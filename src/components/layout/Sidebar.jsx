@@ -44,8 +44,12 @@ const Sidebar = ({ isOpen, onClose }) => {
           <>
             <div className="nav-section-title">الإدارة</div>
             <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">◉</span>
+              <span className="nav-icon">👤</span>
               <span>المستخدمين</span>
+            </NavLink>
+            <NavLink to="/roles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🔑</span>
+              <span>الأدوار</span>
             </NavLink>
             <NavLink to="/audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">▣</span>

@@ -429,6 +429,32 @@ const Api = {
     return res.data;
   },
 
+  // ─── Role Management ───
+  async getRolesFull() {
+    const res = await this._request('/admin/roles');
+    return res.data;
+  },
+
+  async createRole(data) {
+    const res = await this._request('/admin/roles', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateRole(id, data) {
+    const res = await this._request(`/admin/roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteRole(id) {
+    await this._request(`/admin/roles/${id}`, { method: 'DELETE' });
+  },
+
   // ─── Audit Logs ───
   async getAuditLogs(page = 0, size = 20) {
     const res = await this._request(`/audit?page=${page}&size=${size}`);

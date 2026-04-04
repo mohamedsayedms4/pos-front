@@ -12,6 +12,7 @@ import Notifications from './pages/Notifications.jsx'
 import ProductDetails from './pages/ProductDetails.jsx'
 import SupplierDetails from './pages/SupplierDetails.jsx'
 import AuditDetails from './pages/AuditDetails.jsx'
+import Roles from './pages/Roles.jsx'
 
 import MainLayout from './components/layout/MainLayout.jsx'
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/audit" element={<Audit />} />
           <Route path="/audit/:id" element={<AuditDetails />} />
+          <Route path="/roles" element={<Roles />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/products/:id" element={<ProductDetails />} />
           <Route path="/suppliers/:id" element={<SupplierDetails />} />
