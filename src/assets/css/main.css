@@ -1,0 +1,2521 @@
+/* ============================================
+   POS Dashboard — Windows Phone / Metro UI Style
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;700;800;900&family=Cairo:wght@300;400;600;700;800&display=swap');
+
+/* ─── CSS Custom Properties ─── */
+:root {
+  /* Metro Colors */
+  --metro-blue: #0078D7;
+  --metro-dark-blue: #005A9E;
+  --metro-green: #107C10;
+  --metro-dark-green: #0B5C0B;
+  --metro-red: #E81123;
+  --metro-orange: #FF8C00;
+  --metro-purple: #881798;
+  --metro-teal: #00B294;
+  --metro-magenta: #E3008C;
+  --metro-cobalt: #0050EF;
+  --metro-indigo: #6A00FF;
+  --metro-violet: #AA00FF;
+  --metro-yellow: #FFB900;
+  --metro-steel: #647687;
+  --metro-mauve: #76608A;
+  --metro-brown: #A0522D;
+  --metro-olive: #6D8764;
+  --metro-lime: #A4C400;
+  --metro-crimson: #A20025;
+
+  /* Base */
+  --bg-black: #000000;
+  --bg-dark: #1a1a1a;
+  --bg-tile: #1d1d1d;
+  --bg-hover-tile: #2a2a2a;
+
+  /* Text */
+  --text-white: #ffffff;
+  --text-light: #cccccc;
+  --text-muted: #888888;
+  --text-dim: #555555;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+
+  /* Metro Tile Sizes */
+  --tile-gap: 4px;
+  --tile-unit: 1fr;
+
+  /* Transitions */
+  --transition-fast: 100ms ease;
+  --transition-base: 200ms ease;
+  --transition-tile: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Sidebar */
+  --sidebar-width: 52px;
+  --sidebar-expanded: 240px;
+  --topbar-height: 48px;
+}
+
+/* ─── Reset & Base ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', 'Cairo', -apple-system, sans-serif;
+  background: var(--bg-black);
+  color: var(--text-white);
+  line-height: 1.4;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* ─── Typography ─── */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-white);
+  font-weight: 300;
+  letter-spacing: -0.5px;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 200;
+}
+
+h2 {
+  font-size: 1.75rem;
+  font-weight: 300;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+h4 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+a {
+  color: var(--metro-blue);
+  text-decoration: none;
+}
+
+/* ============================
+   LOGIN PAGE — Metro Style
+   ============================ */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-black);
+  position: relative;
+}
+
+.login-card {
+  width: 400px;
+  max-width: 95vw;
+  padding: 40px;
+  background: var(--bg-dark);
+  animation: metroSlideUp 0.4s ease both;
+}
+
+@keyframes metroSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.login-logo .logo-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--metro-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.login-logo h1 {
+  font-size: 1.5rem;
+  font-weight: 200;
+  color: var(--text-white);
+  letter-spacing: 1px;
+}
+
+.login-logo p {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 300;
+  margin-top: 6px;
+}
+
+/* ─── Form Elements — Metro Flat ─── */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  background: #000;
+  border: 2px solid #333;
+  border-radius: 0;
+  color: var(--text-white);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  transition: border-color var(--transition-fast);
+  outline: none;
+}
+
+.form-control:focus {
+  border-color: var(--metro-blue);
+}
+
+.form-control::placeholder {
+  color: var(--text-dim);
+}
+
+select.form-control {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* ─── Buttons — Metro Flat ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  position: relative;
+  text-transform: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--metro-blue);
+  color: white;
+  border-color: var(--metro-blue);
+}
+
+.btn-primary:hover {
+  background: var(--metro-dark-blue);
+  border-color: var(--metro-dark-blue);
+}
+
+.btn-success {
+  background: var(--metro-green);
+  color: white;
+  border-color: var(--metro-green);
+}
+
+.btn-success:hover {
+  background: var(--metro-dark-green);
+}
+
+.btn-danger {
+  background: var(--metro-red);
+  color: white;
+  border-color: var(--metro-red);
+}
+
+.btn-danger:hover {
+  background: var(--metro-crimson);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-light);
+  border: 2px solid #444;
+}
+
+.btn-ghost:hover {
+  background: #222;
+  border-color: #666;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 1rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Loading Spinner (Windows 8 Style) ─── */
+.spinner {
+  position: relative;
+  width: var(--spinner-size, 32px);
+  height: var(--spinner-size, 32px);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.spinner .dot {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transform: rotate(225deg);
+  animation-iteration-count: infinite;
+  animation-name: orbit;
+  animation-duration: 5.5s;
+}
+
+.spinner .dot:after {
+  content: '';
+  position: absolute;
+  width: 12%;
+  height: 12%;
+  border-radius: 50%;
+  background: currentColor;
+  /* Inherit color from parent */
+}
+
+.spinner .dot:nth-child(2) {
+  animation-delay: 240ms;
+}
+
+.spinner .dot:nth-child(3) {
+  animation-delay: 480ms;
+}
+
+.spinner .dot:nth-child(4) {
+  animation-delay: 720ms;
+}
+
+.spinner .dot:nth-child(5) {
+  animation-delay: 960ms;
+}
+
+@keyframes orbit {
+  0% {
+    transform: rotate(225deg);
+    opacity: 1;
+    animation-timing-function: ease-out;
+  }
+
+  7% {
+    transform: rotate(345deg);
+    animation-timing-function: linear;
+  }
+
+  30% {
+    transform: rotate(455deg);
+    animation-timing-function: ease-in-out;
+  }
+
+  39% {
+    transform: rotate(690deg);
+    animation-timing-function: linear;
+  }
+
+  70% {
+    transform: rotate(815deg);
+    opacity: 1;
+    animation-timing-function: ease-out;
+  }
+
+  75% {
+    transform: rotate(945deg);
+    animation-timing-function: ease-out;
+  }
+
+  76% {
+    transform: rotate(945deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: rotate(945deg);
+    opacity: 0;
+  }
+}
+
+
+/* ============================
+   DASHBOARD LAYOUT
+   ============================ */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-black);
+}
+
+/* ─── Sidebar — Metro Slim ─── */
+.sidebar {
+  position: fixed;
+  right: 0;
+  left: auto;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-expanded);
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+.sidebar.collapsed {
+  width: 0;
+  padding: 0;
+}
+
+.sidebar.collapsed * {
+  white-space: nowrap;
+}
+
+.sidebar.collapsed .sidebar-header,
+.sidebar.collapsed .sidebar-footer {
+  padding: 12px 0;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-header img {
+  width: 32px;
+}
+
+.sidebar.collapsed .nav-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  margin: 0;
+}
+
+.sidebar-header {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #222;
+  height: var(--topbar-height);
+  position: relative;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-white);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+}
+
+@media (max-width: 1024px) {
+  .sidebar-close-btn {
+    display: block;
+    position: absolute;
+    left: 10px;
+    top: 5px;
+  }
+
+  body[dir="rtl"] .sidebar-close-btn {
+    left: auto;
+    right: 10px;
+  }
+}
+
+.sidebar-header .logo-mark {
+  width: 32px;
+  height: 32px;
+  background: var(--metro-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: white;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.sidebar-header .brand-text {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text-white);
+  letter-spacing: 1px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.nav-section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 16px 16px 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  color: var(--text-light);
+  font-size: 0.875rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  position: relative;
+  border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+  background: #1a1a1a;
+  color: var(--text-white);
+}
+
+.nav-item.active {
+  color: var(--text-white);
+  background: #1d1d1d;
+  border-left-color: var(--metro-blue);
+}
+
+.nav-item .nav-icon {
+  font-family: 'Segoe UI Symbol', 'Segoe UI', system-ui;
+  font-size: 1.125rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-item .nav-badge {
+  margin-left: auto;
+  background: var(--metro-red);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.sidebar-user .user-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--metro-cobalt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.sidebar-user .user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-user .user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user .user-role {
+  font-size: 0.6875rem;
+  color: var(--text-dim);
+}
+
+/* ─── Main Content ─── */
+.main-content {
+  flex: 1;
+  margin-right: var(--sidebar-expanded);
+  margin-left: 0;
+  position: relative;
+  min-height: 100vh;
+  min-width: 0;
+  overflow-x: hidden;
+  transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed+.main-content {
+  margin-right: 0;
+}
+
+/* ─── Top Bar — Metro Minimal ─── */
+.topbar {
+  position: sticky;
+  top: 0;
+  height: var(--topbar-height);
+  background: #111;
+  border-bottom: 1px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 150;
+  /* Above everything */
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-left .page-title {
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-white);
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.menu-toggle:hover {
+  filter: brightness(1.1);
+  color: var(--text-white);
+}
+
+.menu-toggle:active {
+  transform: scale(0.95);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.topbar-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.topbar-btn:hover {
+  background: #222;
+  color: var(--text-white);
+}
+
+.btn-logout {
+  margin-left: 8px;
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid #333;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-logout:hover {
+  background: var(--metro-red);
+  border-color: var(--metro-red);
+  color: white;
+}
+
+/* ─── Page Content Area ─── */
+.page-content {
+  padding: 24px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================
+   METRO TILES — Windows Phone Grid
+   ============================ */
+
+/* WP-style grid: 6 columns for varied tile sizes */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: minmax(80px, auto);
+  gap: var(--tile-gap);
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  padding: 12px 14px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-tile);
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--metro-blue);
+  /* Default */
+}
+
+/* ─── Tile Size Variants (Windows Phone Style) ─── */
+/* Square Small (1x1) */
+.tile-sq-sm {
+  grid-column: span 1;
+  grid-row: span 1;
+  min-height: 80px;
+}
+
+/* Square Medium (2x2) */
+.tile-sq-md {
+  grid-column: span 2;
+  grid-row: span 2;
+  min-height: 164px;
+}
+
+/* Wide (4x2) */
+.tile-wd-md {
+  grid-column: span 4;
+  grid-row: span 2;
+  min-height: 164px;
+}
+
+/* Wide Short (2x1) */
+.tile-wd-sm {
+  grid-column: span 2;
+  grid-row: span 1;
+  min-height: 80px;
+}
+
+/* Wide Long (4x1) */
+.tile-wd-lg {
+  grid-column: span 4;
+  grid-row: span 1;
+  min-height: 80px;
+}
+
+/* Full Width (6x1 or 6x2) */
+.tile-full-sm {
+  grid-column: span 6;
+  grid-row: span 1;
+  min-height: 80px;
+}
+
+.stat-card:hover {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+.stat-card.blue {
+  background: var(--metro-blue);
+}
+
+.stat-card.emerald {
+  background: var(--metro-green);
+}
+
+.stat-card.amber {
+  background: var(--metro-orange);
+}
+
+.stat-card.rose {
+  background: var(--metro-red);
+}
+
+.stat-card.purple {
+  background: var(--metro-purple);
+}
+
+.stat-card.teal {
+  background: var(--metro-teal);
+}
+
+.stat-card.magenta {
+  background: var(--metro-magenta);
+}
+
+.stat-card.cobalt {
+  background: var(--metro-cobalt);
+}
+
+.stat-card .stat-icon {
+  font-family: 'Segoe UI Symbol', 'Segoe UI', system-ui;
+  font-size: 4rem;
+  opacity: 0.15;
+  position: absolute;
+  bottom: -15px;
+  right: -10px;
+  pointer-events: none;
+}
+
+.stat-card .stat-value {
+  font-size: 2rem;
+  font-weight: 200;
+  color: white;
+  line-height: 1.1;
+}
+
+.stat-card.tile-sq-md .stat-value,
+.stat-card.tile-wd-md .stat-value {
+  font-size: 3rem;
+}
+
+.stat-card.tile-sq-sm .stat-value {
+  font-size: 1.25rem;
+}
+
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  color: white;
+  font-weight: 400;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-card .stat-subtitle {
+  font-size: 0.625rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 300;
+  margin-top: 0;
+}
+
+/* ─── Glass Card → Metro Card ─── */
+.card {
+  background: var(--bg-dark);
+  border: 1px solid #222;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.card-header h3 {
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-body.no-padding {
+  padding: 0;
+}
+
+/* ─── Toolbar & Search ─── */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input .search-icon {
+  position: absolute;
+  right: 12px;
+  color: var(--text-muted);
+}
+
+.search-input input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  padding-right: 36px;
+  padding-left: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid #333;
+  color: var(--text-white);
+  border-radius: 4px;
+}
+
+body[dir="ltr"] .search-input .search-icon {
+  left: 12px;
+  right: auto;
+}
+
+body[dir="ltr"] .search-input input {
+  padding-left: 36px;
+  padding-right: 12px;
+}
+
+/* ─── Data Table — Metro Flat ─── */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: #111;
+  padding: 12px 14px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--metro-blue);
+}
+
+.data-table td {
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  color: var(--text-light);
+  border-bottom: 1px solid #1a1a1a;
+  vertical-align: middle;
+}
+
+.data-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.data-table tbody tr:hover {
+  background: #141414;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── Table action buttons ─── */
+.table-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.table-actions .btn-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+}
+
+.table-actions .btn-icon:hover {
+  background: #222;
+  color: var(--text-white);
+}
+
+/* ─── Badges — Metro Flat ─── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background: var(--metro-green);
+  color: white;
+}
+
+.badge-danger {
+  background: var(--metro-red);
+  color: white;
+}
+
+.badge-warning {
+  background: var(--metro-orange);
+  color: white;
+}
+
+.badge-info {
+  background: var(--metro-blue);
+  color: white;
+}
+
+.badge-neutral {
+  background: #333;
+  color: var(--text-light);
+}
+
+/* ─── Modal — Metro Style ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-base);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  transform: translateY(20px);
+  transition: transform var(--transition-base);
+}
+
+.modal-overlay.active .modal {
+  transform: translateY(0);
+}
+
+.modal-header {
+  padding: 20px 24px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--metro-blue);
+}
+
+.modal-header h3 {
+  font-size: 1.125rem;
+  font-weight: 300;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: #333;
+  color: white;
+}
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+.modal-footer {
+  padding: 12px 24px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #222;
+}
+
+/* ─── Toast Notifications — Metro ─── */
+.toast-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  min-width: 320px;
+  max-width: 420px;
+  pointer-events: auto;
+  animation: metroToastIn 0.3s ease both;
+  position: relative;
+  color: white;
+  font-weight: 600;
+}
+
+.toast.success {
+  background: var(--metro-green);
+}
+
+.toast.error {
+  background: var(--metro-red);
+}
+
+.toast.warning {
+  background: var(--metro-orange);
+}
+
+.toast.info {
+  background: var(--metro-blue);
+}
+
+.toast .toast-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.toast .toast-msg {
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.toast .toast-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.toast .toast-close:hover {
+  color: white;
+}
+
+@keyframes metroToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast.removing {
+  animation: metroToastOut 0.3s ease forwards;
+}
+
+@keyframes metroToastOut {
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+/* ─── Search / Filter Bar ─── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.search-input input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  background: #000;
+  border: 2px solid #333;
+  border-radius: 0;
+  color: var(--text-white);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.search-input input:focus {
+  border-color: var(--metro-blue);
+}
+
+.search-input .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+/* ─── Empty State ─── */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-dim);
+}
+
+.empty-state .empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state h4 {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  margin-bottom: 6px;
+}
+
+.empty-state p {
+  font-size: 0.8125rem;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+/* ─── Confirm Dialog ─── */
+.confirm-dialog .modal {
+  max-width: 380px;
+  text-align: center;
+}
+
+.confirm-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--metro-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+  margin: 0 auto 14px;
+}
+
+.confirm-dialog .modal-body p {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: 8px;
+  font-weight: 300;
+}
+
+.confirm-dialog .modal-footer {
+  justify-content: center;
+}
+
+/* ─── Form Row ─── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ─── Toggle Switch ─── */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #333;
+  transition: all var(--transition-base);
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  transition: transform var(--transition-base);
+}
+
+.toggle-switch input:checked+.toggle-slider {
+  background: var(--metro-blue);
+}
+
+.toggle-switch input:checked+.toggle-slider::before {
+  transform: translateX(22px);
+}
+
+/* ─── Quick Actions — WP Varied Tiles ─── */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--tile-gap);
+}
+
+.quick-action-card {
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-tile);
+  text-decoration: none;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  grid-column: span 2;
+  min-height: 110px;
+}
+
+/* Varied sizes — WP style */
+.quick-action-card:nth-child(1) {
+  grid-column: span 3;
+  min-height: 130px;
+  background: var(--metro-blue);
+}
+
+.quick-action-card:nth-child(2) {
+  grid-column: span 3;
+  min-height: 130px;
+  background: var(--metro-teal);
+}
+
+.quick-action-card:nth-child(3) {
+  grid-column: span 2;
+  background: var(--metro-green);
+}
+
+.quick-action-card:nth-child(4) {
+  grid-column: span 2;
+  background: var(--metro-purple);
+}
+
+.quick-action-card:nth-child(5) {
+  grid-column: span 2;
+  background: var(--metro-orange);
+}
+
+.quick-action-card:nth-child(6) {
+  grid-column: span 6;
+  min-height: 80px;
+  background: var(--metro-magenta);
+  flex-direction: row;
+}
+
+.quick-action-card:hover {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+.quick-action-card:active {
+  transform: scale(0.94);
+}
+
+.quick-action-card .qa-icon {
+  font-family: 'Segoe UI Symbol', 'Segoe UI', system-ui;
+  font-size: 2.5rem;
+  margin-bottom: 4px;
+}
+
+.quick-action-card .qa-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* ─── Pagination ─── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 16px;
+}
+
+.pagination button {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #333;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #222;
+  color: white;
+}
+
+.pagination button.active {
+  background: var(--metro-blue);
+  color: white;
+  border-color: var(--metro-blue);
+}
+
+.pagination button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ─── Supplier Balance ─── */
+.balance-positive {
+  color: var(--metro-green);
+}
+
+.balance-negative {
+  color: var(--metro-red);
+}
+
+/* ─── Loading skeleton ─── */
+.skeleton {
+  background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ─── Responsive ─── */
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 99;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+}
+
+.sidebar-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed !important;
+    z-index: 1000 !important;
+    width: 100% !important;
+    height: 100% !important;
+    right: 0 !important;
+    left: 0 !important;
+    top: auto !important;
+    bottom: -100% !important;
+    /* Hidden off-screen to the bottom */
+    transition: bottom 0.3s cubic-bezier(0.13, 0.76, 0.46, 1) !important;
+    animation: none !important;
+    transform: none !important;
+    /* Clear transforms */
+  }
+
+  .sidebar.open {
+    bottom: 0 !important;
+    /* Slide up to cover screen */
+  }
+
+  .sidebar-header,
+  .sidebar-nav,
+  .sidebar-footer {
+    width: 100% !important;
+  }
+  
+  .sidebar-overlay {
+    z-index: 990 !important;
+  }
+
+  .main-content {
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .menu-toggle {
+    display: flex;
+    /* Show as flex on mobile */
+  }
+
+  .topbar {
+    padding: 0;
+    /* Align button to edge */
+    z-index: 150;
+  }
+
+  .topbar-left {
+    gap: 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tiles: 6-column grid on tablet, adjust spans */
+  .stats-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .tile-sq-md,
+  .tile-wd-md,
+  .tile-large {
+    grid-column: span 3;
+  }
+
+  .tile-sq-sm {
+    grid-column: span 2;
+  }
+
+  .tile-wd-sm {
+    grid-column: span 3;
+  }
+
+  .tile-wd-lg {
+    grid-column: span 6;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Simple Responsive Grids */
+.grid-responsive-4-to-2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1024px) {
+  .grid-responsive-4-to-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .page-content {
+    padding: 8px;
+  }
+
+  .toolbar {
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  /* Tiles: 4-column grid on phone */
+  .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  .stat-card.tile-sq-md {
+    grid-column: span 2 !important;
+    grid-row: span 2 !important;
+  }
+
+  .stat-card.tile-wd-md {
+    grid-column: span 4 !important;
+    grid-row: span 2 !important;
+  }
+
+  .stat-card.tile-sq-sm {
+    grid-column: span 1 !important;
+    grid-row: span 1 !important;
+  }
+
+  .stat-card.tile-wd-sm {
+    grid-column: span 2 !important;
+    grid-row: span 1 !important;
+  }
+
+  .stat-card.tile-wd-lg {
+    grid-column: span 4 !important;
+    grid-row: span 1 !important;
+  }
+
+  .stat-card.tile-full-sm {
+    grid-column: span 4 !important;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .stat-card.tile-sq-md .stat-value {
+    font-size: 2.25rem;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .quick-action-card {
+    grid-column: span 2 !important;
+    min-height: 90px !important;
+  }
+
+  .quick-action-card:nth-child(even) {
+    grid-column: span 2 !important;
+  }
+
+  .quick-action-card:last-child {
+    grid-column: span 4 !important;
+  }
+
+  .modal {
+    max-width: 100%;
+    margin: 0;
+    max-height: 100vh;
+    border: none;
+  }
+
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    max-width: 100%;
+  }
+
+  /* Cards stack vertically */
+  .page-section>div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── Utility Classes ─── */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-sm {
+  font-size: 0.8125rem;
+}
+
+.mt-1 {
+  margin-top: 8px;
+}
+
+.mt-2 {
+  margin-top: 16px;
+}
+
+.mt-3 {
+  margin-top: 24px;
+}
+
+.mb-1 {
+  margin-bottom: 8px;
+}
+
+.mb-2 {
+  margin-bottom: 16px;
+}
+
+.mb-3 {
+  margin-bottom: 24px;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ====================================
+   WINDOWS PHONE ANIMATIONS
+   ==================================== */
+
+/* ─── 1. Turnstile Page Transition ─── */
+.page-section {
+  animation: metroTurnstileIn 0.4s cubic-bezier(0.13, 0.76, 0.46, 1.00) both;
+  perspective: 1200px;
+}
+
+@keyframes metroTurnstileIn {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-70deg);
+    transform-origin: right center;
+  }
+
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg);
+    transform-origin: right center;
+  }
+}
+
+/* Reverse turnstile (for going back) */
+@keyframes metroTurnstileOut {
+  0% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg);
+    transform-origin: left center;
+  }
+
+  100% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(70deg);
+    transform-origin: left center;
+  }
+}
+
+/* ─── 2. Staggered Tile Entrance ─── */
+.stat-card {
+  animation: metroTileSlideIn 0.35s cubic-bezier(0, 0.9, 0.3, 1) both;
+}
+
+.stat-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.stat-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.stat-card:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+@keyframes metroTileSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(60px) scale(0.85);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Quick action tiles also stagger */
+.quick-action-card {
+  animation: metroTileSlideIn 0.35s cubic-bezier(0, 0.9, 0.3, 1) both;
+}
+
+.quick-action-card:nth-child(1) {
+  animation-delay: 0.25s;
+}
+
+.quick-action-card:nth-child(2) {
+  animation-delay: 0.30s;
+}
+
+.quick-action-card:nth-child(3) {
+  animation-delay: 0.35s;
+}
+
+.quick-action-card:nth-child(4) {
+  animation-delay: 0.40s;
+}
+
+.quick-action-card:nth-child(5) {
+  animation-delay: 0.45s;
+}
+
+.quick-action-card:nth-child(6) {
+  animation-delay: 0.50s;
+}
+
+/* ─── 3. Metro Tilt Effect (3D press) ─── */
+.stat-card,
+.quick-action-card {
+  transform-style: preserve-3d;
+  perspective: 600px;
+  will-change: transform;
+}
+
+.stat-card:hover {
+  opacity: 1;
+  transform: scale(0.98);
+}
+
+.stat-card:active,
+.quick-action-card:active {
+  transform: perspective(600px) rotateX(4deg) rotateY(-3deg) scale(0.96) !important;
+  transition: transform 60ms ease;
+}
+
+.quick-action-card:hover {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+/* Tilt class added by JS for directional tilt */
+.metro-tilt-tl:active {
+  transform: perspective(600px) rotateX(-5deg) rotateY(5deg) scale(0.96) !important;
+}
+
+.metro-tilt-tr:active {
+  transform: perspective(600px) rotateX(-5deg) rotateY(-5deg) scale(0.96) !important;
+}
+
+.metro-tilt-bl:active {
+  transform: perspective(600px) rotateX(5deg) rotateY(5deg) scale(0.96) !important;
+}
+
+.metro-tilt-br:active {
+  transform: perspective(600px) rotateX(5deg) rotateY(-5deg) scale(0.96) !important;
+}
+
+/* ─── 4. Live Tile Flip Animation ─── */
+.tile-flip-container {
+  position: relative;
+  perspective: 800px;
+  overflow: hidden;
+}
+
+.tile-flip-container .tile-front,
+.tile-flip-container .tile-back {
+  backface-visibility: hidden;
+  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.tile-flip-container .tile-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateX(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px;
+}
+
+.tile-flip-container.flipped .tile-front {
+  transform: rotateX(-180deg);
+}
+
+.tile-flip-container.flipped .tile-back {
+  transform: rotateX(0deg);
+}
+
+/* ─── 5. Table Row Slide In ─── */
+.data-table tbody tr {
+  animation: metroRowSlideIn 0.3s cubic-bezier(0, 0.9, 0.3, 1) both;
+}
+
+/* Generate staggered delays for rows 1-15 */
+.data-table tbody tr:nth-child(1) {
+  animation-delay: 0.02s;
+}
+
+.data-table tbody tr:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.data-table tbody tr:nth-child(3) {
+  animation-delay: 0.06s;
+}
+
+.data-table tbody tr:nth-child(4) {
+  animation-delay: 0.08s;
+}
+
+.data-table tbody tr:nth-child(5) {
+  animation-delay: 0.10s;
+}
+
+.data-table tbody tr:nth-child(6) {
+  animation-delay: 0.12s;
+}
+
+.data-table tbody tr:nth-child(7) {
+  animation-delay: 0.14s;
+}
+
+.data-table tbody tr:nth-child(8) {
+  animation-delay: 0.16s;
+}
+
+.data-table tbody tr:nth-child(9) {
+  animation-delay: 0.18s;
+}
+
+.data-table tbody tr:nth-child(10) {
+  animation-delay: 0.20s;
+}
+
+.data-table tbody tr:nth-child(11) {
+  animation-delay: 0.22s;
+}
+
+.data-table tbody tr:nth-child(12) {
+  animation-delay: 0.24s;
+}
+
+.data-table tbody tr:nth-child(13) {
+  animation-delay: 0.26s;
+}
+
+.data-table tbody tr:nth-child(14) {
+  animation-delay: 0.28s;
+}
+
+.data-table tbody tr:nth-child(15) {
+  animation-delay: 0.30s;
+}
+
+@keyframes metroRowSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── 6. Nav Item Slide Highlight ─── */
+.nav-item {
+  overflow: hidden;
+}
+
+.nav-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0, 0.9, 0.3, 1);
+}
+
+.nav-item:hover::after {
+  transform: translateX(0);
+}
+
+.nav-item.active::after {
+  transform: translateX(0);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ─── 7. Modal Turnstile Entrance ─── */
+.modal-overlay.active .modal {
+  transform: translateY(0);
+  animation: metroModalTurnstile 0.35s cubic-bezier(0.13, 0.76, 0.46, 1) both;
+}
+
+@keyframes metroModalTurnstile {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-50deg) translateX(60px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) translateX(0);
+  }
+}
+
+/* ─── 8. Login Card Entrance ─── */
+.login-card {
+  animation: metroLoginEntrance 0.5s cubic-bezier(0.13, 0.76, 0.46, 1) both;
+}
+
+@keyframes metroLoginEntrance {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) rotateX(-15deg) translateY(80px) scale(0.9);
+  }
+
+  60% {
+    opacity: 1;
+    transform: perspective(1000px) rotateX(2deg) translateY(-5px) scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+
+/* ─── 9. Card Entrance ─── */
+.card {
+  animation: metroCardSlide 0.4s cubic-bezier(0, 0.9, 0.3, 1) both;
+  animation-delay: 0.3s;
+}
+
+@keyframes metroCardSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── 10. Badge Pulse ─── */
+.badge-danger {
+  animation: metroPulse 2s ease infinite;
+}
+
+@keyframes metroPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ─── 11. Button Press Metro Bounce ─── */
+.btn {
+  transition: all 80ms ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.93);
+  transition: transform 40ms ease;
+}
+
+/* ─── 12. Topbar Slide Down ─── */
+.topbar {
+  animation: metroSlideDown 0.3s cubic-bezier(0, 0.9, 0.3, 1) both;
+}
+
+@keyframes metroSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── 13. Sidebar Slide In ─── */
+.sidebar {
+  animation: metroSidebarSlide 0.35s cubic-bezier(0.13, 0.76, 0.46, 1) both;
+}
+
+@keyframes metroSidebarSlide {
+  0% {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── 14. Notification Item Entrance ─── */
+.notification-item {
+  animation: metroNotifSlide 0.3s cubic-bezier(0, 0.9, 0.3, 1) both;
+}
+
+/* ─── 15. Loading Dots (Metro style) ─── */
+.metro-loading {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.metro-loading .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--metro-blue);
+  animation: metroDotBounce 1.4s infinite ease-in-out both;
+}
+
+.metro-loading .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.metro-loading .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.metro-loading .dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.metro-loading .dot:nth-child(4) {
+  animation-delay: 0.16s;
+}
+
+.metro-loading .dot:nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+@keyframes metroDotBounce {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ─── 16. Focus Ring Animation ─── */
+.form-control:focus {
+  animation: metroFocusPulse 0.3s ease;
+}
+
+@keyframes metroFocusPulse {
+  0% {
+    border-color: #333;
+  }
+
+  50% {
+    border-color: var(--metro-blue);
+    box-shadow: 0 0 0 3px rgba(0, 120, 215, 0.15);
+  }
+
+  100% {
+    border-color: var(--metro-blue);
+    box-shadow: none;
+  }
+}
+
+/* ─── Reduce motion for accessibility ─── */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE OVERRIDES (Mobile First Fixes)
+   ============================================ */
+
+/* 1. Stats Grid (Metro Tiles) Responsiveness */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    min-height: 100px;
+  }
+}
+
+/* 2. Sidebar & Layout Mobile Fixes (The "Black Space" issue) */
+@media (max-width: 992px) {
+  :root {
+    --sidebar-expanded: 0px;
+    /* Collapse sidebar on mobile */
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 260px;
+    background: #111;
+    z-index: 2000;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .main-content {
+    margin-right: 0 !important;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .page-content {
+    padding: 12px;
+  }
+
+  /* Table wrapping on mobile */
+  .table-wrapper {
+    margin: 0 -12px;
+    padding: 0 12px;
+    width: calc(100% + 24px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Reset Metro Tile spans for mobile */
+  .tile-sq-sm,
+  .tile-sq-md,
+  .tile-wd-md,
+  .tile-wd-sm,
+  .tile-wd-lg,
+  .tile-full-sm {
+    grid-column: span 1 !important;
+    grid-row: span 1 !important;
+    min-height: 100px !important;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* 3. Details Grid (Supplier Details Page) */
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 992px) {
+  .details-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ============================================
+   RTL SUPPORT (Arabic Language Overrides)
+   ============================================ */
+body[dir="rtl"] .sidebar {
+  right: 0;
+  left: auto;
+  border-right: none;
+  border-left: 1px solid #222;
+}
+
+@media (min-width: 993px) {
+  body[dir="rtl"] .main-content {
+    margin-left: 0;
+    margin-right: var(--sidebar-expanded);
+  }
+
+  body[dir="rtl"] .sidebar.collapsed+.main-content {
+    margin-right: var(--sidebar-width);
+  }
+}
+
+body[dir="rtl"] .sidebar-header,
+body[dir="rtl"] .sidebar-user {
+  flex-direction: row;
+}
+
+body[dir="rtl"] .nav-item {
+  border-left: none;
+  border-right: 3px solid transparent;
+}
+
+body[dir="rtl"] .nav-item.active {
+  border-right-color: var(--metro-blue);
+}
+
+body[dir="rtl"] .nav-item .nav-badge {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+body[dir="rtl"] .data-table th {
+  text-align: right;
+}
+
+/* RTL: Turnstile rotates from LEFT edge */
+body[dir="rtl"] .page-section {
+  animation-name: metroTurnstileInRTL;
+}
+
+@keyframes metroTurnstileInRTL {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(70deg);
+    transform-origin: left center;
+  }
+
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg);
+    transform-origin: left center;
+  }
+}
+
+/* RTL: Tilt directions mirrored */
+body[dir="rtl"] .metro-tilt-tl:active {
+  transform: perspective(600px) rotateX(-5deg) rotateY(-5deg) scale(0.96) !important;
+}
+
+body[dir="rtl"] .metro-tilt-tr:active {
+  transform: perspective(600px) rotateX(-5deg) rotateY(5deg) scale(0.96) !important;
+}
+
+body[dir="rtl"] .metro-tilt-bl:active {
+  transform: perspective(600px) rotateX(5deg) rotateY(-5deg) scale(0.96) !important;
+}
+
+body[dir="rtl"] .metro-tilt-br:active {
+  transform: perspective(600px) rotateX(5deg) rotateY(5deg) scale(0.96) !important;
+}
