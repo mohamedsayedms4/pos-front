@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
+import Loader from '../components/common/Loader';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -53,7 +54,7 @@ const Dashboard = () => {
   }, []);
 
   if (loading) {
-    return <div style={{ padding: '20px' }}>جاري التحميل...</div>;
+    return <Loader message="جاري تحميل إحصائيات النظام..." />;
   }
 
   return (

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
+import Loader from '../components/common/Loader';
 
 const Suppliers = () => {
   const { toast, confirm } = useGlobalUI();
@@ -158,7 +159,7 @@ const Suppliers = () => {
         <div className="card-body no-padding">
           <div className="table-wrapper">
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center' }}>جاري التحميل...</div>
+              <Loader message="جاري تحميل الموردين..." />
             ) : items.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">🏭</div>
@@ -227,7 +228,7 @@ const Suppliers = () => {
     {modalType === 'form' && (
       <ModalContainer>
         <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-          <div className="modal" style={{ maxWidth: '500px' }}>
+          <div className="modal">
             <div className="modal-header">
               <h3>{activeSupplier ? 'تعديل مورد' : 'إضافة مورد جديد'}</h3>
               <button className="modal-close" onClick={closeModal}>✕</button>
@@ -272,7 +273,7 @@ const Suppliers = () => {
     {modalType === 'payment' && (
       <ModalContainer>
         <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-          <div className="modal" style={{ maxWidth: '400px' }}>
+          <div className="modal" style={{ maxWidth: '450px' }}>
             <div className="modal-header">
               <h3>دفع للمورد — {activeSupplier.name}</h3>
               <button className="modal-close" onClick={closeModal}>✕</button>

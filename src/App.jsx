@@ -13,26 +13,38 @@ import ProductDetails from './pages/ProductDetails.jsx'
 import SupplierDetails from './pages/SupplierDetails.jsx'
 import AuditDetails from './pages/AuditDetails.jsx'
 import Roles from './pages/Roles.jsx'
+import StockReceipts from './pages/StockReceipts.jsx'
+import POS from './pages/POS.jsx'
+import Customers from './pages/Customers.jsx'
+import Sales from './pages/Sales.jsx'
+import Returns from './pages/Returns.jsx'
+import Treasury from './pages/Treasury.jsx'
 
 import MainLayout from './components/layout/MainLayout.jsx'
+import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 
 import { GlobalUIProvider } from './components/common/GlobalUI'
 
 function App() {
   return (
     <GlobalUIProvider>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<Login />} />
         
-        <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/pos" element={<POS />} />
           <Route path="/products" element={<Products />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/suppliers" element={<Suppliers />} />
+          <Route path="/customers" element={<Customers />} />
           <Route path="/purchases" element={<Purchases />} />
           <Route path="/purchases/:supplierName" element={<Purchases />} />
+          <Route path="/sales" element={<Sales />} />
+          <Route path="/returns" element={<Returns />} />
           <Route path="/users" element={<Users />} />
           <Route path="/audit" element={<Audit />} />
           <Route path="/audit/:id" element={<AuditDetails />} />
@@ -40,8 +52,11 @@ function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/products/:id" element={<ProductDetails />} />
           <Route path="/suppliers/:id" element={<SupplierDetails />} />
+          <Route path="/stock-receipts" element={<StockReceipts />} />
+          <Route path="/treasury" element={<Treasury />} />
         </Route>
-      </Routes>
+      </Route>
+    </Routes>
     </BrowserRouter>
   </GlobalUIProvider>
   )

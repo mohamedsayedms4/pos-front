@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNotifications } from '../services/useNotifications';
+import Loader from '../components/common/Loader';
 
 const typeIcon = {
   INFO: '🔵',
@@ -9,7 +10,7 @@ const typeIcon = {
 };
 
 const Notifications = () => {
-  const { notifications, unreadCount, connected, markRead, markAllRead, refresh } = useNotifications();
+  const { notifications, unreadCount, connected, loading, markRead, markAllRead, refresh } = useNotifications();
 
   return (
     <div className="page-section">
@@ -49,7 +50,9 @@ const Notifications = () => {
           </div>
         </div>
         <div className="card-body">
-          {notifications.length === 0 ? (
+          {loading ? (
+             <Loader message="جاري تحميل الإشعارات..." />
+          ) : notifications.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🔔</div>
               <h4>لا توجد إشعارات</h4>

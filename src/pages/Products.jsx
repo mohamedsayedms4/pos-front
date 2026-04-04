@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
+import Loader from '../components/common/Loader';
 
 const Products = () => {
   const { toast, confirm } = useGlobalUI();
@@ -16,7 +17,8 @@ const Products = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة'
+    name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة',
+    units: [] // List of packaging units
   });
   const [images, setImages] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -64,11 +66,13 @@ const Products = () => {
         stock: product.stock || '0',
         productCode: product.productCode || '',
         categoryId: product.categoryId || '',
-        unitName: product.unitName || 'القطعة'
+        unitName: product.unitName || 'القطعة',
+        units: product.units || []
       });
     } else {
       setFormData({
-        name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة'
+        name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة',
+        units: []
       });
     }
     setImages(null);
@@ -110,6 +114,25 @@ const Products = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const addUnitRow = () => {
+    setFormData({
+      ...formData,
+      units: [...formData.units, { unitName: '', conversionFactor: 1, purchasePrice: 0, salePrice: 0 }]
+    });
+  };
+
+  const removeUnitRow = (index) => {
+    const newUnits = [...formData.units];
+    newUnits.splice(index, 1);
+    setFormData({ ...formData, units: newUnits });
+  };
+
+  const updateUnitRow = (index, field, value) => {
+    const newUnits = [...formData.units];
+    newUnits[index] = { ...newUnits[index], [field]: value };
+    setFormData({ ...formData, units: newUnits });
   };
 
   const handleDelete = async (id, name) => {
@@ -172,7 +195,7 @@ const Products = () => {
         <div className="card-body no-padding">
           <div className="table-wrapper">
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center' }}>جاري التحميل...</div>
+              <Loader message="جاري تحميل المنتجات..." />
             ) : items.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">📦</div>
@@ -204,7 +227,14 @@ const Products = () => {
                           </div>
                           <div>
                             <Link to={`/products/${p.id}`} style={{ fontWeight: 600, color: 'var(--metro-blue)', textDecoration: 'none' }}>{p.name}</Link>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.unitName || ''}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '2px' }}>
+                              <span>{p.unitName || 'قطعة'}</span>
+                              {p.units && p.units.length > 0 && p.units.map(u => (
+                                <span key={u.id} style={{ background: 'var(--bg-card)', padding: '0 5px', borderRadius: '3px', border: '1px solid var(--border-color)', color: 'var(--accent-emerald)' }}>
+                                  {u.unitName}: {u.conversionFactor} {p.unitName}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -236,7 +266,7 @@ const Products = () => {
     {isModalOpen && (
       <ModalContainer>
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal" style={{ maxWidth: '600px' }}>
+            <div className="modal">
               <div className="modal-header">
                 <h3>{editProduct ? 'تعديل منتج' : 'إضافة منتج جديد'}</h3>
                 <button className="modal-close" onClick={closeModal}>✕</button>
@@ -280,11 +310,50 @@ const Products = () => {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>الوحدة</label>
-                      <input className="form-control" name="unitName" value={formData.unitName} onChange={(e) => setFormData({...formData, unitName: e.target.value})} />
+                      <label>الوحدة الأساسية (قطاعي) *</label>
+                      <input className="form-control" name="unitName" value={formData.unitName} onChange={(e) => setFormData({...formData, unitName: e.target.value})} required placeholder="كيس، قطعة، كيلو..." />
                     </div>
                   </div>
-                  <div className="form-group">
+
+                  {/* Packaging Units Section */}
+                  <div style={{ marginTop: '20px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem' }}>📦 وحدات الجملة/التعبئة (اختياري)</h4>
+                      <button type="button" className="btn btn-sm btn-secondary" onClick={addUnitRow}>+ إضافة وحدة جملة</button>
+                    </div>
+                    
+                    {formData.units.length === 0 ? (
+                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '10px' }}>
+                        لم يتم إضافة وحدات جملة (مثلاً: كرتونة)
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {formData.units.map((unit, index) => (
+                          <div key={index} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 40px', gap: '8px', alignItems: 'end', background: 'var(--bg-card)', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '0.7rem' }}>اسم الوحدة (كرتونة)</label>
+                              <input className="form-control form-control-sm" value={unit.unitName} onChange={(e) => updateUnitRow(index, 'unitName', e.target.value)} placeholder="مثلاً: كرتونة" />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '0.7rem' }}>فيها كام قطعة؟</label>
+                              <input className="form-control form-control-sm" type="number" value={unit.conversionFactor} onChange={(e) => updateUnitRow(index, 'conversionFactor', e.target.value)} />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '0.7rem' }}>سعر الشراء</label>
+                              <input className="form-control form-control-sm" type="number" value={unit.purchasePrice} onChange={(e) => updateUnitRow(index, 'purchasePrice', e.target.value)} />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '0.7rem' }}>سعر البيع</label>
+                              <input className="form-control form-control-sm" type="number" value={unit.salePrice} onChange={(e) => updateUnitRow(index, 'salePrice', e.target.value)} />
+                            </div>
+                            <button type="button" className="btn btn-icon btn-sm" style={{ color: 'var(--metro-red)', marginBottom: '5px' }} onClick={() => removeUnitRow(index)}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="form-group" style={{ marginTop: '20px' }}>
                     <label>الصور</label>
                     <input className="form-control" type="file" name="images" multiple accept="image/*" onChange={(e) => setImages(e.target.files)} />
                   </div>

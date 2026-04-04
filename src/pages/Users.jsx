@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 
 const Users = () => {
@@ -140,7 +141,7 @@ const Users = () => {
         <div className="card-body no-padding">
           <div className="table-wrapper">
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center' }}>جاري التحميل...</div>
+              <Loader message="جاري تحميل قائمة المستخدمين..." />
             ) : data.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">👥</div>
@@ -203,7 +204,7 @@ const Users = () => {
     {modalType === 'form' && (
       <ModalContainer>
         <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-          <div className="modal" style={{ maxWidth: '500px' }}>
+          <div className="modal">
             <div className="modal-header">
               <h3>إضافة مستخدم جديد</h3>
               <button className="modal-close" onClick={closeModal}>✕</button>
@@ -259,7 +260,7 @@ const Users = () => {
     {modalType === 'access' && activeUser && (
       <ModalContainer>
         <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-          <div className="modal" style={{ maxWidth: '600px' }}>
+          <div className="modal">
             <div className="modal-header">
               <h3>صلاحيات — {activeUser.name}</h3>
               <button className="modal-close" onClick={closeModal}>✕</button>

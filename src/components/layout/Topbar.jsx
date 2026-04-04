@@ -2,10 +2,16 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Api from '../../services/api';
 import { useNotifications } from '../../services/useNotifications';
+import { useGlobalUI } from '../common/GlobalUI';
 
 const Topbar = ({ onMenuToggle }) => {
   const navigate = useNavigate();
-  const { unreadCount, connected } = useNotifications();
+  const { toast } = useGlobalUI ? useGlobalUI() : { toast: () => {} }; // Safely get toast
+  const { unreadCount, connected } = useNotifications({
+    onNewNotification: (notif) => {
+      toast(notif.message, notif.type === 'WARNING' || notif.type === 'SECURITY' ? 'error' : 'success');
+    }
+  });
 
   const handleLogout = async () => {
     try {

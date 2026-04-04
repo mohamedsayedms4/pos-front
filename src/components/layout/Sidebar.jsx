@@ -15,10 +15,12 @@ const Sidebar = ({ isOpen, onClose }) => {
       <nav className="sidebar-nav">
         <div className="nav-section-title">الرئيسية</div>
         
-        <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-          <span className="nav-icon">▦</span>
-          <span>لوحة التحكم</span>
-        </NavLink>
+        {Api.can('SALE_WRITE') && (
+          <NavLink to="/pos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">🖥️</span>
+            <span>نقطة البيع (POS)</span>
+          </NavLink>
+        )}
 
         <NavLink to="/products" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-icon">▨</span>
@@ -30,31 +32,75 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span>الفئات</span>
         </NavLink>
 
-        <NavLink to="/suppliers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-          <span className="nav-icon">▧</span>
-          <span>الموردين</span>
-        </NavLink>
-        
-        <NavLink to="/purchases" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-          <span className="nav-icon">🛒</span>
-          <span>المشتريات</span>
-        </NavLink>
+        {Api.can('SUPPLIER_READ') && (
+          <NavLink to="/suppliers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">▧</span>
+            <span>الموردين</span>
+          </NavLink>
+        )}
 
-        {Api.can('view_users') && (
+        {Api.can('CUSTOMER_READ') && (
+          <NavLink to="/customers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">👥</span>
+            <span>العملاء</span>
+          </NavLink>
+        )}
+        
+        {Api.can('PURCHASE_READ') && (
+          <NavLink to="/purchases" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">🛒</span>
+            <span>المشتريات</span>
+          </NavLink>
+        )}
+
+        {Api.can('SALE_READ') && (
+          <>
+            <NavLink to="/sales" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🧾</span>
+              <span>فواتير المبيعات</span>
+            </NavLink>
+            <NavLink to="/returns" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🔄</span>
+              <span>مرتجع المبيعات</span>
+            </NavLink>
+          </>
+        )}
+
+        {Api.can('STOCK_READ') && (
+          <NavLink to="/stock-receipts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">📦</span>
+            <span>استلام المخزون</span>
+          </NavLink>
+        )}
+
+        {Api.can('TREASURY_READ') && (
+          <NavLink to="/treasury" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">💰</span>
+            <span>الخزنة</span>
+          </NavLink>
+        )}
+
+        {(Api.can('USER_READ') || Api.can('ROLE_READ') || Api.can('AUDIT_READ')) && (
           <>
             <div className="nav-section-title">الإدارة</div>
-            <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">👤</span>
-              <span>المستخدمين</span>
-            </NavLink>
-            <NavLink to="/roles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">🔑</span>
-              <span>الأدوار</span>
-            </NavLink>
-            <NavLink to="/audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">▣</span>
-              <span>سجل المراجعة</span>
-            </NavLink>
+            {Api.can('USER_READ') && (
+              <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">👤</span>
+                <span>المستخدمين</span>
+              </NavLink>
+            )}
+            {Api.can('ROLE_READ') && (
+              <NavLink to="/roles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🔑</span>
+                <span>الأدوار</span>
+              </NavLink>
+            )}
+            {Api.can('AUDIT_READ') && (
+              <NavLink to="/audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">▣</span>
+                <span>سجل المراجعة</span>
+              </NavLink>
+            )}
           </>
         )}
       </nav>

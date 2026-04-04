@@ -49,10 +49,12 @@ async function playNotificationSound() {
 }
 // ────────────────────────────────────────────────────────────────────────────
 
-export function useNotifications() {
+export function useNotifications(options = {}) {
+  const { onNewNotification } = options;
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [connected, setConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
   const clientRef = useRef(null);
 
   // Re-compute unread count whenever notifications change
@@ -62,12 +64,15 @@ export function useNotifications() {
 
   // Load existing notifications from REST API
   const loadInitial = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await Api.getNotifications();
       setNotifications(data);
       updateUnread(data);
     } catch (e) {
       // Silently ignore
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -88,7 +93,10 @@ export function useNotifications() {
       return updated;
     });
     playNotificationSound();
-  }, []);
+    if (onNewNotification) {
+      onNewNotification(newNotif);
+    }
+  }, [onNewNotification]);
 
   // Mark a notification as read (optimistic update + API call)
   const markRead = useCallback(async (id) => {
@@ -176,5 +184,5 @@ export function useNotifications() {
     return () => { client.deactivate(); };
   }, []);
 
-  return { notifications, unreadCount, connected, markRead, markAllRead, refresh };
+  return { notifications, unreadCount, connected, loading, markRead, markAllRead, refresh };
 }

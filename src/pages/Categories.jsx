@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
+import Loader from '../components/common/Loader';
 
 const Categories = () => {
   const { toast, confirm } = useGlobalUI();
@@ -120,7 +121,7 @@ const Categories = () => {
         <div className="card-body no-padding">
           <div className="table-wrapper">
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center' }}>جاري التحميل...</div>
+              <Loader message="جاري تحميل الفئات..." />
             ) : flatData.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">📂</div>

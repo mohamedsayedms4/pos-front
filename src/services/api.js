@@ -39,6 +39,25 @@ const Api = {
    * Check if current user has a specific permission.
    * Admins (ROLE_ADMIN) have all permissions.
    */
+  // Stock Receipts
+  async getStockReceipts(page = 0, size = 10) {
+    const res = await this._request(`/stock-receipts?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async saveStockReceiptQuantities(id, itemQuantities = null) {
+    return await this._request(`/stock-receipts/${id}/save`, { 
+      method: 'POST',
+      body: itemQuantities ? JSON.stringify(itemQuantities) : null
+    });
+  },
+
+  async commitStockReceiptToInventory(id) {
+    return await this._request(`/stock-receipts/${id}/commit`, { 
+      method: 'POST'
+    });
+  },
+
   can(permission) {
     const user = this._getUser();
     if (!user) return false;
@@ -79,7 +98,8 @@ const Api = {
           response = await fetch(url, { ...options, headers });
         } else {
           this._clearTokens();
-          window.location.href = '../index.html';
+          console.warn('Session expired - redirecting to login');
+          window.location.href = '/login';
           throw new Error('Session expired');
         }
       }
@@ -133,13 +153,23 @@ const Api = {
   },
 
   async logout() {
-    try {
-      await this._request('/auth/logout', {
-        method: 'POST',
-        body: JSON.stringify({ refreshToken: this._getRefreshToken() })
-      });
-    } catch { }
-    this._clearTokens();
+    const refreshToken = this._getRefreshToken();
+    this._clearTokens(); // Clear local state immediately
+    
+    if (refreshToken) {
+      try {
+        // Use direct fetch for logout instead of this._request to avoid 401 refresh loop
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+      } catch (err) {
+        console.error('Logout API call failed', err);
+      }
+    }
+    
+    window.location.href = '/login';
   },
 
   // ─── Products ───
@@ -455,6 +485,32 @@ const Api = {
     await this._request(`/admin/roles/${id}`, { method: 'DELETE' });
   },
 
+  // ─── Product Units ───
+  async getProductUnits(productId) {
+    const res = await this._request(`/products/${productId}/units`);
+    return res.data;
+  },
+
+  async addProductUnit(productId, data) {
+    const res = await this._request(`/products/${productId}/units`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateProductUnit(productId, unitId, data) {
+    const res = await this._request(`/products/${productId}/units/${unitId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteProductUnit(productId, unitId) {
+    await this._request(`/products/${productId}/units/${unitId}`, { method: 'DELETE' });
+  },
+
   // ─── Audit Logs ───
   async getAuditLogs(page = 0, size = 20) {
     const res = await this._request(`/audit?page=${page}&size=${size}`);
@@ -494,6 +550,70 @@ const Api = {
     const res = await this._request(`/installments/invoice/${invoiceId}`);
     return res;
   },
+
+  // ─── Customers ───
+  async getCustomers(page = 0, size = 10, query = '') {
+    const res = await this._request(`/customers?page=${page}&size=${size}&query=${query}`);
+    return res.data;
+  },
+
+  async createCustomer(data) {
+    const res = await this._request('/customers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateCustomer(id, data) {
+    const res = await this._request(`/customers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteCustomer(id) {
+    await this._request(`/customers/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Sales ───
+  async getSales(page = 0, size = 10) {
+    const res = await this._request(`/sales?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async createSale(data) {
+    const res = await this._request('/sales', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async createSaleReturn(data) {
+    const res = await this._request('/sales/returns', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async getReturns(page = 0, size = 10) {
+    const res = await this._request(`/sales/returns?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  // ─── Treasury ───
+  async getMainTreasury() {
+    const res = await this._request('/treasury/main');
+    return res.data;
+  },
+
+  async getTreasuryTransactions(page = 0, size = 20) {
+    const res = await this._request(`/treasury/transactions?page=${page}&size=${size}`);
+    return res.data;
+  }
 };
 
 export default Api;

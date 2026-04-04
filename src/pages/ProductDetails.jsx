@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Api, { API_BASE } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import Loader from '../components/common/Loader';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -11,6 +12,84 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mainImage, setMainImage] = useState(null);
+
+  // ─── Unit management ───────────────────────────────────────────────────────
+  const [units, setUnits] = useState([]);
+  const [showUnitForm, setShowUnitForm] = useState(false);
+  const [editingUnit, setEditingUnit] = useState(null); // null = add mode
+  const [unitForm, setUnitForm] = useState({
+    unitName: '', conversionFactor: '', purchasePrice: '', salePrice: '',
+    isDefaultPurchase: false, isDefaultSale: false
+  });
+  const [savingUnit, setSavingUnit] = useState(false);
+
+  const loadUnits = async () => {
+    try {
+      const data = await Api.getProductUnits(id);
+      setUnits(data || []);
+    } catch { /* ignore */ }
+  };
+
+  const openAddUnit = () => {
+    setEditingUnit(null);
+    setUnitForm({ unitName: '', conversionFactor: '', purchasePrice: '', salePrice: '', isDefaultPurchase: false, isDefaultSale: false });
+    setShowUnitForm(true);
+  };
+
+  const openEditUnit = (u) => {
+    setEditingUnit(u);
+    setUnitForm({
+      unitName: u.unitName,
+      conversionFactor: u.conversionFactor,
+      purchasePrice: u.purchasePrice,
+      salePrice: u.salePrice,
+      isDefaultPurchase: !!u.isDefaultPurchase,
+      isDefaultSale: !!u.isDefaultSale,
+    });
+    setShowUnitForm(true);
+  };
+
+  const handleSaveUnit = async (e) => {
+    e.preventDefault();
+    if (!unitForm.unitName || !unitForm.conversionFactor) {
+      toast('اسم الوحدة ومعامل التحويل مطلوبان', 'warning');
+      return;
+    }
+    setSavingUnit(true);
+    try {
+      const payload = {
+        unitName: unitForm.unitName,
+        conversionFactor: parseFloat(unitForm.conversionFactor),
+        purchasePrice: parseFloat(unitForm.purchasePrice) || 0,
+        salePrice: parseFloat(unitForm.salePrice) || 0,
+        isDefaultPurchase: unitForm.isDefaultPurchase,
+        isDefaultSale: unitForm.isDefaultSale,
+      };
+      if (editingUnit) {
+        await Api.updateProductUnit(id, editingUnit.id, payload);
+        toast('تم تعديل الوحدة بنجاح', 'success');
+      } else {
+        await Api.addProductUnit(id, payload);
+        toast('تم إضافة الوحدة بنجاح', 'success');
+      }
+      setShowUnitForm(false);
+      loadUnits();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setSavingUnit(false);
+    }
+  };
+
+  const handleDeleteUnit = async (unitId) => {
+    try {
+      await Api.deleteProductUnit(id, unitId);
+      toast('تم حذف الوحدة', 'success');
+      loadUnits();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -33,6 +112,7 @@ const ProductDetails = () => {
 
     if (id) {
       loadProduct();
+      loadUnits();
     }
   }, [id]);
 
@@ -121,7 +201,7 @@ const ProductDetails = () => {
   };
 
   if (loading) {
-    return <div className="page-section"><div style={{ padding: '40px', textAlign: 'center' }}>جاري التحميل...</div></div>;
+    return <Loader message="جاري تحميل تفاصيل المنتج..." />;
   }
 
   if (error || !product) {
@@ -193,10 +273,22 @@ const ProductDetails = () => {
             <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0', color: 'var(--text-primary)' }}>
               {product.name}
             </h2>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '0.9rem' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '0.9rem', flexWrap: 'wrap' }}>
               <span style={{ background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>{product.categoryName || 'بدون فئة'}</span>
               <span style={{ color: 'var(--text-muted)' }}>|</span>
               <span style={{ color: 'var(--text-muted)' }}>كود: <strong>{product.productCode || '—'}</strong></span>
+              {units && units.length > 0 && (
+                <>
+                  <span style={{ color: 'var(--text-muted)' }}>|</span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {units.map(u => (
+                      <span key={u.id} className="badge" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--accent-emerald)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '0.75rem' }}>
+                        📦 {u.unitName} = {u.conversionFactor} {product.unitName || 'قطعة'}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
               <span style={{ color: 'var(--text-muted)' }}>|</span>
               <span style={{ color: badgeColor, fontWeight: 600 }}>{badgeText}</span>
             </div>
@@ -238,6 +330,109 @@ const ProductDetails = () => {
               <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{product.description || 'لا يوجد وصف متاح لهذا المنتج.'}</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ═══ Unit Management Section ══════════════════════════════════════════ */}
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="card-header">
+          <h3>📦 وحدات التغليف والكميات الجملة</h3>
+          <button className="btn btn-primary btn-sm" onClick={openAddUnit}>+ إضافة وحدة</button>
+        </div>
+        <div className="card-body">
+
+          {/* Unit Form */}
+          {showUnitForm && (
+            <form onSubmit={handleSaveUnit} style={{
+              background: 'var(--bg-elevated)', borderRadius: '8px',
+              padding: '20px', marginBottom: '20px', border: '1px solid var(--border-color)'
+            }}>
+              <h4 style={{ marginBottom: '16px' }}>{editingUnit ? 'تعديل الوحدة' : 'إضافة وحدة جديدة'}</h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>اسم الوحدة *</label>
+                  <input className="form-control" placeholder="كرتونة، شكارة، دستة..." value={unitForm.unitName}
+                    onChange={e => setUnitForm({ ...unitForm, unitName: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label>معامل التحويل * <small style={{ color: 'var(--text-muted)' }}>(كم وحدة أساسية بداخلها)</small></label>
+                  <input className="form-control" type="number" step="0.001" min="0.001" placeholder="12، 10، 6..." value={unitForm.conversionFactor}
+                    onChange={e => setUnitForm({ ...unitForm, conversionFactor: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label>سعر الشراء</label>
+                  <input className="form-control" type="number" step="0.01" min="0" placeholder="120.00" value={unitForm.purchasePrice}
+                    onChange={e => setUnitForm({ ...unitForm, purchasePrice: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>سعر البيع بالجملة</label>
+                  <input className="form-control" type="number" step="0.01" min="0" placeholder="150.00" value={unitForm.salePrice}
+                    onChange={e => setUnitForm({ ...unitForm, salePrice: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '20px', marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={unitForm.isDefaultPurchase}
+                    onChange={e => setUnitForm({ ...unitForm, isDefaultPurchase: e.target.checked })} />
+                  الوحدة الافتراضية للشراء
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={unitForm.isDefaultSale}
+                    onChange={e => setUnitForm({ ...unitForm, isDefaultSale: e.target.checked })} />
+                  الوحدة الافتراضية للبيع
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="submit" className="btn btn-primary" disabled={savingUnit}>
+                  {savingUnit ? 'جاري الحفظ...' : (editingUnit ? 'حفظ التعديل' : 'إضافة الوحدة')}
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowUnitForm(false)}>إلغاء</button>
+              </div>
+            </form>
+          )}
+
+          {/* Units Table */}
+          {units.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px' }}>
+              لا توجد وحدات جملة محددة — المنتج يُباع ويُشترى بالوحدة الأساسية ({product.unitName || 'قطعة'})
+            </div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>اسم الوحدة</th>
+                  <th>معامل التحويل</th>
+                  <th>= كم وحدة أساسية</th>
+                  <th>سعر الشراء</th>
+                  <th>سعر البيع الجملة</th>
+                  <th>افتراضي شراء</th>
+                  <th>افتراضي بيع</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {units.map(u => (
+                  <tr key={u.id}>
+                    <td style={{ fontWeight: 600 }}>{u.unitName}</td>
+                    <td>×{u.conversionFactor}</td>
+                    <td style={{ color: 'var(--accent-emerald)' }}>
+                      1 {u.unitName} = <strong>{u.conversionFactor}</strong> {product.unitName || 'قطعة'}
+                    </td>
+                    <td>{u.purchasePrice ? Number(u.purchasePrice).toFixed(2) : '—'}</td>
+                    <td>{u.salePrice ? Number(u.salePrice).toFixed(2) : '—'}</td>
+                    <td style={{ textAlign: 'center' }}>{u.isDefaultPurchase ? '✅' : '—'}</td>
+                    <td style={{ textAlign: 'center' }}>{u.isDefaultSale ? '✅' : '—'}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openEditUnit(u)}>✏️</button>
+                        <button className="btn btn-icon btn-ghost" title="حذف" style={{ color: 'var(--metro-red)' }} onClick={() => handleDeleteUnit(u.id)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

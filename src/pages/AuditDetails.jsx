@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import Loader from '../components/common/Loader';
 
 const AuditDetails = () => {
   const { id } = useParams();
@@ -32,11 +33,7 @@ const AuditDetails = () => {
   }, [id, log, toast]);
 
   if (loading) {
-    return (
-      <div className="page-section">
-        <div style={{ padding: '40px', textAlign: 'center' }}>جاري التحميل...</div>
-      </div>
-    );
+    return <Loader message="جاري تحميل تفاصيل السجل..." />;
   }
 
   if (!log) {

@@ -213,23 +213,26 @@ a {
 
 .form-control {
   width: 100%;
-  padding: 10px 12px;
-  background: #000;
-  border: 2px solid #333;
+  padding: 12px 14px;
+  background: #0d0d0d;
+  border: 1px solid #333;
   border-radius: 0;
   color: var(--text-white);
   font-family: inherit;
   font-size: 0.9375rem;
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-fast);
   outline: none;
 }
 
 .form-control:focus {
   border-color: var(--metro-blue);
+  background: #111;
+  box-shadow: 0 0 0 1px var(--metro-blue);
 }
 
 .form-control::placeholder {
   color: var(--text-dim);
+  opacity: 0.6;
 }
 
 select.form-control {
@@ -251,18 +254,19 @@ textarea.form-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 20px;
+  gap: 10px;
+  padding: 12px 24px;
   font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: 2px solid transparent;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  border: 1px solid transparent;
   border-radius: 0;
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
   position: relative;
-  text-transform: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .btn:active {
@@ -1130,12 +1134,13 @@ body[dir="ltr"] .search-input input {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 40px 20px;
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-base);
@@ -1147,31 +1152,57 @@ body[dir="ltr"] .search-input input {
 }
 
 .modal {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  width: 100%;
-  max-width: 520px;
-  max-height: 85vh;
-  overflow-y: auto;
-  transform: translateY(20px);
-  transition: transform var(--transition-base);
+  background: #121212;
+  border: 1px solid #2a2a2a;
+  width: 95%;
+  max-width: 650px; /* Standardize on a wider, more premium width */
+  max-height: 85vh; /* Reduced to fit better on standard screens */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px) scale(0.98);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
+  position: relative;
 }
 
 .modal-overlay.active .modal {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+}
+
+/* Enforce flex layout for both direct body children and form wrappers */
+.modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  height: auto;
 }
 
 .modal-header {
-  padding: 20px 24px 12px;
+  padding: 24px 30px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid var(--metro-blue);
+  border-bottom: 1px solid #222;
+  position: relative;
+}
+
+.modal-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: 0;
+  width: 100px;
+  height: 2px;
+  background: var(--metro-blue);
 }
 
 .modal-header h3 {
-  font-size: 1.125rem;
-  font-weight: 300;
+  font-size: 1.25rem;
+  font-weight: 200;
+  letter-spacing: 0.5px;
+  color: var(--text-white);
 }
 
 .modal-close {
@@ -1193,15 +1224,20 @@ body[dir="ltr"] .search-input input {
 }
 
 .modal-body {
-  padding: 20px 24px;
+  padding: 24px 30px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0; /* Critical for flex overflow scrolling */
 }
 
 .modal-footer {
-  padding: 12px 24px 20px;
+  padding: 16px 30px 20px;
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
   border-top: 1px solid #222;
+  background: #121212;
+  flex-shrink: 0;
 }
 
 /* ─── Toast Notifications — Metro ─── */
@@ -1393,7 +1429,7 @@ body[dir="ltr"] .search-input input {
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 20px;
 }
 
 /* ─── Toggle Switch ─── */
@@ -2550,3 +2586,23 @@ body[dir="rtl"] .metro-tilt-bl:active {
 body[dir="rtl"] .metro-tilt-br:active {
   transform: perspective(600px) rotateX(5deg) rotateY(5deg) scale(0.96) !important;
 }
+/* ─── Modals (Metro Style) ─── */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s ease; }
+.modal-container { background: #1a1a1a; border: 1px solid #333; width: 500px; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+.modal-xl { width: 900px; }
+.modal-header { padding: 15px 20px; background: #222; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h2 { margin: 0; font-size: 1.2rem; color: var(--metro-blue); }
+.modal-header button { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 15px 20px; background: #222; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ─── Modals (Metro Style) ─── */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.2s ease; perspective: 1200px; }
+.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal { background: #1a1a1a; border: 1px solid #333; width: 500px; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s ease; }
+.modal-overlay.active .modal { transform: translateY(0); }
+.modal-header { padding: 15px 20px; background: #222; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h2 { margin: 0; font-size: 1.2rem; color: var(--metro-blue); font-weight: 300; }
+.modal-header button { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 15px 20px; background: #222; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 10px; }

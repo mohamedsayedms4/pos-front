@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 
 const Roles = () => {
@@ -116,7 +117,7 @@ const Roles = () => {
           <div className="card-body no-padding">
             <div className="table-wrapper">
               {loading ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>جاري التحميل...</div>
+                <Loader message="جاري تحميل الأدوار..." />
               ) : data.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">🔑</div>

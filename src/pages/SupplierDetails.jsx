@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 
 const SupplierDetails = () => {
@@ -57,14 +58,7 @@ const SupplierDetails = () => {
   };
 
   if (loading) {
-    return (
-      <div className="page-section">
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <div style={{ textAlign: 'center', padding: '40px' }}>جاري التحميل...</div>
-          <p style={{ marginTop: '10px', color: 'var(--text-muted)' }}>جاري تحميل الإحصائيات...</p>
-        </div>
-      </div>
-    );
+    return <Loader message="جاري تحميل إحصائيات المورد..." />;
   }
 
   if (error || !data) {
@@ -203,7 +197,7 @@ const SupplierDetails = () => {
               </div>
               <div className="modal-body">
                 {isLedgerLoading ? (
-                  <div style={{ padding: '40px', textAlign: 'center' }}>جاري تحميل كشف الحساب...</div>
+                  <Loader message="جاري تحميل كشف الحساب..." />
                 ) : !ledgerData || ledgerData.length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-icon">📋</div>
