@@ -82,7 +82,7 @@ const Sales = () => {
                 </div>
             </div>
 
-            <div className="card">
+            <div className="table-responsive">
                 <table className="data-table">
                     <thead>
                         <tr>
@@ -98,20 +98,20 @@ const Sales = () => {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan="8"><Loader message="جاري تحميل فواتير المبيعات..." /></td></tr>
+                            <tr><td colSpan="8" className="full-mobile"><Loader message="جاري تحميل فواتير المبيعات..." /></td></tr>
                         ) : sales.length === 0 ? (
-                            <tr><td colSpan="8" style={{ textAlign: 'center' }}>لا يوجد فواتير مبيعات</td></tr>
+                            <tr><td colSpan="8" className="full-mobile" style={{ textAlign: 'center' }}>لا يوجد فواتير مبيعات</td></tr>
                         ) : sales.map(s => (
                             <tr key={s.id}>
-                                <td><strong>{s.invoiceNumber}</strong></td>
-                                <td>{new Date(s.invoiceDate).toLocaleString('ar-EG')}</td>
-                                <td>{s.customerName}</td>
-                                <td>{(s.totalAmount || 0).toFixed(2)}</td>
-                                <td>{(s.paidAmount || 0).toFixed(2)}</td>
-                                <td className={(s.remainingAmount || 0) > 0 ? 'text-danger' : 'text-success'}>
+                                <td data-label="رقم الفاتورة"><strong>{s.invoiceNumber}</strong></td>
+                                <td data-label="التاريخ">{new Date(s.invoiceDate).toLocaleString('ar-EG')}</td>
+                                <td data-label="العميل">{s.customerName}</td>
+                                <td data-label="الإجمالي">{(s.totalAmount || 0).toFixed(2)}</td>
+                                <td data-label="المدفوع">{(s.paidAmount || 0).toFixed(2)}</td>
+                                <td data-label="المتبقي" className={(s.remainingAmount || 0) > 0 ? 'text-danger' : 'text-success'}>
                                     {(s.remainingAmount || 0).toFixed(2)}
                                 </td>
-                                <td>
+                                <td data-label="الحالة">
                                     <span className={`badge ${
                                         s.status === 'PAID' ? 'badge-success' : 
                                         s.status === 'PARTIAL' ? 'badge-info' : 
@@ -126,7 +126,7 @@ const Sales = () => {
                                          'آجل'}
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="الإجراءات">
                                     <button className="btn btn-secondary btn-sm" onClick={() => openDetails(s)}>التفاصيل</button>
                                     <button className="btn btn-danger btn-sm" onClick={() => openReturnModal(s)}>↩ مرتجع</button>
                                 </td>
@@ -139,40 +139,40 @@ const Sales = () => {
             {/* Details Modal */}
             {showDetails && activeSale && ReactDOM.createPortal(
                 <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowDetails(false); }}>
-                    <div className="modal">
+                    <div className="modal" style={{ width: '100%', maxWidth: '600px' }}>
                         <div className="modal-header">
                             <h2>تفاصيل الفاتورة: {activeSale.invoiceNumber}</h2>
                             <button onClick={() => setShowDetails(false)}>✕</button>
                         </div>
-                        <div className="modal-body">
-                            <div className="invoice-summary mb-4">
-                                <p><strong>العميل:</strong> {activeSale.customerName}</p>
-                                <p><strong>التاريخ:</strong> {new Date(activeSale.invoiceDate).toLocaleString('ar-EG')}</p>
+                        <div className="modal-body" style={{ padding: '15px' }}>
+                            <div className="invoice-summary mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                                <p><strong>العميل:</strong><br/> {activeSale.customerName}</p>
+                                <p><strong>التاريخ:</strong><br/> {new Date(activeSale.invoiceDate).toLocaleDateString('ar-EG')}</p>
                             </div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>الصنف</th>
-                                        <th>الكمية</th>
-                                        <th>الوحدة</th>
-                                        <th>السعر</th>
-                                        <th>الإجمالي</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {activeSale.items && activeSale.items.map(item => (
-                                        <tr key={item.id}>
-                                            <td>{item.productName}</td>
-                                            <td>{item.quantity}</td>
-                                            <td>{item.unitName}</td>
-                                            <td>{(item.unitPrice || 0).toFixed(2)}</td>
-                                            <td>{(item.totalPrice || 0).toFixed(2)}</td>
+                            <div className="table-responsive">
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>الصنف</th>
+                                            <th>الكمية</th>
+                                            <th>السعر</th>
+                                            <th>الإجمالي</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            <div className="mt-4 text-left" style={{ textAlign: 'left' }}>
-                                <h3>الإجمالي النهائي: {(activeSale.totalAmount || 0).toFixed(2)} <small>ج.م</small></h3>
+                                    </thead>
+                                    <tbody>
+                                        {activeSale.items && activeSale.items.map(item => (
+                                            <tr key={item.id}>
+                                                <td data-label="الصنف">{item.productName}</td>
+                                                <td data-label="الكمية">{item.quantity} {item.unitName}</td>
+                                                <td data-label="السعر">{(item.unitPrice || 0).toFixed(2)}</td>
+                                                <td data-label="الإجمالي">{(item.totalPrice || 0).toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="mt-4" style={{ textAlign: 'left', borderTop: '2px solid #222', paddingTop: '10px' }}>
+                                <h3 style={{ color: 'var(--metro-blue)' }}>الإجمالي: {(activeSale.totalAmount || 0).toFixed(2)} <small>ج.م</small></h3>
                             </div>
                         </div>
                         <div className="modal-footer">
@@ -193,43 +193,45 @@ const Sales = () => {
                         </div>
                         <div className="modal-body">
                             <div className="alert alert-info" style={{ marginBottom: '15px' }}>حدد الكميات المراد إرجاعها للمخزن من القائمة أدناه</div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>الصنف</th>
-                                        <th>الكمية المباعة</th>
-                                        <th>السعر</th>
-                                        <th>كمية المرتجع</th>
-                                        <th>إجمالي المرتجع</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {returnItems.map((item, idx) => (
-                                        <tr key={item.id}>
-                                            <td>{item.productName}</td>
-                                            <td>{item.quantity} {item.unitName}</td>
-                                            <td>{(item.unitPrice || 0).toFixed(2)}</td>
-                                            <td>
-                                                <input 
-                                                    type="number" 
-                                                    className="form-control" 
-                                                    style={{ width: '80px' }}
-                                                    min="0"
-                                                    max={item.quantity}
-                                                    value={item.returnQty}
-                                                    onChange={e => {
-                                                        const val = Math.min(item.quantity, Math.max(0, parseFloat(e.target.value) || 0));
-                                                        const newItems = [...returnItems];
-                                                        newItems[idx].returnQty = val;
-                                                        setReturnItems(newItems);
-                                                    }}
-                                                />
-                                            </td>
-                                            <td>{(item.returnQty * (item.unitPrice || 0)).toFixed(2)}</td>
+                            <div className="table-responsive">
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>الصنف</th>
+                                            <th>الكمية المباعة</th>
+                                            <th>السعر</th>
+                                            <th>كمية المرتجع</th>
+                                            <th>الإجمالي</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {returnItems.map((item, idx) => (
+                                            <tr key={item.id}>
+                                                <td data-label="الصنف">{item.productName}</td>
+                                                <td data-label="الكمية">{item.quantity} {item.unitName}</td>
+                                                <td data-label="السعر">{(item.unitPrice || 0).toFixed(2)}</td>
+                                                <td data-label="كمية المرتجع">
+                                                    <input 
+                                                        type="number" 
+                                                        className="form-control" 
+                                                        style={{ width: '80px', margin: '0 auto' }}
+                                                        min="0"
+                                                        max={item.quantity}
+                                                        value={item.returnQty}
+                                                        onChange={e => {
+                                                            const val = Math.min(item.quantity, Math.max(0, parseFloat(e.target.value) || 0));
+                                                            const newItems = [...returnItems];
+                                                            newItems[idx].returnQty = val;
+                                                            setReturnItems(newItems);
+                                                        }}
+                                                    />
+                                                </td>
+                                                <td data-label="الإجمالي">{(item.returnQty * (item.unitPrice || 0)).toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                             <div className="form-group mt-4">
                                 <label>ملاحظات المرتجع (سبب الإرجاع) *</label>
                                 <textarea 

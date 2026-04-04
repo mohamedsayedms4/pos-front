@@ -3,7 +3,7 @@
  */
 export const API_BASE = window.location.port === '8085'
   ? '/api/v1'
-  : 'https://posapi.digitalrace.net/api/v1';
+  : 'http://localhost:8080/api/v1';
 
 const Api = {
   _getToken() {
@@ -46,14 +46,14 @@ const Api = {
   },
 
   async saveStockReceiptQuantities(id, itemQuantities = null) {
-    return await this._request(`/stock-receipts/${id}/save`, { 
+    return await this._request(`/stock-receipts/${id}/save`, {
       method: 'POST',
       body: itemQuantities ? JSON.stringify(itemQuantities) : null
     });
   },
 
   async commitStockReceiptToInventory(id) {
-    return await this._request(`/stock-receipts/${id}/commit`, { 
+    return await this._request(`/stock-receipts/${id}/commit`, {
       method: 'POST'
     });
   },
@@ -155,7 +155,7 @@ const Api = {
   async logout() {
     const refreshToken = this._getRefreshToken();
     this._clearTokens(); // Clear local state immediately
-    
+
     if (refreshToken) {
       try {
         // Use direct fetch for logout instead of this._request to avoid 401 refresh loop
@@ -168,7 +168,7 @@ const Api = {
         console.error('Logout API call failed', err);
       }
     }
-    
+
     window.location.href = '/login';
   },
 
