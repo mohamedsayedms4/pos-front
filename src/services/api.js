@@ -3,7 +3,7 @@
  */
 export const API_BASE = window.location.port === '8085'
   ? '/api/v1'
-  : 'http://localhost:8080/api/v1';
+  : 'https://posapi.digitalrace.net/api/v1';
 
 const Api = {
   _getToken() {
