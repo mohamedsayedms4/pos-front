@@ -25,7 +25,7 @@ const Users = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'http://localhost:8080/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1'; // Standard base for image serving 
 
   const loadData = async () => {
     setLoading(true);
