@@ -18,7 +18,7 @@ const Treasury = () => {
     try {
       const tData = await Api.getMainTreasury();
       setTreasury(tData);
-      
+
       const transData = await Api.getTreasuryTransactions(0, 100);
       setTransactions(transData.items || transData.content || []);
     } catch (err) {
@@ -128,17 +128,17 @@ const Treasury = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ 
-                          width: '8px', height: '8px', 
-                          background: t.source === 'SALE' ? 'var(--metro-blue)' : 
-                                      t.source === 'PURCHASE' ? 'var(--metro-orange)' : 
-                                      'var(--metro-purple)'
+                        <span style={{
+                          width: '8px', height: '8px',
+                          background: t.source === 'SALE' ? 'var(--metro-blue)' :
+                            t.source === 'PURCHASE' ? 'var(--metro-orange)' :
+                              'var(--metro-purple)'
                         }}></span>
-                        {t.source === 'SALE' ? 'فاتورة مبيعات' : 
-                         t.source === 'RETURN' ? 'مرتجع مبيعات' : 
-                         t.source === 'PURCHASE' ? 'فاتورة مشتريات' : 
-                         t.source === 'INSTALLMENT_PAYMENT' ? 'قسط مورد' :
-                         t.source === 'SUPPLIER_PAYMENT' ? 'دفعة مورد' : t.source}
+                        {t.source === 'SALE' ? 'فاتورة مبيعات' :
+                          t.source === 'RETURN' ? 'مرتجع مبيعات' :
+                            t.source === 'PURCHASE' ? 'فاتورة مشتريات' :
+                              t.source === 'INSTALLMENT_PAYMENT' ? 'قسط مورد' :
+                                t.source === 'SUPPLIER_PAYMENT' ? 'دفعة مورد' : t.source}
                       </div>
                     </td>
                     <td>

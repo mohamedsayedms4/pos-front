@@ -24,10 +24,12 @@ import MainLayout from './components/layout/MainLayout.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 
 import { GlobalUIProvider } from './components/common/GlobalUI'
+import { ThemeProvider } from './components/common/ThemeContext'
 
 function App() {
   return (
-    <GlobalUIProvider>
+    <ThemeProvider>
+      <GlobalUIProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -58,7 +60,8 @@ function App() {
       </Route>
     </Routes>
     </BrowserRouter>
-  </GlobalUIProvider>
+    </GlobalUIProvider>
+    </ThemeProvider>
   )
 }
 

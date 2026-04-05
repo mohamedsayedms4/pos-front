@@ -109,65 +109,83 @@ const Categories = () => {
   return (
     <>
       <div className="page-section">
-      <div className="card">
-        <div className="card-header">
-          <h3>📂 إدارة الفئات</h3>
-          {Api.can('CATEGORY_WRITE') && (
-            <button className="btn btn-primary" onClick={() => openForm(null)}>
-              <span>+</span> إضافة فئة
-            </button>
-          )}
-        </div>
-        <div className="card-body no-padding">
-          <div className="table-wrapper">
-            {loading ? (
-              <Loader message="جاري تحميل الفئات..." />
-            ) : flatData.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📂</div>
-                <h4>لا توجد فئات</h4>
-                <p>قم بإضافة فئات لتنظيم المنتجات</p>
-              </div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>الفئة</th>
-                    <th>الوصف</th>
-                    <th>الفئة الأم</th>
-                    <th>عدد المنتجات</th>
-                    <th>الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {flatData.map((c, i) => (
-                    <tr key={c.id}>
-                      <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                      <td>
-                        <div style={{ paddingLeft: `${c.level * 24}px`, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>{c.level > 0 ? '↳' : '📁'}</span>
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
-                        </div>
-                      </td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{c.description || '—'}</td>
-                      <td>{c.parentName || <span className="text-muted">—</span>}</td>
-                      <td><span className="badge badge-info">{c.productCount || 0}</span></td>
-                      <td>
-                        <div className="table-actions">
-                          <Link className="btn btn-icon btn-ghost" title="عرض المنتجات" to={`/categories/${c.id}/products`}>📦</Link>
-                          {Api.can('CATEGORY_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(c)}>✏️</button>}
-                          {Api.can('CATEGORY_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(c.id, c.name)}>🗑️</button>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+        <div className="stats-grid">
+          <div className="stat-card blue tile-wd-sm">
+            <div className="stat-icon">📂</div>
+            <div className="stat-value">{flatData.length}</div>
+            <div className="stat-label">إجمالي الفئات</div>
+          </div>
+          <div className="stat-card emerald tile-sq-sm">
+            <div className="stat-icon">📁</div>
+            <div className="stat-value">{flatData.filter(c => c.level === 0).length}</div>
+            <div className="stat-label">رئيسية</div>
+          </div>
+          <div className="stat-card amber tile-sq-sm">
+            <div className="stat-icon">↳</div>
+            <div className="stat-value">{flatData.filter(c => c.level > 0).length}</div>
+            <div className="stat-label">فرعية</div>
           </div>
         </div>
-      </div>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>📂 إدارة الفئات</h3>
+            {Api.can('CATEGORY_WRITE') && (
+              <button className="btn btn-primary" onClick={() => openForm(null)}>
+                <span>+</span> إضافة فئة
+              </button>
+            )}
+          </div>
+          <div className="card-body no-padding">
+            <div className="table-wrapper">
+              {loading ? (
+                <Loader message="جاري تحميل الفئات..." />
+              ) : flatData.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📂</div>
+                  <h4>لا توجد فئات</h4>
+                  <p>قم بإضافة فئات لتنظيم المنتجات</p>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>الفئة</th>
+                      <th>الوصف</th>
+                      <th>الفئة الأم</th>
+                      <th>عدد المنتجات</th>
+                      <th>الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flatData.map((c, i) => (
+                      <tr key={c.id}>
+                        <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                        <td>
+                          <div style={{ paddingLeft: `${c.level * 24}px`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>{c.level > 0 ? '↳' : '📁'}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{c.description || '—'}</td>
+                        <td>{c.parentName || <span className="text-muted">—</span>}</td>
+                        <td><span className="badge badge-info">{c.productCount || 0}</span></td>
+                        <td>
+                          <div className="table-actions">
+                            <Link className="btn btn-icon btn-ghost" title="عرض المنتجات" to={`/categories/${c.id}/products`}>📦</Link>
+                            {Api.can('CATEGORY_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(c)}>✏️</button>}
+                            {Api.can('CATEGORY_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(c.id, c.name)}>🗑️</button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
 
       </div>
 
@@ -183,15 +201,15 @@ const Categories = () => {
                 <form id="categoryForm" onSubmit={handleSave}>
                   <div className="form-group">
                     <label>اسم الفئة *</label>
-                    <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                    <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                   </div>
                   <div className="form-group">
                     <label>الوصف</label>
-                    <textarea className="form-control" name="description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
+                    <textarea className="form-control" name="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
                   </div>
                   <div className="form-group">
                     <label>الفئة الأم (اختياري)</label>
-                    <select className="form-control" name="parentId" value={formData.parentId} onChange={(e) => setFormData({...formData, parentId: e.target.value})}>
+                    <select className="form-control" name="parentId" value={formData.parentId} onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}>
                       <option value="">بدون فئة أم</option>
                       {flatData.filter(c => c.id !== editCategory?.id).map(c => (
                         <option key={c.id} value={c.id}>

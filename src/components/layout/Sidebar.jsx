@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import Api from '../../services/api';
+import Api, { API_BASE } from '../../services/api';
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const user = Api._getUser() || { name: 'Admin', role: 'مدير النظام' };
+  const [user, setUser] = useState(Api._getUser() || { name: 'Admin', role: 'مدير النظام' });
+
+  useEffect(() => {
+    const handleStorage = () => setUser(Api._getUser() || { name: 'Admin', role: 'مدير النظام' });
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const avatarUrl = user?.profilePicture
+    ? `${API_BASE}/products/images/${user.profilePicture}`
+    : null;
+  const isAdmin = (user?.roles || []).some(r => r.includes('ADMIN'));
 
   return (
     <aside className={`sidebar ${isOpen ? 'open' : ''}`} id="sidebar">
@@ -14,7 +25,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       <nav className="sidebar-nav">
         <div className="nav-section-title">الرئيسية</div>
-        
+
         {Api.can('SALE_WRITE') && (
           <NavLink to="/pos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🖥️</span>
@@ -45,7 +56,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span>العملاء</span>
           </NavLink>
         )}
-        
+
         {Api.can('PURCHASE_READ') && (
           <NavLink to="/purchases" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🛒</span>
@@ -107,10 +118,32 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       <div className="sidebar-footer">
         <div className="sidebar-user">
-          <div className="user-avatar">{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</div>
+          <div className="user-avatar" style={{ padding: 0, overflow: 'hidden' }}>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={user.name || 'Avatar'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div
+              style={{
+                width: '100%', height: '100%', display: avatarUrl ? 'none' : 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                background: isAdmin ? 'var(--gradient-primary)' : 'var(--gradient-emerald)',
+                borderRadius: 'inherit', fontWeight: 700,
+              }}
+            >
+              {(user.name || 'U').charAt(0).toUpperCase()}
+            </div>
+          </div>
           <div className="user-info">
             <div className="user-name">{user.name}</div>
-            <div className="user-role">{user.role || (Api.can('ROLE_ADMIN') ? 'مدير النظام' : 'مستخدم')}</div>
+            <div className="user-role">{user.role || (isAdmin ? 'مدير النظام' : 'مستخدم')}</div>
           </div>
         </div>
       </div>

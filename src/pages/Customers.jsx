@@ -83,12 +83,30 @@ const Customers = () => {
         </div>
       </div>
 
+      <div className="stats-grid mb-3">
+        <div className="stat-card blue tile-wd-sm">
+          <div className="stat-icon">👤</div>
+          <div className="stat-value">{customers.length}</div>
+          <div className="stat-label">إجمالي العملاء</div>
+        </div>
+        <div className="stat-card emerald tile-sq-sm">
+          <div className="stat-icon">✅</div>
+          <div className="stat-value">{customers.length}</div>
+          <div className="stat-label">نشط</div>
+        </div>
+        <div className="stat-card amber tile-sq-sm">
+          <div className="stat-icon">📅</div>
+          <div className="stat-value">0</div>
+          <div className="stat-label">انضموا مؤخراً</div>
+        </div>
+      </div>
+
       <div className="toolbar mb-3">
         <div className="search-input">
           <span className="search-icon">🔍</span>
-          <input 
-            type="text" 
-            placeholder="بحث بالاسم أو رقم الهاتف..." 
+          <input
+            type="text"
+            placeholder="بحث بالاسم أو رقم الهاتف..."
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -165,45 +183,45 @@ const Customers = () => {
             <div className="modal-body">
               <div className="form-group">
                 <label>اسم العميل *</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="form-control"
-                  required 
+                  required
                   placeholder="مثال: محمد علي"
                   value={currentCustomer.name}
-                  onChange={e => setCurrentCustomer({...currentCustomer, name: e.target.value})}
+                  onChange={e => setCurrentCustomer({ ...currentCustomer, name: e.target.value })}
                 />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>رقم الهاتف</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className="form-control"
                     placeholder="01xxxxxxxxx"
                     value={currentCustomer.phone}
-                    onChange={e => setCurrentCustomer({...currentCustomer, phone: e.target.value})}
+                    onChange={e => setCurrentCustomer({ ...currentCustomer, phone: e.target.value })}
                   />
                 </div>
                 <div className="form-group">
                   <label>البريد الإلكتروني</label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     className="form-control"
                     placeholder="example@mail.com"
                     value={currentCustomer.email}
-                    onChange={e => setCurrentCustomer({...currentCustomer, email: e.target.value})}
+                    onChange={e => setCurrentCustomer({ ...currentCustomer, email: e.target.value })}
                   />
                 </div>
               </div>
               <div className="form-group">
                 <label>العنوان التفصيلي</label>
-                <textarea 
+                <textarea
                   className="form-control"
                   rows="3"
                   placeholder="المدينة، الشارع، رقم المبنى..."
                   value={currentCustomer.address}
-                  onChange={e => setCurrentCustomer({...currentCustomer, address: e.target.value})}
+                  onChange={e => setCurrentCustomer({ ...currentCustomer, address: e.target.value })}
                 />
               </div>
             </div>

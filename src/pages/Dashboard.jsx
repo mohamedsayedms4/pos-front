@@ -27,7 +27,7 @@ const Dashboard = () => {
 
         let users = [];
         if (Api.can('ROLE_ADMIN')) {
-          try { users = await Api.getUsers(); } catch {}
+          try { users = await Api.getUsers(); } catch { }
         }
 
         const lowStockItems = products.filter(p => Number(p.stock) < 10 && Number(p.stock) > 0);
@@ -209,7 +209,7 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-        
+
         <div className="card">
           <div className="card-header">
             <h3>تنبيهات المخزون</h3>

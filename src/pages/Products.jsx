@@ -12,7 +12,7 @@ const Products = () => {
   const [stats, setStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -152,119 +152,121 @@ const Products = () => {
   return (
     <>
       <div className="page-section">
-      {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '25px' }}>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--metro-blue)' }}>📦</div>
-            <div className="stat-value">{stats.totalProducts}</div>
+        <div className="stats-grid">
+          <div className="stat-card blue tile-wd-sm">
+            <div className="stat-icon">📦</div>
+            <div className="stat-value">{data.length}</div>
             <div className="stat-label">إجمالي المنتجات</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--accent-emerald)' }}>💰</div>
-            <div className="stat-value">{Number(stats.totalExpectedSales).toLocaleString('en-US')}</div>
-            <div className="stat-label">المبيعات المتوقعة (ج.م)</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--metro-red)' }}>⚠️</div>
-            <div className="stat-value">{stats.outOfStockCount}</div>
-            <div className="stat-label">منتجات نفذت</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--accent-amber)' }}>📉</div>
-            <div className="stat-value">{stats.lowStockCount}</div>
-            <div className="stat-label">منتجات منخفضة المخزون</div>
-          </div>
-        </div>
-      )}
 
-      <div className="card">
-        <div className="card-header">
-          <h3>📦 إدارة المنتجات</h3>
-          <div className="toolbar">
-            <div className="search-input">
-              <span className="search-icon">🔍</span>
-              <input type="text" placeholder="بحث عن منتج..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            {Api.can('PRODUCT_WRITE') && (
-              <button className="btn btn-primary" onClick={() => openForm(null)}>
-                <span>+</span> إضافة منتج
-              </button>
-            )}
+          <div className="stat-card emerald tile-wd-sm">
+            <div className="stat-icon">💰</div>
+            <div className="stat-value">{Number(stats?.totalExpectedSales || 0).toLocaleString('en-US')}</div>
+            <div className="stat-label">المبيعات المتوقعة</div>
+            <div className="stat-subtitle">(ج.م)</div>
+          </div>
+
+          <div className="stat-card rose tile-sq-sm">
+            <div className="stat-icon">⚠️</div>
+            <div className="stat-value">{stats?.outOfStockCount || 0}</div>
+            <div className="stat-label">نفذت</div>
+          </div>
+
+          <div className="stat-card amber tile-sq-sm">
+            <div className="stat-icon">📉</div>
+            <div className="stat-value">{stats?.lowStockCount || 0}</div>
+            <div className="stat-label">منخفض</div>
           </div>
         </div>
-        <div className="card-body no-padding">
-          <div className="table-wrapper">
-            {loading ? (
-              <Loader message="جاري تحميل المنتجات..." />
-            ) : items.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📦</div>
-                <h4>لا توجد منتجات</h4>
-                <p>قم بإضافة منتجات جديدة للبدء</p>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>📦 إدارة المنتجات</h3>
+            <div className="toolbar">
+              <div className="search-input">
+                <span className="search-icon">🔍</span>
+                <input type="text" placeholder="بحث عن منتج..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>المنتج</th>
-                    <th>الكود</th>
-                    <th>الفئة</th>
-                    <th>سعر الشراء</th>
-                    <th>سعر البيع</th>
-                    <th>المخزون</th>
-                    <th>الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((p, i) => (
-                    <tr key={p.id}>
-                      <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
-                            📦
-                          </div>
-                          <div>
-                            <Link to={`/products/${p.id}`} style={{ fontWeight: 600, color: 'var(--metro-blue)', textDecoration: 'none' }}>{p.name}</Link>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '2px' }}>
-                              <span>{p.unitName || 'قطعة'}</span>
-                              {p.units && p.units.length > 0 && p.units.map(u => (
-                                <span key={u.id} style={{ background: 'var(--bg-card)', padding: '0 5px', borderRadius: '3px', border: '1px solid var(--border-color)', color: 'var(--accent-emerald)' }}>
-                                  {u.unitName}: {u.conversionFactor} {p.unitName}
-                                </span>
-                              ))}
+              {Api.can('PRODUCT_WRITE') && (
+                <button className="btn btn-primary" onClick={() => openForm(null)}>
+                  <span>+</span> إضافة منتج
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="card-body no-padding">
+            <div className="table-wrapper">
+              {loading ? (
+                <Loader message="جاري تحميل المنتجات..." />
+              ) : items.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📦</div>
+                  <h4>لا توجد منتجات</h4>
+                  <p>قم بإضافة منتجات جديدة للبدء</p>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>المنتج</th>
+                      <th>الكود</th>
+                      <th>الفئة</th>
+                      <th>سعر الشراء</th>
+                      <th>سعر البيع</th>
+                      <th>المخزون</th>
+                      <th>الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((p, i) => (
+                      <tr key={p.id}>
+                        <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+                              📦
+                            </div>
+                            <div>
+                              <Link to={`/products/${p.id}`} style={{ fontWeight: 600, color: 'var(--metro-blue)', textDecoration: 'none' }}>{p.name}</Link>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '2px' }}>
+                                <span>{p.unitName || 'قطعة'}</span>
+                                {p.units && p.units.length > 0 && p.units.map(u => (
+                                  <span key={u.id} style={{ background: 'var(--bg-card)', padding: '0 5px', borderRadius: '3px', border: '1px solid var(--border-color)', color: 'var(--accent-emerald)' }}>
+                                    {u.unitName}: {u.conversionFactor} {p.unitName}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{p.productCode || '—'}</code></td>
-                      <td>{p.categoryName || <span className="text-muted">—</span>}</td>
-                      <td>{Number(p.purchasePrice).toFixed(2)}</td>
-                      <td style={{ fontWeight: 600, color: 'var(--accent-emerald-light)' }}>{Number(p.salePrice).toFixed(2)}</td>
-                      <td>
-                        <span className={`badge ${Number(p.stock) > 0 ? 'badge-success' : 'badge-danger'}`}>
-                          {Number(p.stock).toFixed(1)}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="table-actions">
-                          {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(p)}>✏️</button>}
-                          {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(p.id, p.name)}>🗑️</button>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        </td>
+                        <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{p.productCode || '—'}</code></td>
+                        <td>{p.categoryName || <span className="text-muted">—</span>}</td>
+                        <td>{Number(p.purchasePrice).toFixed(2)}</td>
+                        <td style={{ fontWeight: 600, color: 'var(--accent-emerald-light)' }}>{Number(p.salePrice).toFixed(2)}</td>
+                        <td>
+                          <span className={`badge ${Number(p.stock) > 0 ? 'badge-success' : 'badge-danger'}`}>
+                            {Number(p.stock).toFixed(1)}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(p)}>✏️</button>}
+                            {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(p.id, p.name)}>🗑️</button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    {isModalOpen && (
-      <ModalContainer>
+      {isModalOpen && (
+        <ModalContainer>
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
             <div className="modal">
               <div className="modal-header">
@@ -275,43 +277,43 @@ const Products = () => {
                 <form id="productForm" onSubmit={handleSave}>
                   <div className="form-group">
                     <label>اسم المنتج *</label>
-                    <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                    <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                   </div>
                   <div className="form-group">
                     <label>الوصف</label>
-                    <textarea className="form-control" name="description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
+                    <textarea className="form-control" name="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
                   </div>
                   <div className="form-row">
                     <div className="form-group">
                       <label>سعر الشراء *</label>
-                      <input className="form-control" type="number" step="0.01" name="purchasePrice" value={formData.purchasePrice} onChange={(e) => setFormData({...formData, purchasePrice: e.target.value})} required />
+                      <input className="form-control" type="number" step="0.01" name="purchasePrice" value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })} required />
                     </div>
                     <div className="form-group">
                       <label>سعر البيع *</label>
-                      <input className="form-control" type="number" step="0.01" name="salePrice" value={formData.salePrice} onChange={(e) => setFormData({...formData, salePrice: e.target.value})} required />
+                      <input className="form-control" type="number" step="0.01" name="salePrice" value={formData.salePrice} onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })} required />
                     </div>
                   </div>
                   <div className="form-row">
                     <div className="form-group">
                       <label>المخزون</label>
-                      <input className="form-control" type="number" step="0.001" name="stock" value={formData.stock} onChange={(e) => setFormData({...formData, stock: e.target.value})} />
+                      <input className="form-control" type="number" step="0.001" name="stock" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} />
                     </div>
                     <div className="form-group">
                       <label>كود المنتج</label>
-                      <input className="form-control" name="productCode" value={formData.productCode} onChange={(e) => setFormData({...formData, productCode: e.target.value})} />
+                      <input className="form-control" name="productCode" value={formData.productCode} onChange={(e) => setFormData({ ...formData, productCode: e.target.value })} />
                     </div>
                   </div>
                   <div className="form-row">
                     <div className="form-group">
                       <label>الفئة</label>
-                      <select className="form-control" name="categoryId" value={formData.categoryId} onChange={(e) => setFormData({...formData, categoryId: e.target.value})}>
+                      <select className="form-control" name="categoryId" value={formData.categoryId} onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}>
                         <option value="">بدون فئة</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                     </div>
                     <div className="form-group">
                       <label>الوحدة الأساسية (قطاعي) *</label>
-                      <input className="form-control" name="unitName" value={formData.unitName} onChange={(e) => setFormData({...formData, unitName: e.target.value})} required placeholder="كيس، قطعة، كيلو..." />
+                      <input className="form-control" name="unitName" value={formData.unitName} onChange={(e) => setFormData({ ...formData, unitName: e.target.value })} required placeholder="كيس، قطعة، كيلو..." />
                     </div>
                   </div>
 
@@ -321,7 +323,7 @@ const Products = () => {
                       <h4 style={{ margin: 0, fontSize: '0.95rem' }}>📦 وحدات الجملة/التعبئة (اختياري)</h4>
                       <button type="button" className="btn btn-sm btn-secondary" onClick={addUnitRow}>+ إضافة وحدة جملة</button>
                     </div>
-                    
+
                     {formData.units.length === 0 ? (
                       <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '10px' }}>
                         لم يتم إضافة وحدات جملة (مثلاً: كرتونة)

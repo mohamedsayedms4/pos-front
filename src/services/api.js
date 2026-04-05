@@ -1,9 +1,14 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-export const API_BASE = window.location.port === '8085'
-  ? '/api/v1'
-  : 'https://posapi.digitalrace.net/api/v1';
+const PROD_BASE = 'https://posapi.digitalrace.net/api/v1';
+const DEV_BASE = 'https://posapi.digitalrace.net/api/v1';
+
+// Use production URL when not running on Vite dev server (port 5173)
+export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
+  ? DEV_BASE
+  : PROD_BASE;
+
 
 const Api = {
   _getToken() {
@@ -422,10 +427,17 @@ const Api = {
     return res.data;
   },
 
-  async createUser(data) {
+  async createUser(data, avatarFile) {
+    const formData = new FormData();
+    formData.append('user', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    if (avatarFile) {
+      formData.append('avatar', avatarFile);
+    }
+
     const res = await this._request('/admin/users', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: formData,
+      headers: {} // Browser sets boundary
     });
     return res.data;
   },
@@ -441,6 +453,21 @@ const Api = {
     const res = await this._request(`/admin/users/${id}/access`, {
       method: 'PUT',
       body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateUser(id, data, avatarFile) {
+    const formData = new FormData();
+    formData.append('user', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    if (avatarFile) {
+      formData.append('avatar', avatarFile);
+    }
+
+    const res = await this._request(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: formData,
+      headers: {}
     });
     return res.data;
   },

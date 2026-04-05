@@ -1,17 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Api from '../../services/api';
+import Api, { API_BASE } from '../../services/api';
 import { useNotifications } from '../../services/useNotifications';
 import { useGlobalUI } from '../common/GlobalUI';
+import { useTheme } from '../common/ThemeContext';
 
 const Topbar = ({ onMenuToggle }) => {
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { toast } = useGlobalUI ? useGlobalUI() : { toast: () => {} }; // Safely get toast
+  const { toast } = useGlobalUI ? useGlobalUI() : { toast: () => {} };
   const { unreadCount, connected } = useNotifications({
     onNewNotification: (notif) => {
       toast(notif.message, notif.type === 'WARNING' || notif.type === 'SECURITY' ? 'error' : 'success');
     }
   });
+
+  const [user, setUser] = useState(Api._getUser());
+
+  // Re-read user from localStorage whenever storage changes (e.g. after profile update)
+  useEffect(() => {
+    setUser(Api._getUser());
+    const handleStorage = () => setUser(Api._getUser());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -21,6 +33,12 @@ const Topbar = ({ onMenuToggle }) => {
     }
     navigate('/login');
   };
+
+  const avatarUrl = user?.profilePicture
+    ? `${API_BASE}/products/images/${user.profilePicture}`
+    : null;
+
+  const isAdmin = (user?.roles || []).some(r => r.includes('ADMIN'));
 
   return (
     <header className="topbar">
@@ -56,6 +74,14 @@ const Topbar = ({ onMenuToggle }) => {
               }}
             />
           )}
+        </button>
+        <button
+          className="topbar-btn theme-toggle-btn"
+          title={theme === 'dark' ? 'الوضع المضيء' : 'الوضع الداكن'}
+          onClick={toggleTheme}
+          style={{ fontSize: '1.2rem' }}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
         </button>
         <button className="btn-logout" onClick={handleLogout}>
           <span>⏻</span>
