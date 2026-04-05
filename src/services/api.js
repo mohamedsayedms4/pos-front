@@ -1,8 +1,8 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-const PROD_BASE = 'https://posapi.digitalrace.net/api/v1';
-const DEV_BASE = 'https://posapi.digitalrace.net/api/v1';
+const PROD_BASE = 'http://localhost:8080/api/v1';
+const DEV_BASE = 'http://localhost:8080/api/v1';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
@@ -182,6 +182,21 @@ const Api = {
     const res = await this._request(`/products?page=${page}&size=${size}`);
     // Support both old array format and new PaginatedResponse/PageImpl format
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
+  },
+
+  async getProductsPaged(page = 0, size = 20, search = '') {
+    const query = search ? `&search=${encodeURIComponent(search)}` : '';
+    const res = await this._request(`/products?page=${page}&size=${size}${query}`);
+    const raw = res.data;
+    if (Array.isArray(raw)) {
+      return { items: raw, totalPages: 1, totalElements: raw.length, page: 0 };
+    }
+    return {
+      items: raw.items || raw.content || [],
+      totalPages: raw.totalPages ?? 1,
+      totalElements: raw.totalElements ?? 0,
+      page: raw.number ?? page,
+    };
   },
 
   async getProductsByCategory(categoryId, page = 0, size = 1000) {

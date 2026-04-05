@@ -19,6 +19,10 @@ import Customers from './pages/Customers.jsx'
 import Sales from './pages/Sales.jsx'
 import Returns from './pages/Returns.jsx'
 import Treasury from './pages/Treasury.jsx'
+import CustomerOrder from './pages/CustomerOrder.jsx'
+
+import OrderCustomer from './pages/OrderCustomer.jsx'
+import OrderCashier from './pages/OrderCashier.jsx'
 
 import MainLayout from './components/layout/MainLayout.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
@@ -36,6 +40,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         
         <Route element={<ProtectedRoute />}>
+          <Route path="/customer-order" element={<CustomerOrder />} />
+          <Route path="/order-customer" element={<OrderCustomer />} />
+          <Route path="/order-cashier" element={<OrderCashier />} />
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pos" element={<POS />} />

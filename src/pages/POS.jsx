@@ -1,11 +1,45 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Api, { API_BASE } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+
+const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
+const PAGE_SIZE = 20;
+
+/* ─── Helper: Image Resolver ─── */
+const getProductImage = (product) => {
+  if (product.imageUrls && product.imageUrls.length > 0) {
+    const url = product.imageUrls[0];
+    if (url.startsWith('http')) return url;
+    const filename = url.split('/').pop();
+    return `${API_BASE}/products/images/${filename}`;
+  }
+  return null;
+};
+
+/* ─── Product Card Component ─── */
+const ProductCard = ({ product, onAdd }) => {
+  const imgSrc = getProductImage(product);
+  const outOfStock = product.stock <= 0;
+  return (
+    <div className={`pos-product-card${outOfStock ? ' out-of-stock' : ''}`} onClick={() => !outOfStock && onAdd(product)}>
+      <div className="pos-product-img-wrap">
+        {imgSrc ? <img src={imgSrc} alt={product.name} className="pos-product-img" /> : <div className="pos-product-img-placeholder">📦</div>}
+        {outOfStock && <div className="pos-out-badge">نفذ</div>}
+      </div>
+      <div className="pos-product-info">
+        <div className="pos-product-name">{product.name}</div>
+        <div className="pos-product-price">{Number(product.salePrice).toFixed(2)} <span>ج.م</span></div>
+      </div>
+    </div>
+  );
+};
 
 const POS = () => {
-  const [products, setProducts] = useState([]);
+  const [connected, setConnected] = useState(false);
+  const [showBrowser, setShowBrowser] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,192 +48,193 @@ const POS = () => {
   const [paidAmount, setPaidAmount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [lastSale, setLastSale] = useState(null);
   const { toast } = useGlobalUI();
   const searchInputRef = useRef(null);
+  const stompClientRef = useRef(null);
+
+  /* ─── Product browser state ─── */
+  const [browseProducts, setBrowseProducts] = useState([]);
+  const [browsePage, setBrowsePage] = useState(0);
+  const [browseTotalPages, setBrowseTotalPages] = useState(1);
+  const [browseLoading, setBrowseLoading] = useState(false);
+  const [browseSearch, setBrowseSearch] = useState('');
+  const [searchProducts, setSearchProducts] = useState([]);
+  const observerTarget = useRef(null);
 
   useEffect(() => {
-    loadInitialData();
+    Promise.all([loadCustomers(), loadBrowsePage(0, '', false)]).finally(() => setLoading(false));
   }, []);
 
-  const loadInitialData = async () => {
-    setLoading(true);
+  const loadCustomers = async () => {
     try {
-      const pData = await Api.getProducts(0, 1000);
-      setProducts(pData || []);
-
       const cData = await Api.getCustomers(0, 100);
       setCustomers(cData.items || cData.content || []);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) {}
   };
 
-  const addToCart = (product) => {
-    const existing = cart.find(item => item.id === product.id);
-    if (existing) {
-      if (existing.qty + 1 > product.stock) {
-        toast('الكمية المطلوبة تتجاوز المتاح بالمخزن', 'warning');
-        return;
-      }
-      setCart(cart.map(item =>
-        item.id === product.id ? { ...item, qty: item.qty + 1 } : item
-      ));
-    } else {
-      if (product.stock <= 0) {
-        toast('المنتج نفذ من المخزن', 'warning');
-        return;
-      }
-      setCart([...cart, {
-        id: product.id,
-        name: product.name,
-        price: product.salePrice,
-        qty: 1,
-        stock: product.stock,
-        unitName: product.unitName
-      }]);
-    }
-    setSearchQuery('');
-    searchInputRef.current.focus();
+  const loadBrowsePage = useCallback(async (page, search, append = false) => {
+    setBrowseLoading(true);
+    try {
+      const data = await Api.getProductsPaged(page, PAGE_SIZE, search);
+      setBrowseProducts(prev => append ? [...prev, ...data.items] : data.items);
+      setBrowseTotalPages(data.totalPages);
+      setBrowsePage(page);
+    } catch (e) { toast('فشل تحميل المنتجات', 'error'); }
+    finally { setBrowseLoading(false); }
+  }, [toast]);
+
+  const handleBrowseSearch = (val) => {
+    setBrowseSearch(val);
+    loadBrowsePage(0, val, false);
   };
+
+  useEffect(() => {
+    if (!showBrowser) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !browseLoading && browsePage < browseTotalPages - 1) {
+        loadBrowsePage(browsePage + 1, browseSearch, true);
+      }
+    }, { threshold: 1.0 });
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [showBrowser, browseLoading, browsePage, browseTotalPages, browseSearch, loadBrowsePage]);
+
+  const handleSearchChange = async (value) => {
+    setSearchQuery(value);
+    if (!value) { setSearchProducts([]); return; }
+    try {
+      const data = await Api.getProductsPaged(0, 50, value);
+      setSearchProducts(data.items);
+    } catch { setSearchProducts([]); }
+  };
+
+  const addToCart = useCallback((product) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === product.id);
+      if (existing) {
+        if (existing.qty + 1 > product.stock) { toast('تجاوزت المخزن', 'warning'); return prev; }
+        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+      }
+      if (product.stock <= 0) { toast('نفذ المخزن', 'warning'); return prev; }
+      return [...prev, { id: product.id, name: product.name, price: product.salePrice, qty: 1, stock: product.stock, unitName: product.unitName }];
+    });
+    setSearchQuery(''); setSearchProducts([]);
+    if (searchInputRef.current) searchInputRef.current.focus();
+  }, [toast]);
 
   const updateQty = (id, newQty) => {
-    const item = cart.find(i => i.id === id);
-    if (newQty > item.stock) {
-      toast('لا يمكن تجاوز الكمية المتاحة', 'warning');
-      return;
-    }
-    if (newQty <= 0) {
-      removeFromCart(id);
-      return;
-    }
-    setCart(cart.map(i => i.id === id ? { ...i, qty: newQty } : i));
+    setCart(prev => {
+      const item = prev.find(i => i.id === id);
+      if (newQty > item.stock) { toast('تجاوزت المتاح', 'warning'); return prev; }
+      if (newQty <= 0) return prev.filter(i => i.id !== id);
+      return prev.map(i => i.id === id ? { ...i, qty: newQty } : i);
+    });
   };
 
-  const removeFromCart = (id) => {
-    setCart(cart.filter(item => item.id !== id));
-  };
+  const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  /* ─── Keyboard shortcuts ─── */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowBrowser(false);
+      if (e.key === 'F2') setShowBrowser(true);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  /* ─── WebSocket Sync ─── */
+  useEffect(() => {
+    const token = localStorage.getItem('pos_access_token');
+    if (!token) return;
+    const client = new Client({
+      webSocketFactory: () => new SockJS(WS_URL),
+      connectHeaders: { Authorization: `Bearer ${token}` },
+      reconnectDelay: 5000,
+      onConnect: () => { 
+        setConnected(true); 
+        client.subscribe('/user/queue/pos-updates', (msg) => addToCart(JSON.parse(msg.body))); 
+      },
+      onDisconnect: () => setConnected(false)
+    });
+    client.activate();
+    stompClientRef.current = client;
+    return () => client.deactivate();
+  }, [addToCart]);
+
+  const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
   const total = subtotal - discount;
   const change = paidAmount - total;
 
-  useEffect(() => {
-    if (cart.length > 0) {
-      setPaidAmount(total);
-    } else {
-      setPaidAmount(0);
-    }
-  }, [total]);
+  useEffect(() => { setPaidAmount(cart.length > 0 ? total : 0); }, [total, cart.length]);
 
   const handleCheckout = async () => {
-    if (cart.length === 0) {
-      toast('السلة فارغة', 'warning');
-      return;
-    }
-
     setCheckoutLoading(true);
     try {
-      const saleRequest = {
-        customerId: selectedCustomerId || null,
-        discount: discount,
-        paidAmount: paidAmount,
-        items: cart.map(item => ({
-          productId: item.id,
-          quantity: item.qty,
-          unitPrice: item.price
-        }))
-      };
+      await Api.createSale({ customerId: selectedCustomerId || null, discount, paidAmount, items: cart.map(i => ({ productId: i.id, quantity: i.qty, unitPrice: i.price })) });
+      toast('تمت العملية بنجاح', 'success'); 
+      
+      // Send refresh signal to customer
+      if (stompClientRef.current?.connected) {
+          stompClientRef.current.publish({
+              destination: '/app/order-complete',
+              body: JSON.stringify({ status: 'COMPLETED', ts: Date.now() })
+          });
+      }
 
-      const res = await Api.createSale(saleRequest);
-      toast('تمت عملية البيع بنجاح', 'success');
-      const curUser = Api._getUser();
-
-      setLastSale({
-        ...res,
-        items: cart.map(item => ({ ...item })),
-        customerName: selectedCustomerId ? customers.find(c => c.id == selectedCustomerId)?.name : 'عميل نقدي',
-        userName: curUser?.name || curUser?.username || 'المسؤول',
-        userId: curUser?.id || '0',
-        subtotal,
-        discount,
-        total,
-        change,
-        paidAmount
-      });
-      setShowReceipt(true);
-
-      setCart([]);
-      setDiscount(0);
-      setPaidAmount(0);
-      setSelectedCustomerId('');
-      loadInitialData();
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setCheckoutLoading(false);
-    }
+      setCart([]); setDiscount(0); setPaidAmount(0);
+    } catch (e) { toast('فشلت العملية', 'error'); }
+    finally { setCheckoutLoading(false); }
   };
 
-  const filteredProducts = searchQuery.length > 0
-    ? products.filter(p =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.productCode?.includes(searchQuery)
-    )
-    : [];
-
-  if (loading) {
-    return <Loader message="جاري تهيئة نظام المبيعات..." />;
-  }
+  if (loading) return <Loader message="جاري التحميل..." />;
 
   return (
-    <div className="pos-container no-sidebar-layout">
-      {checkoutLoading && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Loader message="جاري إتمام العملية وحفظ الفاتورة..." />
-        </div>
-      )}
+    <div className="pos-container no-sidebar-layout" style={{ position: 'relative' }}>
+      {checkoutLoading && <div className="loader-overlay"><Loader message="جاري الحفظ..." /></div>}
+
       <div className="pos-main">
-        <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
-          <div className="search-input" style={{ maxWidth: '100%' }}>
-            <span className="search-icon">🔍</span>
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="form-control"
-              placeholder="بحث عن منتج بالاسم أو الباركود..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ fontSize: '1.2rem', padding: '12px 40px' }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && filteredProducts.length === 1) {
-                  addToCart(filteredProducts[0]);
-                }
-              }}
-            />
-            {filteredProducts.length > 0 && (
-              <div className="search-results-dropdown card" style={{ top: '60px', zIndex: 1000 }}>
-                {filteredProducts.map(p => (
-                  <div key={p.id} className="search-result-item" onClick={() => addToCart(p)} style={{ borderBottom: '1px solid #222' }}>
-                    <div className="item-main">
-                      <strong style={{ color: 'var(--text-white)' }}>{p.name}</strong>
-                      <span className="stock-label" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>المخزن: {p.stock} {p.unitName}</span>
-                    </div>
-                    <div className="item-price" style={{ fontWeight: 700, color: 'var(--metro-blue)' }}>{p.salePrice.toFixed(2)} ج.م</div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Header Controls */}
+        <div className="card" style={{ marginBottom: '16px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+             <h2 style={{ margin: 0, fontSize: '1.2rem' }}>🧾 فاتورة المبيعات</h2>
+             <div className={`sync-badge ${connected ? 'active' : ''}`}>{connected ? 'متصل بالعميل' : 'غير متصل'}</div>
           </div>
+          <button 
+            className="btn btn-primary" 
+            onClick={() => {
+                console.log("Opening Browser...");
+                setShowBrowser(true);
+            }} 
+            style={{ padding: '12px 40px', fontWeight: 900, fontSize: '1rem', background: 'var(--metro-blue)', color: '#fff', border: 'none', cursor: 'pointer', zIndex: 10 }}
+          >
+            🛍️ فتح قائمة المنتجات (F2)
+          </button>
         </div>
 
-        <div className="card pos-cart" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Quick Search */}
+        <div className="card" style={{ marginBottom: '16px', padding: '12px' }}>
+           <div className="search-input" style={{ maxWidth: '100%' }}>
+              <span className="search-icon">🔍</span>
+              <input ref={searchInputRef} type="text" className="form-control" placeholder="بحث سريع لإضافة منتج..." value={searchQuery} onChange={e => handleSearchChange(e.target.value)} />
+              {searchProducts.length > 0 && (
+                <div className="search-results-dropdown card">
+                  {searchProducts.map(p => (
+                    <div key={p.id} className="search-result-item" onClick={() => addToCart(p)}>
+                      <span>{p.name}</span>
+                      <span style={{ fontWeight: 700 }}>{p.salePrice.toFixed(2)} ج.م</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+           </div>
+        </div>
+
+        {/* Main Invoice Table */}
+        <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className="card-header">
-            <h3>🛒 سلة المشتريات ({cart.length})</h3>
-            <button className="btn btn-danger btn-sm" onClick={() => setCart([])}>مسح السلة</button>
+             <h3>🛒 محتويات الفاتورة ({cart.length})</h3>
+             <button className="btn btn-danger btn-sm" onClick={() => setCart([])}>تفريغ</button>
           </div>
           <div className="table-wrapper" style={{ flex: 1 }}>
             <table className="data-table">
@@ -214,35 +249,24 @@ const POS = () => {
               </thead>
               <tbody>
                 {cart.length === 0 ? (
-                  <tr><td colSpan="5" className="empty-state" style={{ padding: '80px' }}>
-                    <div className="empty-icon">🛒</div>
-                    <h4>السلة فارغة</h4>
-                    <p>ابدأ بإضافة المنتجات للمتابعة</p>
+                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '100px', color: '#444' }}>
+                    <div style={{ fontSize: '4rem' }}>📑</div>
+                    <h3>لا توجد أصناف في الفاتورة</h3>
+                    <p>ابدأ بإضافة منتجات من القائمة أو عبر البحث</p>
                   </td></tr>
                 ) : cart.map(item => (
                   <tr key={item.id}>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--text-white)' }}>{item.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.unitName}</div>
-                    </td>
+                    <td><div style={{ fontWeight: 600 }}>{item.name}</div><div style={{ fontSize: '0.8rem', color: '#777' }}>{item.unitName}</div></td>
                     <td style={{ textAlign: 'center' }}>{item.price.toFixed(2)}</td>
-                    <td style={{ textAlign: 'center', width: '150px' }}>
-                      <div className="qty-control" style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid #333', background: '#000' }}>
-                        <button className="btn btn-ghost btn-sm" style={{ border: 'none', padding: '5px 10px' }} onClick={() => updateQty(item.id, item.qty - 1)}>-</button>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={item.qty}
-                          style={{ width: '50px', background: 'transparent', border: 'none', textAlign: 'center', padding: '0' }}
-                          onChange={(e) => updateQty(item.id, parseFloat(e.target.value) || 0)}
-                        />
-                        <button className="btn btn-ghost btn-sm" style={{ border: 'none', padding: '5px 10px' }} onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+                    <td style={{ textAlign: 'center' }}>
+                      <div className="qty-control" style={{ display: 'inline-flex', border: '1px solid #333', background: '#000', borderRadius: '4px' }}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => updateQty(item.id, item.qty - 1)}>-</button>
+                        <input type="number" value={item.qty} onChange={e => updateQty(item.id, parseFloat(e.target.value) || 0)} style={{ width: '40px', border: 'none', background: 'transparent', textAlign: 'center', color: '#fff' }} />
+                        <button className="btn btn-ghost btn-sm" onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
                       </div>
                     </td>
-                    <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--text-white)' }}>{(item.price * item.qty).toFixed(2)}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--metro-red)', border: 'none' }} onClick={() => removeFromCart(item.id)}>✕</button>
-                    </td>
+                    <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--metro-blue)' }}>{(item.price * item.qty).toFixed(2)}</td>
+                    <td style={{ textAlign: 'center' }}><button className="btn btn-ghost btn-sm" onClick={() => removeFromCart(item.id)} style={{ color: 'var(--metro-red)' }}>✕</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -252,279 +276,87 @@ const POS = () => {
       </div>
 
       <div className="pos-sidebar">
-        <div className="card pos-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div className="card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px' }}>
-            <div className="form-group mb-4">
-              <label>العميل (اختياري)</label>
-              <select
-                className="form-control"
-                value={selectedCustomerId}
-                onChange={e => setSelectedCustomerId(e.target.value)}
-              >
-                <option value="">عميل نقدي (Cash)</option>
-                {customers.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="pos-summary" style={{ background: '#0d0d0d', padding: '16px', border: '1px solid #222', marginBottom: '20px' }}>
-              <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>الإجمالي الفرعي</span>
-                <span style={{ fontWeight: 600 }}>{subtotal.toFixed(2)} ج.م</span>
-              </div>
-              <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #222', paddingTop: '12px', marginTop: '12px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>الخصم</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="number"
-                    className="form-control"
-                    style={{ width: '80px', padding: '4px 8px', textAlign: 'center' }}
-                    value={discount}
-                    onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
-                  />
-                  <span style={{ fontSize: '0.8rem' }}>ج.م</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="total-display" style={{ textAlign: 'left', marginBottom: '24px' }}>
-              <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-dim)', display: 'block', marginBottom: '4px' }}>الإجمالي النهائي</label>
-              <div style={{ fontSize: '3rem', fontWeight: 200, color: 'var(--metro-blue)', lineHeight: 1 }}>
-                {total.toFixed(2)} <span style={{ fontSize: '1rem' }}>ج.م</span>
-              </div>
-            </div>
-
-            <div className="pos-payment card" style={{ padding: '16px', background: '#111', border: '1px solid #222' }}>
-              <div className="form-group mb-3">
-                <label>المبلغ المدفوع</label>
-                <div className="d-flex align-items-center gap-2">
-                  <input
-                    type="number"
-                    className="form-control"
-                    style={{ fontSize: '1.5rem', fontWeight: 700, textAlign: 'left', border: '1px solid #444' }}
-                    value={paidAmount}
-                    onChange={e => setPaidAmount(parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                  />
-                  <button className="btn btn-ghost" style={{ padding: '0 12px', height: '48px' }} onClick={() => setPaidAmount(total)}>كل المبلغ</button>
-                </div>
-              </div>
-              <div className="change-display" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '10px' }}>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>الباقي للعميل:</label>
-                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: change >= 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}>
-                  {change.toFixed(2)} ج.م
-                </span>
-              </div>
-            </div>
-
-            <button
-              className="btn btn-primary btn-block btn-lg mt-auto"
-              style={{ padding: '24px', fontSize: '1.1rem', fontWeight: 700, marginTop: '20px' }}
-              disabled={checkoutLoading || cart.length === 0}
-              onClick={handleCheckout}
-            >
-              {checkoutLoading ? 'جاري الحفظ...' : '🖥️ إتمام العملية (Check Out)'}
-            </button>
+        <div className="card pos-panel" style={{ height: '100%', padding: '20px' }}>
+          <div className="form-group mb-4">
+            <label>العميل</label>
+            <select className="form-control" value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+              <option value="">عميل نقدي (Cash)</option>
+              {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
+
+          <div className="pos-summary card mb-4" style={{ padding: '15px' }}>
+             <div className="d-flex justify-content-between mb-2"><span>الفرعي</span><span>{subtotal.toFixed(2)}</span></div>
+             <div className="d-flex justify-content-between align-items-center">
+                <span>الخصم</span>
+                <input type="number" className="form-control" style={{ width: '80px' }} value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} />
+             </div>
+          </div>
+
+          <div className="total-display mb-4">
+             <label>الإجمالي النهائي</label>
+             <div className="total-amount" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--metro-blue)' }}>{total.toFixed(2)} <small style={{ fontSize: '0.8rem' }}>ج.م</small></div>
+          </div>
+
+          <div className="card mb-4" style={{ padding: '15px', background: '#111' }}>
+             <label>المدفوع</label>
+             <div className="d-flex gap-2">
+                <input type="number" className="form-control" value={paidAmount} onChange={e => setPaidAmount(parseFloat(e.target.value) || 0)} style={{ fontSize: '1.5rem', fontWeight: 700 }} />
+                <button className="btn btn-ghost" onClick={() => setPaidAmount(total)}>كل</button>
+             </div>
+             <div className="d-flex justify-content-between mt-3">
+                <span style={{ color: '#777' }}>الباقي</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: change >= 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}>{change.toFixed(2)}</span>
+             </div>
+          </div>
+
+          <button className="btn btn-primary btn-block btn-lg" onClick={handleCheckout} disabled={checkoutLoading || cart.length === 0} style={{ padding: '15px' }}>إتمام العملية</button>
         </div>
       </div>
 
-      <style>{`
-        .pos-container { display: flex; gap: 20px; height: calc(100vh - 120px); padding: 5px; }
-        .pos-main { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
-        .pos-sidebar { width: 400px; }
-        .search-results-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; overflow-y: auto; background: #121212; border: 1px solid #333; }
-        .search-result-item { padding: 12px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
-        .search-result-item:hover { background: #1a1a1a; }
-        .receipt-barcode { height: 45px; width: auto; max-width: 100%; display: block; margin: 4px auto; filter: contrast(150%) brightness(90%); }
-      `}</style>
-
-      {/* ─── Receipt View Modal ─── */}
-      {showReceipt && lastSale && ReactDOM.createPortal(
-        <div className="modal-overlay active no-print" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowReceipt(false); }}>
-          <div className="modal" style={{ width: '400px' }}>
-            <div className="modal-header">
-              <h2>إيصال المبيعات</h2>
-              <button onClick={() => setShowReceipt(false)}>✕</button>
-            </div>
-            <div className="modal-body" style={{ background: '#f0f2f5', padding: '20px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '15px', color: '#1a1a1a' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: '700' }}>معاينة الفاتورة (80mm)</div>
-                <p style={{ margin: '5px 0' }}>تم حفظ العملية بنجاح برقم {lastSale.invoiceNumber || lastSale.id}</p>
-                <div style={{
-                  border: '1px solid #ccc',
-                  background: '#fff',
-                  padding: '12px',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
-                  marginTop: '15px',
-                  width: '300px',
-                  margin: '15px auto',
-                  textAlign: 'right',
-                  fontSize: '10px',
-                  lineHeight: '1.4',
-                  color: '#000',
-                  fontFamily: 'Segoe UI, Tahoma, sans-serif'
-                }}>
-                  <div style={{ textAlign: 'center', borderBottom: '1px solid #000', paddingBottom: '5px', marginBottom: '8px' }}>
-                    <strong style={{ fontSize: '14px' }}>مهلهل جروب</strong><br />
-                    <span>فرع السنترال</span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #000', padding: '2px 0', fontWeight: 'bold' }}>
-                    <span style={{ flex: 1, textAlign: 'right' }}>القيمة</span>
-                    <span style={{ flex: 1, textAlign: 'center' }}>السعر</span>
-                    <span style={{ flex: 1, textAlign: 'center' }}>كمية</span>
-                    <span style={{ flex: 1.5, textAlign: 'left' }}>الصنف</span>
-                  </div>
-
-                  {lastSale.items.map((item, idx) => (
-                    <div key={idx} style={{ borderBottom: '1px dashed #eee', padding: '4px 0' }}>
-                      <div style={{ fontWeight: 'bold', display: 'block' }}>{item.name}</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{(item.qty * (item.price || item.unitPrice)).toFixed(2)}</span>
-                        <span>{(item.price || item.unitPrice).toFixed(2)}</span>
-                        <span>{item.qty}</span>
-                        <span>{products.find(p => p.id === item.id)?.productCode || ''}</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  <div style={{ borderTop: '1px solid #000', marginTop: '8px', paddingTop: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>{lastSale.items.reduce((sum, i) => sum + i.qty, 0)}</span>
-                      <span>عدد القطع:</span>
-                    </div>
-                    {lastSale.discount > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'red' }}>
-                        <span>-{(lastSale.discount || 0).toFixed(2)}</span>
-                        <span>خصم:</span>
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '12px', margin: '4px 0' }}>
-                      <span>{(lastSale.total || 0).toFixed(2)}</span>
-                      <span>الإجمالي:</span>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '8px', borderTop: '1px dashed #ccc', paddingTop: '5px' }}>
-                    <div>الكاشير: {lastSale.userName}</div>
-                    <div>العميل: {lastSale.customerName}</div>
-                  </div>
-
-                  <div style={{ marginTop: '5px', fontSize: '8px', color: '#666' }}>
-                    Date: {new Date(lastSale.invoiceDate || lastSale.date).toLocaleString('en-GB')}
-                  </div>
-
-                  <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                    <img
-                      src={`${API_BASE.replace('v1', 'public')}/barcode/${lastSale.invoiceNumber || lastSale.id}`}
-                      alt="Preview Barcode"
-                      className="receipt-barcode"
-                    />
-                  </div>
-                </div>
+      {/* Browser Modal - MOVED TO THE BOTTOM FOR Z-INDEX SAFETY */}
+      {showBrowser && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+           <div className="card" style={{ width: '95%', maxWidth: '1200px', height: '90vh', display: 'flex', flexDirection: 'column', border: '2px solid #333' }}>
+              <div className="card-header" style={{ padding: '20px', background: '#1a1a1a' }}>
+                 <h3 style={{ margin: 0 }}>🛍️ قائمة المنتجات</h3>
+                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <input type="text" className="form-control" placeholder="بحث..." value={browseSearch} onChange={e => handleBrowseSearch(e.target.value)} style={{ width: '300px' }} autoFocus />
+                    <button className="btn btn-danger" onClick={() => setShowBrowser(false)} style={{ padding: '10px 20px' }}>إغلاق ✕</button>
+                 </div>
               </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowReceipt(false)}>إغلاق</button>
-              <button className="btn btn-primary" onClick={() => window.print()}>🖨️ طباعة الإيصال</button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ─── Printable Content (Hidden in Normal UI) ─── */}
-      {showReceipt && lastSale && (
-        <div className="receipt-wrapper" dir="rtl">
-          <div className="receipt-header">
-            <h2>مهلهل جروب</h2>
-            <p>فرع السنترال</p>
-          </div>
-
-          <div className="receipt-table-header" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #000', padding: '2px 0', fontWeight: 'bold', fontSize: '10px' }}>
-            <span style={{ flex: 1, textAlign: 'right' }}>القيمة</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>السعر</span>
-            <span style={{ flex: 1, textAlign: 'center' }}>الكمية</span>
-            <span style={{ flex: 1.5, textAlign: 'left' }}>الصنف</span>
-          </div>
-
-          <div className="receipt-items">
-            {lastSale.items.map((item, idx) => (
-              <div key={idx} className="receipt-item-row">
-                <span className="receipt-item-name">{item.name}</span>
-                <div className="receipt-item-details">
-                  <span>{(item.qty * (item.price || item.unitPrice)).toFixed(2)}</span>
-                  <span>{(item.price || item.unitPrice).toFixed(2)}</span>
-                  <span>{item.qty}</span>
-                  <span>{products.find(p => p.id === item.id)?.productCode || ''}</span>
-                </div>
-                {item.discount > 0 && <div style={{ fontSize: '9px', textAlign: 'right' }}>خصم: -{item.discount.toFixed(2)}</div>}
+              <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#000' }}>
+                 <div className="pos-product-grid" style={{ maxHeight: 'none', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
+                    {browseProducts.map(p => (
+                        <div key={p.id} className="pos-product-card" onClick={() => { addToCart(p); console.log("Added from modal"); }}>
+                             <div className="pos-product-img-wrap" style={{ paddingTop: '80%', position: 'relative' }}>
+                                 {getProductImage(p) ? <img src={getProductImage(p)} style={{ position: 'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ position: 'absolute', top:0, left:0, width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#111', fontSize:'2rem'}}>📦</div>}
+                             </div>
+                             <div style={{ padding: '10px' }}>
+                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', height: '40px', overflow: 'hidden' }}>{p.name}</div>
+                                 <div style={{ color: 'var(--metro-blue)', fontWeight: 700, fontSize: '1.1rem', marginTop: '5px' }}>{p.salePrice.toFixed(2)} ج.م</div>
+                             </div>
+                        </div>
+                    ))}
+                    <div ref={observerTarget} style={{ height: '20px', gridColumn: '1 / -1' }}></div>
+                 </div>
+                 {browseLoading && <div style={{ color: '#fff', textAlign: 'center', padding: '20px' }}>جاري تحميل المزيد...</div>}
               </div>
-            ))}
-          </div>
-
-          <div className="receipt-divider"></div>
-
-          <div className="receipt-totals">
-            <div>
-              <span>{lastSale.items.reduce((sum, i) => sum + i.qty, 0)}</span>
-              <span>عدد القطع:</span>
-            </div>
-            <div style={{ fontSize: '1.2rem' }}>
-              <span>{(lastSale.total || 0).toFixed(2)}</span>
-              <span>الإجمالي:</span>
-            </div>
-            <div>
-              <span>{(lastSale.paidAmount || 0).toFixed(2)}</span>
-              <span>نقدي:</span>
-            </div>
-            <div className="receipt-divider" style={{ borderStyle: 'dashed' }}></div>
-            <div>
-              <span>{(lastSale.change || 0).toFixed(2)}</span>
-              <span>الباقي:</span>
-            </div>
-          </div>
-
-          <div style={{ marginTop: '4mm', fontSize: '10px' }}>
-            <p>الكاشير: {lastSale.userName}</p>
-            <p>رقم العميل: {lastSale.customerId || '—'}</p>
-            <p>اسم العميل: {lastSale.customerName || 'عام'}</p>
-          </div>
-
-          <div className="receipt-meta-info">
-            <span>Store: 3</span>
-            <span>PoS: 2</span>
-            <span>User: {lastSale.userId || '—'}</span>
-            <span>Trans: {lastSale.id || '—'}</span>
-            <span style={{ gridColumn: 'span 2', textAlign: 'left' }}>Date: {new Date(lastSale.invoiceDate || lastSale.date).toLocaleString('en-GB').replace(',', '')}</span>
-          </div>
-
-          <div className="receipt-policy" style={{ textAlign: 'center' }}>
-            <strong>لخدمة التوصيل</strong><br />
-            الخط الساخن: 19284<br />
-            واتساب الفيوم: 01022129912<br />
-            واتساب بني سويف: 01001246897<br />
-            <div style={{ marginTop: '2mm', fontSize: '8px' }}>
-              مرتجع الأغذية الطازجة خلال 24 ساعة<br />
-              أو الاسترجاع خلال 14 يوم من تاريخ الشراء<br />
-              السلعة خلال 30 يوم بموجب فاتورة البيع<br />
-              للتواصل مع جهاز حماية المستهلك 19588
-            </div>
-          </div>
-
-          <div className="receipt-footer">
-            <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '2px' }}>تفاصيل الفاتورة: {lastSale.invoiceNumber || lastSale.id}</div>
-            <img
-              className="receipt-barcode"
-              src={`${API_BASE.replace('v1', 'public')}/barcode/${lastSale.invoiceNumber || lastSale.id}`}
-              alt="Transaction Barcode"
-            />
-          </div>
+           </div>
         </div>
       )}
 
+      <style>{`
+        .pos-container { display: flex; gap: 15px; height: calc(100vh - 120px); padding: 5px; }
+        .pos-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .pos-sidebar { width: 350px; }
+        .sync-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; background: rgba(239,68,68,0.1); color: #ef4444; }
+        .sync-badge.active { background: rgba(16,185,129,0.1); color: #10b981; }
+        .pos-product-grid { display: grid; gap: 15px; }
+        .pos-product-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: 0.2s; overflow: hidden; }
+        .pos-product-card:hover { border-color: var(--metro-blue); transform: translateY(-3px); }
+        .loader-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+      `}</style>
     </div>
   );
 };

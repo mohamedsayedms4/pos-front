@@ -97,7 +97,7 @@ const ProductDetails = () => {
       try {
         const [prod] = await Promise.all([
           Api.getProduct(id),
-          Api.incrementProductView(id).catch(() => {})
+          Api.incrementProductView(id).catch(() => { })
         ]);
         setProduct(prod);
         if (prod.imageUrls && prod.imageUrls.length > 0) {
@@ -118,8 +118,8 @@ const ProductDetails = () => {
 
   const printCode = async (type) => {
     try {
-      const base64Data = type === 'barcode' 
-        ? await Api.getProductBarcode(id) 
+      const base64Data = type === 'barcode'
+        ? await Api.getProductBarcode(id)
         : await Api.getProductQrCode(id);
 
       if (!base64Data) {
@@ -225,17 +225,17 @@ const ProductDetails = () => {
         <div style={{ flex: 1 }}></div>
         <button className="btn" style={{ background: 'var(--metro-blue)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(59,130,246,0.2)' }} onClick={() => printCode('barcode')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <rect x="2" y="5" width="3" height="14"/><rect x="7" y="5" width="1" height="14"/>
-            <rect x="10" y="5" width="3" height="14"/><rect x="15" y="5" width="2" height="14"/>
-            <rect x="19" y="5" width="3" height="14"/>
-          </svg> 
+            <rect x="2" y="5" width="3" height="14" /><rect x="7" y="5" width="1" height="14" />
+            <rect x="10" y="5" width="3" height="14" /><rect x="15" y="5" width="2" height="14" />
+            <rect x="19" y="5" width="3" height="14" />
+          </svg>
           طباعة باركود
         </button>
         <button className="btn" style={{ background: 'var(--accent-purple, #8b5cf6)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(139,92,246,0.2)' }} onClick={() => printCode('qrcode')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-            <rect x="3" y="14" width="7" height="7"/><path d="M14 14h7v7h-7z"/><path d="M14 14v-2M14 21v-2M21 14v-2M21 21v-2M21 17h2M18 17h.01"/>
-          </svg> 
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" /><path d="M14 14h7v7h-7z" /><path d="M14 14v-2M14 21v-2M21 14v-2M21 21v-2M21 17h2M18 17h.01" />
+          </svg>
           طباعة QR
         </button>
       </div>
@@ -249,10 +249,10 @@ const ProductDetails = () => {
               : <div style={{ fontSize: '100px', color: 'var(--text-dim)' }}>📦</div>
             }
           </div>
-          {product.imageUrls && product.imageUrls.length > 1 && (
+          {product.imageUrls && product.imageUrls.length > 0 && (
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', paddingTop: '15px', borderTop: '1px solid var(--border-color)' }}>
               {product.imageUrls.map(img => {
-                const thumbUrl = `${API_BASE}/products/images/${img.split('/').pop()}`;
+                const thumbUrl = img.startsWith('http') ? img : `${API_BASE}/products/images/${img.split('/').pop()}`;
                 return (
                   <img 
                     key={thumbUrl} 
