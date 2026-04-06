@@ -9,18 +9,39 @@ const Treasury = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useGlobalUI();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Pagination & Search state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const pageSize = 20;
 
-  const loadData = async () => {
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    loadData(currentPage, pageSize, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
+
+  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch) => {
     setLoading(true);
     try {
-      const tData = await Api.getMainTreasury();
-      setTreasury(tData);
+      if (page === 0) {
+        const tData = await Api.getMainTreasury();
+        setTreasury(tData);
+      }
 
-      const transData = await Api.getTreasuryTransactions(0, 100);
-      setTransactions(transData.items || transData.content || []);
+      const res = await Api.getTreasuryTransactions(page, size, query);
+      setTransactions(res.items || res.content || []);
+      setTotalPages(res.totalPages || 0);
+      setTotalElements(res.totalItems || res.totalElements || 0);
+      setCurrentPage(res.currentPage ?? res.number ?? 0);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -43,8 +64,20 @@ const Treasury = () => {
           <h1 style={{ fontWeight: 200, fontSize: '2.5rem', letterSpacing: '1px' }}>الخزنة والمالية</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>إدارة السيولة النقدية وسجل الحركات المالية</p>
         </div>
-        <div className="header-actions">
-          <button className="btn btn-primary" onClick={loadData} disabled={loading}>
+        <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+          <div className="search-input" style={{ width: '300px' }}>
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="بحث في الملاحظات أو المصدر..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(0);
+              }}
+            />
+          </div>
+          <button className="btn btn-primary" onClick={() => loadData()} disabled={loading}>
             {loading ? 'جاري التحديث...' : 'تحديث البيانات'}
           </button>
         </div>
@@ -159,6 +192,28 @@ const Treasury = () => {
           </div>
         </div>
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination" style={{ marginTop: '10px' }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ width: 'auto', padding: '0 15px' }}
+            disabled={currentPage === 0}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+          >
+            السابق
+          </button>
+          <button className="active">{currentPage + 1}</button>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ width: 'auto', padding: '0 15px' }}
+            disabled={currentPage >= totalPages - 1}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+          >
+            التالي
+          </button>
+        </div>
+      )}
     </div>
   );
 };

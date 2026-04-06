@@ -11,7 +11,17 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sort, setSort] = useState('id,desc'); // Default sort
   const [loading, setLoading] = useState(true);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,12 +32,38 @@ const Products = () => {
   });
   const [images, setImages] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
-  const loadData = async () => {
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await Api.exportProductsExcel(debouncedSearch, sort);
+      toast('تم تصدير ملف الإكسيل بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      await Api.exportProductsPdf(debouncedSearch, sort);
+      toast('تم تصدير ملف PDF بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const loadData = async (searchQuery = '', sortOrder = sort) => {
     setLoading(true);
     try {
       const [productsData, categoriesData, statsData] = await Promise.all([
-        Api.getProducts().catch(() => []),
+        Api.getProductsPaged(0, 1000, searchQuery, sortOrder).then(res => res.items).catch(() => []),
         Api.getCategories().catch(() => []),
         Api.getProductStatistics().catch(() => null)
       ]);
@@ -42,18 +78,8 @@ const Products = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  const getFilteredData = () => {
-    if (!searchTerm) return data;
-    const term = searchTerm.toLowerCase();
-    return data.filter(p =>
-      (p.name || '').toLowerCase().includes(term) ||
-      (p.productCode || '').toLowerCase().includes(term) ||
-      (p.categoryName || '').toLowerCase().includes(term)
-    );
-  };
+    loadData(debouncedSearch, sort);
+  }, [debouncedSearch, sort]);
 
   const openForm = async (product = null) => {
     setEditProduct(product);
@@ -147,7 +173,7 @@ const Products = () => {
     });
   };
 
-  const items = getFilteredData();
+  const items = data;
 
   return (
     <>
@@ -187,11 +213,47 @@ const Products = () => {
                 <span className="search-icon">🔍</span>
                 <input type="text" placeholder="بحث عن منتج..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
-              {Api.can('PRODUCT_WRITE') && (
-                <button className="btn btn-primary" onClick={() => openForm(null)}>
-                  <span>+</span> إضافة منتج
+
+              <select
+                className="form-control"
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="id,desc">الأحدث أولاً</option>
+                <option value="id,asc">الأقدم أولاً</option>
+                <option value="name,asc">الاسم (أ-ي)</option>
+                <option value="name,desc">الاسم (ي-أ)</option>
+                <option value="salePrice,asc">السعر (الأقل)</option>
+                <option value="salePrice,desc">السعر (الأعلى)</option>
+                <option value="stock,asc">المخزون (الأقل)</option>
+                <option value="stock,desc">المخزون (الأعلى)</option>
+                <option value="soldQuantity,desc">الأكثر مبيعاً 🔥</option>
+                <option value="viewCount,desc">الأكثر مشاهدة 👀</option>
+              </select>
+              <div style={{ display: 'flex', gap: '5px' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleExportExcel}
+                  disabled={exportingExcel || items.length === 0}
+                  title="تصدير إلى إكسيل"
+                >
+                  {exportingExcel ? '⏳' : '📊'} إكسيل
                 </button>
-              )}
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleExportPdf}
+                  disabled={exportingPdf || items.length === 0}
+                  title="تصدير إلى PDF"
+                >
+                  {exportingPdf ? '⏳' : '📄'} PDF
+                </button>
+                {Api.can('PRODUCT_WRITE') && (
+                  <button className="btn btn-primary" onClick={() => openForm(null)}>
+                    <span>+</span> إضافة منتج
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="card-body no-padding">

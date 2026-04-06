@@ -11,25 +11,41 @@ const StockReceipts = () => {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [receivedQuantities, setReceivedQuantities] = useState({}); // itemId -> qty
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [page, setPage] = useState(0);
+  
+  // Pagination & Search state
+  const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const pageSize = 10;
 
-  const loadReceipts = async () => {
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    loadReceipts(currentPage, pageSize, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
+
+  const loadReceipts = async (pageIndex = currentPage, size = pageSize, query = debouncedSearch) => {
     setLoading(true);
     try {
-      const response = await Api.getStockReceipts(page, 10);
+      const response = await Api.getStockReceipts(pageIndex, size, query);
       setReceipts(response?.items || []);
       setTotalPages(response?.totalPages || 1);
+      setTotalElements(response?.totalItems || 0);
+      setCurrentPage(response?.currentPage || pageIndex);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadReceipts();
-  }, [page]);
 
   const handleSaveQuantities = async (receiptId, qtys = null) => {
     confirm('هل أنت متأكد من تسجيل هذه الكميات؟ سيتم حفظها دون تحديث المخزون الفعلي.', async () => {
@@ -88,8 +104,20 @@ const StockReceipts = () => {
       <div className="card">
         <div className="card-header">
           <h3>📦 أذونات استلام المخزون</h3>
-          <div className="toolbar">
-             <button className="btn btn-secondary btn-sm" onClick={loadReceipts}>تحديث</button>
+          <div className="toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div className="search-input" style={{ width: '300px' }}>
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="بحث برقم الإذن أو الفاتورة..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(0);
+                }}
+              />
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={() => loadReceipts()}>تحديث</button>
           </div>
         </div>
         <div className="card-body no-padding">
@@ -106,6 +134,7 @@ const StockReceipts = () => {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>#</th>
                     <th>رقم الإذن</th>
                     <th>رقم الفاتورة</th>
                     <th>المورد</th>
@@ -116,8 +145,9 @@ const StockReceipts = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {receipts.map(r => (
+                  {receipts.map((r, i) => (
                     <tr key={r.id}>
+                      <td style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{(currentPage * pageSize) + i + 1}</td>
                       <td style={{ fontWeight: 600 }}>{r.receiptNumber}</td>
                       <td>{r.invoiceNumber}</td>
                       <td>{r.supplierName}</td>
@@ -159,6 +189,28 @@ const StockReceipts = () => {
           </div>
         </div>
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination" style={{ marginTop: '10px' }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ width: 'auto', padding: '0 15px' }}
+            disabled={currentPage === 0}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+          >
+            السابق
+          </button>
+          <button className="active">{currentPage + 1}</button>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ width: 'auto', padding: '0 15px' }}
+            disabled={currentPage >= totalPages - 1}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+          >
+            التالي
+          </button>
+        </div>
+      )}
 
       {isModalOpen && selectedReceipt && (
         <ModalContainer>

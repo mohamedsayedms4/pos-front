@@ -10,7 +10,20 @@ const Purchases = () => {
   const { supplierName } = useParams();
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState(supplierName || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(supplierName || '');
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const pageSize = 10;
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Modal State
   const [modalType, setModalType] = useState(null); // 'form', 'payment', 'details'
@@ -41,11 +54,16 @@ const Purchases = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
 
   // ─── Data Loading ─────────────────────────────────────────────────────────
-  const loadData = async () => {
+  const loadData = async (page = 0, size = 10, query = debouncedSearch) => {
     setLoading(true);
     try {
-      const purchasesData = await Api.getPurchases();
-      setData(purchasesData);
+      const res = await Api.getPurchases(page, size, query);
+      // Support both PaginatedResponse and direct content
+      const itemsArray = res.items || res.content || (Array.isArray(res) ? res : []);
+      setData(itemsArray);
+      setTotalPages(res.totalPages || 0);
+      setTotalElements(res.totalItems || res.totalElements || 0);
+      setCurrentPage(res.currentPage ?? res.number ?? 0);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -54,25 +72,31 @@ const Purchases = () => {
   };
 
   useEffect(() => {
-    loadData();
-    if (supplierName) setSearchTerm(supplierName);
+    loadData(currentPage, pageSize, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
+
+  useEffect(() => {
+    if (supplierName) {
+      setSearchTerm(supplierName);
+      setDebouncedSearch(supplierName);
+    }
   }, [supplierName]);
 
-  const getFilteredData = () => {
-    if (!searchTerm) return data;
-    const term = searchTerm.toLowerCase();
-    return data.filter(p =>
-      (p.invoiceNumber || '').toLowerCase().includes(term) ||
-      (p.supplierName || '').toLowerCase().includes(term)
-    );
-  };
+  // Server-side filtering is now handled in loadData
 
   // ─── Form Open ────────────────────────────────────────────────────────────
   const openForm = async () => {
     try {
-      const [sups, prods] = await Promise.all([Api.getSuppliers(), Api.getProducts()]);
-      setSuppliers(sups);
-      setProducts(prods);
+      const [sups, prods] = await Promise.all([
+        Api.getSuppliers(0, 1000), // Fetch more for selection
+        Api.getProducts(0, 1000)
+      ]);
+      // Extract array from response (support both array and Page object)
+      const supsArray = Array.isArray(sups) ? sups : (sups.items || sups.content || sups);
+      const prodsArray = Array.isArray(prods) ? prods : (prods.items || prods.content || prods);
+
+      setSuppliers(supsArray);
+      setProducts(prodsArray);
       setInvoiceForm({ supplierId: '', invoiceDate: new Date().toISOString().split('T')[0], paidAmount: 0 });
       setInvoiceItems([]);
       setItemForm({ productId: '', unitId: '', quantity: 1, unitPrice: 0 });
@@ -242,7 +266,7 @@ const Purchases = () => {
   };
 
   const invoiceTotal = invoiceItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const items = getFilteredData();
+  const items = data;
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -258,7 +282,10 @@ const Purchases = () => {
                   type="text"
                   placeholder="بحث برقم الفاتورة أو المورد..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(0);
+                  }}
                 />
               </div>
               <button className="btn btn-primary" onClick={openForm}>
@@ -294,7 +321,9 @@ const Purchases = () => {
                   <tbody>
                     {items.map((p, i) => (
                       <tr key={p.id}>
-                        <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                        <td style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                          {(currentPage * pageSize) + i + 1}
+                        </td>
                         <td>
                           <code
                             title="اضغط لعرض التفاصيل"
@@ -328,6 +357,28 @@ const Purchases = () => {
                 </table>
               )}
             </div>
+
+            {totalPages > 1 && (
+              <div className="pagination" style={{ borderTop: '1px solid var(--border-main)' }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: 'auto', padding: '0 15px' }}
+                  disabled={currentPage === 0}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                >
+                  السابق
+                </button>
+                <button className="active">{currentPage + 1}</button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: 'auto', padding: '0 15px' }}
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                >
+                  التالي
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

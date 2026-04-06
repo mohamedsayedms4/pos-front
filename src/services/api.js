@@ -1,8 +1,8 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-const PROD_BASE = 'https://posapi.digitalrace.net/api/v1';
-const DEV_BASE = 'https://posapi.digitalrace.net/api/v1';
+const PROD_BASE = 'http://localhost:8080/api/v1';
+const DEV_BASE = 'http://localhost:8080/api/v1';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
@@ -45,8 +45,8 @@ const Api = {
    * Admins (ROLE_ADMIN) have all permissions.
    */
   // Stock Receipts
-  async getStockReceipts(page = 0, size = 10) {
-    const res = await this._request(`/stock-receipts?page=${page}&size=${size}`);
+  async getStockReceipts(page = 0, size = 10, query = '') {
+    const res = await this._request(`/stock-receipts?page=${page}&size=${size}&query=${query}`);
     return res.data;
   },
 
@@ -184,9 +184,10 @@ const Api = {
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
   },
 
-  async getProductsPaged(page = 0, size = 20, search = '') {
+  async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc') {
     const query = search ? `&search=${encodeURIComponent(search)}` : '';
-    const res = await this._request(`/products?page=${page}&size=${size}${query}`);
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const res = await this._request(`/products?page=${page}&size=${size}${query}${sortQuery}`);
     const raw = res.data;
     if (Array.isArray(raw)) {
       return { items: raw, totalPages: 1, totalElements: raw.length, page: 0 };
@@ -202,6 +203,38 @@ const Api = {
   async getProductsByCategory(categoryId, page = 0, size = 1000) {
     const res = await this._request(`/products/category/${categoryId}?page=${page}&size=${size}`);
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
+  },
+
+  async exportProductsExcel(search = '', sort = 'id,desc') {
+    const query = search ? `&search=${encodeURIComponent(search)}` : '';
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const res = await fetch(`${API_BASE}/products/export/excel?${query}${sortQuery}`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_export_${new Date().getTime()}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async exportProductsPdf(search = '', sort = 'id,desc') {
+    const query = search ? `&search=${encodeURIComponent(search)}` : '';
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const res = await fetch(`${API_BASE}/products/export/pdf?${query}${sortQuery}`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_export_${new Date().getTime()}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   },
 
   async getProductStatistics() {
@@ -310,8 +343,8 @@ const Api = {
   },
 
   // ─── Suppliers ───
-  async getSuppliers() {
-    const res = await this._request('/suppliers');
+  async getSuppliers(page = 0, size = 10, query = '') {
+    const res = await this._request(`/suppliers?page=${page}&size=${size}&query=${query}`);
     return res.data;
   },
 
@@ -406,9 +439,9 @@ const Api = {
   },
 
   // ─── Purchases ───
-  async getPurchases(page = 0, size = 1000) {
-    const res = await this._request(`/purchases?page=${page}&size=${size}`);
-    return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
+  async getPurchases(page = 0, size = 10, query = '') {
+    const res = await this._request(`/purchases?page=${page}&size=${size}&query=${query}`);
+    return res.data;
   },
 
   async getSupplierPurchases(supplierId, page = 0, size = 1000) {
@@ -432,8 +465,8 @@ const Api = {
   },
 
   // ─── Users ───
-  async getUsers() {
-    const res = await this._request('/admin/users');
+  async getUsers(page = 0, size = 10, query = '') {
+    const res = await this._request(`/admin/users?page=${page}&size=${size}&query=${query}`);
     return res.data;
   },
 
@@ -620,8 +653,8 @@ const Api = {
   },
 
   // ─── Sales ───
-  async getSales(page = 0, size = 10) {
-    const res = await this._request(`/sales?page=${page}&size=${size}`);
+  async getSales(page = 0, size = 10, query = '') {
+    const res = await this._request(`/sales?page=${page}&size=${size}&query=${query}`);
     return res.data;
   },
 
@@ -641,8 +674,8 @@ const Api = {
     return res.data;
   },
 
-  async getReturns(page = 0, size = 10) {
-    const res = await this._request(`/sales/returns?page=${page}&size=${size}`);
+  async getReturns(page = 0, size = 10, query = '') {
+    const res = await this._request(`/sales/returns?page=${page}&size=${size}&query=${query}`);
     return res.data;
   },
 
@@ -652,8 +685,8 @@ const Api = {
     return res.data;
   },
 
-  async getTreasuryTransactions(page = 0, size = 20) {
-    const res = await this._request(`/treasury/transactions?page=${page}&size=${size}`);
+  async getTreasuryTransactions(page = 0, size = 20, query = '') {
+    const res = await this._request(`/treasury/transactions?page=${page}&size=${size}&query=${query}`);
     return res.data;
   }
 };

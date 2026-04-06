@@ -11,16 +11,23 @@ const Customers = () => {
   const [isEditing, setIsEditing] = useState(false);
   const { toast, confirm } = useGlobalUI();
   const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const pageSize = 10;
 
   useEffect(() => {
-    loadCustomers();
-  }, []);
+    loadCustomers(currentPage, pageSize, query);
+  }, [currentPage]);
 
-  const loadCustomers = async (searchQuery = '') => {
+  const loadCustomers = async (page = 0, size = 10, searchQuery = query) => {
     setLoading(true);
     try {
-      const data = await Api.getCustomers(0, 50, searchQuery);
-      setCustomers(data.items || data.content || []);
+      const res = await Api.getCustomers(page, size, searchQuery);
+      // Backend returns Page object
+      setCustomers(res.items || res.content || []);
+      setTotalPages(res.totalPages || 0);
+      setTotalElements(res.totalElements || 0);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -39,7 +46,7 @@ const Customers = () => {
         toast('تم إضافة العميل بنجاح', 'success');
       }
       setShowModal(false);
-      loadCustomers(query);
+      loadCustomers(currentPage, pageSize, query);
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -50,7 +57,7 @@ const Customers = () => {
       try {
         await Api.deleteCustomer(id);
         toast('تم حذف العميل بنجاح', 'success');
-        loadCustomers(query);
+        loadCustomers(currentPage, pageSize, query);
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -86,7 +93,7 @@ const Customers = () => {
       <div className="stats-grid mb-3">
         <div className="stat-card blue tile-wd-sm">
           <div className="stat-icon">👤</div>
-          <div className="stat-value">{customers.length}</div>
+          <div className="stat-value">{totalElements}</div>
           <div className="stat-label">إجمالي العملاء</div>
         </div>
         <div className="stat-card emerald tile-sq-sm">
@@ -110,7 +117,8 @@ const Customers = () => {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              loadCustomers(e.target.value);
+              setCurrentPage(0);
+              loadCustomers(0, pageSize, e.target.value);
             }}
           />
         </div>
@@ -121,6 +129,7 @@ const Customers = () => {
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: '50px' }}>#</th>
                 <th>الاسم</th>
                 <th>الهاتف</th>
                 <th>البريد الإلكتروني</th>
@@ -144,6 +153,9 @@ const Customers = () => {
                 </tr>
               ) : customers.map((c, idx) => (
                 <tr key={c.id} style={{ animationDelay: `${idx * 0.05}s` }}>
+                  <td style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                    {(currentPage * pageSize) + idx + 1}
+                  </td>
                   <td>
                     <div style={{ fontWeight: 600, color: 'var(--text-white)' }}>{c.name}</div>
                   </td>
@@ -170,6 +182,28 @@ const Customers = () => {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="pagination" style={{ borderTop: '1px solid var(--border-main)' }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ width: 'auto', padding: '0 15px' }}
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+            >
+              السابق
+            </button>
+            <button className="active">{currentPage + 1}</button>
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ width: 'auto', padding: '0 15px' }}
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+            >
+              التالي
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modern Metro Modal */}

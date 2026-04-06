@@ -11,6 +11,14 @@ const Users = () => {
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Pagination & Search state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const pageSize = 10;
+
   // Modal State
   const [modalType, setModalType] = useState(null); // 'form', 'access', null
   const [activeUser, setActiveUser] = useState(null);
@@ -25,29 +33,42 @@ const Users = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'http://localhost:8080/api/v1'; // Standard base for image serving 
 
-  const loadData = async () => {
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    loadData(currentPage, pageSize, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
+
+  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch) => {
     setLoading(true);
     try {
-      const [usersData, rolesData, permsData] = await Promise.all([
-        Api.getUsers(),
-        Api.getRoles().catch(() => []),
-        Api.getPermissions().catch(() => [])
+      const [usersRes, rolesData, permsData] = await Promise.all([
+        Api.getUsers(page, size, query),
+        roles.length === 0 ? Api.getRoles().catch(() => []) : Promise.resolve(roles),
+        permissions.length === 0 ? Api.getPermissions().catch(() => []) : Promise.resolve(permissions)
       ]);
-      setData(usersData);
-      setRoles(rolesData);
-      setPermissions(permsData);
+      
+      setData(usersRes.items || usersRes.content || []);
+      setTotalPages(usersRes.totalPages || 0);
+      setTotalElements(usersRes.totalItems || usersRes.totalElements || 0);
+      setCurrentPage(usersRes.currentPage ?? usersRes.number ?? 0);
+      
+      if (roles.length === 0) setRoles(rolesData);
+      if (permissions.length === 0) setPermissions(permsData);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const openForm = () => {
     setUserForm({ name: '', email: '', password: '', roles: [], enabled: true, profilePicture: '' });
@@ -173,7 +194,7 @@ const Users = () => {
         <div className="stats-grid">
           <div className="stat-card blue tile-wd-sm">
             <div className="stat-icon">👥</div>
-            <div className="stat-value">{data.length}</div>
+            <div className="stat-value">{totalElements}</div>
             <div className="stat-label">المستخدمين</div>
           </div>
           <div className="stat-card magenta tile-sq-sm">
@@ -191,9 +212,23 @@ const Users = () => {
         <div className="card">
           <div className="card-header">
             <h3>👥 إدارة المستخدمين</h3>
-            <button className="btn btn-primary" onClick={openForm}>
-              <span>+</span> إضافة مستخدم
-            </button>
+            <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+              <div className="search-input" style={{ width: '250px' }}>
+                <span className="search-icon">🔍</span>
+                <input
+                  type="text"
+                  placeholder="بحث بالاسم أو البريد..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(0);
+                  }}
+                />
+              </div>
+              <button className="btn btn-primary" onClick={openForm}>
+                <span>+</span> إضافة مستخدم
+              </button>
+            </div>
           </div>
           <div className="card-body no-padding">
             <div className="table-wrapper">
@@ -219,7 +254,7 @@ const Users = () => {
                   <tbody>
                     {data.map((u, i) => (
                       <tr key={u.id}>
-                        <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                        <td style={{ color: 'var(--text-muted)' }}>{(currentPage * pageSize) + i + 1}</td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div className="user-avatar-wrapper">
@@ -264,6 +299,28 @@ const Users = () => {
             </div>
           </div>
         </div>
+
+        {totalPages > 1 && (
+          <div className="pagination" style={{ marginTop: '10px' }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ width: 'auto', padding: '0 15px' }}
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+            >
+              السابق
+            </button>
+            <button className="active">{currentPage + 1}</button>
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ width: 'auto', padding: '0 15px' }}
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+            >
+              التالي
+            </button>
+          </div>
+        )}
       </div>
 
       {modalType === 'form' && (

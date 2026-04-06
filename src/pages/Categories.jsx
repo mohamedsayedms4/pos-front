@@ -8,6 +8,7 @@ import Loader from '../components/common/Loader';
 const Categories = () => {
   const { toast, confirm } = useGlobalUI();
   const [data, setData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -105,6 +106,11 @@ const Categories = () => {
   };
 
   const flatData = flattenCategories(data);
+  const filteredData = flatData.filter(c => 
+    !searchTerm || 
+    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <>
@@ -130,11 +136,17 @@ const Categories = () => {
         <div className="card">
           <div className="card-header">
             <h3>📂 إدارة الفئات</h3>
-            {Api.can('CATEGORY_WRITE') && (
-              <button className="btn btn-primary" onClick={() => openForm(null)}>
-                <span>+</span> إضافة فئة
-              </button>
-            )}
+            <div className="toolbar">
+              <div className="search-input">
+                <span className="search-icon">🔍</span>
+                <input type="text" placeholder="بحث عن فئة..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              </div>
+              {Api.can('CATEGORY_WRITE') && (
+                <button className="btn btn-primary" onClick={() => openForm(null)}>
+                  <span>+</span> إضافة فئة
+                </button>
+              )}
+            </div>
           </div>
           <div className="card-body no-padding">
             <div className="table-wrapper">
@@ -159,7 +171,7 @@ const Categories = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {flatData.map((c, i) => (
+                    {filteredData.map((c, i) => (
                       <tr key={c.id}>
                         <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
                         <td>

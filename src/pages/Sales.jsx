@@ -14,15 +14,34 @@ const Sales = () => {
     const [returnNotes, setReturnNotes] = useState('');
     const { toast, confirm } = useGlobalUI();
 
-    useEffect(() => {
-        loadSales();
-    }, []);
+    // Pagination & Search state
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const pageSize = 10;
 
-    const loadSales = async () => {
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        loadSales(currentPage, pageSize, debouncedSearch);
+    }, [currentPage, debouncedSearch]);
+
+    const loadSales = async (page = 0, size = 10, query = debouncedSearch) => {
         setLoading(true);
         try {
-            const data = await Api.getSales(0, 50);
-            setSales(data.items || data.content || []);
+            const res = await Api.getSales(page, size, query);
+            setSales(res.items || res.content || []);
+            setTotalPages(res.totalPages || 0);
+            setTotalElements(res.totalItems || res.totalElements || 0);
+            setCurrentPage(res.currentPage ?? res.number ?? 0);
         } catch (err) {
             toast(err.message, 'error');
         } finally {
@@ -80,12 +99,27 @@ const Sales = () => {
                     <span className="header-icon">🧾</span>
                     <h1>سجل فواتير المبيعات</h1>
                 </div>
+                <div className="header-actions">
+                    <div className="search-input">
+                        <span className="search-icon">🔍</span>
+                        <input
+                            type="text"
+                            placeholder="بحث برقم الفاتورة أو اسم العميل..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(0);
+                            }}
+                        />
+                    </div>
+                </div>
             </div>
 
             <div className="table-responsive">
                 <table className="data-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>رقم الفاتورة</th>
                             <th>التاريخ</th>
                             <th>العميل</th>
@@ -98,11 +132,12 @@ const Sales = () => {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan="8" className="full-mobile"><Loader message="جاري تحميل فواتير المبيعات..." /></td></tr>
+                            <tr><td colSpan="9" className="full-mobile"><Loader message="جاري تحميل فواتير المبيعات..." /></td></tr>
                         ) : sales.length === 0 ? (
-                            <tr><td colSpan="8" className="full-mobile" style={{ textAlign: 'center' }}>لا يوجد فواتير مبيعات</td></tr>
-                        ) : sales.map(s => (
+                            <tr><td colSpan="9" className="full-mobile" style={{ textAlign: 'center' }}>لا يوجد فواتير مبيعات</td></tr>
+                        ) : sales.map((s, i) => (
                             <tr key={s.id}>
+                                <td data-label="#"><strong>{(currentPage * pageSize) + i + 1}</strong></td>
                                 <td data-label="رقم الفاتورة"><strong>{s.invoiceNumber}</strong></td>
                                 <td data-label="التاريخ">{new Date(s.invoiceDate).toLocaleString('ar-EG')}</td>
                                 <td data-label="العميل">{s.customerName}</td>
@@ -135,6 +170,28 @@ const Sales = () => {
                     </tbody>
                 </table>
             </div>
+
+            {totalPages > 1 && (
+                <div className="pagination" style={{ borderTop: '1px solid var(--border-main)' }}>
+                    <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ width: 'auto', padding: '0 15px' }}
+                        disabled={currentPage === 0}
+                        onClick={() => setCurrentPage(prev => prev - 1)}
+                    >
+                        السابق
+                    </button>
+                    <button className="active">{currentPage + 1}</button>
+                    <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ width: 'auto', padding: '0 15px' }}
+                        disabled={currentPage >= totalPages - 1}
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                    >
+                        التالي
+                    </button>
+                </div>
+            )}
 
             {/* Details Modal */}
             {showDetails && activeSale && ReactDOM.createPortal(

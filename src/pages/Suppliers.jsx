@@ -9,8 +9,21 @@ const Suppliers = () => {
   const { toast, confirm } = useGlobalUI();
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const pageSize = 10;
   const navigate = useNavigate();
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Modals state
   const [modalType, setModalType] = useState(null); // 'form', 'payment', null
@@ -25,11 +38,14 @@ const Suppliers = () => {
 
   const [saving, setSaving] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (page = 0, size = 10, query = debouncedSearch) => {
     setLoading(true);
     try {
-      const suppliersData = await Api.getSuppliers();
-      setData(suppliersData);
+      const res = await Api.getSuppliers(page, size, query);
+      setData(res.content || res.items || []);
+      setTotalPages(res.totalPages || 0);
+      setTotalElements(res.totalElements || 0);
+      setCurrentPage(res.number || 0);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -38,18 +54,10 @@ const Suppliers = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(currentPage, pageSize, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
 
-  const getFilteredData = () => {
-    if (!searchTerm) return data;
-    const term = searchTerm.toLowerCase();
-    return data.filter(s =>
-      (s.name || '').toLowerCase().includes(term) ||
-      (s.phone || '').includes(term) ||
-      (s.email || '').toLowerCase().includes(term)
-    );
-  };
+  // Server-side filtering is now handled in loadData
 
   const openForm = async (supplier = null) => {
     setActiveSupplier(supplier);
@@ -136,7 +144,7 @@ const Suppliers = () => {
     });
   };
 
-  const items = getFilteredData();
+  const items = data;
 
   return (
     <>
@@ -144,7 +152,7 @@ const Suppliers = () => {
         <div className="stats-grid">
           <div className="stat-card blue tile-wd-sm">
             <div className="stat-icon">🏭</div>
-            <div className="stat-value">{data.length}</div>
+            <div className="stat-value">{totalElements}</div>
             <div className="stat-label">إجمالي الموردين</div>
           </div>
           <div className="stat-card emerald tile-wd-sm">
@@ -174,7 +182,15 @@ const Suppliers = () => {
             <div className="toolbar">
               <div className="search-input">
                 <span className="search-icon">🔍</span>
-                <input type="text" placeholder="بحث عن مورد..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <input 
+                  type="text" 
+                  placeholder="بحث عن مورد..." 
+                  value={searchTerm} 
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(0);
+                  }} 
+                />
               </div>
               {Api.can('SUPPLIER_WRITE') && (
                 <button className="btn btn-primary" onClick={() => openForm(null)}>
@@ -212,7 +228,9 @@ const Suppliers = () => {
                       const balanceClass = balance > 0 ? 'balance-negative' : balance < 0 ? 'balance-positive' : '';
                       return (
                         <tr key={s.id}>
-                          <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                          <td style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                            {(currentPage * pageSize) + i + 1}
+                          </td>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-full)', background: 'var(--gradient-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
@@ -248,6 +266,28 @@ const Suppliers = () => {
                 </table>
               )}
             </div>
+
+            {totalPages > 1 && (
+              <div className="pagination" style={{ borderTop: '1px solid var(--border-main)' }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: 'auto', padding: '0 15px' }}
+                  disabled={currentPage === 0}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                >
+                  السابق
+                </button>
+                <button className="active">{currentPage + 1}</button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: 'auto', padding: '0 15px' }}
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                >
+                  التالي
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

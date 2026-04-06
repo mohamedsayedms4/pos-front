@@ -4,6 +4,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import ThermalReceipt from '../components/common/ThermalReceipt';
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 const PAGE_SIZE = 20;
@@ -48,6 +49,7 @@ const POS = () => {
   const [paidAmount, setPaidAmount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [lastInvoice, setLastInvoice] = useState(null);
   const { toast } = useGlobalUI();
   const searchInputRef = useRef(null);
   const stompClientRef = useRef(null);
@@ -69,7 +71,7 @@ const POS = () => {
     try {
       const cData = await Api.getCustomers(0, 100);
       setCustomers(cData.items || cData.content || []);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const loadBrowsePage = useCallback(async (page, search, append = false) => {
@@ -151,9 +153,9 @@ const POS = () => {
       webSocketFactory: () => new SockJS(WS_URL),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
-      onConnect: () => { 
-        setConnected(true); 
-        client.subscribe('/user/queue/pos-updates', (msg) => addToCart(JSON.parse(msg.body))); 
+      onConnect: () => {
+        setConnected(true);
+        client.subscribe('/user/queue/pos-updates', (msg) => addToCart(JSON.parse(msg.body)));
       },
       onDisconnect: () => setConnected(false)
     });
@@ -171,19 +173,32 @@ const POS = () => {
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     try {
-      await Api.createSale({ customerId: selectedCustomerId || null, discount, paidAmount, items: cart.map(i => ({ productId: i.id, quantity: i.qty, unitPrice: i.price })) });
-      toast('تمت العملية بنجاح', 'success'); 
-      
+      const resp = await Api.createSale({ customerId: selectedCustomerId || null, discount, paidAmount, items: cart.map(i => ({ productId: i.id, quantity: i.qty, unitPrice: i.price })) });
+      const invoiceData = resp.data || resp;
+      setLastInvoice(invoiceData);
+
+      toast('تمت العملية بنجاح', 'success');
+
+      // Automatic Print Trigger
+      setTimeout(() => {
+        window.print();
+        // Clear last invoice after a while to avoid accidental reprints if user refreshes
+        setTimeout(() => setLastInvoice(null), 5000);
+      }, 500);
+
       // Send refresh signal to customer
       if (stompClientRef.current?.connected) {
-          stompClientRef.current.publish({
-              destination: '/app/order-complete',
-              body: JSON.stringify({ status: 'COMPLETED', ts: Date.now() })
-          });
+        stompClientRef.current.publish({
+          destination: '/app/order-complete',
+          body: JSON.stringify({ status: 'COMPLETED', invoiceId: invoiceData.id, ts: Date.now() })
+        });
       }
 
       setCart([]); setDiscount(0); setPaidAmount(0);
-    } catch (e) { toast('فشلت العملية', 'error'); }
+    } catch (e) {
+      console.error("Checkout Error:", e);
+      toast('فشلت العملية', 'error');
+    }
     finally { setCheckoutLoading(false); }
   };
 
@@ -197,15 +212,15 @@ const POS = () => {
         {/* Header Controls */}
         <div className="card" style={{ marginBottom: '16px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-             <h2 style={{ margin: 0, fontSize: '1.2rem' }}>🧾 فاتورة المبيعات</h2>
-             <div className={`sync-badge ${connected ? 'active' : ''}`}>{connected ? 'متصل بالعميل' : 'غير متصل'}</div>
+            <h2 style={{ margin: 0, fontSize: '1.2rem' }}>🧾 فاتورة المبيعات</h2>
+            <div className={`sync-badge ${connected ? 'active' : ''}`}>{connected ? 'متصل بالعميل' : 'غير متصل'}</div>
           </div>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             onClick={() => {
-                console.log("Opening Browser...");
-                setShowBrowser(true);
-            }} 
+              console.log("Opening Browser...");
+              setShowBrowser(true);
+            }}
             style={{ padding: '12px 40px', fontWeight: 900, fontSize: '1rem', background: 'var(--metro-blue)', color: '#fff', border: 'none', cursor: 'pointer', zIndex: 10 }}
           >
             🛍️ فتح قائمة المنتجات (F2)
@@ -214,27 +229,27 @@ const POS = () => {
 
         {/* Quick Search */}
         <div className="card" style={{ marginBottom: '16px', padding: '12px' }}>
-           <div className="search-input" style={{ maxWidth: '100%' }}>
-              <span className="search-icon">🔍</span>
-              <input ref={searchInputRef} type="text" className="form-control" placeholder="بحث سريع لإضافة منتج..." value={searchQuery} onChange={e => handleSearchChange(e.target.value)} />
-              {searchProducts.length > 0 && (
-                <div className="search-results-dropdown card">
-                  {searchProducts.map(p => (
-                    <div key={p.id} className="search-result-item" onClick={() => addToCart(p)}>
-                      <span>{p.name}</span>
-                      <span style={{ fontWeight: 700 }}>{p.salePrice.toFixed(2)} ج.م</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-           </div>
+          <div className="search-input" style={{ maxWidth: '100%' }}>
+            <span className="search-icon">🔍</span>
+            <input ref={searchInputRef} type="text" className="form-control" placeholder="بحث سريع لإضافة منتج..." value={searchQuery} onChange={e => handleSearchChange(e.target.value)} />
+            {searchProducts.length > 0 && (
+              <div className="search-results-dropdown card">
+                {searchProducts.map(p => (
+                  <div key={p.id} className="search-result-item" onClick={() => addToCart(p)}>
+                    <span>{p.name}</span>
+                    <span style={{ fontWeight: 700 }}>{p.salePrice.toFixed(2)} ج.م</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Main Invoice Table */}
         <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className="card-header">
-             <h3>🛒 محتويات الفاتورة ({cart.length})</h3>
-             <button className="btn btn-danger btn-sm" onClick={() => setCart([])}>تفريغ</button>
+            <h3>🛒 محتويات الفاتورة ({cart.length})</h3>
+            <button className="btn btn-danger btn-sm" onClick={() => setCart([])}>تفريغ</button>
           </div>
           <div className="table-wrapper" style={{ flex: 1 }}>
             <table className="data-table">
@@ -286,28 +301,28 @@ const POS = () => {
           </div>
 
           <div className="pos-summary card mb-4" style={{ padding: '15px' }}>
-             <div className="d-flex justify-content-between mb-2"><span>الفرعي</span><span>{subtotal.toFixed(2)}</span></div>
-             <div className="d-flex justify-content-between align-items-center">
-                <span>الخصم</span>
-                <input type="number" className="form-control" style={{ width: '80px' }} value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} />
-             </div>
+            <div className="d-flex justify-content-between mb-2"><span>الفرعي</span><span>{subtotal.toFixed(2)}</span></div>
+            <div className="d-flex justify-content-between align-items-center">
+              <span>الخصم</span>
+              <input type="number" className="form-control" style={{ width: '80px' }} value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} />
+            </div>
           </div>
 
           <div className="total-display mb-4">
-             <label>الإجمالي النهائي</label>
-             <div className="total-amount" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--metro-blue)' }}>{total.toFixed(2)} <small style={{ fontSize: '0.8rem' }}>ج.م</small></div>
+            <label>الإجمالي النهائي</label>
+            <div className="total-amount" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--metro-blue)' }}>{total.toFixed(2)} <small style={{ fontSize: '0.8rem' }}>ج.م</small></div>
           </div>
 
           <div className="card mb-4" style={{ padding: '15px', background: '#111' }}>
-             <label>المدفوع</label>
-             <div className="d-flex gap-2">
-                <input type="number" className="form-control" value={paidAmount} onChange={e => setPaidAmount(parseFloat(e.target.value) || 0)} style={{ fontSize: '1.5rem', fontWeight: 700 }} />
-                <button className="btn btn-ghost" onClick={() => setPaidAmount(total)}>كل</button>
-             </div>
-             <div className="d-flex justify-content-between mt-3">
-                <span style={{ color: '#777' }}>الباقي</span>
-                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: change >= 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}>{change.toFixed(2)}</span>
-             </div>
+            <label>المدفوع</label>
+            <div className="d-flex gap-2">
+              <input type="number" className="form-control" value={paidAmount} onChange={e => setPaidAmount(parseFloat(e.target.value) || 0)} style={{ fontSize: '1.5rem', fontWeight: 700 }} />
+              <button className="btn btn-ghost" onClick={() => setPaidAmount(total)}>كل</button>
+            </div>
+            <div className="d-flex justify-content-between mt-3">
+              <span style={{ color: '#777' }}>الباقي</span>
+              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: change >= 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}>{change.toFixed(2)}</span>
+            </div>
           </div>
 
           <button className="btn btn-primary btn-block btn-lg" onClick={handleCheckout} disabled={checkoutLoading || cart.length === 0} style={{ padding: '15px' }}>إتمام العملية</button>
@@ -317,32 +332,39 @@ const POS = () => {
       {/* Browser Modal - MOVED TO THE BOTTOM FOR Z-INDEX SAFETY */}
       {showBrowser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-           <div className="card" style={{ width: '95%', maxWidth: '1200px', height: '90vh', display: 'flex', flexDirection: 'column', border: '2px solid #333' }}>
-              <div className="card-header" style={{ padding: '20px', background: '#1a1a1a' }}>
-                 <h3 style={{ margin: 0 }}>🛍️ قائمة المنتجات</h3>
-                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <input type="text" className="form-control" placeholder="بحث..." value={browseSearch} onChange={e => handleBrowseSearch(e.target.value)} style={{ width: '300px' }} autoFocus />
-                    <button className="btn btn-danger" onClick={() => setShowBrowser(false)} style={{ padding: '10px 20px' }}>إغلاق ✕</button>
-                 </div>
+          <div className="card" style={{ width: '95%', maxWidth: '1200px', height: '90vh', display: 'flex', flexDirection: 'column', border: '2px solid #333' }}>
+            <div className="card-header" style={{ padding: '20px', background: '#1a1a1a' }}>
+              <h3 style={{ margin: 0 }}>🛍️ قائمة المنتجات</h3>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <input type="text" className="form-control" placeholder="بحث..." value={browseSearch} onChange={e => handleBrowseSearch(e.target.value)} style={{ width: '300px' }} autoFocus />
+                <button className="btn btn-danger" onClick={() => setShowBrowser(false)} style={{ padding: '10px 20px' }}>إغلاق ✕</button>
               </div>
-              <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#000' }}>
-                 <div className="pos-product-grid" style={{ maxHeight: 'none', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
-                    {browseProducts.map(p => (
-                        <div key={p.id} className="pos-product-card" onClick={() => { addToCart(p); console.log("Added from modal"); }}>
-                             <div className="pos-product-img-wrap" style={{ paddingTop: '80%', position: 'relative' }}>
-                                 {getProductImage(p) ? <img src={getProductImage(p)} style={{ position: 'absolute', top:0, left:0, width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ position: 'absolute', top:0, left:0, width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#111', fontSize:'2rem'}}>📦</div>}
-                             </div>
-                             <div style={{ padding: '10px' }}>
-                                 <div style={{ fontWeight: 600, fontSize: '0.9rem', height: '40px', overflow: 'hidden' }}>{p.name}</div>
-                                 <div style={{ color: 'var(--metro-blue)', fontWeight: 700, fontSize: '1.1rem', marginTop: '5px' }}>{p.salePrice.toFixed(2)} ج.م</div>
-                             </div>
-                        </div>
-                    ))}
-                    <div ref={observerTarget} style={{ height: '20px', gridColumn: '1 / -1' }}></div>
-                 </div>
-                 {browseLoading && <div style={{ color: '#fff', textAlign: 'center', padding: '20px' }}>جاري تحميل المزيد...</div>}
+            </div>
+            <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#000' }}>
+              <div className="pos-product-grid" style={{ maxHeight: 'none', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
+                {browseProducts.map(p => (
+                  <div key={p.id} className="pos-product-card" onClick={() => { addToCart(p); console.log("Added from modal"); }}>
+                    <div className="pos-product-img-wrap" style={{ paddingTop: '80%', position: 'relative' }}>
+                      {getProductImage(p) ? <img src={getProductImage(p)} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', fontSize: '2rem' }}>📦</div>}
+                    </div>
+                    <div style={{ padding: '10px' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', height: '40px', overflow: 'hidden' }}>{p.name}</div>
+                      <div style={{ color: 'var(--metro-blue)', fontWeight: 700, fontSize: '1.1rem', marginTop: '5px' }}>{p.salePrice.toFixed(2)} ج.م</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={observerTarget} style={{ height: '20px', gridColumn: '1 / -1' }}></div>
               </div>
-           </div>
+              {browseLoading && <div style={{ color: '#fff', textAlign: 'center', padding: '20px' }}>جاري تحميل المزيد...</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Thermal Receipt for Printing */}
+      {lastInvoice && (
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <ThermalReceipt invoice={lastInvoice} />
         </div>
       )}
 

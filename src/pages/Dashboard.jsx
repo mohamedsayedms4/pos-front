@@ -30,15 +30,17 @@ const Dashboard = () => {
           try { users = await Api.getUsers(); } catch { }
         }
 
-        const lowStockItems = products.filter(p => Number(p.stock) < 10 && Number(p.stock) > 0);
-        const outOfStockItems = products.filter(p => Number(p.stock) <= 0);
-        const recent = [...products].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+        const lowStockItems = Array.isArray(products) ? products.filter(p => Number(p.stock) < 10 && Number(p.stock) > 0) : (products.content || []).filter(p => Number(p.stock) < 10 && Number(p.stock) > 0);
+        const outOfStockItems = Array.isArray(products) ? products.filter(p => Number(p.stock) <= 0) : (products.content || []).filter(p => Number(p.stock) <= 0);
+        
+        const productsArray = Array.isArray(products) ? products : (products.content || []);
+        const recent = [...productsArray].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
         setStats({
-          products: products.length,
-          categories: categories.length,
-          suppliers: suppliers.length,
-          users: users.length,
+          products: products.totalElements ?? products.totalItems ?? productsArray.length,
+          categories: categories.totalElements ?? categories.totalItems ?? (Array.isArray(categories) ? categories.length : (categories.content || []).length),
+          suppliers: suppliers.totalElements ?? suppliers.totalItems ?? (Array.isArray(suppliers) ? suppliers.length : (suppliers.content || []).length),
+          users: Array.isArray(users) ? users.length : (users.totalElements || users.length || 0),
           lowStock: lowStockItems,
           outOfStock: outOfStockItems,
           recentProducts: recent
