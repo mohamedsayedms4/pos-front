@@ -33,7 +33,7 @@ const Users = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'http://localhost:8080/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1'; // Standard base for image serving 
 
   // Debounce search
   useEffect(() => {
@@ -55,12 +55,12 @@ const Users = () => {
         roles.length === 0 ? Api.getRoles().catch(() => []) : Promise.resolve(roles),
         permissions.length === 0 ? Api.getPermissions().catch(() => []) : Promise.resolve(permissions)
       ]);
-      
+
       setData(usersRes.items || usersRes.content || []);
       setTotalPages(usersRes.totalPages || 0);
       setTotalElements(usersRes.totalItems || usersRes.totalElements || 0);
       setCurrentPage(usersRes.currentPage ?? usersRes.number ?? 0);
-      
+
       if (roles.length === 0) setRoles(rolesData);
       if (permissions.length === 0) setPermissions(permsData);
     } catch (err) {
