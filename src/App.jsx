@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Products from './pages/Products.jsx'
 import Categories from './pages/Categories.jsx'
 import Suppliers from './pages/Suppliers.jsx'
+import ProductAnalytics from './pages/ProductAnalytics.jsx'
 import Purchases from './pages/Purchases.jsx'
 import Users from './pages/Users.jsx'
 import Audit from './pages/Audit.jsx'
@@ -60,6 +61,7 @@ function App() {
           <Route path="/roles" element={<Roles />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/products/:id" element={<ProductDetails />} />
+          <Route path="/products/analytics" element={<ProductAnalytics />} />
           <Route path="/suppliers/:id" element={<SupplierDetails />} />
           <Route path="/stock-receipts" element={<StockReceipts />} />
           <Route path="/treasury" element={<Treasury />} />

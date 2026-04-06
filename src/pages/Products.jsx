@@ -178,37 +178,58 @@ const Products = () => {
   return (
     <>
       <div className="page-section">
-        <div className="stats-grid">
-          <div className="stat-card blue tile-wd-sm">
-            <div className="stat-icon">📦</div>
-            <div className="stat-value">{data.length}</div>
-            <div className="stat-label">إجمالي المنتجات</div>
-          </div>
 
-          <div className="stat-card emerald tile-wd-sm">
-            <div className="stat-icon">💰</div>
-            <div className="stat-value">{Number(stats?.totalExpectedSales || 0).toLocaleString('en-US')}</div>
-            <div className="stat-label">المبيعات المتوقعة</div>
-            <div className="stat-subtitle">(ج.م)</div>
-          </div>
+        {/* KPI TILES GRID — Metro Style 6-Column Grid */}
+        {stats && (
+          <div className="stats-grid">
+            {/* Row 1 — 2+4 = 6 columns */}
+            <Link to="/products/analytics" className="stat-card azure tile-sq-sm" style={{ textDecoration: 'none' }}>
+              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{stats.totalProducts}</div>
+              <div className="stat-label">إجمالي المنتجات</div>
+              <div className="stat-icon">▨</div>
+            </Link>
 
-          <div className="stat-card rose tile-sq-sm">
-            <div className="stat-icon">⚠️</div>
-            <div className="stat-value">{stats?.outOfStockCount || 0}</div>
-            <div className="stat-label">نفذت</div>
-          </div>
+            <Link to="/products/analytics" className="stat-card forest tile-wd-sm" style={{ textDecoration: 'none' }}>
+              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{Number(stats.totalInventoryCapital || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>ج.م</span></div>
+              <div className="stat-label">قيمة المخزون (شراء)</div>
+              <div className="stat-icon">▧</div>
+            </Link>
 
-          <div className="stat-card amber tile-sq-sm">
-            <div className="stat-icon">📉</div>
-            <div className="stat-value">{stats?.lowStockCount || 0}</div>
-            <div className="stat-label">منخفض</div>
+            {/* Row 2 — 2+4 = 6 columns */}
+            <Link to="/products/analytics" className="stat-card deep-purple tile-sq-sm" style={{ textDecoration: 'none' }}>
+              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{Number(stats.totalExpectedProfit || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>ج.م</span></div>
+              <div className="stat-label">الأرباح المتوقعة</div>
+              <div className="stat-icon">◈</div>
+            </Link>
+
+            <Link to="/products/analytics" className="stat-card sky tile-wd-sm" style={{ textDecoration: 'none' }}>
+              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{Number(stats.totalRealizedProfit || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>ج.م</span></div>
+              <div className="stat-label">الأرباح المحققة</div>
+              <div className="stat-icon">▤</div>
+            </Link>
+
+            {/* Row 3 — Small alerts */}
+            <Link to="/products/analytics" className="stat-card crimson tile-sq-sm" style={{ textDecoration: 'none' }}>
+              <div className="stat-value" style={{ fontSize: '1.5rem' }}>{stats.outOfStockCount}</div>
+              <div className="stat-label">منتجات نفدت</div>
+              <div className="stat-icon">⚠</div>
+            </Link>
+
+            <Link to="/products/analytics" className="stat-card gold tile-sq-sm" style={{ textDecoration: 'none' }}>
+              <div className="stat-value" style={{ fontSize: '1.5rem' }}>{stats.lowStockCount}</div>
+              <div className="stat-label">مخزون منخفض</div>
+              <div className="stat-icon">⚠</div>
+            </Link>
           </div>
-        </div>
+        )}
 
         <div className="card">
           <div className="card-header">
             <h3>📦 إدارة المنتجات</h3>
             <div className="toolbar">
+              <Link to="/products/analytics" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                📊 الإحصائيات
+              </Link>
               <div className="search-input">
                 <span className="search-icon">🔍</span>
                 <input type="text" placeholder="بحث عن منتج..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />

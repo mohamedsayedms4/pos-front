@@ -1,8 +1,8 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-const PROD_BASE = 'https://posapi.digitalrace.net/api/v1';
-const DEV_BASE = 'https://posapi.digitalrace.net/api/v1';
+const PROD_BASE = 'http://localhost:8080/api/v1';
+const DEV_BASE = 'http://localhost:8080/api/v1';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
@@ -205,6 +205,11 @@ const Api = {
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
   },
 
+  async getProductStatistics() {
+    const res = await this._request('/products/statistics');
+    return res.data;
+  },
+
   async exportProductsExcel(search = '', sort = 'id,desc') {
     const query = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
@@ -233,6 +238,62 @@ const Api = {
     const a = document.createElement('a');
     a.href = url;
     a.download = `products_export_${new Date().getTime()}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async exportCategoriesExcel() {
+    const res = await fetch(`${API_BASE}/categories/export/excel`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `categories_export_${new Date().getTime()}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async exportCategoriesPdf() {
+    const res = await fetch(`${API_BASE}/categories/export/pdf`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `categories_export_${new Date().getTime()}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async exportComprehensiveCategoriesExcel() {
+    const res = await fetch(`${API_BASE}/categories/export/comprehensive/excel`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير التقرير الشامل إلى Excel');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `comprehensive_report_${new Date().getTime()}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async exportComprehensiveCategoriesPdf() {
+    const res = await fetch(`${API_BASE}/categories/export/comprehensive/pdf`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير التقرير الشامل إلى PDF');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `comprehensive_report_${new Date().getTime()}.pdf`;
     a.click();
     window.URL.revokeObjectURL(url);
   },
@@ -343,8 +404,8 @@ const Api = {
   },
 
   // ─── Suppliers ───
-  async getSuppliers(page = 0, size = 10, query = '') {
-    const res = await this._request(`/suppliers?page=${page}&size=${size}&query=${query}`);
+  async getSuppliers(page = 0, size = 10, query = '', sort = 'name,asc') {
+    const res = await this._request(`/suppliers?page=${page}&size=${size}&query=${encodeURIComponent(query)}&sort=${sort}`);
     return res.data;
   },
 
@@ -371,6 +432,38 @@ const Api = {
 
   async deleteSupplier(id) {
     await this._request(`/suppliers/${id}`, { method: 'DELETE' });
+  },
+
+  async exportSuppliersExcel(search = '', sort = 'name,asc') {
+    const query = search ? `&query=${encodeURIComponent(search)}` : '';
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const res = await fetch(`${API_BASE}/suppliers/export/excel?${query}${sortQuery}`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `suppliers_export_${new Date().getTime()}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async exportSuppliersPdf(search = '', sort = 'name,asc') {
+    const query = search ? `&query=${encodeURIComponent(search)}` : '';
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const res = await fetch(`${API_BASE}/suppliers/export/pdf?${query}${sortQuery}`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `suppliers_export_${new Date().getTime()}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   },
 
   async getSupplierLedger(id) {

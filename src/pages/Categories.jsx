@@ -10,12 +10,69 @@ const Categories = () => {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState('name,asc');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', parentId: '' });
   const [saving, setSaving] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingCompExcel, setExportingCompExcel] = useState(false);
+  const [exportingCompPdf, setExportingCompPdf] = useState(false);
+
+  // Dropdown states
+  const [showExcelDropdown, setShowExcelDropdown] = useState(false);
+  const [showPdfDropdown, setShowPdfDropdown] = useState(false);
+
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await Api.exportCategoriesExcel();
+      toast('تم تصدير ملف الإكسيل بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      await Api.exportCategoriesPdf();
+      toast('تم تصدير ملف PDF بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const handleExportCompExcel = async () => {
+    setExportingCompExcel(true);
+    try {
+      await Api.exportComprehensiveCategoriesExcel();
+      toast('تم تصدير تقرير الجرد الشامل بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingCompExcel(false);
+    }
+  };
+
+  const handleExportCompPdf = async () => {
+    setExportingCompPdf(true);
+    try {
+      await Api.exportComprehensiveCategoriesPdf();
+      toast('تم تصدير تقرير الجرد الشامل بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingCompPdf(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -34,8 +91,25 @@ const Categories = () => {
   }, []);
 
   const flattenCategories = (cats, level = 0) => {
+    if (!cats) return [];
+    
+    // Create a copy to sort
+    const sortedCats = [...cats].sort((a, b) => {
+      const [field, direction] = sort.split(',');
+      const factor = direction === 'desc' ? -1 : 1;
+      
+      if (field === 'name') {
+        return factor * (a.name || '').localeCompare(b.name || '');
+      } else if (field === 'productCount') {
+        return factor * ((a.productCount || 0) - (b.productCount || 0));
+      } else if (field === 'createdAt') {
+        return factor * (new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      }
+      return 0;
+    });
+
     let result = [];
-    for (const cat of cats) {
+    for (const cat of sortedCats) {
       result.push({ ...cat, level });
       if (cat.children && cat.children.length) {
         result = result.concat(flattenCategories(cat.children, level + 1));
@@ -141,11 +215,112 @@ const Categories = () => {
                 <span className="search-icon">🔍</span>
                 <input type="text" placeholder="بحث عن فئة..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
-              {Api.can('CATEGORY_WRITE') && (
-                <button className="btn btn-primary" onClick={() => openForm(null)}>
-                  <span>+</span> إضافة فئة
-                </button>
-              )}
+
+              <select 
+                className="form-control" 
+                value={sort} 
+                onChange={(e) => setSort(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+              >
+                <option value="name,asc">الاسم (أ-ي)</option>
+                <option value="name,desc">الاسم (ي-أ)</option>
+                <option value="productCount,desc">الأكثر منتجات 🔥</option>
+                <option value="productCount,asc">الأقل منتجات</option>
+                <option value="createdAt,desc">الأحدث 🆕</option>
+                <option value="createdAt,asc">الأقدم</option>
+              </select>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {/* Excel Dropdown */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => { setShowExcelDropdown(!showExcelDropdown); setShowPdfDropdown(false); }}
+                    disabled={exportingExcel || exportingCompExcel || data.length === 0}
+                  >
+                    {exportingExcel || exportingCompExcel ? '⏳' : '📊'} إكسيل
+                  </button>
+                  {showExcelDropdown && (
+                    <div style={{ 
+                      position: 'absolute', top: '100%', right: 0, zIndex: 100, 
+                      backgroundColor: 'var(--bg-elevated)', borderRadius: '0', 
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
+                      marginTop: '4px', minWidth: '180px', overflow: 'hidden', 
+                      border: '1px solid var(--metro-blue)'
+                    }}>
+                      <div 
+                        onClick={() => { handleExportExcel(); setShowExcelDropdown(false); }}
+                        className="metro-dropdown-item"
+                        style={{ 
+                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
+                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px',
+                          borderBottom: '1px solid var(--border-subtle)'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.1rem' }}>📂</span> قائمة الفئات
+                      </div>
+                      <div 
+                        onClick={() => { handleExportCompExcel(); setShowExcelDropdown(false); }}
+                        className="metro-dropdown-item"
+                        style={{ 
+                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
+                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.1rem' }}>📋</span> جرد شامل (منتجات)
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* PDF Dropdown */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => { setShowPdfDropdown(!showPdfDropdown); setShowExcelDropdown(false); }}
+                    disabled={exportingPdf || exportingCompPdf || data.length === 0}
+                  >
+                    {exportingPdf || exportingCompPdf ? '⏳' : '📄'} PDF
+                  </button>
+                  {showPdfDropdown && (
+                    <div style={{ 
+                      position: 'absolute', top: '100%', right: 0, zIndex: 100, 
+                      backgroundColor: 'var(--bg-elevated)', borderRadius: '0', 
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
+                      marginTop: '4px', minWidth: '180px', overflow: 'hidden', 
+                      border: '1px solid var(--metro-blue)'
+                    }}>
+                      <div 
+                        onClick={() => { handleExportPdf(); setShowPdfDropdown(false); }}
+                        className="metro-dropdown-item"
+                        style={{ 
+                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
+                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px',
+                          borderBottom: '1px solid var(--border-subtle)'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.1rem' }}>📄</span> تقرير الفئات
+                      </div>
+                      <div 
+                        onClick={() => { handleExportCompPdf(); setShowPdfDropdown(false); }}
+                        className="metro-dropdown-item"
+                        style={{ 
+                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
+                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.1rem' }}>📋</span> جرد شامل (منتجات)
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {Api.can('CATEGORY_WRITE') && (
+                  <button className="btn btn-primary" onClick={() => openForm(null)}>
+                    <span>+</span> إضافة فئة
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="card-body no-padding">

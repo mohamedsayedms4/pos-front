@@ -10,6 +10,7 @@ const Suppliers = () => {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sort, setSort] = useState('name,asc');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -25,6 +26,9 @@ const Suppliers = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
   // Modals state
   const [modalType, setModalType] = useState(null); // 'form', 'payment', null
   const [activeSupplier, setActiveSupplier] = useState(null);
@@ -38,10 +42,34 @@ const Suppliers = () => {
 
   const [saving, setSaving] = useState(false);
 
-  const loadData = async (page = 0, size = 10, query = debouncedSearch) => {
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await Api.exportSuppliersExcel(debouncedSearch, sort);
+      toast('تم التصدير إلى Excel بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      await Api.exportSuppliersPdf(debouncedSearch, sort);
+      toast('تم التصدير إلى PDF بنجاح', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const loadData = async (page = 0, size = 10, query = debouncedSearch, sortParam = sort) => {
     setLoading(true);
     try {
-      const res = await Api.getSuppliers(page, size, query);
+      const res = await Api.getSuppliers(page, size, query, sortParam);
       setData(res.content || res.items || []);
       setTotalPages(res.totalPages || 0);
       setTotalElements(res.totalElements || 0);
@@ -54,8 +82,8 @@ const Suppliers = () => {
   };
 
   useEffect(() => {
-    loadData(currentPage, pageSize, debouncedSearch);
-  }, [currentPage, debouncedSearch]);
+    loadData(currentPage, pageSize, debouncedSearch, sort);
+  }, [currentPage, debouncedSearch, sort]);
 
   // Server-side filtering is now handled in loadData
 
@@ -192,11 +220,50 @@ const Suppliers = () => {
                   }} 
                 />
               </div>
-              {Api.can('SUPPLIER_WRITE') && (
-                <button className="btn btn-primary" onClick={() => openForm(null)}>
-                  <span>+</span> إضافة مورد
+              
+              <select 
+                className="form-control" 
+                value={sort} 
+                onChange={(e) => {
+                  setSort(e.target.value);
+                  setCurrentPage(0);
+                }}
+                style={{ width: '230px', height: '40px', padding: '0 10px' }}
+              >
+                <option value="name,asc">الاسم (أ-ي)</option>
+                <option value="name,desc">الاسم (ي-أ)</option>
+                <option value="balance,asc">لموردين لهم مستحقات (الرصيد السالب)</option>
+                <option value="balance,desc">موردين عليهم مديونيات (الرصيد الموجب)</option>
+                <option value="createdAt,desc">الأحدث تسجيلًا 🆕</option>
+                <option value="createdAt,asc">الأقدم تسجيلًا</option>
+                <option value="purchasesCount,desc">الأكثر توريداً (عدد فواتير) 📈</option>
+                <option value="purchasesCount,asc">الأقل توريداً (عدد فواتير) 📉</option>
+                <option value="purchasesTotalValue,desc">الأكثر توريداً (قيمة مالية) 💰</option>
+                <option value="purchasesTotalValue,asc">الأقل توريداً (قيمة مالية) 💵</option>
+              </select>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleExportExcel}
+                  disabled={exportingExcel || items.length === 0}
+                >
+                  {exportingExcel ? '⏳' : '📊'} إكسيل
                 </button>
-              )}
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleExportPdf}
+                  disabled={exportingPdf || items.length === 0}
+                >
+                  {exportingPdf ? '⏳' : '📄'} PDF
+                </button>
+
+                {Api.can('SUPPLIER_WRITE') && (
+                  <button className="btn btn-primary" onClick={() => openForm(null)}>
+                    <span>+</span> إضافة مورد
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="card-body no-padding">
