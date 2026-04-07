@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
@@ -14,7 +15,21 @@ const Customers = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const pageSize = 10;
+  const [pageSize] = useState(10);
+  const [showDebtModal, setShowDebtModal] = useState(false);
+  const [debtSummary, setDebtSummary] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
+  // Transaction History State
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyData, setHistoryData] = useState({ items: [], totalPages: 0, totalElements: 0, page: 0 });
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedHistoryCustomer, setSelectedHistoryCustomer] = useState(null);
+  const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
+  const [activeInvoice, setActiveInvoice] = useState(null);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
 
   useEffect(() => {
     loadCustomers(currentPage, pageSize, query);
@@ -76,6 +91,70 @@ const Customers = () => {
     setShowModal(true);
   };
 
+  const handleViewDebt = async (customerId) => {
+    setLoading(true);
+    try {
+      const summary = await Api.getCustomerDebt(customerId);
+      setDebtSummary(summary);
+      setPaymentAmount(''); // Initialize payment amount as empty
+      setPaymentNotes('');
+      setShowDebtModal(true);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    if (!paymentAmount || Number(paymentAmount) <= 0) {
+      toast('يرجى إدخال مبلغ صحيح', 'error');
+      return;
+    }
+
+    setIsSubmittingPayment(true);
+    try {
+      const updatedSummary = await Api.collectCustomerPayment(debtSummary.customerId, {
+        amount: Number(paymentAmount),
+        notes: paymentNotes
+      });
+      setDebtSummary(updatedSummary);
+      setPaymentAmount('');
+      setPaymentNotes('');
+      toast('تم تسجيل الدفعة بنجاح', 'success');
+      loadCustomers(currentPage, pageSize, query);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
+
+  const handleViewHistory = async (customer, page = 0) => {
+    setSelectedHistoryCustomer(customer);
+    setLoadingHistory(true);
+    setShowHistoryModal(true);
+    try {
+      const res = await Api.getCustomerInvoices(customer.id, page, 10);
+      setHistoryData({
+        items: res.items || res.content || [],
+        totalPages: res.totalPages || 0,
+        totalElements: res.totalElements || 0,
+        page: res.number || page
+      });
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const openInvoiceDetails = (invoice) => {
+    setActiveInvoice(invoice);
+    setShowInvoiceDetails(true);
+  };
+
   return (
     <div className="page-section">
       <div className="page-header" style={{ marginBottom: '24px' }}>
@@ -90,21 +169,18 @@ const Customers = () => {
         </div>
       </div>
 
-      <div className="stats-grid mb-3">
-        <div className="stat-card blue tile-wd-sm">
-          <div className="stat-icon">👤</div>
-          <div className="stat-value">{totalElements}</div>
-          <div className="stat-label">إجمالي العملاء</div>
+      <div className="stats-grid mb-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        <div className="stat-card blue" style={{ height: '70px', margin: 0, padding: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="stat-value" style={{ fontSize: '1.4rem' }}>{totalElements}</div>
+          <div className="stat-label" style={{ fontSize: '0.75rem' }}>إجمالي العملاء</div>
         </div>
-        <div className="stat-card emerald tile-sq-sm">
-          <div className="stat-icon">✅</div>
-          <div className="stat-value">{customers.length}</div>
-          <div className="stat-label">نشط</div>
+        <div className="stat-card emerald" style={{ height: '70px', margin: 0, padding: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="stat-value" style={{ fontSize: '1.4rem' }}>{customers.length}</div>
+          <div className="stat-label" style={{ fontSize: '0.75rem' }}>نشط</div>
         </div>
-        <div className="stat-card amber tile-sq-sm">
-          <div className="stat-icon">📅</div>
-          <div className="stat-value">0</div>
-          <div className="stat-label">انضموا مؤخراً</div>
+        <div className="stat-card amber" style={{ height: '70px', margin: 0, padding: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="stat-value" style={{ fontSize: '1.4rem' }}>0</div>
+          <div className="stat-label" style={{ fontSize: '0.75rem' }}>انضموا مؤخراً</div>
         </div>
       </div>
 
@@ -169,6 +245,14 @@ const Customers = () => {
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <div className="table-actions" style={{ justifyContent: 'center' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleViewHistory(c)} title="سجل التعاملات">
+                        👁️
+                      </button>
+                      {Number(c.balance) > 0 && (
+                        <button className="btn btn-emerald btn-sm" onClick={() => handleViewDebt(c.id)} title="تحصيل دفع">
+                          💰
+                        </button>
+                      )}
                       <button className="btn btn-ghost btn-sm" onClick={() => openEditModal(c)} title="تعديل">
                         ✏️
                       </button>
@@ -207,6 +291,7 @@ const Customers = () => {
       </div>
 
       {/* Modern Metro Modal */}
+      {ReactDOM.createPortal(
       <div className={`modal-overlay ${showModal ? 'active' : ''}`}>
         <div className="modal">
           <div className="modal-header">
@@ -267,7 +352,231 @@ const Customers = () => {
             </div>
           </form>
         </div>
-      </div>
+      </div>,
+      document.body
+      )}
+
+      {/* Customer Debt & Payment Modal */}
+      {ReactDOM.createPortal(
+        <div className={`modal-overlay ${showDebtModal ? 'active' : ''}`}>
+        <div className="modal" style={{ maxWidth: '700px', width: '90%' }}>
+          <div className="modal-header">
+            <h3>كشف حساب ومديونية: <span style={{ fontWeight: 800 }}>{debtSummary?.customerName}</span></h3>
+            <button className="modal-close" onClick={() => setShowDebtModal(false)}>✕</button>
+          </div>
+          <div className="modal-body">
+            {debtSummary && (
+              <>
+                <div className="stats-grid mb-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  <div className="stat-card amber" style={{ height: '90px', margin: 0, padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div className="stat-value" style={{ fontSize: '1.6rem', fontWeight: 800 }}>{Number(debtSummary.totalDebt).toFixed(2)}</div>
+                    <div className="stat-label" style={{ fontSize: '0.75rem' }}>إجمالي المديونية</div>
+                  </div>
+                  <div className="stat-card blue" style={{ height: '90px', margin: 0, padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div className="stat-value" style={{ fontSize: '1.6rem' }}>{debtSummary.openInvoicesCount}</div>
+                    <div className="stat-label" style={{ fontSize: '0.75rem' }}>عدد الفواتير</div>
+                  </div>
+                  <div className="stat-card emerald" style={{ height: '90px', margin: 0, padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div className="stat-value" style={{ fontSize: '1.6rem' }}>{Number(debtSummary.totalPaid).toFixed(2)}</div>
+                    <div className="stat-label" style={{ fontSize: '0.75rem' }}>المسدد لليوم</div>
+                  </div>
+                </div>
+
+                <h4 className="mb-2" style={{ borderBottom: '1px solid var(--border-main)', paddingBottom: '8px' }}>الفواتير المفتوحة</h4>
+                <div className="table-wrapper mb-3" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>رقم الفاتورة</th>
+                        <th>التاريخ</th>
+                        <th style={{ textAlign: 'center' }}>الإجمالي</th>
+                        <th style={{ textAlign: 'center' }}>المتبقي</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {debtSummary.openInvoices.length === 0 ? (
+                        <tr><td colSpan="4" className="text-center">لا توجد فواتير مفتوحة</td></tr>
+                      ) : debtSummary.openInvoices.map(inv => (
+                        <tr key={inv.id}>
+                          <td>{inv.invoiceNumber}</td>
+                          <td>{new Date(inv.invoiceDate).toLocaleDateString('ar-EG')}</td>
+                          <td style={{ textAlign: 'center' }}>{Number(inv.totalAmount).toFixed(2)}</td>
+                          <td style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--accent-red)' }}>{Number(inv.remainingAmount).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {Number(debtSummary.totalDebt) > 0 && (
+                  <form onSubmit={handlePayment} style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
+                    <h4 className="mb-2">تسجيل تحصيل مبلغ من العميل</h4>
+                    <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                      <div className="form-group">
+                        <label>المبلغ المراد تحصيله *</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-control"
+                          required
+                          max={debtSummary.totalDebt}
+                          placeholder="0.00"
+                          value={paymentAmount}
+                          onChange={e => setPaymentAmount(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>ملاحظات</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="مثال: دفعة كاش، تحويل بنكي..."
+                          value={paymentNotes}
+                          onChange={e => setPaymentNotes(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <button type="submit" className="btn btn-emerald w-100 mt-2" disabled={isSubmittingPayment}>
+                      {isSubmittingPayment ? 'جاري الحفظ...' : 'تأكيد عملية التحصيل'}
+                    </button>
+                  </form>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>,
+      document.body
+      )}
+
+      {/* Customer Full Transaction History Modal */}
+      {ReactDOM.createPortal(
+      <div className={`modal-overlay ${showHistoryModal ? 'active' : ''}`}>
+        <div className="modal" style={{ maxWidth: '900px', width: '95%' }}>
+          <div className="modal-header">
+            <h3>سجل تعاملات العميل: <span style={{ fontWeight: 800 }}>{selectedHistoryCustomer?.name}</span></h3>
+            <button className="modal-close" onClick={() => setShowHistoryModal(false)}>✕</button>
+          </div>
+          <div className="modal-body">
+            {loadingHistory ? (
+              <Loader message="جاري جلب سجل الفواتير..." />
+            ) : (
+              <>
+                <div className="table-wrapper mb-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>رقم الفاتورة</th>
+                        <th>التاريخ</th>
+                        <th style={{ textAlign: 'center' }}>الإجمالي</th>
+                        <th style={{ textAlign: 'center' }}>الحالة</th>
+                        <th style={{ textAlign: 'center' }}>الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyData.items.length === 0 ? (
+                        <tr><td colSpan="5" className="text-center">لا توجد تعاملات سابقة لهذا العميل</td></tr>
+                      ) : historyData.items.map(inv => (
+                        <tr key={inv.id}>
+                          <td><strong>{inv.invoiceNumber}</strong></td>
+                          <td style={{ fontSize: '0.85rem' }}>{new Date(inv.invoiceDate).toLocaleString('ar-EG')}</td>
+                          <td style={{ textAlign: 'center' }}>{Number(inv.totalAmount).toFixed(2)}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span className={`badge ${
+                              inv.status === 'PAID' ? 'badge-success' : 
+                              inv.status === 'PARTIAL' ? 'badge-info' : 
+                              'badge-danger'
+                            }`}>
+                              {inv.status === 'PAID' ? 'تم الدفع' : inv.status === 'PARTIAL' ? 'جزئي' : 'آجل'}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                             <button className="btn btn-ghost btn-sm" onClick={() => openInvoiceDetails(inv)}>
+                               تفاصيل 📄
+                             </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {historyData.totalPages > 1 && (
+                  <div className="pagination">
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      disabled={historyData.page === 0}
+                      onClick={() => handleViewHistory(selectedHistoryCustomer, historyData.page - 1)}
+                    >السابق</button>
+                    <span>صفحة {historyData.page + 1} من {historyData.totalPages}</span>
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      disabled={historyData.page >= historyData.totalPages - 1}
+                      onClick={() => handleViewHistory(selectedHistoryCustomer, historyData.page + 1)}
+                    >التالي</button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => setShowHistoryModal(false)}>إغلاق</button>
+          </div>
+        </div>
+      </div>,
+      document.body
+      )}
+
+      {/* Quick Invoice Details View (Inside History) */}
+      {ReactDOM.createPortal(
+      <div className={`modal-overlay ${showInvoiceDetails ? 'active' : ''}`} style={{ zIndex: 1100 }}>
+        <div className="modal" style={{ maxWidth: '600px' }}>
+          <div className="modal-header">
+            <h3>تفاصيل فاتورة: {activeInvoice?.invoiceNumber}</h3>
+            <button className="modal-close" onClick={() => setShowInvoiceDetails(false)}>✕</button>
+          </div>
+          <div className="modal-body">
+            {activeInvoice && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                  <span><strong>التاريخ:</strong> {new Date(activeInvoice.invoiceDate).toLocaleDateString('ar-EG')}</span>
+                  <span><strong>الحالة:</strong> {activeInvoice.status}</span>
+                </div>
+                <div className="table-wrapper" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>الصنف</th>
+                        <th>الكمية</th>
+                        <th>السعر</th>
+                        <th>الإجمالي</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeInvoice.items?.map(item => (
+                        <tr key={item.id}>
+                          <td>{item.productName}</td>
+                          <td>{item.quantity} {item.unitName}</td>
+                          <td>{Number(item.unitPrice).toFixed(2)}</td>
+                          <td>{Number(item.totalPrice).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-3" style={{ textAlign: 'left', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                  الإجمالي النهائي: {Number(activeInvoice.totalAmount).toFixed(2)} ج.م
+                </div>
+              </>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={() => setShowInvoiceDetails(false)}>عودة للسجل</button>
+          </div>
+        </div>
+      </div>,
+      document.body
+      )}
     </div>
   );
 };

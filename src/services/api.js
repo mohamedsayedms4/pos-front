@@ -1,8 +1,8 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-const PROD_BASE = 'https://posapi.digitalrace.net/api/v1';
-const DEV_BASE = 'https://posapi.digitalrace.net/api/v1';
+const PROD_BASE = 'https://linuxstoreapi.mobily.cloud/api/v1';
+const DEV_BASE = 'https://linuxstoreapi.mobily.cloud/api/v1';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
@@ -743,6 +743,24 @@ const Api = {
 
   async deleteCustomer(id) {
     await this._request(`/customers/${id}`, { method: 'DELETE' });
+  },
+
+  async getCustomerDebt(id) {
+    const res = await this._request(`/customers/${id}/debt`);
+    return res.data;
+  },
+
+  async getCustomerInvoices(id, page = 0, size = 10) {
+    const res = await this._request(`/customers/${id}/invoices?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async collectCustomerPayment(id, data) {
+    const res = await this._request(`/customers/${id}/pay`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
   },
 
   // ─── Sales ───
