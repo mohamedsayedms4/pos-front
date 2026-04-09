@@ -2,9 +2,7 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-export const SERVER_URL = window.location.hostname === 'localhost' && window.location.port === '5173'
-  ? 'https://posapi.digitalrace.net'
-  : (window.location.protocol + '//' + window.location.host);
+export const SERVER_URL = 'https://posapi.digitalrace.net';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
