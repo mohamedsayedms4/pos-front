@@ -24,6 +24,7 @@ import CustomerOrder from './pages/CustomerOrder.jsx'
 import DamagedProducts from './pages/DamagedProducts.jsx'
 import SalesAnalytics from './pages/SalesAnalytics.jsx'
 import DebtManagement from './pages/DebtManagement.jsx'
+import InstallmentCalendar from './pages/InstallmentCalendar.jsx'
 
 import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
@@ -71,6 +72,7 @@ function App() {
           <Route path="/stock-receipts" element={<StockReceipts />} />
           <Route path="/treasury" element={<Treasury />} />
           <Route path="/debts" element={<DebtManagement />} />
+          <Route path="/installments-calendar" element={<InstallmentCalendar />} />
         </Route>
       </Route>
     </Routes>

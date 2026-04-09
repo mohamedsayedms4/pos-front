@@ -101,10 +101,16 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {Api.can('TREASURY_READ') && (
-          <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-            <span className="nav-icon">📅</span>
-            <span>إدارة الآجل والأقساط</span>
-          </NavLink>
+          <>
+            <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">📊</span>
+              <span>إدارة الآجل والأقساط</span>
+            </NavLink>
+            <NavLink to="/installments-calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">📅</span>
+              <span>تقويم الأقساط</span>
+            </NavLink>
+          </>
         )}
 
         {(Api.can('USER_READ') || Api.can('ROLE_READ') || Api.can('AUDIT_READ')) && (

@@ -1,8 +1,8 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-const PROD_BASE = 'https://posapi.digitalrace.net/api/v1';
-const DEV_BASE = 'https://posapi.digitalrace.net/api/v1';
+const PROD_BASE = 'http://localhost:8080/api/v1';
+const DEV_BASE = 'http://localhost:8080/api/v1';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
@@ -126,6 +126,11 @@ const Api = {
       }
       throw err;
     }
+  },
+
+  async getCalendarInstallments(start, end) {
+    const res = await this._request(`/debts/installments/calendar?start=${start}&end=${end}`);
+    return res.data;
   },
 
   async _tryRefresh() {
