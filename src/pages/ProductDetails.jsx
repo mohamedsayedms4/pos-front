@@ -117,86 +117,102 @@ const ProductDetails = () => {
   }, [id]);
 
   const printCode = async (type) => {
-    try {
-      const base64Data = type === 'barcode'
-        ? await Api.getProductBarcode(id)
-        : await Api.getProductQrCode(id);
-
-      if (!base64Data) {
-        toast('لم يتم العثور على صورة الكود', 'error');
-        return;
-      }
-
+    if (type === 'qrcode') {
+      const base64Data = await Api.getProductQrCode(id);
       const printWindow = window.open('', '_blank');
       printWindow.document.write(`
-        <html dir="rtl">
-          <head>
-            <title>طباعة ${type === 'barcode' ? 'باركود' : 'QR'}</title>
-            <style>
-              body { 
-                margin: 0; 
-                display: flex; 
-                justify-content: center; 
-                align-items: center; 
-                padding-top: 20px;
-                background: #fff;
-                font-family: 'Courier New', Courier, monospace;
-              }
-              .sticker {
-                text-align: center;
-                border: 2px dashed #ccc;
-                padding: 15px;
-                border-radius: 8px;
-                width: 250px;
-              }
-              .name {
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 10px;
-                white-space: pre-wrap;
-              }
-              .img-container {
-                margin: 10px 0;
-              }
-              img { 
-                max-width: 100%; 
-                height: ${type === 'barcode' ? '80px' : '150px'};
-                object-fit: contain;
-              }
-              .price {
-                font-size: 18px;
-                font-weight: bold;
-                margin-top: 10px;
-              }
-              @media print {
-                @page { margin: 0; size: auto; }
-                body { padding: 0; margin: 0; }
-                .sticker { border: none; padding: 5mm; width: 100%; max-width: 50mm;}
-              }
-            </style>
-          </head>
-          <body>
-            <div class="sticker">
-              <div class="name">${product.name.replace(/`/g, '')}</div>
-              <div class="img-container">
-                <img src="data:image/png;base64,${base64Data}" />
-              </div>
-              <div class="price">${Number(product.salePrice).toFixed(2)} ج.م</div>
-            </div>
-            <script>
-              window.onload = function() { 
-                setTimeout(() => {
-                  window.print(); 
-                  window.close(); 
-                }, 200);
-              }
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    } catch (e) {
-      toast('فشل في الطباعة: ' + e.message, 'error');
+          <html dir="rtl">
+            <head>
+              <title>QR Code</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+                img { max-width: 150px; }
+              </style>
+            </head>
+            <body onload="window.print(); window.close();">
+              <img src="data:image/png;base64,${base64Data}" />
+            </body>
+          </html>
+        `);
+      return;
+    }
+
+    try {
+      // 1. Get Image URL and Config
+      const imageUrl = await Api.getProductBarcodeLabel(id);
+      const config = await Api.getPrinterConfig();
+      const width = config.labelWidthMm || 40;
+      const height = config.labelHeightMm || 30;
+
+      // 2. Pre-load image as data URL to avoid blank labels
+      const dataUrl = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => reject(new Error('فشل تحميل صورة الباركود'));
+        img.src = imageUrl;
+      });
+
+      // 3. Print using hidden iframe (no landscape, size:auto)
+      const oldFrame = document.getElementById('__barcode_print_frame');
+      if (oldFrame) oldFrame.remove();
+
+      const iframe = document.createElement('iframe');
+      iframe.id = '__barcode_print_frame';
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+      document.body.appendChild(iframe);
+
+      const idoc = iframe.contentDocument || iframe.contentWindow.document;
+      const sw = width - 4;
+      const sh = height - 4;
+
+      idoc.open();
+      idoc.write([
+        '<!DOCTYPE html><html><head><meta charset="utf-8">',
+        '<style>',
+        '@page{size:auto;margin:0}',
+        '*{margin:0;padding:0;box-sizing:border-box}',
+        `html,body{width:${width}mm;height:${height}mm;overflow:hidden;background:#fff}`,
+        `body{display:flex;align-items:center;justify-content:center}`,
+        `img{max-width:${sw}mm;max-height:${sh}mm;width:auto;height:auto;display:block;object-fit:contain}`,
+        '@media print{html,body{overflow:hidden}img{page-break-inside:avoid;page-break-after:avoid;page-break-before:avoid}}',
+        '</style></head>',
+        `<body><img src="${dataUrl}"/></body></html>`,
+      ].join(''));
+      idoc.close();
+
+      const printImg = idoc.querySelector('img');
+      const doPrint = () => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (e) { window.print(); }
+        setTimeout(() => {
+          const f = document.getElementById('__barcode_print_frame');
+          if (f) f.remove();
+        }, 2000);
+      };
+
+      if (printImg.complete && printImg.naturalWidth > 0) {
+        setTimeout(doPrint, 100);
+      } else {
+        printImg.onload = () => setTimeout(doPrint, 100);
+        printImg.onerror = () => {
+          const f = document.getElementById('__barcode_print_frame');
+          if (f) f.remove();
+        };
+      }
+
+      toast('جاري تحضير ملصق الباركود...', 'success');
+
+    } catch (err) {
+      toast('فشل في الطباعة: ' + err.message, 'error');
     }
   };
 
@@ -240,12 +256,12 @@ const ProductDetails = () => {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '20px' }}>
+      <div className="product-details-grid">
         {/* Gallery */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)' }}>
           <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: (product.imageUrls && product.imageUrls.length > 1) ? '20px' : '0', minHeight: '200px', alignItems: 'center' }}>
-            {mainImage 
-              ? <img src={mainImage} style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} alt="Main Product" /> 
+            {mainImage
+              ? <img src={mainImage} style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} alt="Main Product" />
               : <div style={{ fontSize: '100px', color: 'var(--text-dim)' }}>📦</div>
             }
           </div>
@@ -254,12 +270,12 @@ const ProductDetails = () => {
               {product.imageUrls.map(img => {
                 const thumbUrl = img.startsWith('http') ? img : `${API_BASE}/products/images/${img.split('/').pop()}`;
                 return (
-                  <img 
-                    key={thumbUrl} 
-                    src={thumbUrl} 
-                    alt="thumbnail" 
-                    onClick={() => setMainImage(thumbUrl)} 
-                    style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: mainImage === thumbUrl ? '2px solid var(--metro-blue)' : '2px solid var(--border-color)', cursor: 'pointer', background: 'var(--bg-card)' }} 
+                  <img
+                    key={thumbUrl}
+                    src={thumbUrl}
+                    alt="thumbnail"
+                    onClick={() => setMainImage(thumbUrl)}
+                    style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: mainImage === thumbUrl ? '2px solid var(--metro-blue)' : '2px solid var(--border-color)', cursor: 'pointer', background: 'var(--bg-card)' }}
                   />
                 );
               })}
@@ -294,7 +310,7 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          <div className="card-body no-padding" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+          <div className="card-body no-padding product-info-metrics">
             <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>سعر البيع</div>
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-emerald-light)' }}>{Number(product.salePrice).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>ج.م</span></div>
@@ -397,41 +413,43 @@ const ProductDetails = () => {
               لا توجد وحدات جملة محددة — المنتج يُباع ويُشترى بالوحدة الأساسية ({product.unitName || 'قطعة'})
             </div>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>اسم الوحدة</th>
-                  <th>معامل التحويل</th>
-                  <th>= كم وحدة أساسية</th>
-                  <th>سعر الشراء</th>
-                  <th>سعر البيع الجملة</th>
-                  <th>افتراضي شراء</th>
-                  <th>افتراضي بيع</th>
-                  <th>إجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {units.map(u => (
-                  <tr key={u.id}>
-                    <td style={{ fontWeight: 600 }}>{u.unitName}</td>
-                    <td>×{u.conversionFactor}</td>
-                    <td style={{ color: 'var(--accent-emerald)' }}>
-                      1 {u.unitName} = <strong>{u.conversionFactor}</strong> {product.unitName || 'قطعة'}
-                    </td>
-                    <td>{u.purchasePrice ? Number(u.purchasePrice).toFixed(2) : '—'}</td>
-                    <td>{u.salePrice ? Number(u.salePrice).toFixed(2) : '—'}</td>
-                    <td style={{ textAlign: 'center' }}>{u.isDefaultPurchase ? '✅' : '—'}</td>
-                    <td style={{ textAlign: 'center' }}>{u.isDefaultSale ? '✅' : '—'}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openEditUnit(u)}>✏️</button>
-                        <button className="btn btn-icon btn-ghost" title="حذف" style={{ color: 'var(--metro-red)' }} onClick={() => handleDeleteUnit(u.id)}>🗑️</button>
-                      </div>
-                    </td>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>اسم الوحدة</th>
+                    <th>معامل التحويل</th>
+                    <th>= كم وحدة أساسية</th>
+                    <th>سعر الشراء</th>
+                    <th>سعر البيع الجملة</th>
+                    <th>افتراضي شراء</th>
+                    <th>افتراضي بيع</th>
+                    <th>إجراءات</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {units.map(u => (
+                    <tr key={u.id}>
+                      <td style={{ fontWeight: 600 }}>{u.unitName}</td>
+                      <td>×{u.conversionFactor}</td>
+                      <td style={{ color: 'var(--accent-emerald)' }}>
+                        1 {u.unitName} = <strong>{u.conversionFactor}</strong> {product.unitName || 'قطعة'}
+                      </td>
+                      <td>{u.purchasePrice ? Number(u.purchasePrice).toFixed(2) : '—'}</td>
+                      <td>{u.salePrice ? Number(u.salePrice).toFixed(2) : '—'}</td>
+                      <td style={{ textAlign: 'center' }}>{u.isDefaultPurchase ? '✅' : '—'}</td>
+                      <td style={{ textAlign: 'center' }}>{u.isDefaultSale ? '✅' : '—'}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openEditUnit(u)}>✏️</button>
+                          <button className="btn btn-icon btn-ghost" title="حذف" style={{ color: 'var(--metro-red)' }} onClick={() => handleDeleteUnit(u.id)}>🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

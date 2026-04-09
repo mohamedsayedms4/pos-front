@@ -1,8 +1,8 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-const PROD_BASE = 'https://linuxstoreapi.mobily.cloud/api/v1';
-const DEV_BASE = 'https://linuxstoreapi.mobily.cloud/api/v1';
+const PROD_BASE = 'https://posapi.digitalrace.net/api/v1';
+const DEV_BASE = 'https://posapi.digitalrace.net/api/v1';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
@@ -303,6 +303,11 @@ const Api = {
     return res.data;
   },
 
+  async getDailyProductStats(days = 30) {
+    const res = await this._request(`/products/daily-stats?days=${days}`);
+    return res.data;
+  },
+
   async incrementProductView(id) {
     try {
       await this._request(`/products/${id}/view`, { method: 'POST' });
@@ -319,6 +324,15 @@ const Api = {
   async getProductBarcode(id) {
     const res = await this._request(`/products/${id}/barcode`);
     return res.data;
+  },
+
+  async getProductBarcodeLabel(id) {
+    const res = await fetch(`${API_BASE}/products/${id}/barcode/label`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error("فشل تحميل صورة الباركود من السيرفر");
+    const blob = await res.blob();
+    return window.URL.createObjectURL(blob);
   },
 
   async getProductQrCode(id) {
@@ -369,6 +383,46 @@ const Api = {
 
   async getProductQrCode(id) {
     const res = await this._request(`/products/${id}/qrcode`);
+    return res.data;
+  },
+
+  // ─── Printer Config ───
+  async getPrinterConfig() {
+    const res = await this._request('/printer-config');
+    return res.data;
+  },
+
+  async updatePrinterConfig(data) {
+    const res = await this._request('/printer-config', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async testPrintConfig(config) {
+    const res = await fetch(`${API_BASE}/printer-config/test-print`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this._getToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(config)
+    });
+    if (!res.ok) throw new Error("فشل اختبار الطباعة");
+    const blob = await res.blob();
+    return window.URL.createObjectURL(blob);
+  },
+
+  async getAvailablePrinters() {
+    const res = await this._request('/products/printers');
+    return res.data;
+  },
+
+  async directPrintBarcode(productId, copies, printerName) {
+    const res = await this._request(`/products/${productId}/barcode/direct-print?copies=${copies}&printerName=${encodeURIComponent(printerName)}`, {
+      method: 'POST'
+    });
     return res.data;
   },
 
@@ -476,6 +530,16 @@ const Api = {
     return res.data;
   },
 
+  async getDailySupplierStats(days = 30) {
+    const res = await this._request(`/suppliers/daily-stats?days=${days}`);
+    return res.data;
+  },
+
+  async getSupplierDailyStats(id, days = 30) {
+    const res = await this._request(`/suppliers/${id}/daily-stats?days=${days}`);
+    return res.data;
+  },
+
   async exportSupplierStatement(id, supplierName) {
     const url = `${API_BASE}/suppliers/${id}/export`;
     const token = this._getToken();
@@ -542,6 +606,11 @@ const Api = {
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
   },
 
+  async getPurchaseAnalytics() {
+    const res = await this._request('/purchases/analytics');
+    return res.data;
+  },
+
   async createPurchase(data) {
     const res = await this._request('/purchases', {
       method: 'POST',
@@ -555,6 +624,36 @@ const Api = {
       method: 'POST',
       body: JSON.stringify({ amount })
     });
+  },
+
+  async getSalesSummary(date = '') {
+    const res = await this._request(`/sales/analytics/summary${date ? `?date=${date}` : ''}`);
+    return res.data;
+  },
+
+  async getCashierAnalytics(date = '') {
+    const res = await this._request(`/sales/analytics/cashiers${date ? `?date=${date}` : ''}`);
+    return res.data;
+  },
+
+  async getProductAnalytics(date = '') {
+    const res = await this._request(`/sales/analytics/products${date ? `?date=${date}` : ''}`);
+    return res.data;
+  },
+
+  async getHourlyAnalytics(date = '') {
+    const res = await this._request(`/sales/analytics/hourly${date ? `?date=${date}` : ''}`);
+    return res.data;
+  },
+
+  async getReturnAnalytics(date = '') {
+    const res = await this._request(`/sales/analytics/returns${date ? `?date=${date}` : ''}`);
+    return res.data;
+  },
+
+  async getStockReceiptAnalytics(date = '') {
+    const res = await this._request(`/stock/analytics/stats${date ? `?date=${date}` : ''}`);
+    return res.data;
   },
 
   // ─── Users ───
@@ -700,6 +799,52 @@ const Api = {
     await this._request(`/notifications/${id}/read`, { method: 'POST' });
   },
 
+  // ─── Debt Management ───
+  async getDebts(page = 0, size = 10, type = '', status = '', entityType = '', query = '') {
+    const params = new URLSearchParams({ page, size, type, status, entityType, query });
+    const res = await this._request(`/debts?${params.toString()}`);
+    return res.data;
+  },
+
+  async getDebt(id) {
+    const res = await this._request(`/debts/${id}`);
+    return res.data;
+  },
+
+  async createManualDebt(data) {
+    const res = await this._request('/debts/manual', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async payDebtInstallment(id, amount) {
+    await this._request(`/debts/installments/${id}/pay?amount=${amount}`, {
+      method: 'POST'
+    });
+  },
+
+  async getDebtStats() {
+    const res = await this._request('/debts/stats');
+    return res.data;
+  },
+
+  async getDailyDebtStats(days = 7) {
+    const res = await this._request(`/debts/stats/daily?days=${days}`);
+    return res.data;
+  },
+
+  async triggerDebtReminders() {
+    const res = await this._request('/debts/reminders/trigger', { method: 'POST' });
+    return res;
+  },
+
+  async scheduleDebtReminders(hour, minute = 0) {
+    const res = await this._request(`/debts/reminders/schedule?hour=${hour}&minute=${minute}`, { method: 'POST' });
+    return res;
+  },
+
   // ─── Installments ───
   async generateInstallmentPlan(data) {
     const res = await this._request('/installments/generate', {
@@ -790,6 +935,11 @@ const Api = {
     return res.data;
   },
 
+  async getDailySaleStats(days = 30) {
+    const res = await this._request(`/sales/daily-stats?days=${days}`);
+    return res.data;
+  },
+
   // ─── Treasury ───
   async getMainTreasury() {
     const res = await this._request('/treasury/main');
@@ -798,6 +948,20 @@ const Api = {
 
   async getTreasuryTransactions(page = 0, size = 20, query = '') {
     const res = await this._request(`/treasury/transactions?page=${page}&size=${size}&query=${query}`);
+    return res.data;
+  },
+
+  // ─── Damaged Goods ───
+  async getDamagedProducts(page = 0, size = 10, search = '') {
+    const res = await this._request(`/damaged?page=${page}&size=${size}&search=${encodeURIComponent(search)}`);
+    return res.data;
+  },
+
+  async recordDamagedProduct(data) {
+    const res = await this._request('/damaged', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
     return res.data;
   }
 };

@@ -17,7 +17,9 @@ import {
   Pie,
   Cell,
   Legend,
-  LabelList
+  LabelList,
+  ComposedChart,
+  Line
 } from 'recharts';
 
 const ProductAnalytics = () => {
@@ -30,21 +32,34 @@ const ProductAnalytics = () => {
   const [latest, setLatest] = useState([]);
   const [viewed, setViewed] = useState([]);
   const [expensive, setExpensive] = useState([]);
+  const [dailyStats, setDailyStats] = useState([]);
+
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [statData, latestData, viewedData, priceyData] = await Promise.all([
+        const [statData, latestData, viewedData, priceyData, dailyData] = await Promise.all([
           Api.getProductStatistics(),
           Api.getProductsPaged(0, 5, '', 'id,desc'),
           Api.getProductsPaged(0, 5, '', 'viewCount,desc'),
-          Api.getProductsPaged(0, 5, '', 'purchasePrice,desc')
+          Api.getProductsPaged(0, 5, '', 'purchasePrice,desc'),
+          Api.getDailyProductStats(7).catch(() => [])
         ]);
         
         setStats(statData);
         setLatest(latestData?.items || []);
         setViewed(viewedData?.items || []);
         setExpensive(priceyData?.items || []);
+        
+        const mappedDaily = Array.isArray(dailyData) ? dailyData.map(d => ({
+          name: new Date(d.additionDate).toLocaleDateString('ar-EG', { weekday: 'short' }),
+          profit: d.totalExpectedProfit || 0,
+          purchase: d.totalPurchaseValue || 0,
+          sale: d.totalSaleValue || 0,
+          count: d.productCount || 0
+        })) : [];
+        setDailyStats(mappedDaily);
+
       } catch (err) {
         toast(err.message, 'error');
       } finally {
@@ -244,7 +259,53 @@ const ProductAnalytics = () => {
         </div>
 
       </div>
+
+      {/* Daily Additions Chart (Full Width) */}
+      <div className="card" style={{ marginTop: '24px' }}>
+        <div className="card-header">
+          <h3>📦 حركة الإضافات اليومية للمنتجات (الـ 7 أيام الماضية)</h3>
+        </div>
+        <div className="card-body" style={{ height: '350px', width: '100%', padding: '20px' }}>
+          {dailyStats.length > 0 ? (
+            <ResponsiveContainer>
+              <ComposedChart data={dailyStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
+                
+                {/* المحور الأيسر للقيم المالية */}
+                <YAxis yAxisId="left" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val} />
+                
+                {/* المحور الأيمن لعدد المنتجات */}
+                <YAxis yAxisId="right" orientation="right" tick={{ fill: '#f59e0b', fontSize: 12 }} axisLine={false} tickLine={false} />
+
+                <Tooltip 
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                  formatter={(value, name) => {
+                    let label = name;
+                    if (name === 'profit') return [`${Number(value).toLocaleString()} ج.م`, 'المكسب المتوقع'];
+                    if (name === 'purchase') return [`${Number(value).toLocaleString()} ج.م`, 'رأس المال (مشتريات)'];
+                    if (name === 'sale') return [`${Number(value).toLocaleString()} ج.م`, 'إجمالي المبيعات المحتملة'];
+                    if (name === 'count') return [value, 'عدد المنتجات المختلفة'];
+                    return [value, label];
+                  }}
+                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', color: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+                />
+                
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#ccc' }} />
+
+                <Bar yAxisId="left" dataKey="purchase" name="رأس المال" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={25} />
+                <Bar yAxisId="left" dataKey="profit" name="المكسب المتوقع" fill="#10b981" radius={[4, 4, 0, 0]} barSize={25} />
+                
+                <Line yAxisId="right" type="monotone" dataKey="count" name="عدد المنتجات" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#111' }} activeDot={{ r: 6 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          ) : (
+            <div style={{ padding: '20px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '100px' }}>لا توجد إضافات في الفترة المحددة</div>
+          )}
+        </div>
+      </div>
     </div>
+
   );
 };
 

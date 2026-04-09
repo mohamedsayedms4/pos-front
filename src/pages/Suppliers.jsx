@@ -4,6 +4,18 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
+
 
 const Suppliers = () => {
   const { toast, confirm } = useGlobalUI();
@@ -12,6 +24,8 @@ const Suppliers = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sort, setSort] = useState('name,asc');
   const [loading, setLoading] = useState(true);
+  const [dailyStats, setDailyStats] = useState([]);
+
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -69,17 +83,29 @@ const Suppliers = () => {
   const loadData = async (page = 0, size = 10, query = debouncedSearch, sortParam = sort) => {
     setLoading(true);
     try {
-      const res = await Api.getSuppliers(page, size, query, sortParam);
+      const [res, statsData] = await Promise.all([
+        Api.getSuppliers(page, size, query, sortParam),
+        Api.getDailySupplierStats(7).catch(() => [])
+      ]);
       setData(res.content || res.items || []);
       setTotalPages(res.totalPages || 0);
       setTotalElements(res.totalElements || 0);
       setCurrentPage(res.number || 0);
+      
+      const mappedDaily = Array.isArray(statsData) ? statsData.map(d => ({
+        name: new Date(d.statDate).toLocaleDateString('ar-EG', { weekday: 'short' }),
+        invoicesCount: d.invoiceCount || 0,
+        purchases: d.totalPurchases || 0,
+        payments: d.totalPayments || 0
+      })) : [];
+      setDailyStats(mappedDaily);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     loadData(currentPage, pageSize, debouncedSearch, sort);
@@ -201,6 +227,50 @@ const Suppliers = () => {
             <div className="stat-icon">🔔</div>
             <div className="stat-value">{data.filter(s => Number(s.balance || 0) > 0).length}</div>
             <div className="stat-label">لهم مستحقات</div>
+          </div>
+        </div>
+
+        {/* Daily Supplier Stats Chart */}
+        <div className="card" style={{ marginBottom: '24px' }}>
+          <div className="card-header">
+            <h3>📊 حركة الموردين اليومية (أخر 7 أيام)</h3>
+          </div>
+          <div className="card-body" style={{ minHeight: '350px', height: 'auto', width: '100%', padding: '20px' }}>
+            {dailyStats.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300} minWidth={0}>
+                <ComposedChart data={dailyStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
+                  
+                  {/* المحور الأيسر للقيم المالية */}
+                  <YAxis yAxisId="left" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val} />
+                  
+                  {/* المحور الأيمن لعدد الفواتير */}
+                  <YAxis yAxisId="right" orientation="right" tick={{ fill: '#f59e0b', fontSize: 12 }} axisLine={false} tickLine={false} />
+
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                    formatter={(value, name) => {
+                      let label = name;
+                      if (name === 'invoicesCount') return [value, 'عدد فواتير المشتريات'];
+                      if (name === 'purchases') return [`${Number(value).toLocaleString()} ج.م`, 'إجمالي الفواتير (علينا)'];
+                      if (name === 'payments') return [`${Number(value).toLocaleString()} ج.م`, 'إجمالي الدفعات (دفعنا)'];
+                      return [value, label];
+                    }}
+                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', color: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+                  />
+                  
+                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#ccc' }} />
+
+                  <Bar yAxisId="left" dataKey="purchases" name="إجمالي الفواتير" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={25} />
+                  <Bar yAxisId="left" dataKey="payments" name="الدفعات المسددة" fill="#10b981" radius={[4, 4, 0, 0]} barSize={25} />
+                  
+                  <Line yAxisId="right" type="monotone" dataKey="invoicesCount" name="عدد الفواتير" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#111' }} activeDot={{ r: 6 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: '20px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '100px' }}>لا توجد تعاملات في الفترة المحددة</div>
+            )}
           </div>
         </div>
 

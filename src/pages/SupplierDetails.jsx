@@ -4,6 +4,18 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
+
 
 const SupplierDetails = () => {
   const { id } = useParams();
@@ -12,6 +24,8 @@ const SupplierDetails = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dailyStats, setDailyStats] = useState([]);
+
   
   // Ledger Modal State
   const [ledgerData, setLedgerData] = useState(null);
@@ -26,8 +40,19 @@ const SupplierDetails = () => {
       }
       setLoading(true);
       try {
-        const stats = await Api.getSupplierStatistics(id);
+        const [stats, historyData] = await Promise.all([
+          Api.getSupplierStatistics(id),
+          Api.getSupplierDailyStats(id, 7).catch(() => [])
+        ]);
         setData(stats);
+        
+        const mappedDaily = Array.isArray(historyData) ? historyData.map(d => ({
+          name: new Date(d.statDate).toLocaleDateString('ar-EG', { weekday: 'short' }),
+          invoicesCount: d.invoiceCount || 0,
+          purchases: d.totalPurchases || 0,
+          payments: d.totalPayments || 0
+        })) : [];
+        setDailyStats(mappedDaily);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -92,6 +117,41 @@ const SupplierDetails = () => {
               {d.supplierPhone ? `📞 ${d.supplierPhone}` : ''} {d.supplierEmail ? ` ✉️ ${d.supplierEmail}` : ''}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Daily Supplier Activity Chart */}
+      <div className="card" style={{ marginBottom: '24px' }}>
+        <div className="card-header">
+          <h3 style={{ fontSize: '1rem', margin: 0 }}>📊 نشاط المورد اليومي (أخر 7 أيام)</h3>
+        </div>
+        <div className="card-body" style={{ height: '300px', width: '100%', padding: '20px' }}>
+          {dailyStats.length > 0 ? (
+            <ResponsiveContainer>
+              <ComposedChart data={dailyStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: '#888', fontSize: 11 }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis yAxisId="left" tick={{ fill: '#888', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fill: '#f59e0b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', color: '#fff', borderRadius: '8px' }}
+                  formatter={(value, name) => {
+                    if (name === 'invoicesCount') return [value, 'عدد الفواتير'];
+                    if (name === 'purchases') return [`${Number(value).toLocaleString()} ج.م`, 'قيمة المشتريات'];
+                    if (name === 'payments') return [`${Number(value).toLocaleString()} ج.م`, 'الدفعات المسددة'];
+                    return [value, name];
+                  }}
+                />
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                <Bar yAxisId="left" dataKey="purchases" name="قيمة المشتريات" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar yAxisId="left" dataKey="payments" name="الدفعات المسددة" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                <Line yAxisId="right" type="monotone" dataKey="invoicesCount" name="عدد الفواتير" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          ) : (
+            <div style={{ padding: '20px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '80px' }}>لا توجد تعاملات مؤخراً</div>
+          )}
         </div>
       </div>
       

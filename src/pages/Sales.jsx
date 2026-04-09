@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import ReactDOM from 'react-dom';
@@ -18,6 +19,7 @@ const Sales = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const pageSize = 10;
@@ -100,6 +102,13 @@ const Sales = () => {
                     <h1>سجل فواتير المبيعات</h1>
                 </div>
                 <div className="header-actions">
+                    <button 
+                        className="btn btn-secondary" 
+                        onClick={() => navigate('/sales/analytics')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--metro-purple)', color: '#fff', border: 'none' }}
+                    >
+                        <span>📊</span> إحصائيات المبيعات
+                    </button>
                     <div className="search-input">
                         <span className="search-icon">🔍</span>
                         <input

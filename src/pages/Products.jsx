@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import JsBarcode from 'jsbarcode';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
@@ -35,6 +36,109 @@ const Products = () => {
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
+  // Print Barcode State
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printProduct, setPrintProduct] = useState(null);
+  const [printing, setPrinting] = useState(false);
+
+  // Printer Config State
+  const [printerConfigModalOpen, setPrinterConfigModalOpen] = useState(false);
+  const [printerConfig, setPrinterConfig] = useState(null);
+  const [availablePrinters, setAvailablePrinters] = useState([]);
+  const [loadingPrinters, setLoadingPrinters] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [testingPrint, setTestingPrint] = useState(false);
+
+  /**
+   * Convert a blob: URL to a data: URL (base64-embedded).
+   * This ensures the image bytes are fully loaded BEFORE we write the print HTML.
+   */
+  const _blobUrlToDataUrl = (blobUrl) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => reject(new Error('فشل تحميل صورة الباركود'));
+      img.src = blobUrl;
+    });
+  };
+
+  /**
+   * Print a barcode label using a hidden iframe.
+   * Fixes for XP-370B blank thermal labels:
+   *  - Image is a data: URL (fully loaded, no network fetch)
+   *  - Uses iframe instead of popup (more reliable with thermal printers)
+   *  - NO 'landscape' keyword (it swaps dimensions and confuses thermal drivers)
+   *  - @page size: auto — lets the PRINTER DRIVER control actual paper size
+   *  - Image sized conservatively to never overflow one label
+   */
+  const _openPrintWindow = (dataUrl, widthMm, heightMm) => {
+    // Remove any previous print iframe
+    const oldFrame = document.getElementById('__barcode_print_frame');
+    if (oldFrame) oldFrame.remove();
+
+    // Create hidden iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = '__barcode_print_frame';
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+    // Conservative image sizing: 4mm less than label to guarantee no overflow
+    const sw = widthMm - 4;
+    const sh = heightMm - 4;
+
+    // Minified HTML with NO landscape keyword
+    doc.open();
+    doc.write([
+      '<!DOCTYPE html><html><head><meta charset="utf-8">',
+      '<style>',
+      '@page{size:auto;margin:0}',
+      '*{margin:0;padding:0;box-sizing:border-box}',
+      `html,body{width:${widthMm}mm;height:${heightMm}mm;overflow:hidden;background:#fff}`,
+      `body{display:flex;align-items:center;justify-content:center}`,
+      `img{max-width:${sw}mm;max-height:${sh}mm;width:auto;height:auto;display:block;object-fit:contain}`,
+      '@media print{html,body{overflow:hidden}img{page-break-inside:avoid;page-break-after:avoid;page-break-before:avoid}}',
+      '</style></head>',
+      `<body><img src="${dataUrl}"/></body></html>`,
+    ].join(''));
+    doc.close();
+
+    // Wait for image to render, then print
+    const img = doc.querySelector('img');
+    const doPrint = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (e) {
+        window.print(); // fallback
+      }
+      // Cleanup after a delay
+      setTimeout(() => {
+        const f = document.getElementById('__barcode_print_frame');
+        if (f) f.remove();
+      }, 2000);
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      setTimeout(doPrint, 100);
+    } else {
+      img.onload = () => setTimeout(doPrint, 100);
+      img.onerror = () => {
+        console.error('Failed to load barcode image for print');
+        const f = document.getElementById('__barcode_print_frame');
+        if (f) f.remove();
+      };
+    }
+  };
+
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
@@ -56,6 +160,69 @@ const Products = () => {
       toast(err.message, 'error');
     } finally {
       setExportingPdf(false);
+    }
+  };
+
+  const openPrinterConfig = async () => {
+    try {
+      const config = await Api.getPrinterConfig();
+      setPrinterConfig(config || {
+        printerName: 'XP-370B',
+        labelWidthMm: 40,
+        labelHeightMm: 30,
+        marginMm: 1.5,
+        nameFontSize: 7,
+        priceFontSize: 8,
+        barcodeFontSize: 6
+      });
+      setPrinterConfigModalOpen(true);
+      refreshPrinters();
+    } catch (err) {
+      toast('فشل جلب الإعدادات', 'error');
+    }
+  };
+
+  const refreshPrinters = async () => {
+    setLoadingPrinters(true);
+    try {
+      const printers = await Api.getAvailablePrinters();
+      setAvailablePrinters(printers || []);
+    } catch (err) {
+      console.error('Failed to fetch printers:', err);
+    } finally {
+      setLoadingPrinters(false);
+    }
+  };
+
+  const savePrinterConfig = async (e) => {
+    e.preventDefault();
+    setSavingConfig(true);
+    try {
+      await Api.updatePrinterConfig(printerConfig);
+      toast('تم حفظ إعدادات الطابعة بنجاح', 'success');
+      setPrinterConfigModalOpen(false);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleTestPrint = async () => {
+    setTestingPrint(true);
+    try {
+      const sampleImageUrl = await Api.getProductBarcodeLabel(items.length > 0 ? items[0].id : 1);
+      const width = printerConfig.labelWidthMm || 40;
+      const height = printerConfig.labelHeightMm || 30;
+
+      // Pre-load image and convert to data URL to avoid blank pages
+      const dataUrl = await _blobUrlToDataUrl(sampleImageUrl);
+      _openPrintWindow(dataUrl, width, height);
+      toast('تم بدء اختبار الطباعة بالصورة المباشرة', 'success');
+    } catch (err) {
+      toast('فشل طباعة التجربة: ' + err.message, 'error');
+    } finally {
+      setTestingPrint(false);
     }
   };
 
@@ -173,6 +340,28 @@ const Products = () => {
     });
   };
 
+  const executePrint = async (e) => {
+    e.preventDefault();
+    setPrinting(true);
+    try {
+      const imageUrl = await Api.getProductBarcodeLabel(printProduct.id);
+      const config = await Api.getPrinterConfig();
+      const width = config.labelWidthMm || 40;
+      const height = config.labelHeightMm || 30;
+
+      const dataUrl = await _blobUrlToDataUrl(imageUrl);
+      _openPrintWindow(dataUrl, width, height);
+
+      setPrintModalOpen(false);
+      toast('جاري تحضير ملصق الباركود للطباعة...', 'success');
+
+    } catch (err) {
+      toast('فشل تحضير الباركود أو الطباعة: ' + err.message, 'error');
+    } finally {
+      setPrinting(false);
+    }
+  };
+
   const items = data;
 
   return (
@@ -269,6 +458,13 @@ const Products = () => {
                 >
                   {exportingPdf ? '⏳' : '📄'} PDF
                 </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={openPrinterConfig}
+                  title="إعدادات الطابعة للباركود"
+                >
+                  ⚙️ إعدادات الطابعة
+                </button>
                 {Api.can('PRODUCT_WRITE') && (
                   <button className="btn btn-primary" onClick={() => openForm(null)}>
                     <span>+</span> إضافة منتج
@@ -333,7 +529,8 @@ const Products = () => {
                           </span>
                         </td>
                         <td>
-                          <div className="table-actions">
+                          <div className="table-actions" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <button className="btn btn-sm btn-secondary" title="طباعة باركود (PDF)" onClick={() => { setPrintProduct(p); setPrintModalOpen(true); }} style={{ whiteSpace: 'nowrap' }}>🖨️ طباعة P</button>
                             {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(p)}>✏️</button>}
                             {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(p.id, p.name)}>🗑️</button>}
                           </div>
@@ -449,6 +646,144 @@ const Products = () => {
                 <button type="submit" form="productForm" className="btn btn-primary" disabled={saving}>
                   {saving ? 'جاري الحفظ...' : (editProduct ? 'حفظ التعديلات' : 'إضافة المنتج')}
                 </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {printModalOpen && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrintModalOpen(false); }}>
+            <div className="modal" style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3>🖨️ طباعة ملصق باركود مباشرة (صورة)</h3>
+                <button className="modal-close" onClick={() => setPrintModalOpen(false)}>✕</button>
+              </div>
+              <div className="modal-body" style={{ textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-secondary)' }}>تم تحسين الطباعة لتناسب طابعة <b>XP-370B</b> والاتصال المباشر بالورق.</p>
+                <div style={{ background: 'rgba(52, 152, 219, 0.1)', padding: '10px', borderRadius: '5px', borderRight: '3px solid var(--metro-blue)', marginTop: '20px', textAlign: 'right' }}>
+                  <h5 style={{ margin: '0 0 5px 0', fontSize: '0.85rem', color: 'var(--metro-blue)' }}>✅ تعليمات الضبط (مرة واحدة):</h5>
+                  <ul style={{ margin: 0, paddingRight: '20px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    <li>الهوامش (Margins): اختر <b>None</b> أو <b>بلا</b></li>
+                    <li>المقياس (Scale): اختر <b>Actual Size</b> أو <b>الحجم الفعلي (100%)</b></li>
+                    <li>حجم الورق: اضبطه من <b>إعدادات الطابعة (Printer Properties)</b> ليطابق حجم الليبل</li>
+                    <li>إلغاء تحديد <b>Headers/Footers</b> إن وجد</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setPrintModalOpen(false)}>إلغاء</button>
+                <button type="button" onClick={executePrint} className="btn btn-primary" disabled={printing}>
+                  {printing ? 'جاري التحضير...' : 'ابدأ الطباعة المباشرة'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {/* Printer Config Modal */}
+      {printerConfigModalOpen && printerConfig && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrinterConfigModalOpen(false); }}>
+            <div className="modal" style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>⚙️ إعدادات طابعة الباركود ديناميكياً</h3>
+                <button className="modal-close" onClick={() => setPrinterConfigModalOpen(false)}>✕</button>
+              </div>
+              <div className="modal-body">
+                <div style={{ marginBottom: '20px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <h5 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>📍 قوالب سريعة للمقاسات:</h5>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[
+                      { label: 'كبير (50×25 مم)', w: 50, h: 25, m: 1, nf: 32, pf: 42 },
+                      { label: 'صغير (40×15 مم)', w: 40, h: 15, m: 0.5, nf: 28, pf: 36 },
+                      { label: 'قياسي (38×25 مم)', w: 38, h: 25, m: 1, nf: 32, pf: 42 }
+                    ].map(p => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        style={{ border: '1px solid var(--metro-blue)', color: 'var(--metro-blue)', padding: '5px 12px' }}
+                        onClick={() => setPrinterConfig({
+                          ...printerConfig,
+                          labelWidthMm: p.w,
+                          labelHeightMm: p.h,
+                          marginMm: p.m,
+                          nameFontSize: p.nf,
+                          priceFontSize: p.pf
+                        })}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <form id="printerConfigForm" onSubmit={savePrinterConfig}>
+                  <div className="form-group">
+                    <label>اختر الطابعة المثبتة على الجهاز</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select 
+                        className="form-control" 
+                        value={printerConfig.printerName} 
+                        onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })} 
+                        required
+                        disabled={loadingPrinters}
+                      >
+                        <option value="">-- اختر طابعة --</option>
+                        {availablePrinters.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                      <button type="button" className="btn btn-icon" onClick={refreshPrinters} disabled={loadingPrinters} title="تحديث قائمة الطابعات">
+                        {loadingPrinters ? '⏳' : '🔄'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <h5 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', color: 'var(--metro-blue)' }}>المقاسات بالـ ملم (mm)</h5>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>العرض (Width)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelWidthMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelWidthMm: parseFloat(e.target.value) })} required />
+                    </div>
+                    <div className="form-group">
+                      <label>الطول (Height)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelHeightMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelHeightMm: parseFloat(e.target.value) })} required />
+                    </div>
+                    <div className="form-group">
+                      <label>الهامش (Margin)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.marginMm} onChange={(e) => setPrinterConfig({ ...printerConfig, marginMm: parseFloat(e.target.value) })} required />
+                    </div>
+                  </div>
+
+                  <h5 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', marginTop: '15px', color: 'var(--metro-blue)' }}>أحجام الخطوط (Font Size)</h5>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>الاسم (Name)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.nameFontSize} onChange={(e) => setPrinterConfig({ ...printerConfig, nameFontSize: parseFloat(e.target.value) })} required />
+                    </div>
+                    <div className="form-group">
+                      <label>السعر (Price)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.priceFontSize} onChange={(e) => setPrinterConfig({ ...printerConfig, priceFontSize: parseFloat(e.target.value) })} required />
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+                <div>
+                  <button type="button" className="btn btn-secondary" onClick={handleTestPrint} disabled={testingPrint} style={{ backgroundColor: 'var(--accent-purple)' }}>
+                    {testingPrint ? 'جاري...' : '🖨️ طباعة تجريبية'}
+                  </button>
+                </div>
+                <div>
+                  <button type="button" className="btn btn-ghost" onClick={() => setPrinterConfigModalOpen(false)}>إلغاء</button>
+                  <button type="submit" form="printerConfigForm" className="btn btn-primary" disabled={savingConfig}>
+                    {savingConfig ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

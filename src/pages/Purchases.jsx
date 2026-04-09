@@ -4,6 +4,21 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
+
 
 const Purchases = () => {
   const { toast } = useGlobalUI();
@@ -16,6 +31,11 @@ const Purchases = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const pageSize = 10;
+  
+  // Analytics State
+  const [analytics, setAnalytics] = useState(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
 
   // Debounce search
   useEffect(() => {
@@ -71,8 +91,23 @@ const Purchases = () => {
     }
   };
 
+  const loadAnalytics = async () => {
+    setLoadingAnalytics(true);
+    try {
+      const res = await Api.getPurchaseAnalytics();
+      setAnalytics(res);
+    } catch (err) {
+      console.error('Failed to load purchase analytics', err);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
   useEffect(() => {
     loadData(currentPage, pageSize, debouncedSearch);
+    if (currentPage === 0 && !debouncedSearch) {
+      loadAnalytics();
+    }
   }, [currentPage, debouncedSearch]);
 
   useEffect(() => {
@@ -272,6 +307,139 @@ const Purchases = () => {
   return (
     <>
       <div className="page-section">
+        {/* Analytics Dashboard */}
+        {!loadingAnalytics && analytics && (
+          <div className="analytics-section" style={{ marginBottom: '24px' }}>
+            <div className="analytics-dashboard-grid">
+              {/* Status Distribution - Circular Chart */}
+              <div className="card" style={{ margin: 0, padding: '20px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>📊</span>
+                  <h4 style={{ fontSize: '0.9rem', margin: 0, fontWeight: 700 }}>توزيع المديونيات</h4>
+                </div>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '180px', height: '180px' }}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <PieChart>
+                        <Pie
+                          data={['PAID', 'PARTIAL', 'UNPAID'].map(status => {
+                            const stat = analytics.statusStats.find(s => s.status === status) || { count: 0, totalAmount: 0 };
+                            return {
+                              name: status === 'PAID' ? 'مدفوع' : status === 'PARTIAL' ? 'جزئي' : 'غير مدفوع',
+                              value: Number(stat.totalAmount) || 0,
+                              count: stat.count,
+                              color: status === 'PAID' ? '#10b981' : status === 'PARTIAL' ? '#f59e0b' : '#f43f5e'
+                            };
+                          }).filter(d => d.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {['PAID', 'PARTIAL', 'UNPAID'].map((status, index) => {
+                            const color = status === 'PAID' ? '#10b981' : status === 'PARTIAL' ? '#f59e0b' : '#f43f5e';
+                            return <Cell key={`cell-${index}`} fill={color} stroke="none" />;
+                          })}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', color: '#fff' }}
+                          formatter={(value) => [`${value.toLocaleString()} ج.م`, 'الإجمالي']}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minWidth: '150px' }}>
+                    {['PAID', 'PARTIAL', 'UNPAID'].map(status => {
+                      const stat = analytics.statusStats.find(s => s.status === status) || { count: 0, totalAmount: 0 };
+                      const config = {
+                        PAID: { label: 'مدفوعة بالكامل', color: '#10b981' },
+                        PARTIAL: { label: 'مدفوعة جزئياً', color: '#f59e0b' },
+                        UNPAID: { label: 'غير مدفوعة', color: '#f43f5e' }
+                      }[status];
+                      const totalAll = analytics.statusStats.reduce((sum, s) => sum + Number(s.totalAmount), 0);
+                      const percent = totalAll > 0 ? ((stat.totalAmount / totalAll) * 100).toFixed(1) : 0;
+
+                      return (
+                        <div key={status} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: config.color, marginTop: '4px' }} />
+                          <div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '8px' }}>
+                              {config.label}
+                              <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>{percent}%</span>
+                            </div>
+                            <div style={{ fontSize: '1rem', fontWeight: 700 }}>{Number(stat.totalAmount).toLocaleString()}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Suppliers Card */}
+              <div className="card" style={{ margin: 0, padding: '15px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                  <h4 style={{ fontSize: '0.9rem', margin: 0, fontWeight: 700 }}>أهم الموردين</h4>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {analytics.topSuppliers.length > 0 ? (
+                    analytics.topSuppliers.slice(0, 3).map((sup, idx) => {
+                      const maxVal = analytics.topSuppliers[0].totalAmount || 1;
+                      const percent = (sup.totalAmount / maxVal) * 100;
+                      return (
+                        <div key={idx} style={{ position: 'relative' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', position: 'relative', zIndex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ 
+                                width: '18px', height: '18px', borderRadius: '50%', 
+                                background: idx === 0 ? 'var(--metro-yellow)' : idx === 1 ? '#C0C0C0' : '#CD7F32',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: '10px', fontWeight: 800
+                              }}>{idx + 1}</span>
+                              <span style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-light)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sup.name}</span>
+                            </div>
+                            <span style={{ color: 'var(--accent-emerald)', fontWeight: 700, fontSize: '0.85rem' }}>{Number(sup.totalAmount).toLocaleString()}</span>
+                          </div>
+                          <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{ width: `${percent}%`, height: '100%', background: 'var(--metro-blue)', transition: 'width 1s ease-out' }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-dim)', padding: '10px' }}>لا توجد بيانات</div>}
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Trend Chart */}
+            <div className="card" style={{ padding: '15px' }}>
+              <div className="card-header" style={{ padding: '0 0 10px 0', border: 'none' }}>
+                <h4 style={{ fontSize: '0.9rem', margin: 0 }}>📈 إجمالي المشتريات اليومية (أخر 30 يوم)</h4>
+              </div>
+              <div style={{ height: '200px', width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <ComposedChart data={analytics.dailyTrend.map(d => ({
+                    date: new Date(d.statDate).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
+                    total: d.totalPurchases
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fill: '#777', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#777', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
+                      formatter={(val) => [`${Number(val).toLocaleString()} ج.م`, 'إجمالي الشراء']}
+                    />
+                    <Bar dataKey="total" fill="var(--metro-blue)" radius={[4, 4, 0, 0]} barSize={30} opacity={0.8} />
+                    <Line type="monotone" dataKey="total" stroke="var(--accent-emerald)" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="card">
           <div className="card-header">
             <h3>🛒 إدارة المشتريات</h3>
@@ -541,65 +709,67 @@ const Purchases = () => {
                     })()}
 
                     {/* Items table */}
-                    <table className="data-table" style={{ marginTop: '10px' }}>
-                      <thead>
-                        <tr>
-                          <th>المنتج</th>
-                          <th>الوحدة</th>
-                          <th>الكمية</th>
-                          <th>= عدد القطع</th>
-                          <th>سعر القطعة</th>
-                          <th>الإجمالي</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {invoiceItems.length === 0 ? (
+                    <div className="table-wrapper">
+                      <table className="data-table" style={{ marginTop: '10px' }}>
+                        <thead>
                           <tr>
-                            <td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
-                              لم يتم إضافة منتجات بعد
-                            </td>
-                          </tr>
-                        ) : (
-                          invoiceItems.map((item, index) => (
-                            <tr key={index}>
-                              <td style={{ fontWeight: 600 }}>{item.name}</td>
-                              <td>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{item.unitLabel}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.packagingDesc}</div>
-                              </td>
-                              <td style={{ textAlign: 'center' }}>{item.quantity}</td>
-                              <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
-                                {item.qtyInBase.toFixed(2)} {item.unitName}
-                              </td>
-                              <td>{Number(item.unitPrice).toFixed(2)}</td>
-                              <td style={{ fontWeight: 700 }}>
-                                {(item.totalPrice).toFixed(2)}
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="btn btn-icon btn-ghost"
-                                  style={{ color: 'var(--metro-red)' }}
-                                  onClick={() => handleRemoveItem(index)}
-                                >
-                                  ✕
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                      {invoiceItems.length > 0 && (
-                        <tfoot>
-                          <tr>
-                            <th colSpan="5" style={{ textAlign: 'left' }}>إجمالي الفاتورة:</th>
-                            <th>{invoiceTotal.toFixed(2)}</th>
+                            <th>المنتج</th>
+                            <th>الوحدة</th>
+                            <th>الكمية</th>
+                            <th>= عدد القطع</th>
+                            <th>سعر القطعة</th>
+                            <th>الإجمالي</th>
                             <th></th>
                           </tr>
-                        </tfoot>
-                      )}
-                    </table>
+                        </thead>
+                        <tbody>
+                          {invoiceItems.length === 0 ? (
+                            <tr>
+                              <td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                                لم يتم إضافة منتجات بعد
+                              </td>
+                            </tr>
+                          ) : (
+                            invoiceItems.map((item, index) => (
+                              <tr key={index}>
+                                <td style={{ fontWeight: 600 }}>{item.name}</td>
+                                <td>
+                                  <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{item.unitLabel}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.packagingDesc}</div>
+                                </td>
+                                <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                                <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
+                                  {item.qtyInBase.toFixed(2)} {item.unitName}
+                                </td>
+                                <td>{Number(item.unitPrice).toFixed(2)}</td>
+                                <td style={{ fontWeight: 700 }}>
+                                  {(item.totalPrice).toFixed(2)}
+                                </td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    className="btn btn-icon btn-ghost"
+                                    style={{ color: 'var(--metro-red)' }}
+                                    onClick={() => handleRemoveItem(index)}
+                                  >
+                                    ✕
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                        {invoiceItems.length > 0 && (
+                          <tfoot>
+                            <tr>
+                              <th colSpan="5" style={{ textAlign: 'left' }}>إجمالي الفاتورة:</th>
+                              <th>{invoiceTotal.toFixed(2)}</th>
+                              <th></th>
+                            </tr>
+                          </tfoot>
+                        )}
+                      </table>
+                    </div>
                   </div>
                 </form>
               </div>

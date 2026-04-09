@@ -20,7 +20,9 @@ const Sidebar = ({ isOpen, onClose }) => {
     <aside className={`sidebar ${isOpen ? 'open' : ''}`} id="sidebar">
       <div className="sidebar-header">
         <button className="sidebar-close-btn" onClick={onClose}>✕</button>
-        <div className="logo-mark" style={{ margin: '0 auto', fontSize: '24px' }}>◆</div>
+        <NavLink to="/" className="logo-mark" style={{ margin: '0 auto', fontSize: '24px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+          ◆
+        </NavLink>
       </div>
 
       <nav className="sidebar-nav">
@@ -37,6 +39,13 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span className="nav-icon">▨</span>
           <span>المنتجات</span>
         </NavLink>
+
+        {(isAdmin || Api.can('DAMAGED_GOODS_MANAGE')) && (
+          <NavLink to="/damaged" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">🗑️</span>
+            <span>التوالف والهوالك</span>
+          </NavLink>
+        )}
 
         <NavLink to="/categories" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-icon">▤</span>
@@ -88,6 +97,13 @@ const Sidebar = ({ isOpen, onClose }) => {
           <NavLink to="/treasury" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">💰</span>
             <span>الخزنة</span>
+          </NavLink>
+        )}
+
+        {Api.can('TREASURY_READ') && (
+          <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">📅</span>
+            <span>إدارة الآجل والأقساط</span>
           </NavLink>
         )}
 

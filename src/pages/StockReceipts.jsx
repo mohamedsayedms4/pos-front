@@ -3,6 +3,7 @@ import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 const StockReceipts = () => {
   const { toast, confirm } = useGlobalUI();
@@ -11,6 +12,8 @@ const StockReceipts = () => {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [receivedQuantities, setReceivedQuantities] = useState({}); // itemId -> qty
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [analytics, setAnalytics] = useState({ pending: 0, received: 0, completed: 0, trend: [] });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
@@ -46,6 +49,39 @@ const StockReceipts = () => {
       setLoading(false);
     }
   };
+
+  const loadAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const stats = await Api.getStockReceiptAnalytics();
+      
+      // Calculate current totals from stats
+      const today = new Date().toISOString().split('T')[0];
+      const summary = { pending: 0, received: 0, completed: 0, trend: [] };
+      
+      // Group trend by date
+      const trendMap = {};
+      
+      stats.forEach(s => {
+        if (!trendMap[s.receiptDate]) trendMap[s.receiptDate] = { date: s.receiptDate, PENDING: 0, RECEIVED: 0, COMPLETED: 0 };
+        trendMap[s.receiptDate][s.receiptStatus] = s.receiptCount;
+        
+        // Sum totals for all-time categories
+        if (s.receiptStatus === 'PENDING') summary.pending += s.receiptCount;
+        if (s.receiptStatus === 'RECEIVED') summary.received += s.receiptCount;
+        if (s.receiptStatus === 'COMPLETED') summary.completed += s.receiptCount;
+      });
+      
+      summary.trend = Object.values(trendMap).sort((a,b) => a.date.localeCompare(b.date)).slice(-15);
+      setAnalytics(summary);
+    } catch (err) {
+      console.error('Analytics error:', err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  useEffect(() => { loadAnalytics(); }, []);
 
   const handleSaveQuantities = async (receiptId, qtys = null) => {
     confirm('هل أنت متأكد من تسجيل هذه الكميات؟ سيتم حفظها دون تحديث المخزون الفعلي.', async () => {
@@ -101,6 +137,54 @@ const StockReceipts = () => {
 
   return (
     <div className="page-section">
+      {/* Stock Receipts Analytics Dashboard */}
+      <div className="analytics-dashboard-grid">
+        {/* Stat Cards Column */}
+        <div className="stat-cards-container">
+          <div className="card" style={{ flex: 1, padding: '15px', borderLeft: '4px solid var(--metro-orange)', background: 'rgba(255,165,0,0.03)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>بانتظار المورد</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, margin: '5px 0' }}>{analytics.pending} <small style={{ fontSize: '0.9rem' }}>أمر</small></div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>بضائع لم تصل بعد للموقع</div>
+          </div>
+          <div className="card" style={{ flex: 1, padding: '15px', borderLeft: '4px solid var(--metro-blue)', background: 'rgba(0,120,215,0.03)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>استلام مؤقت (لم يرحل)</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, margin: '5px 0', color: 'var(--metro-blue)' }}>{analytics.received}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>بضائع مستلمة بانتظار التخزين</div>
+          </div>
+          <div className="card" style={{ flex: 1, padding: '15px', borderLeft: '4px solid var(--metro-green)', background: 'rgba(122,185,0,0.03)' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>تم التخزين</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, margin: '5px 0', color: 'var(--metro-green)' }}>{analytics.completed}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>بضائع أضيفت للمخزون الفعلي</div>
+          </div>
+        </div>
+
+        {/* Trend Chart Column */}
+        <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
+          <h4 style={{ marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>📊 اتجاه التوريد (آخر 15 يوم توريد)</span>
+            {analyticsLoading && <small style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>جاري التحديث...</small>}
+          </h4>
+          <div style={{ flex: 1, width: '100%', minHeight: '250px' }}>
+            {analytics.trend.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <BarChart data={analytics.trend} stackOffset="sign">
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="date" tick={{fontSize: 9}} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
+                  <YAxis tick={{fontSize: 9}} />
+                  <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333'}} />
+                  <Legend iconType="circle" wrapperStyle={{fontSize: '11px', paddingTop: '10px'}} />
+                  <Bar dataKey="PENDING" name="بانتظار المورد" fill="var(--metro-orange)" stackId="a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="RECEIVED" name="استلام جزئي" fill="var(--metro-blue)" stackId="a" />
+                  <Bar dataKey="COMPLETED" name="مرحل للمخزن" fill="var(--metro-green)" stackId="a" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-dim)' }}>لا توجد بيانات كافية للرسم البياني</div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="card">
         <div className="card-header">
           <h3>📦 أذونات استلام المخزون</h3>
