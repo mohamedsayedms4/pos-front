@@ -25,6 +25,8 @@ import DamagedProducts from './pages/DamagedProducts.jsx'
 import SalesAnalytics from './pages/SalesAnalytics.jsx'
 import DebtManagement from './pages/DebtManagement.jsx'
 import InstallmentCalendar from './pages/InstallmentCalendar.jsx'
+import Employees from './pages/Employees.jsx'
+import EmployeeDetails from './pages/EmployeeDetails.jsx'
 
 import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
@@ -34,6 +36,8 @@ import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 
 import { GlobalUIProvider } from './components/common/GlobalUI'
 import { ThemeProvider } from './components/common/ThemeContext'
+
+import Messages from './pages/Messages.jsx'
 
 function App() {
   return (
@@ -73,6 +77,9 @@ function App() {
           <Route path="/treasury" element={<Treasury />} />
           <Route path="/debts" element={<DebtManagement />} />
           <Route path="/installments-calendar" element={<InstallmentCalendar />} />
+          <Route path="/employees" element={<Employees />} />
+          <Route path="/employees/:id" element={<EmployeeDetails />} />
+          <Route path="/messages" element={<Messages />} />
         </Route>
       </Route>
     </Routes>

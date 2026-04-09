@@ -117,10 +117,20 @@ const Sidebar = ({ isOpen, onClose }) => {
           <>
             <div className="nav-section-title">الإدارة</div>
             {Api.can('USER_READ') && (
-              <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">👤</span>
-                <span>المستخدمين</span>
-              </NavLink>
+              <>
+                <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">👤</span>
+                  <span>المستخدمين</span>
+                </NavLink>
+                <NavLink to="/employees" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">👥</span>
+                  <span>الموظفين</span>
+                </NavLink>
+                <NavLink to="/messages" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">💬</span>
+                  <span>الرسائل</span>
+                </NavLink>
+              </>
             )}
             {Api.can('ROLE_READ') && (
               <NavLink to="/roles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>

@@ -1,17 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNotifications } from '../../services/useNotifications';
 import Api from '../../services/api';
+import ChatService from '../../services/ChatService';
+import msgIcon from '../../assets/img/msg.png';
 
 const AlwaysOnDisplay = () => {
     const [time, setTime] = useState(new Date());
     const { unreadCount } = useNotifications();
+    const [unreadMessages, setUnreadMessages] = useState(0);
     const user = Api._getUser();
 
     useEffect(() => {
         const timer = setInterval(() => {
             setTime(new Date());
         }, 1000);
-        return () => clearInterval(timer);
+
+        // Initial fetch
+        ChatService.getTotalUnreadCount().then(setUnreadMessages).catch(() => {});
+
+        // Listen for real-time updates
+        const unsub = ChatService.onCountUpdate(() => {
+            ChatService.getTotalUnreadCount().then(setUnreadMessages).catch(() => {});
+        });
+
+        return () => {
+            clearInterval(timer);
+            unsub();
+        };
     }, []);
 
     const formatTime = (date) => {
@@ -48,10 +63,20 @@ const AlwaysOnDisplay = () => {
                     </div>
                 )}
 
-                {unreadCount > 0 && (
+                {(unreadCount > 0 || unreadMessages > 0) && (
                     <div className="aod-notifications">
-                        <span className="aod-notif-icon">🔔</span>
-                        <span className="aod-notif-badge">{unreadCount}</span>
+                        {unreadCount > 0 && (
+                            <div className="aod-notif-item">
+                                <span className="aod-notif-icon">🔔</span>
+                                <span className="aod-notif-badge">{unreadCount}</span>
+                            </div>
+                        )}
+                        {unreadMessages > 0 && (
+                            <div className="aod-notif-item">
+                                <img src={msgIcon} alt="" className="aod-msg-icon" />
+                                <span className="aod-notif-badge">{unreadMessages}</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

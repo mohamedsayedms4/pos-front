@@ -4,18 +4,55 @@ import Api, { API_BASE } from '../../services/api';
 import { useNotifications } from '../../services/useNotifications';
 import { useGlobalUI } from '../common/GlobalUI';
 import { useTheme } from '../common/ThemeContext';
+import ChatService from '../../services/ChatService';
+import msgIcon from '../../assets/img/msg.png';
 
 const Topbar = ({ onMenuToggle }) => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { toast } = useGlobalUI ? useGlobalUI() : { toast: () => {} };
-  const { unreadCount, connected } = useNotifications({
+  const { showToast } = useGlobalUI ? useGlobalUI() : { showToast: () => {} };
+  const { unreadCount: notifUnreadCount, connected } = useNotifications({
     onNewNotification: (notif) => {
-      toast(notif.message, notif.type === 'WARNING' || notif.type === 'SECURITY' ? 'error' : 'success');
+      showToast(notif.message, notif.type === 'WARNING' || notif.type === 'SECURITY' ? 'error' : 'success');
     }
   });
 
   const [user, setUser] = useState(Api._getUser());
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // Initial fetch and real-time subscription for messages
+  useEffect(() => {
+    ChatService.connect();
+    
+    // Initial count
+    ChatService.getTotalUnreadCount().then(setUnreadMessages).catch(() => {});
+
+    // Listen for new messages
+    const unsubMsg = ChatService.onMessage((msg) => {
+      const isSelf = msg.senderId === Api._getUser()?.id;
+      // If NOT self and NOT on Messages page, refetch count for reliability
+      if (!isSelf && window.location.pathname !== '/messages') {
+        ChatService.getTotalUnreadCount().then(setUnreadMessages);
+      }
+    });
+
+    // Listen for manual count update triggers (e.g. from Messages page)
+    const unsubCount = ChatService.onCountUpdate(() => {
+      ChatService.getTotalUnreadCount().then(setUnreadMessages);
+    });
+
+    return () => {
+      unsubMsg();
+      unsubCount();
+    };
+  }, []);
+
+  // Reset count if we navigate to messages
+  useEffect(() => {
+    if (window.location.pathname === '/messages') {
+      setUnreadMessages(0);
+    }
+  }, [window.location.pathname]);
 
   // Re-read user from localStorage whenever storage changes (e.g. after profile update)
   useEffect(() => {
@@ -26,6 +63,8 @@ const Topbar = ({ onMenuToggle }) => {
   }, []);
 
   const handleLogout = async () => {
+
+
     try {
       await Api.logout();
     } catch (e) {
@@ -48,15 +87,28 @@ const Topbar = ({ onMenuToggle }) => {
       </div>
       <div className="topbar-right">
         <button
+          className="topbar-btn msg-btn"
+          title="الرسائل"
+          onClick={() => navigate('/messages')}
+          style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <img src={msgIcon} alt="Messages" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+          {unreadMessages > 0 && (
+            <span className="notif-badge" style={{ left: 'auto', right: '-2px', top: '-2px' }}>
+              {unreadMessages > 99 ? '99+' : unreadMessages}
+            </span>
+          )}
+        </button>
+        <button
           className="topbar-btn notif-btn"
           title="الإشعارات"
           onClick={() => navigate('/notifications')}
           style={{ position: 'relative' }}
         >
           🔔
-          {unreadCount > 0 && (
+          {notifUnreadCount > 0 && (
             <span className="notif-badge">
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
             </span>
           )}
           {connected && (
@@ -75,6 +127,7 @@ const Topbar = ({ onMenuToggle }) => {
             />
           )}
         </button>
+
         <button
           className="topbar-btn theme-toggle-btn"
           title={theme === 'dark' ? 'الوضع المضيء' : 'الوضع الداكن'}

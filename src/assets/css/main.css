@@ -2609,11 +2609,27 @@ body[dir="ltr"] .search-input input {
 
 .aod-notifications {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 2rem;
+  gap: 3rem;
+  margin-top: 3rem;
   animation: aodFadeIn 0.8s 0.3s ease both;
+}
+
+.aod-notif-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aod-msg-icon {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 10px rgba(136, 23, 152, 0.4));
 }
 
 .aod-notif-icon {

@@ -1,13 +1,13 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-const PROD_BASE = 'https://linuxstoreapi.mobily.cloud/api/v1';
-const DEV_BASE = 'https://linuxstoreapi.mobily.cloud/api/v1';
+// Base server URL (without /api/v1 prefix)
+export const SERVER_URL = window.location.hostname === 'localhost' && window.location.port === '5173'
+  ? 'https://posapi.digitalrace.net'
+  : (window.location.protocol + '//' + window.location.host);
 
 // Use production URL when not running on Vite dev server (port 5173)
-export const API_BASE = window.location.hostname === 'localhost' && window.location.port === '5173'
-  ? DEV_BASE
-  : PROD_BASE;
+export const API_BASE = `${SERVER_URL}/api/v1`;
 
 
 const Api = {
@@ -672,17 +672,16 @@ const Api = {
     return res.data;
   },
 
-  async createUser(data, avatarFile) {
+  async createUser(data, avatarFile, nationalIdFile) {
     const formData = new FormData();
     formData.append('user', new Blob([JSON.stringify(data)], { type: 'application/json' }));
-    if (avatarFile) {
-      formData.append('avatar', avatarFile);
-    }
+    if (avatarFile) formData.append('avatar', avatarFile);
+    if (nationalIdFile) formData.append('nationalId', nationalIdFile);
 
     const res = await this._request('/admin/users', {
       method: 'POST',
       body: formData,
-      headers: {} // Browser sets boundary
+      headers: {}
     });
     return res.data;
   },
@@ -702,12 +701,11 @@ const Api = {
     return res.data;
   },
 
-  async updateUser(id, data, avatarFile) {
+  async updateUser(id, data, avatarFile, nationalIdFile) {
     const formData = new FormData();
     formData.append('user', new Blob([JSON.stringify(data)], { type: 'application/json' }));
-    if (avatarFile) {
-      formData.append('avatar', avatarFile);
-    }
+    if (avatarFile) formData.append('avatar', avatarFile);
+    if (nationalIdFile) formData.append('nationalId', nationalIdFile);
 
     const res = await this._request(`/admin/users/${id}`, {
       method: 'PUT',
@@ -729,6 +727,32 @@ const Api = {
   async getPermissions() {
     const res = await this._request('/admin/users/permissions');
     return res.data;
+  },
+
+  // ─── Job Titles ───
+  async getJobTitles() {
+    const res = await this._request('/job-titles');
+    return res.data;
+  },
+
+  async createJobTitle(data) {
+    const res = await this._request('/job-titles', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateJobTitle(id, data) {
+    const res = await this._request(`/job-titles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteJobTitle(id) {
+    await this._request(`/job-titles/${id}`, { method: 'DELETE' });
   },
 
   // ─── Role Management ───

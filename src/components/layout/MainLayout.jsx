@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import AlwaysOnDisplay from '../common/AlwaysOnDisplay';
-import { useEffect, useRef } from 'react';
+import ChatService from '../../services/ChatService';
+import { useGlobalUI } from '../common/GlobalUI';
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const idleTimer = useRef(null);
+  const { showToast } = useGlobalUI();
 
   const resetIdleTimer = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
@@ -18,25 +20,37 @@ const MainLayout = () => {
   };
 
   useEffect(() => {
+    // Connect to WebSocket base connection
+    ChatService.connect();
+
+    // Subscribe to global messaging updates
+    const unsubscribe = ChatService.onMessage((msg) => {
+      // If message is from someone else and user is NOT on the messages page
+      const isSelf = msg.senderId === JSON.parse(localStorage.getItem('pos_user'))?.id;
+      if (!isSelf && window.location.pathname !== '/messages') {
+        showToast(`💬 رسالة جديدة من ${msg.senderName}: ${msg.content.substring(0, 30)}${msg.content.length > 30 ? '...' : ''}`, 'info', () => {
+          window.location.href = '/messages';
+        });
+      }
+    });
+
     const wakeEvents = ['mousedown', 'keydown'];
     const ambientEvents = ['mousemove', 'touchstart', 'scroll'];
 
     const handleInteraction = (e) => {
-      // If it's a wake event, we definitely want to exit idle state
       if (wakeEvents.includes(e.type)) {
         setIsIdle(false);
       }
-      
-      // All events reset the timer to prevent GOING into idle
       resetIdleTimer();
     };
     
     wakeEvents.forEach(event => window.addEventListener(event, handleInteraction));
     ambientEvents.forEach(event => window.addEventListener(event, handleInteraction));
 
-    resetIdleTimer(); // Initial start
+    resetIdleTimer();
 
     return () => {
+      unsubscribe();
       wakeEvents.forEach(event => window.removeEventListener(event, handleInteraction));
       ambientEvents.forEach(event => window.removeEventListener(event, handleInteraction));
       if (idleTimer.current) clearTimeout(idleTimer.current);
