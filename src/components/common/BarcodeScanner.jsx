@@ -16,52 +16,38 @@ const BarcodeScanner = ({
         const html5QrCode = new Html5Qrcode(scannerId);
         scannerRef.current = html5QrCode;
 
-        // Optimized configuration for POS/Barcodes
+        // RADICAL OPTIMIZATION:
+        // 1. We remove qrbox entirely. Cropping in JS is extremely slow.
+        // 2. We use a standard resolution (640x480) which is perfect for barcodes and very fast to decode.
         const config = { 
-            fps: 20, // Increased FPS for faster capture
-            qrbox: { width: 300, height: 150 }, // Rectangular box better for 1D barcodes
-            aspectRatio: 1.0,
+            fps: 15, // Balanced FPS to prevent CPU choking
+            aspectRatio: 1.333334, // 4:3 is more natural for barcodes
+            videoConstraints: {
+                facingMode: facingMode,
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
             experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true // Native API (Much faster/accurate)
+                useBarCodeDetectorIfSupported: true // The "Magic" ingredient for speed
             }
         };
 
         const startScanner = async () => {
             try {
-                // Restrict formats to only what we need for speed
-                const formats = [
-                    0, // QR_CODE
-                    1, // AZTEC
-                    2, // CODABAR
-                    3, // CODE_39
-                    4, // CODE_93
-                    5, // CODE_128
-                    6, // DATA_MATRIX
-                    7, // EAN_8
-                    8, // EAN_13
-                    9, // ITF
-                    10, // MAXICODE
-                    11, // PDF_417
-                    12, // RSS_14
-                    13, // RSS_EXPANDED
-                    14 // UPC_A
-                ]; 
-                // Wait, it's better to use the literal names or the Html5QrcodeSupportedFormats enum if imported.
-                // Since I can't import the enum easily here, I'll use the default start but with restricted formats if I knew their constants.
-                // Actually, the best way to speed it up is focusing on the most common ones.
-                
+                // Focus only on common 1D POS formats if possible
+                // Starting with default but with high-performance config
                 await html5QrCode.start(
                     { facingMode: facingMode }, 
                     config, 
-                    (decodedText, decodedResult) => {
-                        onResult(decodedText, decodedResult);
+                    (decodedText) => {
+                        onResult(decodedText);
                     },
-                    (errorMessage) => {
-                        if (onError) onError(errorMessage);
+                    () => {
+                        // Silent fail for "no barcode in frame"
                     }
                 );
             } catch (err) {
-                console.error("Failed to start scanner:", err);
+                console.error("Scanner error:", err);
                 if (onError) onError(err);
             }
         };
