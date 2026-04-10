@@ -70,28 +70,29 @@ const ScannerModal = ({ isOpen, onClose, onScan }) => {
                     pointer-events: none;
                 }
                 .scan-target {
-                    width: 70%;
-                    height: 50%;
-                    border: 2px solid var(--metro-blue);
-                    box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);
-                    border-radius: 8px;
+                    width: 75%;
+                    height: 40%;
+                    border: 2px solid #00ff00; /* Green for better visibility */
+                    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), 0 0 0 1000px rgba(0,0,0,0.6);
+                    border-radius: 12px;
                     position: relative;
                 }
                 .scan-target::after {
                     content: '';
                     position: absolute;
                     top: 50%;
-                    left: 5%;
-                    width: 90%;
-                    height: 2px;
-                    background: var(--metro-red);
-                    box-shadow: 0 0 8px var(--metro-red);
-                    animation: scanning 2s infinite ease-in-out;
+                    left: 2%;
+                    width: 96%;
+                    height: 3px;
+                    background: #ff0000;
+                    box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+                    animation: scanning 1.5s infinite linear;
+                    border-radius: 5px;
                 }
                 @keyframes scanning {
-                    0% { top: 10%; }
-                    50% { top: 90%; }
-                    100% { top: 10%; }
+                    0% { top: 5%; opacity: 0.8; }
+                    50% { top: 95%; opacity: 1; }
+                    100% { top: 5%; opacity: 0.8; }
                 }
                 .scanner-modal {
                     border: 1px solid rgba(255,255,255,0.1);
