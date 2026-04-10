@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
+import notifyAudio from '../../assets/sound/notifiy.wav';
+import beepAudio from '../../assets/sound/freesound_community-store-scanner-beep-90395.mp3';
 
 const GlobalUIContext = createContext(null);
 
@@ -13,13 +15,27 @@ export const GlobalUIProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
     const [confirm, setConfirm] = useState(null);
 
-    const toast = useCallback((message, type = 'info') => {
+    const playSound = useCallback((type = 'beep') => {
+        try {
+            const audioSrc = type === 'beep' ? beepAudio : notifyAudio;
+            const audio = new Audio(audioSrc);
+            audio.volume = 1.0; // Max volume for better feedback
+            audio.play().catch(e => console.warn("Auto-play blocked or audio failed:", e));
+        } catch (e) {
+            console.warn("Audio playback failed", e);
+        }
+    }, []);
+
+    const toast = useCallback((message, type = 'info', silent = false) => {
         const id = Date.now();
         setToasts(prev => [...prev, { id, message, type }]);
+        if (!silent) {
+            playSound('notification');
+        }
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 4000);
-    }, []);
+    }, [playSound]);
 
     const showConfirm = useCallback((message, onConfirm, onCancel) => {
         setConfirm({ message, onConfirm, onCancel });
@@ -28,9 +44,9 @@ export const GlobalUIProvider = ({ children }) => {
     const closeConfirm = () => setConfirm(null);
 
     return (
-        <GlobalUIContext.Provider value={{ toast, confirm: showConfirm }}>
+        <GlobalUIContext.Provider value={{ toast, confirm: showConfirm, playSound }}>
             {children}
-            
+
             {/* Global Toasts */}
             {ReactDOM.createPortal(
                 <div className="toast-container">

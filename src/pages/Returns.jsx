@@ -4,6 +4,7 @@ import Loader from '../components/common/Loader';
 import ReactDOM from 'react-dom';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import ScannerModal from '../components/common/ScannerModal';
 
 const Returns = () => {
     const [returns, setReturns] = useState([]);
@@ -11,6 +12,7 @@ const Returns = () => {
     const [activeReturn, setActiveReturn] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
     const [analytics, setAnalytics] = useState({ trend: [], totalRefund: 0, totalCount: 0 });
+    const [showScanner, setShowScanner] = useState(false);
     const { toast } = useGlobalUI();
 
     // Pagination & Search state
@@ -73,17 +75,23 @@ const Returns = () => {
                     <h1>سجل مرتجعات المبيعات</h1>
                 </div>
                 <div className="header-actions">
-                    <div className="search-input">
+                    <div className="premium-search-wrapper" style={{ minWidth: '300px' }}>
                         <span className="search-icon">🔍</span>
                         <input
                             type="text"
-                            placeholder="بحث برقم المرتجع أو الفاتورة..."
+                            placeholder="رقم المرتجع أو الفاتورة..."
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
                                 setCurrentPage(0);
                             }}
                         />
+                        <button 
+                            className="mobile-only camera-trigger" 
+                            onClick={() => setShowScanner(true)}
+                        >
+                            📷
+                        </button>
                     </div>
                 </div>
             </div>
@@ -277,6 +285,23 @@ const Returns = () => {
                 </div>,
                 document.body
             )}
+            {/* Barcode Scanner Modal */}
+            <ScannerModal 
+                isOpen={showScanner} 
+                onClose={() => setShowScanner(false)} 
+                onScan={(barcode) => {
+                    setSearchTerm(barcode);
+                    setCurrentPage(0);
+                    toast(`تم سحب الكود: ${barcode}`, 'info', true);
+                }} 
+            />
+
+            <style>{`
+                @media (max-width: 768px) {
+                    .mobile-hide { display: none; }
+                    .mobile-show { display: inline !important; }
+                }
+            `}</style>
         </div>
     );
 };

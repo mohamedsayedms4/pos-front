@@ -129,6 +129,24 @@ html.theme-transition *::after {
   transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease !important;
 }
 
+/* ─── Visibility Utilities ─── */
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: flex !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: flex !important;
+  }
+  .desktop-only {
+    display: none !important;
+  }
+}
+
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 4px;
@@ -145,6 +163,85 @@ html.theme-transition *::after {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* ─── Premium UI Blocks (Metro Style) ─── */
+.premium-toolbar-container {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.premium-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  width: 100%;
+}
+
+.premium-search-wrapper .search-icon {
+  padding: 0 12px;
+  color: var(--text-dim);
+}
+
+.premium-search-wrapper input {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  padding: 12px 0;
+  color: #fff !important;
+  outline: none;
+  font-size: 1rem;
+}
+
+.premium-search-wrapper .camera-trigger {
+  background: var(--bg-tile);
+  border: none;
+  border-right: 1px solid var(--border-input);
+  padding: 0 15px;
+  height: 100%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.premium-action-grid {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.premium-tool-btn {
+  width: 40px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-input);
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .hero-add-btn {
+    width: 100%;
+    padding: 15px;
+    font-weight: 800;
+    font-size: 1.1rem;
+  }
+  .premium-action-grid {
+    flex-wrap: wrap;
+  }
+  .grid-full-mobile {
+    width: 100% !important;
+  }
 }
 
 /* ─── Typography ─── */

@@ -5,6 +5,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import ScannerModal from '../components/common/ScannerModal';
 
 const Products = () => {
   const { toast, confirm } = useGlobalUI();
@@ -15,6 +16,7 @@ const Products = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sort, setSort] = useState('id,desc'); // Default sort
   const [loading, setLoading] = useState(true);
+  const [showScanner, setShowScanner] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -244,6 +246,12 @@ const Products = () => {
     }
   };
 
+  const handleBarcodeScan = (barcode) => {
+    if (!barcode) return;
+    setSearchTerm(barcode);
+    toast(`تم سحب الكود: ${barcode}`, 'info', true);
+  };
+
   useEffect(() => {
     loadData(debouncedSearch, sort);
   }, [debouncedSearch, sort]);
@@ -413,65 +421,56 @@ const Products = () => {
         )}
 
         <div className="card">
-          <div className="card-header">
-            <h3>📦 إدارة المنتجات</h3>
-            <div className="toolbar">
-              <Link to="/products/analytics" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                📊 الإحصائيات
-              </Link>
-              <div className="search-input">
-                <span className="search-icon">🔍</span>
-                <input type="text" placeholder="بحث عن منتج..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-              </div>
+          <div className="products-header-premium">
 
-              <select
-                className="form-control"
-                style={{ width: '180px', height: '40px', padding: '0 10px' }}
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                <option value="id,desc">الأحدث أولاً</option>
-                <option value="id,asc">الأقدم أولاً</option>
-                <option value="name,asc">الاسم (أ-ي)</option>
-                <option value="name,desc">الاسم (ي-أ)</option>
-                <option value="salePrice,asc">السعر (الأقل)</option>
-                <option value="salePrice,desc">السعر (الأعلى)</option>
-                <option value="stock,asc">المخزون (الأقل)</option>
-                <option value="stock,desc">المخزون (الأعلى)</option>
-                <option value="soldQuantity,desc">الأكثر مبيعاً 🔥</option>
-                <option value="viewCount,desc">الأكثر مشاهدة 👀</option>
-              </select>
-              <div style={{ display: 'flex', gap: '5px' }}>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleExportExcel}
-                  disabled={exportingExcel || items.length === 0}
-                  title="تصدير إلى إكسيل"
-                >
-                  {exportingExcel ? '⏳' : '📊'} إكسيل
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleExportPdf}
-                  disabled={exportingPdf || items.length === 0}
-                  title="تصدير إلى PDF"
-                >
-                  {exportingPdf ? '⏳' : '📄'} PDF
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={openPrinterConfig}
-                  title="إعدادات الطابعة للباركود"
-                >
-                  ⚙️ إعدادات الطابعة
-                </button>
-                {Api.can('PRODUCT_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => openForm(null)}>
-                    <span>+</span> إضافة منتج
-                  </button>
-                )}
+            {/* Row 1: Add & Stats (50/50 on Mobile) */}
+            <div className="row-premium title-row desktop-only">
+              <h3 style={{ margin: 0 }}>📦 إدارة المنتجات</h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Link to="/products/analytics" className="btn btn-ghost stats-btn-desktop">📊 الإحصائيات</Link>
+                {Api.can('PRODUCT_WRITE') && <button className="btn btn-primary" onClick={() => openForm(null)}>+ إضافة منتج</button>}
               </div>
             </div>
+
+            <div className="row-premium mobile-only">
+              {Api.can('PRODUCT_WRITE') && (
+                <button className="btn btn-primary split-btn" onClick={() => openForm(null)}>+ إضافة منتج</button>
+              )}
+              <Link to="/products/analytics" className="btn btn-ghost split-btn stats-btn-mobile">📊 الإحصائيات</Link>
+            </div>
+
+            {/* Row 2: Search & Camera */}
+            <div className="row-premium">
+              <div className="search-wrap-new">
+                <span className="search-icon">🔍</span>
+                <input
+                  type="text"
+                  placeholder="بحث سريع..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button className="camera-btn-new mobile-only" onClick={() => setShowScanner(true)}>📷</button>
+            </div>
+
+            {/* Row 3: Sort & Tool Buttons (Compact Height) */}
+            <div className="row-premium compact-row">
+              <div className="sort-wrap-new">
+                <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                  <option value="id,desc">الأحدث</option>
+                  <option value="id,asc">الأقدم</option>
+                  <option value="name,asc">أ - ي</option>
+                  <option value="salePrice,asc">السعر ↑</option>
+                  <option value="salePrice,desc">السعر ↓</option>
+                </select>
+              </div>
+              <div className="tools-wrap-new">
+                <button className="tool-btn-new" onClick={handleExportExcel} disabled={exportingExcel}>📊</button>
+                <button className="tool-btn-new" onClick={handleExportPdf} disabled={exportingPdf}>📄</button>
+                <button className="tool-btn-new" onClick={openPrinterConfig}>⚙️</button>
+              </div>
+            </div>
+
           </div>
           <div className="card-body no-padding">
             <div className="table-wrapper">
@@ -725,10 +724,10 @@ const Products = () => {
                   <div className="form-group">
                     <label>اختر الطابعة المثبتة على الجهاز</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <select 
-                        className="form-control" 
-                        value={printerConfig.printerName} 
-                        onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })} 
+                      <select
+                        className="form-control"
+                        value={printerConfig.printerName}
+                        onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })}
                         required
                         disabled={loadingPrinters}
                       >
@@ -789,6 +788,37 @@ const Products = () => {
           </div>
         </ModalContainer>
       )}
+      {/* Barcode Scanner Modal */}
+      <ScannerModal
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScan={handleBarcodeScan}
+      />
+      <style>{`
+        .products-header-premium { padding: 15px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border-subtle); }
+        .row-premium { display: flex; gap: 8px; width: 100%; align-items: stretch; }
+        .title-row { justify-content: space-between; align-items: center; }
+        
+        .split-btn { flex: 1; padding: 12px 0; font-weight: 700; text-align: center; }
+        .stats-btn-mobile { border: 1px solid var(--border-input); background: var(--bg-elevated); color: var(--text-white); }
+        .stats-btn-desktop { border: 1px solid var(--metro-blue); color: var(--metro-blue); padding: 5px 15px; }
+
+        .search-wrap-new { flex: 1; display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-input); min-width: 0; }
+        .search-wrap-new .search-icon { padding: 0 10px; color: var(--text-dim); }
+        .search-wrap-new input { flex: 1; background: transparent; border: none; padding: 10px 0; color: #fff; outline: none; width: 100%; }
+        .camera-btn-new { width: 50px; flex-shrink: 0; background: var(--bg-tile); border: 1px solid var(--border-input); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .compact-row { height: 34px !important; }
+        .sort-wrap-new { flex: 1; height: 100%; }
+        .sort-wrap-new select { width: 100%; height: 100%; background: var(--bg-input); border: 1px solid var(--border-input); color: #fff; padding: 0 8px; font-size: 0.9rem; }
+        .tools-wrap-new { display: flex; gap: 5px; height: 100%; }
+        .tool-btn-new { width: 34px !important; height: 34px !important; background: var(--bg-elevated); border: 1px solid var(--border-input); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
+
+        @media (max-width: 768px) {
+          .mobile-only { display: flex !important; }
+          .desktop-only { display: none !important; }
+        }
+      `}</style>
     </>
   );
 };

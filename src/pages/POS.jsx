@@ -5,6 +5,7 @@ import Loader from '../components/common/Loader';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import ThermalReceipt from '../components/common/ThermalReceipt';
+import ScannerModal from '../components/common/ScannerModal';
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 const PAGE_SIZE = 20;
@@ -50,6 +51,7 @@ const POS = () => {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [lastInvoice, setLastInvoice] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
   const { toast } = useGlobalUI();
   const searchInputRef = useRef(null);
   const stompClientRef = useRef(null);
@@ -108,6 +110,30 @@ const POS = () => {
       const data = await Api.getProductsPaged(0, 50, value);
       setSearchProducts(data.items);
     } catch { setSearchProducts([]); }
+  };
+
+  const handleBarcodeScan = async (barcode) => {
+    if (!barcode) return;
+    try {
+      setCheckoutLoading(true); // Reuse loader overlay
+      const data = await Api.getProductsPaged(0, 2, barcode);
+      const results = data.items || [];
+      
+      if (results.length === 1) {
+        addToCart(results[0]);
+        toast(`تمت إضافة ${results[0].name}`, 'success', true); // Silent toast, camera already beeped
+      } else if (results.length > 1) {
+        setSearchQuery(barcode);
+        setSearchProducts(results);
+        toast('تم العثور على أكثر من منتج', 'info');
+      } else {
+        toast('المنتج غير موجود', 'error');
+      }
+    } catch (e) {
+      toast('خطأ في البحث عن المنتج', 'error');
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   const addToCart = useCallback((product) => {
@@ -227,11 +253,16 @@ const POS = () => {
           </button>
         </div>
 
-        {/* Quick Search */}
-        <div className="card" style={{ marginBottom: '16px', padding: '12px' }}>
-          <div className="search-input" style={{ maxWidth: '100%' }}>
+        <div className="card" style={{ marginBottom: '16px', padding: '0' }}>
+          <div className="premium-search-wrapper">
             <span className="search-icon">🔍</span>
-            <input ref={searchInputRef} type="text" className="form-control" placeholder="بحث سريع لإضافة منتج..." value={searchQuery} onChange={e => handleSearchChange(e.target.value)} />
+            <input 
+              ref={searchInputRef} 
+              type="text" 
+              placeholder="ابحث هنا لإضافة منتج سريعاً..." 
+              value={searchQuery} 
+              onChange={e => handleSearchChange(e.target.value)} 
+            />
             {searchProducts.length > 0 && (
               <div className="search-results-dropdown card">
                 {searchProducts.map(p => (
@@ -242,6 +273,13 @@ const POS = () => {
                 ))}
               </div>
             )}
+            <button 
+              className="mobile-only camera-trigger" 
+              onClick={() => setShowScanner(true)}
+              title="سحب بالكاميرا"
+            >
+              📷
+            </button>
           </div>
         </div>
 
@@ -368,6 +406,13 @@ const POS = () => {
         </div>
       )}
 
+      {/* Barcode Scanner Modal */}
+      <ScannerModal 
+        isOpen={showScanner} 
+        onClose={() => setShowScanner(false)} 
+        onScan={handleBarcodeScan} 
+      />
+
       <style>{`
         .pos-container { display: flex; gap: 15px; height: calc(100vh - 120px); padding: 5px; }
         .pos-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -378,6 +423,9 @@ const POS = () => {
         .pos-product-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: 0.2s; overflow: hidden; }
         .pos-product-card:hover { border-color: var(--metro-blue); transform: translateY(-3px); }
         .loader-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        @media (max-width: 768px) {
+          .mobile-hide { display: none; }
+        }
       `}</style>
     </div>
   );
