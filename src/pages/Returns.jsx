@@ -86,12 +86,14 @@ const Returns = () => {
                                 setCurrentPage(0);
                             }}
                         />
+{/* 
                         <button 
                             className="mobile-only camera-trigger" 
                             onClick={() => setShowScanner(true)}
                         >
                             📷
                         </button>
+                        */}
                     </div>
                 </div>
             </div>
@@ -286,6 +288,7 @@ const Returns = () => {
                 document.body
             )}
             {/* Barcode Scanner Modal */}
+{/* 
             <ScannerModal 
                 isOpen={showScanner} 
                 onClose={() => setShowScanner(false)} 
@@ -295,6 +298,7 @@ const Returns = () => {
                     toast(`تم سحب الكود: ${barcode}`, 'info', true);
                 }} 
             />
+            */}
 
             <style>{`
                 @media (max-width: 768px) {

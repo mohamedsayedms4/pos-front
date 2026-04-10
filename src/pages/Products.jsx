@@ -450,7 +450,7 @@ const Products = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button className="camera-btn-new mobile-only" onClick={() => setShowScanner(true)}>📷</button>
+{/* <button className="camera-btn-new mobile-only" onClick={() => setShowScanner(true)}>📷</button> */}
             </div>
 
             {/* Row 3: Sort & Tool Buttons (Compact Height) */}
@@ -789,11 +789,13 @@ const Products = () => {
         </ModalContainer>
       )}
       {/* Barcode Scanner Modal */}
+{/* 
       <ScannerModal
         isOpen={showScanner}
         onClose={() => setShowScanner(false)}
         onScan={handleBarcodeScan}
       />
+      */}
       <style>{`
         .products-header-premium { padding: 15px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border-subtle); }
         .row-premium { display: flex; gap: 8px; width: 100%; align-items: stretch; }

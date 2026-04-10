@@ -4,6 +4,7 @@ import BarcodeScanner from './BarcodeScanner';
 
 const ScannerModal = ({ isOpen, onClose, onScan }) => {
   const [facingMode, setFacingMode] = useState("environment");
+  const [errorMsg, setErrorMsg] = useState(null);
 
   if (!isOpen) return null;
 
@@ -23,11 +24,15 @@ const ScannerModal = ({ isOpen, onClose, onScan }) => {
             <BarcodeScanner
               facingMode={facingMode}
               onResult={(text) => {
+                setErrorMsg(null);
                 onScan(text);
                 onClose();
               }}
               onError={(err) => {
-                // Ignore common framing errors
+                // Show error message briefly then auto-hide
+                const msg = err?.message || 'خطأ في المسح';
+                setErrorMsg(msg);
+                setTimeout(() => setErrorMsg(null), 3000);
               }}
             />
 
@@ -37,8 +42,32 @@ const ScannerModal = ({ isOpen, onClose, onScan }) => {
             </div>
           </div>
 
+          {/* Error toast */}
+          {errorMsg && (
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(255, 60, 60, 0.9)',
+              color: '#fff',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              zIndex: 20,
+              textAlign: 'center',
+              maxWidth: '90%',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+              animation: 'fadeInDown 0.3s ease'
+            }}>
+              {errorMsg}
+            </div>
+          )}
+
           <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(0,0,0,0.5)', color: '#fff' }}>
-            <p style={{ margin: 0 }}>قم بتوجيه الكاميرا نحو الباركود</p>
+            <p style={{ margin: '0 0 4px 0' }}>قم بتوجيه الكاميرا نحو الباركود</p>
+            <p style={{ margin: 0, fontSize: '12px', opacity: 0.7 }}>أو اضغط "التقاط وتحليل" لإرسال الصورة للسيرفر</p>
           </div>
         </div>
 
@@ -72,7 +101,7 @@ const ScannerModal = ({ isOpen, onClose, onScan }) => {
                 .scan-target {
                     width: 75%;
                     height: 40%;
-                    border: 2px solid #00ff00; /* Green for better visibility */
+                    border: 2px solid #00ff00;
                     box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), 0 0 0 1000px rgba(0,0,0,0.6);
                     border-radius: 12px;
                     position: relative;
@@ -93,6 +122,10 @@ const ScannerModal = ({ isOpen, onClose, onScan }) => {
                     0% { top: 5%; opacity: 0.8; }
                     50% { top: 95%; opacity: 1; }
                     100% { top: 5%; opacity: 0.8; }
+                }
+                @keyframes fadeInDown {
+                    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+                    to { opacity: 1; transform: translateX(-50%) translateY(0); }
                 }
                 .scanner-modal {
                     border: 1px solid rgba(255,255,255,0.1);

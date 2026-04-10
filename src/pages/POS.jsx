@@ -273,6 +273,7 @@ const POS = () => {
                 ))}
               </div>
             )}
+{/* 
             <button 
               className="mobile-only camera-trigger" 
               onClick={() => setShowScanner(true)}
@@ -280,6 +281,7 @@ const POS = () => {
             >
               📷
             </button>
+            */}
           </div>
         </div>
 
@@ -407,11 +409,13 @@ const POS = () => {
       )}
 
       {/* Barcode Scanner Modal */}
+{/* 
       <ScannerModal 
         isOpen={showScanner} 
         onClose={() => setShowScanner(false)} 
         onScan={handleBarcodeScan} 
       />
+      */}
 
       <style>{`
         .pos-container { display: flex; gap: 15px; height: calc(100vh - 120px); padding: 5px; }

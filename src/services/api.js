@@ -990,6 +990,18 @@ const Api = {
       body: JSON.stringify(data)
     });
     return res.data;
+  },
+
+  // ─── Barcode Scanner (Server-Side) ───
+  async scanBarcodeFromImage(imageBlob) {
+    const formData = new FormData();
+    formData.append('image', imageBlob, 'scan.jpg');
+    const res = await this._request('/barcode/scan', {
+      method: 'POST',
+      body: formData,
+      headers: {}
+    });
+    return res;
   }
 };
 

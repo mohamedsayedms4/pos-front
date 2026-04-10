@@ -1,50 +1,40 @@
 /**
  * useNotifications — Real-time notification hook via STOMP WebSocket
  * Connects to the Spring backend /ws endpoint and subscribes to user queue.
- * Plays a sound (public/sounds/notification.mp3) on each new incoming notification.
+ * Plays a sound on each new incoming notification.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Api, { API_BASE } from './api';
+// Import sound asset so Vite bundles it with a hashed URL (works in production)
+import notifySoundFile from '../assets/sound/notifiy.wav';
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 
 // ─── Sound player ───────────────────────────────────────────────────────────
-// Tries mp3 → wav → ogg in order. Silently fails if none found or browser blocks.
-const SOUND_CANDIDATES = [
-  // '/sounds/notification.mp3',
-  '/sounds/Notifications.wav'
-  // '/sounds/notification.ogg',
-];
+let audioCache = null;
 
-let audioCache = null; // lazily resolved
-
-async function resolveAudio() {
+function getAudio() {
   if (audioCache) return audioCache;
-  for (const src of SOUND_CANDIDATES) {
-    try {
-      const res = await fetch(src, { method: 'HEAD' });
-      if (res.ok) {
-        const audio = new Audio(src);
-        audio.volume = 0.6;
-        audioCache = audio;
-        return audio;
-      }
-    } catch { /* try next */ }
+  try {
+    audioCache = new Audio(notifySoundFile);
+    audioCache.volume = 0.6;
+  } catch (e) {
+    console.warn('[Notifications] Failed to create Audio:', e);
   }
-  return null;
+  return audioCache;
 }
 
 async function playNotificationSound() {
   try {
-    const audio = await resolveAudio();
+    const audio = getAudio();
     if (!audio) return;
-    // Reset to start in case it's still playing
     audio.currentTime = 0;
     await audio.play();
   } catch (e) {
     // Browser may block autoplay — silently ignore
+    console.debug('[Notifications] Sound blocked:', e.message);
   }
 }
 // ────────────────────────────────────────────────────────────────────────────
@@ -137,7 +127,7 @@ export function useNotifications(options = {}) {
     if (!token) return;
 
     // Prefetch audio so first notification plays instantly
-    resolveAudio();
+    getAudio();
 
     // Load initial state
     loadInitial();
