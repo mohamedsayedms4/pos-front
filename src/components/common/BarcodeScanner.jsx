@@ -1,70 +1,106 @@
-import React, { useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import React, { useEffect, useRef, useState } from 'react';
+import { readBarcodesFromImageFile } from 'zxing-wasm';
 
 const BarcodeScanner = ({ 
     onResult, 
-    onError, 
-    onClose, 
-    fps = 10, 
-    qrbox = 250, 
-    facingMode = "environment" // "user" for front, "environment" for back
+    onError,
+    facingMode = "environment"
 }) => {
-    const scannerId = "barcode-scanner-region";
-    const scannerRef = useRef(null);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const [stream, setStream] = useState(null);
+    const isScanning = useRef(true);
 
     useEffect(() => {
-        const html5QrCode = new Html5Qrcode(scannerId);
-        scannerRef.current = html5QrCode;
-
-        // RADICAL OPTIMIZATION:
-        // 1. We remove qrbox entirely. Cropping in JS is extremely slow.
-        // 2. We use a standard resolution (640x480) which is perfect for barcodes and very fast to decode.
-        const config = { 
-            fps: 15, // Balanced FPS to prevent CPU choking
-            aspectRatio: 1.333334, // 4:3 is more natural for barcodes
-            videoConstraints: {
-                facingMode: facingMode,
-                width: { ideal: 640 },
-                height: { ideal: 480 }
-            },
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true // The "Magic" ingredient for speed
-            }
-        };
-
-        const startScanner = async () => {
+        const startCamera = async () => {
             try {
-                // Focus only on common 1D POS formats if possible
-                // Starting with default but with high-performance config
-                await html5QrCode.start(
-                    { facingMode: facingMode }, 
-                    config, 
-                    (decodedText) => {
-                        onResult(decodedText);
-                    },
-                    () => {
-                        // Silent fail for "no barcode in frame"
+                const constraints = {
+                    video: {
+                        facingMode: facingMode,
+                        width: { ideal: 1280 }, // Good balance for sharp barcodes
+                        height: { ideal: 720 },
+                        focusMode: 'continuous'
                     }
-                );
+                };
+                const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+                setStream(newStream);
+                if (videoRef.current) {
+                    videoRef.current.srcObject = newStream;
+                }
             } catch (err) {
-                console.error("Scanner error:", err);
+                console.error("Camera access error:", err);
                 if (onError) onError(err);
             }
         };
 
-        startScanner();
+        startCamera();
 
         return () => {
-            if (scannerRef.current && scannerRef.current.isScanning) {
-                scannerRef.current.stop().then(() => {
-                    scannerRef.current.clear();
-                }).catch(err => console.warn("Cleanup error:", err));
+            isScanning.current = false;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
             }
         };
-    }, [onResult, onError, facingMode, fps, qrbox]);
+    }, [facingMode]);
+
+    useEffect(() => {
+        if (!stream) return;
+
+        const canvas = canvasRef.current;
+        const video = videoRef.current;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        const scanLoop = async () => {
+            if (!isScanning.current || !video || video.paused || video.ended) return;
+
+            // Draw current frame to hidden canvas
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                try {
+                    // This is where the WASM magic happens
+                    const results = await readBarcodesFromImageFile(canvas, {
+                        tryHarder: true, // More accurate
+                        formats: ["EAN-13", "Code-128", "Code-39", "UPC-A", "EAN-8"], // Specific 1D formats for speed
+                        maxNumberOfSymbols: 1
+                    });
+
+                    if (results.length > 0 && isScanning.current) {
+                        const code = results[0].text;
+                        onResult(code);
+                        isScanning.current = false; // Stop further scans
+                    }
+                } catch (err) {
+                    // Normal during empty frames
+                }
+            }
+
+            // High frequency scanning loop (approx ~15-20 fps)
+            if (isScanning.current) {
+                setTimeout(() => {
+                    requestAnimationFrame(scanLoop);
+                }, 50); 
+            }
+        };
+
+        const timer = setTimeout(scanLoop, 1000); // Wait for video to stabilize
+        return () => clearTimeout(timer);
+    }, [stream, onResult]);
 
     return (
-        <div id={scannerId} style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#000' }}></div>
+        <div style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: '#000' }}>
+            <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+            {/* Hidden canvas for processing */}
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+        </div>
     );
 };
 
