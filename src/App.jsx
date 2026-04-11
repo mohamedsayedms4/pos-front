@@ -27,6 +27,12 @@ import DebtManagement from './pages/DebtManagement.jsx'
 import InstallmentCalendar from './pages/InstallmentCalendar.jsx'
 import Employees from './pages/Employees.jsx'
 import EmployeeDetails from './pages/EmployeeDetails.jsx'
+import EcommerceStore from './pages/EcommerceStore.jsx'
+import OnlineOrders from './pages/OnlineOrders.jsx'
+import StoreProductDetail from './pages/StoreProductDetail.jsx'
+import StoreCategoryPage from './pages/StoreCategoryPage.jsx'
+import Settings from './pages/Settings.jsx'
+import { StoreProvider } from './context/StoreContext.jsx'
 
 import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
@@ -47,6 +53,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<Login />} />
+        
+        {/* Public Store Routes with Context */}
+        <Route path="/store" element={<StoreProvider><EcommerceStore /></StoreProvider>} />
+        <Route path="/store/product/:id" element={<StoreProvider><StoreProductDetail /></StoreProvider>} />
+        <Route path="/store/category/:id" element={<StoreProvider><StoreCategoryPage /></StoreProvider>} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/customer-order" element={<CustomerOrder />} />
@@ -80,6 +91,8 @@ function App() {
           <Route path="/employees" element={<Employees />} />
           <Route path="/employees/:id" element={<EmployeeDetails />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/online-orders" element={<OnlineOrders />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
     </Routes>

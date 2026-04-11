@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Api from '../services/api';
+import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
@@ -16,6 +16,7 @@ const Categories = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', parentId: '' });
+  const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -129,12 +130,14 @@ const Categories = () => {
     } else {
       setFormData({ name: '', description: '', parentId: '' });
     }
+    setImageFile(null);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditCategory(null);
+    setImageFile(null);
   };
 
   const handleSave = async (e) => {
@@ -151,11 +154,17 @@ const Categories = () => {
       parentId: formData.parentId ? parseInt(formData.parentId) : null,
     };
 
+    const formDataPayload = new FormData();
+    formDataPayload.append('category', new Blob([JSON.stringify(apiData)], { type: 'application/json' }));
+    if (imageFile) {
+      formDataPayload.append('image', imageFile);
+    }
+
     try {
       if (editCategory) {
-        await Api.updateCategory(editCategory.id, apiData);
+        await Api.updateCategory(editCategory.id, formDataPayload);
       } else {
-        await Api.createCategory(apiData);
+        await Api.createCategory(formDataPayload);
       }
       toast(editCategory ? 'تم تحديث الفئة بنجاح' : 'تم إضافة الفئة بنجاح', 'success');
       closeModal();
@@ -338,6 +347,7 @@ const Categories = () => {
                   <thead>
                     <tr>
                       <th>#</th>
+                      <th>صورة</th>
                       <th>الفئة</th>
                       <th>الوصف</th>
                       <th>الفئة الأم</th>
@@ -350,8 +360,15 @@ const Categories = () => {
                       <tr key={c.id}>
                         <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
                         <td>
+                          {c.imageUrl ? (
+                            <img src={SERVER_URL + c.imageUrl} alt={c.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
+                          ) : (
+                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📁</div>
+                          )}
+                        </td>
+                        <td>
                           <div style={{ paddingLeft: `${c.level * 24}px`, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span>{c.level > 0 ? '↳' : '📁'}</span>
+                            <span>{c.level > 0 ? '↳' : ''}</span>
                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
                           </div>
                         </td>
@@ -393,6 +410,15 @@ const Categories = () => {
                   <div className="form-group">
                     <label>الوصف</label>
                     <textarea className="form-control" name="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
+                  </div>
+                  <div className="form-group">
+                    <label>صورة الفئة (اختياري)</label>
+                    <input type="file" className="form-control" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
+                    {editCategory?.imageUrl && !imageFile && (
+                      <div style={{ marginTop: '10px' }}>
+                        <img src={SERVER_URL + editCategory.imageUrl} alt={editCategory.name} style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover' }} />
+                      </div>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>الفئة الأم (اختياري)</label>

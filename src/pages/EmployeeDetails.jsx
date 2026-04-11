@@ -12,7 +12,7 @@ const EmployeeDetails = () => {
   const [loading, setLoading] = useState(true);
   const [showIdModal, setShowIdModal] = useState(false);
 
-  const API_IMAGE_BASE = 'https://posapi.digitalrace.net/api/v1/products/images';
+  const API_IMAGE_BASE = 'http://localhost:8080/api/v1/products/images';
 
   useEffect(() => {
     loadEmployee();

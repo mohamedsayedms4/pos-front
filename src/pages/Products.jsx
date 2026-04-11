@@ -30,7 +30,7 @@ const Products = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة',
+    name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة', showInStore: true,
     units: [] // List of packaging units
   });
   const [images, setImages] = useState(null);
@@ -268,11 +268,12 @@ const Products = () => {
         productCode: product.productCode || '',
         categoryId: product.categoryId || '',
         unitName: product.unitName || 'القطعة',
+        showInStore: product.showInStore !== false,
         units: product.units || []
       });
     } else {
       setFormData({
-        name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة',
+        name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة', showInStore: true,
         units: []
       });
     }
@@ -298,6 +299,7 @@ const Products = () => {
       purchasePrice: parseFloat(formData.purchasePrice),
       salePrice: parseFloat(formData.salePrice),
       stock: parseFloat(formData.stock) || 0,
+      showInStore: formData.showInStore,
       categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
     };
 
@@ -514,6 +516,11 @@ const Products = () => {
                                     {u.unitName}: {u.conversionFactor} {p.unitName}
                                   </span>
                                 ))}
+                                {p.showInStore === false ? (
+                                  <span style={{ background: 'var(--metro-red)', color: 'white', padding: '0 5px', borderRadius: '3px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '3px' }}>🚫 مخفي من المتجر</span>
+                                ) : (
+                                  <span style={{ background: 'var(--accent-emerald)', color: 'white', padding: '0 5px', borderRadius: '3px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '3px' }}>🌐 متاح بالمتجر</span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -594,6 +601,13 @@ const Products = () => {
                       <label>الوحدة الأساسية (قطاعي) *</label>
                       <input className="form-control" name="unitName" value={formData.unitName} onChange={(e) => setFormData({ ...formData, unitName: e.target.value })} required placeholder="كيس، قطعة، كيلو..." />
                     </div>
+                  </div>
+
+                  <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-elevated)', padding: '10px', borderRadius: '5px', border: '1px solid var(--border-primary)' }}>
+                    <input type="checkbox" id="showInStore" checked={formData.showInStore} onChange={(e) => setFormData({ ...formData, showInStore: e.target.checked })} style={{ width: '18px', height: '18px' }} />
+                    <label htmlFor="showInStore" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: formData.showInStore ? 'var(--metro-blue)' : 'var(--text-muted)' }}>
+                      🌐 عرض المنتج في المتجر الإلكتروني للعملاء (أونلاين)
+                    </label>
                   </div>
 
                   {/* Packaging Units Section */}

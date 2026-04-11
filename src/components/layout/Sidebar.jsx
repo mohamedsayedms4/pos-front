@@ -83,6 +83,10 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className="nav-icon">🔄</span>
               <span>مرتجع المبيعات</span>
             </NavLink>
+            <NavLink to="/online-orders" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🌐</span>
+              <span>الطلبات الإلكترونية</span>
+            </NavLink>
           </>
         )}
 
@@ -142,6 +146,12 @@ const Sidebar = ({ isOpen, onClose }) => {
               <NavLink to="/audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">▣</span>
                 <span>سجل المراجعة</span>
+              </NavLink>
+            )}
+            {isAdmin && (
+              <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">⚙️</span>
+                <span>إعدادات المتجر</span>
               </NavLink>
             )}
           </>
