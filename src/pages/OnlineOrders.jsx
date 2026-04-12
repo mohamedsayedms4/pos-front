@@ -18,6 +18,7 @@ const StatusIcon = ({ type }) => {
 };
 
 const statusConfig = {
+  AWAITING_PAYMENT: { label: 'في انتظار الدفع', color: '#6366f1', icon: <StatusIcon type="PENDING" />, badgeClass: 'badge-primary' },
   PENDING: { label: 'في الانتظار', color: '#f59e0b', icon: <StatusIcon type="PENDING" />, badgeClass: 'badge-warning' },
   CONFIRMED: { label: 'مؤكد', color: '#3b82f6', icon: <StatusIcon type="CONFIRMED" />, badgeClass: 'badge-info' },
   PREPARING: { label: 'جاري التجهيز', color: '#8b5cf6', icon: <StatusIcon type="PREPARING" />, badgeClass: 'badge-primary' },
@@ -277,6 +278,10 @@ const OnlineOrders = () => {
           <div className="stat-value">{stats.total || 0}</div>
           <div className="stat-label">إجمالي الطلبات</div>
         </div>
+        <div className="stat-card" style={{ background: 'var(--bg-elevated)', borderRight: '4px solid #6366f1' }}>
+          <div className="stat-value" style={{ color: '#6366f1' }}>{stats.awaitingPayment || 0}</div>
+          <div className="stat-label">في انتظار الدفع 💳</div>
+        </div>
         <div className="stat-card amber">
           <div className="stat-value">{stats.pending || 0}</div>
           <div className="stat-label">في الانتظار</div>
@@ -296,9 +301,10 @@ const OnlineOrders = () => {
       </div>
 
       <div className="debt-tabs-container mb-3">
-        {['ALL', 'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED', 'RETURNED'].map(tab => {
+        {['ALL', 'AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED', 'RETURNED'].map(tab => {
              const labels = {
                  ALL: 'الكل',
+                 AWAITING_PAYMENT: '💳 انتظار الدفع',
                  PENDING: 'في الانتظار',
                  CONFIRMED: 'مؤكد',
                  PREPARING: 'جاري التجهيز',
@@ -341,6 +347,7 @@ const OnlineOrders = () => {
                 <th>الطلب</th>
                 <th>العميل</th>
                 <th>المبلغ الإجمالي</th>
+                <th>الدفع</th>
                 <th>تاريخ الطلب</th>
                 <th>الحالة</th>
                 <th style={{ textAlign: 'center' }}>الإجراءات</th>
@@ -348,9 +355,9 @@ const OnlineOrders = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6"><Loader message="جاري جلب الطلبات..." /></td></tr>
+                <tr><td colSpan="7"><Loader message="جاري جلب الطلبات..." /></td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan="6" className="text-center" style={{ padding: '50px', color: 'var(--text-dim)' }}>لا توجد طلبات مطابقة</td></tr>
+                <tr><td colSpan="7" className="text-center" style={{ padding: '50px', color: 'var(--text-dim)' }}>لا توجد طلبات مطابقة</td></tr>
               ) : orders.map((order, idx) => (
                 <React.Fragment key={order.id}>
                   <tr style={{ animationDelay: `${idx * 0.05}s`, background: 'rgba(255,255,255,0.02)' }}>
@@ -363,6 +370,18 @@ const OnlineOrders = () => {
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{order.customerPhone}</div>
                     </td>
                     <td style={{ fontWeight: 700 }}>{Number(order.totalAmount).toFixed(2)} ج.م</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span style={{ fontSize: '0.78rem', padding: '2px 8px', borderRadius: '6px', background: order.paymentMethod === 'ONLINE' ? '#ede9fe' : '#f1f5f9', color: order.paymentMethod === 'ONLINE' ? '#6d28d9' : '#475569', fontWeight: 600, display: 'inline-block', width: 'fit-content' }}>
+                          {order.paymentMethod === 'ONLINE' ? '💳 أونلاين' : '💵 عند الاستلام'}
+                        </span>
+                        {order.paymentMethod === 'ONLINE' && (
+                          <span style={{ fontSize: '0.72rem', padding: '1px 6px', borderRadius: '4px', background: order.paymentStatus === 'PAID' ? '#dcfce7' : order.paymentStatus === 'FAILED' ? '#fef2f2' : '#fef9c3', color: order.paymentStatus === 'PAID' ? '#166534' : order.paymentStatus === 'FAILED' ? '#991b1b' : '#854d0e', fontWeight: 600, display: 'inline-block', width: 'fit-content' }}>
+                            {order.paymentStatus === 'PAID' ? '✅ مدفوع' : order.paymentStatus === 'FAILED' ? '❌ فشل' : order.paymentStatus === 'REFUNDED' ? '🔄 مسترد' : '⏳ لم يُدفع'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td>{formatDate(order.orderDate)}</td>
                     <td>
                       <span className={`badge ${statusConfig[order.status]?.badgeClass || 'badge-primary'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
@@ -378,7 +397,7 @@ const OnlineOrders = () => {
                   
                   {selectedOrderDetails?.id === order.id && (
                     <tr>
-                      <td colSpan="6" style={{ padding: '0', background: 'rgba(0,0,0,0.15)' }}>
+                      <td colSpan="7" style={{ padding: '0', background: 'rgba(0,0,0,0.15)' }}>
                         <div style={{ padding: '20px', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                             {/* Order Action Buttons */}
                             <div style={{ width: '100%', marginBottom: '15px', display: 'flex', gap: '10px' }}>

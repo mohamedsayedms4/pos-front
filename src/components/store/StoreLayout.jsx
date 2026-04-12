@@ -4,6 +4,8 @@ import { useStore } from '../../context/StoreContext';
 import StoreApi from '../../services/storeApi';
 import CartDrawer from './CartDrawer';
 import CheckoutModal from './CheckoutModal';
+import StoreLoginModal from './StoreLoginModal';
+import { useStoreAuth } from '../../context/StoreAuthContext';
 import '../../styles/ecommerce.css';
 
 const STORE_NAME = 'مهلهل جروب';
@@ -19,11 +21,14 @@ const StoreLayout = ({ children, hideHeader = false }) => {
     categories
   } = useStore();
 
+  const { storeCustomer, storeLogout } = useStoreAuth();
+
   const navigate = useNavigate();
   const location = useLocation();
 
   const [search, setSearch] = useState(new URLSearchParams(location.search).get('search') || '');
   const [trackOpen, setTrackOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [trackNum, setTrackNum] = useState('');
   const [trackResult, setTrackResult] = useState(null);
   const [trackLoading, setTrackLoading] = useState(false);
@@ -97,14 +102,29 @@ const StoreLayout = ({ children, hideHeader = false }) => {
             </div>
 
             {/* Search (Center) */}
-            <form className="ec-search-box-premium" onSubmit={handleSearch}>
-              <input 
-                type="text" 
-                placeholder="بحث المنتجات ..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <button type="submit" className="ec-search-btn-icon">🔍</button>
+            <form className="ec-search-container-premium" onSubmit={handleSearch}>
+              <div className="ec-search-input-wrapper">
+                <input 
+                  type="text" 
+                  className="ec-search-input"
+                  placeholder="بحث عن المنتجات ..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button 
+                    type="button" 
+                    className="ec-search-clear-btn"
+                    onClick={() => { setSearch(''); navigate('/store'); }}
+                    title="مسح البحث"
+                  >
+                    ✕
+                  </button>
+                )}
+                <button type="submit" className="ec-search-submit-btn">
+                  🔍
+                </button>
+              </div>
             </form>
 
             {/* Actions (Left side) */}
@@ -113,10 +133,19 @@ const StoreLayout = ({ children, hideHeader = false }) => {
                   <span className="ec-btn-icon">🛒</span>
                   <span>عربة التسوق ({cartCount})</span>
                </button>
-               <button className="ec-account-btn">
-                  <span className="ec-btn-icon">👤</span>
-                  <span>تسجيل الدخول</span>
-               </button>
+               {storeCustomer ? (
+                  <div className="ec-nav-dropdown-container" style={{ position: 'relative' }}>
+                    <button className="ec-account-btn" onClick={() => navigate('/store/account')} style={{ gap: '5px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', color: 'var(--ec-primary)' }}>
+                      <span className="ec-btn-icon">👤</span>
+                      <span>{storeCustomer.name.split(' ')[0]}</span>
+                    </button>
+                  </div>
+               ) : (
+                  <button className="ec-account-btn" onClick={() => setLoginModalOpen(true)}>
+                    <span className="ec-btn-icon">👤</span>
+                    <span>تسجيل الدخول</span>
+                  </button>
+               )}
             </div>
           </div>
 
@@ -160,10 +189,17 @@ const StoreLayout = ({ children, hideHeader = false }) => {
           </div>
           <span>عربة التسوق</span>
         </button>
-        <button className="ec-mobile-nav-item" onClick={() => setTrackOpen(true)}>
-          <div className="ec-mobile-nav-icon">⋯</div>
-          <span>المزيد</span>
-        </button>
+        {storeCustomer ? (
+          <button className="ec-mobile-nav-item" onClick={() => navigate('/store/account')}>
+            <div className="ec-mobile-nav-icon">👤</div>
+            <span>حسابي</span>
+          </button>
+        ) : (
+          <button className="ec-mobile-nav-item" onClick={() => setLoginModalOpen(true)}>
+            <div className="ec-mobile-nav-icon">👤</div>
+            <span>دخول</span>
+          </button>
+        )}
       </div>
 
       {/* ─── OVERLAYS ─── */}
@@ -225,6 +261,8 @@ const StoreLayout = ({ children, hideHeader = false }) => {
 
       {/* Toast */}
       {toast && <div className="ec-toast">{toast}</div>}
+
+      <StoreLoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
     </div>
   );
 };

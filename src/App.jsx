@@ -31,8 +31,10 @@ import EcommerceStore from './pages/EcommerceStore.jsx'
 import OnlineOrders from './pages/OnlineOrders.jsx'
 import StoreProductDetail from './pages/StoreProductDetail.jsx'
 import StoreCategoryPage from './pages/StoreCategoryPage.jsx'
+import StoreAccountPage from './pages/StoreAccountPage.jsx'
 import Settings from './pages/Settings.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
+import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 
 import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
@@ -55,9 +57,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         
         {/* Public Store Routes with Context */}
-        <Route path="/store" element={<StoreProvider><EcommerceStore /></StoreProvider>} />
-        <Route path="/store/product/:id" element={<StoreProvider><StoreProductDetail /></StoreProvider>} />
-        <Route path="/store/category/:id" element={<StoreProvider><StoreCategoryPage /></StoreProvider>} />
+        <Route path="/store" element={<StoreAuthProvider><StoreProvider><EcommerceStore /></StoreProvider></StoreAuthProvider>} />
+        <Route path="/store/account" element={<StoreAuthProvider><StoreProvider><StoreAccountPage /></StoreProvider></StoreAuthProvider>} />
+        <Route path="/store/product/:id" element={<StoreAuthProvider><StoreProvider><StoreProductDetail /></StoreProvider></StoreAuthProvider>} />
+        <Route path="/store/category/:id" element={<StoreAuthProvider><StoreProvider><StoreCategoryPage /></StoreProvider></StoreAuthProvider>} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/customer-order" element={<CustomerOrder />} />

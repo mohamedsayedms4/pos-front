@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { SERVER_URL } from '../services/api';
 import StoreApi from '../services/storeApi';
@@ -8,12 +8,25 @@ import ProductCard from '../components/store/ProductCard';
 
 const StoreProductDetail = () => {
   const { id } = useParams();
-  const { addToCart, storeInfo } = useStore();
+  const { addToCart, storeInfo, setCheckoutOpen } = useStore();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mainImage, setMainImage] = useState(null);
+  const relatedScrollRef = useRef(null);
+
+  const handleBuyNow = () => {
+    addToCart(product);
+    setCheckoutOpen(true);
+  };
+
+  const scrollRelated = (dir) => {
+    if (relatedScrollRef.current) {
+      const amt = 500;
+      relatedScrollRef.current.scrollBy({ left: dir === 'left' ? -amt : amt, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -56,9 +69,9 @@ const StoreProductDetail = () => {
 
   return (
     <StoreLayout>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
-        {/* Breadcrumbs */}
-        <nav style={{ marginBottom: '30px', fontSize: '.85rem', color: '#888' }}>
+      <div className="ec-detail-container">
+        {/* Breadcrumbs - Desktop Only */}
+        <nav className="ec-breadcrumb hide-mobile" style={{ marginBottom: '30px', fontSize: '.85rem', color: '#888' }}>
           <Link to="/store" style={{ color: '#888', textDecoration: 'none' }}>المتجر</Link>
           <span style={{ margin: '0 10px' }}>/</span>
           <Link to={`/store/category/${product.categoryId}`} style={{ color: '#888', textDecoration: 'none' }}>{product.categoryName}</Link>
@@ -66,30 +79,22 @@ const StoreProductDetail = () => {
           <span style={{ color: '#333', fontWeight: 'bold' }}>{product.name}</span>
         </nav>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '50px', alignItems: 'start' }}>
+        <div className="ec-detail-grid">
           {/* Gallery */}
-          <div className="ec-product-detail-gallery">
-            <div style={{ 
-              width: '100%', aspectRatio: '1/1', background: '#fff', 
-              borderRadius: '20px', border: '1px solid #eee', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden', padding: '20px', marginBottom: '20px'
-            }}>
-              {mainImage ? <img src={mainImage} alt={product.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <span>📦</span>}
+          <div className="ec-detail-gallery">
+            <div className="ec-detail-main-img-wrapper">
+              {mainImage ? <img src={mainImage} alt={product.name} /> : <span style={{fontSize: '3rem'}}>📦</span>}
             </div>
             {product.imageUrls?.length > 1 && (
-              <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px' }}>
+              <div className="ec-detail-thumbnails">
                 {product.imageUrls.map((url, i) => {
                   const fullUrl = StoreApi.getImageUrl(url);
+                  const isActive = mainImage === fullUrl;
                   return (
                     <div 
                       key={i} 
                       onClick={() => setMainImage(fullUrl)}
-                      style={{ 
-                        width: '80px', height: '80px', borderRadius: '10px', 
-                        border: `2px solid ${mainImage === fullUrl ? '#00a651' : '#eee'}`,
-                        cursor: 'pointer', overflow: 'hidden', flexShrink: 0, padding: '5px', background: '#fff'
-                      }}
+                      className={`ec-detail-thumb ${isActive ? 'active' : ''}`}
                     >
                       <img src={fullUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
@@ -100,42 +105,45 @@ const StoreProductDetail = () => {
           </div>
 
           {/* Info */}
-          <div className="ec-product-detail-info">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+          <div className="ec-detail-info">
+            <div className="ec-detail-category">
               {product.categoryImageUrl && (
-                <img src={`${SERVER_URL}${product.categoryImageUrl}`} alt="" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={`${SERVER_URL}${product.categoryImageUrl}`} alt="" style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
               )}
-              <span style={{ color: '#00a651', fontWeight: 'bold', fontSize: '.9rem' }}>{product.categoryName}</span>
+              <span>{product.categoryName}</span>
             </div>
             
-            <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#1a1a2e', marginBottom: '20px', lineHeight: '1.2' }}>{product.name}</h1>
+            <h1 className="ec-detail-title">{product.name}</h1>
             
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '25px' }}>
-              <span style={{ fontSize: '2.5rem', fontWeight: '900', color: '#00a651' }}>{Number(product.salePrice).toLocaleString()}</span>
-              <span style={{ fontSize: '1.2rem', color: '#888' }}>{storeInfo?.currency || 'جنيه'}</span>
+            <div className="ec-detail-price-wrapper">
+              <span className="ec-detail-price">{Number(product.salePrice).toLocaleString()}</span>
+              <span className="ec-detail-currency">{storeInfo?.currency || 'جنيه'}</span>
             </div>
 
-            <div style={{ 
-              padding: '20px', background: product.inStock ? '#f0fff4' : '#fff5f5', 
-              borderRadius: '12px', marginBottom: '30px', border: `1px solid ${product.inStock ? '#c6f6d5' : '#feb2b2'}` 
-            }}>
-              <strong style={{ color: product.inStock ? '#2f855a' : '#c53030' }}>
-                {product.inStock ? '✅ متوفر في المخزن - جاهز للشحن' : '❌ عذراً، المنتج غير متوفر حالياً'}
+            <div className={`ec-detail-stock-badge ${product.inStock ? 'ec-detail-stock-in' : 'ec-detail-stock-out'}`}>
+              <strong>
+                {product.inStock ? '✅ متوفر - جاهز للشحن' : '❌ عذراً، غير متوفر حالياً'}
               </strong>
             </div>
 
-            <p style={{ fontSize: '1.05rem', color: '#555', lineHeight: '1.8', marginBottom: '40px', whiteSpace: 'pre-wrap' }}>
+            <p className="ec-detail-description">
               {product.description || 'لا يوجد وصف متاح لهذا المنتج حالياً.'}
             </p>
 
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <div className="ec-detail-actions">
               <button 
-                className="ec-btn ec-btn-primary" 
-                style={{ flex: 1, padding: '18px', fontSize: '1.1rem' }}
+                className="ec-btn-buy-now" 
+                onClick={handleBuyNow}
+                disabled={!product.inStock}
+              >
+                اشتري الآن
+              </button>
+              <button 
+                className="ec-btn-add-to-cart" 
                 onClick={() => addToCart(product)}
                 disabled={!product.inStock}
               >
-                أضف إلى سلة التسوق 🛒
+                أضف للسلة
               </button>
             </div>
           </div>
@@ -149,19 +157,24 @@ const StoreProductDetail = () => {
               <h2>منتجات قد تعجبك</h2>
               <div className="ec-section-line" />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {related.map(p => (
-                <ProductCard key={p.id} product={p} onAddToCart={addToCart} />
-              ))}
+            <div className="ec-products-carousel-outer">
+              <button className="ec-carousel-nav prev" onClick={() => scrollRelated('right')}><span>›</span></button>
+              <div className="ec-products-carousel-scroll" ref={relatedScrollRef}>
+                {related.map(p => (
+                  <div key={p.id} className="ec-product-carousel-item">
+                    <ProductCard product={p} onAddToCart={addToCart} />
+                  </div>
+                ))}
+              </div>
+              <button className="ec-carousel-nav next" onClick={() => scrollRelated('left')}><span>‹</span></button>
             </div>
           </div>
         )}
       </div>
 
       <style>{`
-        @media (max-width: 992px) {
-          .ec-product-detail-info { margin-top: 30px; }
-          div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+        @media (max-width: 768px) {
+          .hide-mobile { display: none !important; }
         }
       `}</style>
     </StoreLayout>

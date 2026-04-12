@@ -59,6 +59,55 @@ const StoreApi = {
     return res.json();
   },
 
+  // ─── STORE AUTHENTICATION ───
+  async storeRegister(data) {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.message || 'فشل إنشاء الحساب');
+    }
+    return res.json();
+  },
+
+  async storeLogin(phone, password) {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
+    });
+    if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.message || 'بيانات الدخول غير صحيحة');
+    }
+    return res.json();
+  },
+
+  async getProfile() {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/me`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('store_access_token')}` }
+    });
+    if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.message || 'فشل جلب بيانات الحساب');
+    }
+    return res.json();
+  },
+
+  async getMyOrders(page = 0, size = 10) {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/me/orders?page=${page}&size=${size}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('store_access_token')}` }
+    });
+    if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.message || 'فشل جلب الطلبات');
+    }
+    return res.json();
+  },
+
   async updateStoreInfoAdmin(data) {
     const res = await fetch(`${SERVER_URL}/api/v1/settings/info`, {
       method: 'PUT',

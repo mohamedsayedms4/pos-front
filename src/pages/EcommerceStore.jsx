@@ -24,6 +24,22 @@ const EcommerceStore = () => {
   const [heroSections, setHeroSections] = useState([]);
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
 
+  // Payment return from Stripe
+  const paymentStatus = queryParams.get('payment');
+  const paymentOrderNumber = queryParams.get('order');
+  const [showPaymentBanner, setShowPaymentBanner] = useState(!!paymentStatus);
+
+  useEffect(() => {
+    if (paymentStatus) {
+      // Auto-hide banner after 8 seconds and clean URL
+      const timer = setTimeout(() => {
+        setShowPaymentBanner(false);
+        window.history.replaceState({}, '', '/store');
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentStatus]);
+
   const observerRef = useRef(null);
   const prodScrollRef = useRef(null);
   const catScrollRef = useRef(null);
@@ -100,6 +116,18 @@ const EcommerceStore = () => {
 
   return (
     <StoreLayout>
+      {/* ─── PAYMENT RETURN BANNER ─── */}
+      {showPaymentBanner && paymentStatus && (
+        <div className={`ec-payment-banner ${paymentStatus}`}>
+          {paymentStatus === 'success' ? (
+            <span>✅ تم الدفع بنجاح! طلبك رقم <strong>{paymentOrderNumber}</strong> قيد المراجعة.</span>
+          ) : (
+            <span>❌ تم إلغاء عملية الدفع للطلب <strong>{paymentOrderNumber}</strong>. يمكنك المحاولة مرة أخرى.</span>
+          )}
+          <button className="ec-payment-banner-close" onClick={() => { setShowPaymentBanner(false); window.history.replaceState({}, '', '/store'); }}>✕</button>
+        </div>
+      )}
+
       {/* ─── HERO & CATEGORY BAR ─── */}
       {!selectedCat && !debouncedSearch && (
         <>

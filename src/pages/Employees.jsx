@@ -73,7 +73,7 @@ const Employees = () => {
   const [editJobTitle, setEditJobTitle] = useState(null);
   const [jtSaving, setJtSaving] = useState(false);
 
-  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1';
+  const API_BASE_URL = 'http://localhost:8080/api/v1';
 
   // Helper to format date for HTML5 date input (handles [y,m,d] array, ISO string, or null)
   const formatDateForInput = (date) => {

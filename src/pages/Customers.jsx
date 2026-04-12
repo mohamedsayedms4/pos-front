@@ -24,7 +24,9 @@ const Customers = () => {
 
   // Transaction History State
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyTab, setHistoryTab] = useState('pos'); // 'pos' or 'online'
   const [historyData, setHistoryData] = useState({ items: [], totalPages: 0, totalElements: 0, page: 0 });
+  const [onlineData, setOnlineData] = useState({ items: [], totalPages: 0, totalElements: 0, page: 0 });
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedHistoryCustomer, setSelectedHistoryCustomer] = useState(null);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
@@ -131,18 +133,29 @@ const Customers = () => {
     }
   };
 
-  const handleViewHistory = async (customer, page = 0) => {
+  const handleViewHistory = async (customer, page = 0, tab = 'pos') => {
     setSelectedHistoryCustomer(customer);
+    setHistoryTab(tab);
     setLoadingHistory(true);
     setShowHistoryModal(true);
     try {
-      const res = await Api.getCustomerInvoices(customer.id, page, 10);
-      setHistoryData({
-        items: res.items || res.content || [],
-        totalPages: res.totalPages || 0,
-        totalElements: res.totalElements || 0,
-        page: res.number || page
-      });
+      if (tab === 'pos') {
+        const res = await Api.getCustomerInvoices(customer.id, page, 10);
+        setHistoryData({
+          items: res.items || res.content || [],
+          totalPages: res.totalPages || 0,
+          totalElements: res.totalElements || 0,
+          page: res.number || page
+        });
+      } else {
+        const res = await Api.getCustomerOnlineOrders(customer.id, page, 10);
+        setOnlineData({
+          items: res.items || res.content || [],
+          totalPages: res.totalPages || 0,
+          totalElements: res.totalElements || 0,
+          page: res.number || page
+        });
+      }
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -458,9 +471,24 @@ const Customers = () => {
             <button className="modal-close" onClick={() => setShowHistoryModal(false)}>✕</button>
           </div>
           <div className="modal-body">
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <button 
+                className={`btn ${historyTab === 'pos' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'pos')}
+              >
+                فواتير الكاشير
+              </button>
+              <button 
+                className={`btn ${historyTab === 'online' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'online')}
+              >
+                طلبات المتجر (أونلاين)
+              </button>
+            </div>
+
             {loadingHistory ? (
-              <Loader message="جاري جلب سجل الفواتير..." />
-            ) : (
+              <Loader message="جاري جلب السجل..." />
+            ) : historyTab === 'pos' ? (
               <>
                 <div className="table-wrapper mb-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                   <table className="data-table">
@@ -506,13 +534,65 @@ const Customers = () => {
                     <button 
                       className="btn btn-ghost btn-sm" 
                       disabled={historyData.page === 0}
-                      onClick={() => handleViewHistory(selectedHistoryCustomer, historyData.page - 1)}
+                      onClick={() => handleViewHistory(selectedHistoryCustomer, historyData.page - 1, 'pos')}
                     >السابق</button>
                     <span>صفحة {historyData.page + 1} من {historyData.totalPages}</span>
                     <button 
                       className="btn btn-ghost btn-sm" 
                       disabled={historyData.page >= historyData.totalPages - 1}
-                      onClick={() => handleViewHistory(selectedHistoryCustomer, historyData.page + 1)}
+                      onClick={() => handleViewHistory(selectedHistoryCustomer, historyData.page + 1, 'pos')}
+                    >التالي</button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="table-wrapper mb-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>رقم الطلب</th>
+                        <th>التاريخ</th>
+                        <th style={{ textAlign: 'center' }}>الإجمالي</th>
+                        <th style={{ textAlign: 'center' }}>الحالة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {onlineData.items.length === 0 ? (
+                        <tr><td colSpan="4" className="text-center">لا توجد طلبات أونلاين لهذا العميل</td></tr>
+                      ) : onlineData.items.map(order => (
+                        <tr key={order.id}>
+                          <td><strong>{order.orderNumber}</strong></td>
+                          <td style={{ fontSize: '0.85rem' }}>{new Date(order.orderDate).toLocaleString('ar-EG')}</td>
+                          <td style={{ textAlign: 'center' }}>{Number(order.totalAmount).toFixed(2)}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="badge badge-info">
+                              {order.status === 'PENDING' ? 'قيد الانتظار' : 
+                               order.status === 'CONFIRMED' ? 'مؤكد' : 
+                               order.status === 'PREPARING' ? 'جاري التجهيز' : 
+                               order.status === 'READY' ? 'جاهز للتسليم' : 
+                               order.status === 'DELIVERED' ? 'تم التسليم' : 
+                               order.status === 'CANCELLED' ? 'ملغي' : 'مرتجع'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {onlineData.totalPages > 1 && (
+                  <div className="pagination">
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      disabled={onlineData.page === 0}
+                      onClick={() => handleViewHistory(selectedHistoryCustomer, onlineData.page - 1, 'online')}
+                    >السابق</button>
+                    <span>صفحة {onlineData.page + 1} من {onlineData.totalPages}</span>
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      disabled={onlineData.page >= onlineData.totalPages - 1}
+                      onClick={() => handleViewHistory(selectedHistoryCustomer, onlineData.page + 1, 'online')}
                     >التالي</button>
                   </div>
                 )}

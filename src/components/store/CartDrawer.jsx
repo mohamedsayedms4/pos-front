@@ -46,7 +46,14 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdate, onRemove, onCheckout }) =
               <span>الإجمالي:</span>
               <strong>{total.toLocaleString()} {CURRENCY}</strong>
             </div>
-            <button className="ec-checkout-btn" onClick={onCheckout}>إتمام الطلب</button>
+            <button className="ec-checkout-btn" onClick={onCheckout}>
+              <span>إتمام الطلب</span>
+              <span style={{ fontSize: '1.2rem' }}>🛍️</span>
+            </button>
+            <div className="ec-secure-badge">
+              <span>🔒</span>
+              <span>دفع آمن 100%</span>
+            </div>
           </div>
         )}
       </div>

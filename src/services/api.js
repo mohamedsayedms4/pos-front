@@ -2,7 +2,7 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-export const SERVER_URL = 'https://posapi.digitalrace.net';
+export const SERVER_URL = 'http://localhost:8080';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
@@ -924,6 +924,11 @@ const Api = {
 
   async getCustomerInvoices(id, page = 0, size = 10) {
     const res = await this._request(`/customers/${id}/invoices?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async getCustomerOnlineOrders(id, page = 0, size = 10) {
+    const res = await this._request(`/customers/${id}/online-orders?page=${page}&size=${size}`);
     return res.data;
   },
 
