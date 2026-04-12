@@ -35,7 +35,7 @@ const StoreProductDetail = () => {
         const p = await StoreApi.getProduct(id);
         setProduct(p);
         if (p.imageUrls?.length > 0) setMainImage(StoreApi.getImageUrl(p.imageUrls[0]));
-        
+
         // Load related products from same category
         if (p.categoryId) {
           const rel = await StoreApi.getProducts(0, 10, '', p.categoryId);
@@ -83,7 +83,7 @@ const StoreProductDetail = () => {
           {/* Gallery */}
           <div className="ec-detail-gallery">
             <div className="ec-detail-main-img-wrapper">
-              {mainImage ? <img src={mainImage} alt={product.name} /> : <span style={{fontSize: '3rem'}}>📦</span>}
+              {mainImage ? <img src={mainImage} alt={product.name} /> : <span style={{ fontSize: '3rem' }}>📦</span>}
             </div>
             {product.imageUrls?.length > 1 && (
               <div className="ec-detail-thumbnails">
@@ -91,8 +91,8 @@ const StoreProductDetail = () => {
                   const fullUrl = StoreApi.getImageUrl(url);
                   const isActive = mainImage === fullUrl;
                   return (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       onClick={() => setMainImage(fullUrl)}
                       className={`ec-detail-thumb ${isActive ? 'active' : ''}`}
                     >
@@ -112,9 +112,9 @@ const StoreProductDetail = () => {
               )}
               <span>{product.categoryName}</span>
             </div>
-            
+
             <h1 className="ec-detail-title">{product.name}</h1>
-            
+
             <div className="ec-detail-price-wrapper">
               <span className="ec-detail-price">{Number(product.salePrice).toLocaleString()}</span>
               <span className="ec-detail-currency">{storeInfo?.currency || 'جنيه'}</span>
@@ -131,15 +131,15 @@ const StoreProductDetail = () => {
             </p>
 
             <div className="ec-detail-actions">
-              <button 
-                className="ec-btn-buy-now" 
+              <button
+                className="ec-btn-buy-now"
                 onClick={handleBuyNow}
                 disabled={!product.inStock}
               >
                 اشتري الآن
               </button>
-              <button 
-                className="ec-btn-add-to-cart" 
+              <button
+                className="ec-btn-add-to-cart"
                 onClick={() => addToCart(product)}
                 disabled={!product.inStock}
               >

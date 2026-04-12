@@ -14,26 +14,35 @@ export const StoreProvider = ({ children }) => {
     const saved = localStorage.getItem('ec_cart');
     return saved ? JSON.parse(saved) : [];
   });
-  
+
+  const [wishlist, setWishlist] = useState(() => {
+    const saved = localStorage.getItem('ec_wishlist');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [toast, setToast] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-   const [storeInfo, setStoreInfo] = useState(null);
-   const [categories, setCategories] = useState([]);
+  const [storeInfo, setStoreInfo] = useState(null);
+  const [categories, setCategories] = useState([]);
 
-   useEffect(() => {
-     StoreApi.getStoreInfoPublic().then(res => {
-         if (res.success) setStoreInfo(res.data);
-     }).catch(() => {});
+  useEffect(() => {
+    StoreApi.getStoreInfoPublic().then(res => {
+      if (res.success) setStoreInfo(res.data);
+    }).catch(() => { });
 
-     StoreApi.getCategories().then(res => {
-         if (res.success) setCategories(res.data);
-     }).catch(() => {});
-   }, []);
+    StoreApi.getCategories().then(res => {
+      if (res.success) setCategories(res.data);
+    }).catch(() => { });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('ec_cart', JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('ec_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -43,15 +52,23 @@ export const StoreProvider = ({ children }) => {
   const addToCart = (product, quantity = 1) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
+      const resolvedImage = (product.imageUrls && product.imageUrls.length > 0) 
+        ? StoreApi.getImageUrl(product.imageUrls[0]) 
+        : (product.image ? StoreApi.getImageUrl(product.image) : (product.imageUrl ? StoreApi.getImageUrl(product.imageUrl) : null));
+
       if (existing) {
-        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + quantity } : i);
+        return prev.map(i => i.id === product.id ? { 
+          ...i, 
+          qty: i.qty + quantity,
+          image: i.image || resolvedImage
+        } : i);
       }
       return [...prev, {
         id: product.id,
         name: product.name,
         price: Number(product.salePrice),
         qty: quantity,
-        image: product.imageUrls && product.imageUrls.length > 0 ? StoreApi.getImageUrl(product.imageUrls[0]) : null
+        image: resolvedImage
       }];
     });
     showToast(`تمت إضافة ${product.name} للسلة ✅`);
@@ -68,6 +85,21 @@ export const StoreProvider = ({ children }) => {
 
   const clearCart = () => setCart([]);
 
+  const toggleWishlist = (productId) => {
+    setWishlist(prev => {
+      const isFav = prev.includes(productId);
+      if (isFav) {
+        showToast("تمت الإزالة من المفضلة 🤍");
+        return prev.filter(id => id !== productId);
+      } else {
+        showToast("تمت الإضافة للمفضلة ❤️");
+        return [...prev, productId];
+      }
+    });
+  };
+
+  const isWishlisted = (productId) => wishlist.includes(productId);
+
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -83,10 +115,13 @@ export const StoreProvider = ({ children }) => {
     setCartOpen,
     checkoutOpen,
     setCheckoutOpen,
-     toast,
-     showToast,
-     storeInfo,
-     categories
+    toast,
+    showToast,
+    storeInfo,
+    categories,
+    wishlist,
+    toggleWishlist,
+    isWishlisted
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

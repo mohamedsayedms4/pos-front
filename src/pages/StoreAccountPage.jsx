@@ -8,7 +8,7 @@ const StoreAccountPage = () => {
   const { storeCustomer, storeLogout, isStoreAuthLoading } = useStoreAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('orders'); // 'info', 'orders'
-  
+
   const [orders, setOrders] = useState([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -66,7 +66,7 @@ const StoreAccountPage = () => {
     <StoreLayout>
       <div className="ec-container" style={{ padding: '40px 20px', minHeight: '60vh' }}>
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
-          
+
           {/* Sidebar */}
           <div style={{ flex: '1 1 250px', background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', height: 'fit-content' }}>
             <div style={{ textAlign: 'center', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #e2e8f0' }}>
@@ -78,19 +78,19 @@ const StoreAccountPage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button 
+              <button
                 onClick={() => setActiveTab('orders')}
                 style={{ textAlign: 'right', padding: '10px 15px', borderRadius: '8px', border: 'none', background: activeTab === 'orders' ? '#f1f5f9' : 'transparent', color: activeTab === 'orders' ? 'var(--ec-primary)' : '#475569', fontWeight: activeTab === 'orders' ? 'bold' : 'normal', cursor: 'pointer' }}
               >
                 📦 طلباتي
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('info')}
                 style={{ textAlign: 'right', padding: '10px 15px', borderRadius: '8px', border: 'none', background: activeTab === 'info' ? '#f1f5f9' : 'transparent', color: activeTab === 'info' ? 'var(--ec-primary)' : '#475569', fontWeight: activeTab === 'info' ? 'bold' : 'normal', cursor: 'pointer' }}
               >
                 ⚙️ إعدادات الحساب
               </button>
-              <button 
+              <button
                 onClick={() => { storeLogout(); navigate('/store'); }}
                 style={{ textAlign: 'right', padding: '10px 15px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', marginTop: '20px' }}
               >
@@ -101,11 +101,11 @@ const StoreAccountPage = () => {
 
           {/* Main Content */}
           <div style={{ flex: '3 1 600px', background: 'white', borderRadius: '12px', padding: '30px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-            
+
             {activeTab === 'orders' && (
               <div className="ec-animate-in">
                 <h2 style={{ marginBottom: '20px', color: '#1e293b' }}>سجل الطلبات الأونلاين</h2>
-                
+
                 {isLoadingOrders ? (
                   <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>جاري تحميل الطلبات...</div>
                 ) : orders.length === 0 ? (
@@ -116,8 +116,8 @@ const StoreAccountPage = () => {
                 ) : (
                   <div style={{ display: 'grid', gap: '15px' }}>
                     {orders.map(order => (
-                      <div 
-                        key={order.id} 
+                      <div
+                        key={order.id}
                         onClick={() => { setSelectedOrder(order); setIsDetailsModalOpen(true); }}
                         style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '15px', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
                         onMouseOver={e => e.currentTarget.style.borderColor = 'var(--ec-primary)'}
@@ -125,7 +125,7 @@ const StoreAccountPage = () => {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                           <h4 style={{ margin: 0, color: 'var(--ec-primary)' }}>{order.orderNumber}</h4>
-                          <span style={{ 
+                          <span style={{
                             padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold',
                             ...getStatusStyle(order.status)
                           }}>
@@ -186,7 +186,7 @@ const StoreAccountPage = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '15px', background: '#f8fafc', borderRadius: '12px' }}>
                 <div>
                   <div style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '4px' }}>حالة الطلب</div>
-                  <span style={{ 
+                  <span style={{
                     padding: '4px 8px', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold',
                     ...getStatusStyle(selectedOrder.status)
                   }}>
@@ -241,9 +241,9 @@ const StoreAccountPage = () => {
                   <div style={{ paddingRight: '15px', borderRight: '2px solid #e2e8f0', marginLeft: '10px' }}>
                     {selectedOrder.history.map((h, idx) => (
                       <div key={h.id} style={{ position: 'relative', marginBottom: '15px', paddingRight: '20px' }}>
-                        <div style={{ 
-                          position: 'absolute', right: '-25px', top: '5px', 
-                          width: '10px', height: '10px', borderRadius: '50%', 
+                        <div style={{
+                          position: 'absolute', right: '-25px', top: '5px',
+                          width: '10px', height: '10px', borderRadius: '50%',
                           background: idx === 0 ? 'var(--ec-primary)' : '#cbd5e1',
                           border: '2px solid white'
                         }} />

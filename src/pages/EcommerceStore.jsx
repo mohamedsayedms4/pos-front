@@ -6,8 +6,60 @@ import { useStore } from '../context/StoreContext';
 import StoreLayout from '../components/store/StoreLayout';
 import ProductCard from '../components/store/ProductCard';
 
+const CategoryRow = ({ category, addToCart, onSeeAll, currency }) => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    StoreApi.getProducts(0, 12, '', category.id)
+      .then(res => setProducts(res.items || []))
+      .finally(() => setLoading(false));
+  }, [category.id]);
+
+  const scroll = (dir) => {
+    if (scrollRef.current) {
+      const amt = 500;
+      scrollRef.current.scrollBy({ left: dir === 'left' ? -amt : amt, behavior: 'smooth' });
+    }
+  };
+
+  if (!loading && products.length === 0) return null;
+
+  return (
+    <div className="ec-category-row-section ec-animate-in">
+      <div className="ec-category-row-header">
+        <h3>{category.name}</h3>
+        <button onClick={() => onSeeAll(category.id)} className="ec-see-all-btn">
+          عرض الكل <span>←</span>
+        </button>
+      </div>
+
+      <div className="ec-row-carousel-container">
+        <button className="ec-row-nav-btn prev" onClick={() => scroll('right')}><span>›</span></button>
+        <div className="ec-row-carousel-scroll" ref={scrollRef}>
+          {loading ? (
+            [...Array(4)].map((_, i) => (
+              <div key={i} className="ec-row-product-item">
+                <div className="ec-skeleton" style={{ height: '300px', borderRadius: '20px' }} />
+              </div>
+            ))
+          ) : (
+            products.map(p => (
+              <div key={p.id} className="ec-row-product-item">
+                <ProductCard product={p} onAddToCart={addToCart} />
+              </div>
+            ))
+          )}
+        </div>
+        <button className="ec-row-nav-btn next" onClick={() => scroll('left')}><span>‹</span></button>
+      </div>
+    </div>
+  );
+};
+
 const EcommerceStore = () => {
-  const { addToCart } = useStore();
+  const { addToCart, storeInfo } = useStore();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialSearch = queryParams.get('search') || '';
@@ -24,6 +76,8 @@ const EcommerceStore = () => {
   const [heroSections, setHeroSections] = useState([]);
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
 
+  const currency = storeInfo?.currency || 'جنيه';
+
   // Payment return from Stripe
   const paymentStatus = queryParams.get('payment');
   const paymentOrderNumber = queryParams.get('order');
@@ -31,7 +85,6 @@ const EcommerceStore = () => {
 
   useEffect(() => {
     if (paymentStatus) {
-      // Auto-hide banner after 8 seconds and clean URL
       const timer = setTimeout(() => {
         setShowPaymentBanner(false);
         window.history.replaceState({}, '', '/store');
@@ -58,19 +111,17 @@ const EcommerceStore = () => {
     }
   };
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(t);
   }, [search]);
 
-  // Handle search from URL
   useEffect(() => {
     setSearch(initialSearch);
   }, [initialSearch]);
 
   useEffect(() => {
-    StoreApi.getCategories().then(setCategories).catch(() => {});
+    StoreApi.getCategories().then(setCategories).catch(() => { });
     StoreApi.getHeroSections()
       .then(data => {
         if (Array.isArray(data)) setHeroSections(data);
@@ -79,7 +130,6 @@ const EcommerceStore = () => {
       .catch(() => setHeroSections([]));
   }, []);
 
-  // Hero Slider Auto-play
   useEffect(() => {
     if (heroSections.length > 1) {
       const interval = setInterval(() => {
@@ -89,8 +139,9 @@ const EcommerceStore = () => {
     }
   }, [heroSections]);
 
-  // Load products
   const loadProducts = useCallback(async (p, append = false) => {
+    if (!selectedCat && !debouncedSearch) return; // Don't load main grid if showing sections
+
     if (append) setLoadingMore(true); else setLoading(true);
     try {
       const res = await StoreApi.getProducts(p, PAGE_SIZE, debouncedSearch, selectedCat);
@@ -103,8 +154,8 @@ const EcommerceStore = () => {
 
   useEffect(() => { loadProducts(0, false); }, [loadProducts]);
 
-  // Infinite scroll
   useEffect(() => {
+    if (!selectedCat && !debouncedSearch) return;
     const observer = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !loading && !loadingMore && page < totalPages - 1) {
         loadProducts(page + 1, true);
@@ -112,11 +163,12 @@ const EcommerceStore = () => {
     }, { threshold: 0.5 });
     if (observerRef.current) observer.observe(observerRef.current);
     return () => observer.disconnect();
-  }, [loading, loadingMore, page, totalPages, loadProducts]);
+  }, [loading, loadingMore, page, totalPages, loadProducts, selectedCat, debouncedSearch]);
+
+  const isMainHome = !selectedCat && !debouncedSearch;
 
   return (
     <StoreLayout>
-      {/* ─── PAYMENT RETURN BANNER ─── */}
       {showPaymentBanner && paymentStatus && (
         <div className={`ec-payment-banner ${paymentStatus}`}>
           {paymentStatus === 'success' ? (
@@ -128,38 +180,34 @@ const EcommerceStore = () => {
         </div>
       )}
 
-      {/* ─── HERO & CATEGORY BAR ─── */}
       {!selectedCat && !debouncedSearch && (
         <>
-      {/* ─── HERO SECTION (Slider) ─── */}
-      {!selectedCat && !debouncedSearch && heroSections && heroSections.length > 0 && (
-        <section className="ec-hero-modern">
-          <div className="ec-hero-slider">
-            {heroSections.map((hero, idx) => {
-              const SlideContent = (
-                <div 
-                  className={`ec-hero-slide ${idx === activeHeroIdx ? 'active' : ''}`}
-                  style={{ backgroundImage: `url(${StoreApi.getImageUrl(hero.imageUrl)})` }}
-                >
-                  <div className="ec-hero-overlay">
-                    {/* Text and button removed at user request */}
-                  </div>
-                </div>
-              );
+          {heroSections && heroSections.length > 0 && (
+            <section className="ec-hero-modern">
+              <div className="ec-hero-slider">
+                {heroSections.map((hero, idx) => {
+                  const SlideContent = (
+                    <div
+                      className={`ec-hero-slide ${idx === activeHeroIdx ? 'active' : ''}`}
+                      style={{ backgroundImage: `url(${StoreApi.getImageUrl(hero.imageUrl)})` }}
+                    >
+                      <div className="ec-hero-overlay" />
+                    </div>
+                  );
 
-              return hero.linkUrl ? (
-                <Link key={hero.id} to={hero.linkUrl} style={{ display: 'block', height: '100%' }}>
-                  {SlideContent}
-                </Link>
-              ) : (
-                <div key={hero.id} style={{ height: '100%' }}>
-                  {SlideContent}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                  return hero.linkUrl ? (
+                    <Link key={hero.id} to={hero.linkUrl} style={{ display: 'block', height: '100%' }}>
+                      {SlideContent}
+                    </Link>
+                  ) : (
+                    <div key={hero.id} style={{ height: '100%' }}>
+                      {SlideContent}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="ec-cat-icons-section">
             <h2 className="ec-section-title-premium">تسوق بالفئة</h2>
@@ -167,11 +215,11 @@ const EcommerceStore = () => {
               <button className="ec-cat-arrow prev" onClick={() => scrollCategories('right')}>
                 <span className="ec-arrow-icon">›</span>
               </button>
-              
+
               <div className="ec-cat-icons-scroll" ref={catScrollRef}>
                 {categories.map(cat => (
-                  <button 
-                    key={cat.id} 
+                  <button
+                    key={cat.id}
                     className={`ec-cat-icon-item ${selectedCat === cat.id ? 'active' : ''}`}
                     onClick={() => setSelectedCat(cat.id)}
                   >
@@ -186,7 +234,6 @@ const EcommerceStore = () => {
                   </button>
                 ))}
               </div>
-
               <button className="ec-cat-arrow next" onClick={() => scrollCategories('left')}>
                 <span className="ec-arrow-icon">‹</span>
               </button>
@@ -195,55 +242,68 @@ const EcommerceStore = () => {
         </>
       )}
 
-
-
-      {/* ─── PRODUCTS SECTION ─── */}
       <section className="ec-products-section">
-        {selectedCat && categories.find(c => c.id === selectedCat)?.imageUrl && (
-          <div className="ec-category-banner">
-            <img src={`${SERVER_URL}${categories.find(c => c.id === selectedCat).imageUrl}`} alt="" />
-            <div className="ec-category-banner-overlay">
-              <h2>{categories.find(c => c.id === selectedCat).name}</h2>
-            </div>
-          </div>
-        )}
-        
-        <div className="ec-section-header">
-          <div className="ec-section-line" />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {selectedCat && categories.find(c => c.id === selectedCat)?.imageUrl && (
-              <img src={`${SERVER_URL}${categories.find(c => c.id === selectedCat).imageUrl}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-            )}
-            <h2>{selectedCat ? categories.find(c => c.id === selectedCat)?.name || 'المنتجات' : debouncedSearch ? `نتائج البحث عن: ${debouncedSearch}` : 'جميع المنتجات'}</h2>
-          </div>
-          <div className="ec-section-line" />
-        </div>
-
-        {loading ? (
-          <div className="ec-loading">
-            <div className="ec-spinner" />
-            <p>جاري تحميل المنتجات...</p>
-          </div>
-        ) : products.length === 0 ? (
-          <div className="ec-empty">
-            <span style={{ fontSize: '3rem' }}>📦</span>
-            <p>لا توجد منتجات</p>
+        {isMainHome ? (
+          <div className="ec-home-sections">
+            {categories.slice(0, 6).map(cat => (
+              <CategoryRow 
+                key={cat.id} 
+                category={cat} 
+                addToCart={addToCart} 
+                onSeeAll={setSelectedCat}
+                currency={currency}
+              />
+            ))}
           </div>
         ) : (
-          <div className="ec-products-carousel-outer">
-            <button className="ec-carousel-nav prev" onClick={() => scrollProds('right')}><span>›</span></button>
-            <div className="ec-products-carousel-scroll" ref={prodScrollRef}>
-              {products.map(p => (
-                <div key={p.id} className="ec-product-carousel-item">
-                  <ProductCard product={p} onAddToCart={addToCart} />
+          <>
+            {selectedCat && categories.find(c => c.id === selectedCat)?.imageUrl && (
+              <div className="ec-category-banner">
+                <img src={`${SERVER_URL}${categories.find(c => c.id === selectedCat).imageUrl}`} alt="" />
+                <div className="ec-category-banner-overlay">
+                  <h2>{categories.find(c => c.id === selectedCat).name}</h2>
                 </div>
-              ))}
-              <div ref={observerRef} className="ec-observer-item">
-                {loadingMore && <div className="ec-spinner small" />}
               </div>
+            )}
+
+            <div className="ec-section-header">
+              <div className="ec-section-line" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                {selectedCat && categories.find(c => c.id === selectedCat)?.imageUrl && (
+                  <img src={`${SERVER_URL}${categories.find(c => c.id === selectedCat).imageUrl}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                )}
+                <h2>{selectedCat ? categories.find(c => c.id === selectedCat)?.name || 'المنتجات' : debouncedSearch ? `نتائج البحث عن: ${debouncedSearch}` : 'جميع المنتجات'}</h2>
+              </div>
+              <div className="ec-section-line" />
             </div>
-            <button className="ec-carousel-nav next" onClick={() => scrollProds('left')}><span>‹</span></button>
-          </div>
+
+            {loading ? (
+              <div className="ec-loading">
+                <div className="ec-spinner" />
+                <p>جاري تحميل المنتجات...</p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="ec-empty">
+                <span style={{ fontSize: '3rem' }}>📦</span>
+                <p>لا توجد منتجات</p>
+              </div>
+            ) : (
+              <div className="ec-products-carousel-outer">
+                <button className="ec-carousel-nav prev" onClick={() => scrollProds('right')}><span>›</span></button>
+                <div className="ec-products-carousel-scroll" ref={prodScrollRef}>
+                  {products.map(p => (
+                    <div key={p.id} className="ec-product-carousel-item">
+                      <ProductCard product={p} onAddToCart={addToCart} />
+                    </div>
+                  ))}
+                  <div ref={observerRef} className="ec-observer-item">
+                    {loadingMore && <div className="ec-spinner small" />}
+                  </div>
+                </div>
+                <button className="ec-carousel-nav next" onClick={() => scrollProds('left')}><span>‹</span></button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </StoreLayout>

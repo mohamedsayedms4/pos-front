@@ -9,7 +9,7 @@ import ProductCard from '../components/store/ProductCard';
 const StoreCategoryPage = () => {
   const { id } = useParams();
   const { addToCart } = useStore();
-  
+
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(0);
@@ -38,8 +38,8 @@ const StoreCategoryPage = () => {
     finally { setLoading(false); setLoadingMore(false); }
   }, [id]);
 
-  useEffect(() => { 
-    loadData(0, false); 
+  useEffect(() => {
+    loadData(0, false);
     window.scrollTo(0, 0);
   }, [loadData]);
 
@@ -86,7 +86,7 @@ const StoreCategoryPage = () => {
         <div className="ec-section-header" style={{ marginTop: '40px' }}>
           <div className="ec-section-line" />
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-             {category?.imageUrl && (
+            {category?.imageUrl && (
               <img src={`${SERVER_URL}${category.imageUrl}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
             )}
             <h2>تصفح منتجات {category?.name || 'القسم'}</h2>

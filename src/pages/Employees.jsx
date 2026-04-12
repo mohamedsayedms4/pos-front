@@ -315,10 +315,10 @@ const Employees = () => {
       </div>
 
       <div className="card">
-        <div className="card-header">
-          <h3>👤 إدارة شؤون الموظفين</h3>
-          <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
-            <div className="search-input" style={{ width: '250px' }}>
+        <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0 }}>👤 إدارة شؤون الموظفين</h3>
+          <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', flex: '1 1 100%', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <div className="search-input" style={{ flex: '1 1 200px', minWidth: '200px', maxWidth: '350px' }}>
               <span className="search-icon">🔍</span>
               <input
                 type="text"
@@ -327,12 +327,14 @@ const Employees = () => {
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
               />
             </div>
-            <button className="btn btn-secondary" onClick={() => setShowJobTitlesModal(true)}>
-              👔 المسميات الوظيفية
-            </button>
-            <button className="btn btn-primary" onClick={() => openForm()}>
-              <span>+</span> إضافة موظف جديد
-            </button>
+            <div style={{ display: 'flex', gap: '15px', flex: '1 1 100%' }}>
+              <button className="btn btn-secondary" style={{ flex: 1, margin: '0 2px' }} onClick={() => setShowJobTitlesModal(true)}>
+                👔 المسميات الوظيفية
+              </button>
+              <button className="btn btn-primary" style={{ flex: 1, margin: '0 2px' }} onClick={() => openForm()}>
+                <span>+</span> إضافة موظف جديد
+              </button>
+            </div>
           </div>
         </div>
         <div className="card-body no-padding">
@@ -414,7 +416,7 @@ const Employees = () => {
                 <button className="modal-close" onClick={closeModal}>✕</button>
               </div>
 
-              <div className="modal-tabs" style={{ display: 'flex', background: '#222', borderBottom: '1px solid #333' }}>
+              <div className="modal-tabs" style={{ display: 'flex', background: '#222', borderBottom: '1px solid #333', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
                 <button className={`tab-btn ${activeTab === 'account' ? 'active' : ''}`} onClick={() => setActiveTab('account')}>الحساب</button>
                 <button className={`tab-btn ${activeTab === 'personal' ? 'active' : ''}`} onClick={() => setActiveTab('personal')}>البيانات الشخصية</button>
                 <button className={`tab-btn ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => setActiveTab('contact')}>الاتصال</button>
@@ -646,7 +648,7 @@ const Employees = () => {
             }
             .form-grid-2 {
               display: grid;
-              grid-template-columns: 1fr 1fr;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
               gap: 20px;
             }
             .anim-fade-in {
@@ -655,6 +657,26 @@ const Employees = () => {
             @keyframes fadeIn {
               from { opacity: 0; transform: translateY(5px); }
               to { opacity: 1; transform: translateY(0); }
+            }
+            .header-action-btns {
+              display: flex;
+              gap: 10px;
+            }
+            @media (max-width: 768px) {
+              .header-action-btns {
+                flex: 1 1 100%;
+                justify-content: space-between;
+              }
+              .header-action-btns .btn-split {
+                flex: 1;
+                justify-content: center;
+                padding: 10px 5px;
+                font-size: 0.9rem;
+              }
+              .header-action-btns .btn-split:first-child {
+                margin-left: 10px !important;
+                margin-inline-end: 10px !important;
+              }
             }
           `}</style>
         </ModalContainer>

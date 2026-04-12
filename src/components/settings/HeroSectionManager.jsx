@@ -99,12 +99,14 @@ const HeroSectionManager = () => {
     return (
         <div className="hero-manager">
             <div className="card" style={{ marginBottom: '25px' }}>
-                <div className="card-header">
-                    <h3>{isEditing ? '📝 تعديل هيرو سيكشن' : '✨ إضافة هيرو سيكشن جديد'}</h3>
+                <div className="products-header-premium">
+                    <div className="row-premium title-row">
+                        <h3 style={{ margin: 0 }}>{isEditing ? 'تعديل البانر' : 'إضافة بانر جديد'}</h3>
+                    </div>
                 </div>
                 <div className="card-body">
                     <form onSubmit={handleSave} className="hero-form">
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                             <div className="form-group">
                                 <label>العنوان الأساسي</label>
                                 <input 
@@ -122,20 +124,17 @@ const HeroSectionManager = () => {
                                     onChange={e => setForm({...form, subtitle: e.target.value})} 
                                 />
                             </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '15px' }}>
                             <div className="form-group">
-                                <label>رابط الزر (معرفة المزيد)</label>
+                                <label>رابط التوجيه عند الضغط على البانر</label>
                                 <input 
                                     className="form-control" 
-                                    placeholder="/store/category/1"
+                                    placeholder="مثال: /store/category/1"
                                     value={form.linkUrl || ''} 
                                     onChange={e => setForm({...form, linkUrl: e.target.value})} 
                                 />
                             </div>
                             <div className="form-group">
-                                <label>الترتيب (Display Order)</label>
+                                <label>أولوية العرض (الترتيب)</label>
                                 <input 
                                     type="number" 
                                     className="form-control" 
@@ -149,13 +148,13 @@ const HeroSectionManager = () => {
                             <label>صورة البانر</label>
                             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                                 <div style={{ 
-                                    width: '160px', height: '80px', background: '#f5f5f5', 
-                                    borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' 
+                                    width: '160px', height: '80px', background: 'var(--bg-elevated)', 
+                                    borderRadius: '8px', overflow: 'hidden', border: '1px dashed var(--border-color)' 
                                 }}>
                                     {form.imageUrl ? (
                                         <img src={StoreApi.getImageUrl(form.imageUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>🖼️</div>
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>لا توجد صورة</div>
                                     )}
                                 </div>
                                 <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
@@ -166,11 +165,11 @@ const HeroSectionManager = () => {
                         </div>
 
                         <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-                            <button type="submit" className="btn btn-green" disabled={saving}>
-                                {saving ? 'جاري الحفظ...' : '✅ حفظ البيانات'}
+                            <button type="submit" className="btn btn-primary" disabled={saving}>
+                                {saving ? 'جاري الحفظ...' : 'حفظ البيانات'}
                             </button>
                             {isEditing && (
-                                <button type="button" className="btn btn-secondary" onClick={resetForm}>إلغاء</button>
+                                <button type="button" className="btn btn-ghost" onClick={resetForm}>إلغاء</button>
                             )}
                         </div>
                     </form>
@@ -178,12 +177,14 @@ const HeroSectionManager = () => {
             </div>
 
             <div className="card">
-                <div className="card-header">
-                    <h3>📑 قائمة الـ Hero Sections</h3>
+                <div className="products-header-premium">
+                    <div className="row-premium title-row">
+                        <h3 style={{ margin: 0 }}>قائمة البانرات الفعالة</h3>
+                    </div>
                 </div>
-                <div className="card-body">
-                    <div className="table-responsive">
-                        <table className="table">
+                <div className="card-body no-padding">
+                    <div className="table-wrapper">
+                        <table className="data-table">
                             <thead>
                                 <tr>
                                     <th>الصورة</th>
@@ -197,27 +198,39 @@ const HeroSectionManager = () => {
                                 {sections.map(s => (
                                     <tr key={s.id}>
                                         <td>
-                                            <img src={StoreApi.getImageUrl(s.imageUrl)} alt="" style={{ width: '80px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                                            <div style={{ width: '80px', height: '40px', background: 'var(--bg-elevated)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                {s.imageUrl && <img src={StoreApi.getImageUrl(s.imageUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                                            </div>
                                         </td>
-                                        <td><strong>{s.title}</strong></td>
-                                        <td>{s.displayOrder}</td>
+                                        <td style={{ fontWeight: 600, color: 'var(--metro-blue)' }}>{s.title || 'بدون عنوان'}</td>
+                                        <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '4px' }}>{s.displayOrder}</code></td>
                                         <td>
                                             <button 
                                                 className={`badge ${s.active ? 'badge-success' : 'badge-danger'}`}
                                                 onClick={() => handleToggle(s.id)}
                                                 style={{ border: 'none', cursor: 'pointer' }}
                                             >
-                                                {s.active ? 'نشط' : 'معطل'}
+                                                {s.active ? 'مفعل' : 'معطل'}
                                             </button>
                                         </td>
-                                        <td style={{ display: 'flex', gap: '8px' }}>
-                                            <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(s)}>✏️</button>
-                                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(s.id)}>🗑️</button>
+                                        <td>
+                                            <div className="table-actions" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => handleEdit(s)}>✏️</button>
+                                                <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(s.id)}>🗑️</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                                 {sections.length === 0 && (
-                                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>لا توجد بيانات حالياً</td></tr>
+                                    <tr>
+                                        <td colSpan="5">
+                                            <div className="empty-state">
+                                              <div className="empty-icon">🖼️</div>
+                                              <h4>لا توجد بيانات</h4>
+                                              <p>قم بإضافة بانرات جديدة للبدء</p>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 )}
                             </tbody>
                         </table>

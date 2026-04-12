@@ -32,6 +32,7 @@ import OnlineOrders from './pages/OnlineOrders.jsx'
 import StoreProductDetail from './pages/StoreProductDetail.jsx'
 import StoreCategoryPage from './pages/StoreCategoryPage.jsx'
 import StoreAccountPage from './pages/StoreAccountPage.jsx'
+import StoreWishlistPage from './pages/StoreWishlistPage.jsx'
 import Settings from './pages/Settings.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
@@ -61,6 +62,7 @@ function App() {
         <Route path="/store/account" element={<StoreAuthProvider><StoreProvider><StoreAccountPage /></StoreProvider></StoreAuthProvider>} />
         <Route path="/store/product/:id" element={<StoreAuthProvider><StoreProvider><StoreProductDetail /></StoreProvider></StoreAuthProvider>} />
         <Route path="/store/category/:id" element={<StoreAuthProvider><StoreProvider><StoreCategoryPage /></StoreProvider></StoreAuthProvider>} />
+        <Route path="/store/wishlist" element={<StoreAuthProvider><StoreProvider><StoreWishlistPage /></StoreProvider></StoreAuthProvider>} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/customer-order" element={<CustomerOrder />} />

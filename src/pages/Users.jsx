@@ -210,10 +210,10 @@ const Users = () => {
         </div>
 
         <div className="card">
-          <div className="card-header">
-            <h3>👥 إدارة المستخدمين</h3>
-            <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
-              <div className="search-input" style={{ width: '250px' }}>
+          <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0 }}>👥 إدارة المستخدمين</h3>
+            <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', flex: '1 1 100%', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <div className="search-input" style={{ flex: '1 1 200px', minWidth: '200px', maxWidth: '350px' }}>
                 <span className="search-icon">🔍</span>
                 <input
                   type="text"
