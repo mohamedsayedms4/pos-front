@@ -34,7 +34,7 @@ const Users = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'http://localhost:8080/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1'; // Standard base for image serving 
 
   // Debounce search
   useEffect(() => {
@@ -193,21 +193,21 @@ const Users = () => {
     <>
       <div className="page-section">
         <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-          <StatTile 
+          <StatTile
             id="usr_count"
             label="المستخدمين"
             value={totalElements}
             icon="👥"
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
-          <StatTile 
+          <StatTile
             id="usr_admins"
             label="مسؤول"
             value={data.filter(u => u.roles && u.roles.some(r => r.name === 'ADMIN' || r === 'ROLE_ADMIN' || r.name === 'ROLE_ADMIN')).length}
             icon="🛡️"
             defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 2 }}
           />
-          <StatTile 
+          <StatTile
             id="usr_active"
             label="نشط"
             value={data.filter(u => u.enabled).length}

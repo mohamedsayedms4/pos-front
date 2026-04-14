@@ -77,7 +77,7 @@ const Employees = () => {
   const [editJobTitle, setEditJobTitle] = useState(null);
   const [jtSaving, setJtSaving] = useState(false);
 
-  const API_BASE_URL = 'http://localhost:8080/api/v1';
+  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1';
 
   // Helper to format date for HTML5 date input (handles [y,m,d] array, ISO string, or null)
   const formatDateForInput = (date) => {
@@ -307,21 +307,21 @@ const Employees = () => {
   return (
     <div className="page-section">
       <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-        <StatTile 
+        <StatTile
           id="emp_count"
           label="إجمالي الموظفين"
           value={totalElements}
           icon="👥"
           defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
         />
-        <StatTile 
+        <StatTile
           id="emp_titles"
           label="المسميات الوظيفية"
           value={jobTitles.length}
           icon="👔"
           defaults={{ color: 'teal', size: 'tile-sq-sm', order: 2 }}
         />
-        <StatTile 
+        <StatTile
           id="emp_admins"
           label="مسؤولين"
           value={data.filter(u => (u.roles || []).includes('ROLE_ADMIN')).length}
