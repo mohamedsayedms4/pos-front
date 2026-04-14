@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import AlwaysOnDisplay from '../common/AlwaysOnDisplay';
@@ -11,6 +11,50 @@ const MainLayout = () => {
   const [isIdle, setIsIdle] = useState(false);
   const idleTimer = useRef(null);
   const { showToast } = useGlobalUI();
+  const location = useLocation();
+  const prevRouteRef = useRef({ path: '', label: '' });
+  const currentPathRef = useRef(location.pathname);
+
+  const pathMap = {
+    '/dashboard': 'الرئيسية',
+    '/products': 'المنتجات',
+    '/categories': 'الأقسام',
+    '/suppliers': 'الموردين',
+    '/customers': 'العملاء',
+    '/purchases': 'المشتريات',
+    '/sales': 'المبيعات',
+    '/pos': 'نقطة البيع',
+    '/returns': 'المرتجعات',
+    '/users': 'المستخدمين',
+    '/audit': 'سجل العمليات',
+    '/roles': 'الأدوار',
+    '/notifications': 'الإشعارات',
+    '/treasury': 'الخزينة',
+    '/debts': 'الديون',
+    '/expenses': 'المصروفات',
+    '/partners': 'الشركاء',
+    '/settings': 'الإعدادات',
+    '/messages': 'الرسائل',
+    '/payroll': 'الرواتب',
+    '/attendance': 'الحضور',
+    '/shifts': 'الورديات',
+    '/damaged': 'الهوالك',
+    '/online-orders': 'طلبات المتجر'
+  };
+
+  useEffect(() => {
+    // Track previous route
+    if (currentPathRef.current !== location.pathname) {
+      const prevPath = currentPathRef.current;
+      // Map base path for dynamic IDs (e.g. /products/89 -> /products)
+      const basePath = '/' + prevPath.split('/')[1];
+      prevRouteRef.current = {
+        path: prevPath,
+        label: pathMap[basePath] || pathMap[prevPath] || 'الصفحة السابقة'
+      };
+      currentPathRef.current = location.pathname;
+    }
+  }, [location.pathname]);
 
   const resetIdleTimer = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
@@ -65,7 +109,10 @@ const MainLayout = () => {
     <div className="app-layout">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content">
-        <Topbar onMenuToggle={toggleSidebar} />
+        <Topbar 
+          onMenuToggle={toggleSidebar} 
+          prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 
+        />
         <div className="page-content">
           <Outlet />
         </div>

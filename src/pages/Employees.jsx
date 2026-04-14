@@ -4,6 +4,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
+import StatTile from '../components/common/StatTile';
 
 const Employees = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const Employees = () => {
   const [jobTitles, setJobTitles] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [shifts, setShifts] = useState([]);
 
   // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
@@ -58,7 +60,9 @@ const Employees = () => {
       joiningDate: '',
       instagramLink: '',
       snapchatLink: '',
-      whatsappNumber: ''
+      whatsappNumber: '',
+      baseSalary: '',
+      shift: null
     }
   });
 
@@ -73,7 +77,7 @@ const Employees = () => {
   const [editJobTitle, setEditJobTitle] = useState(null);
   const [jtSaving, setJtSaving] = useState(false);
 
-  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1';
+  const API_BASE_URL = 'http://localhost:8080/api/v1';
 
   // Helper to format date for HTML5 date input (handles [y,m,d] array, ISO string, or null)
   const formatDateForInput = (date) => {
@@ -101,10 +105,11 @@ const Employees = () => {
   const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch) => {
     setLoading(true);
     try {
-      const [usersRes, titlesRes, rolesRes] = await Promise.all([
+      const [usersRes, titlesRes, rolesRes, shiftsRes] = await Promise.all([
         Api.getUsers(page, size, query),
         Api.getJobTitles().catch(() => []),
-        Api.getRoles().catch(() => [])
+        Api.getRoles().catch(() => []),
+        Api.getShifts().catch(() => [])
       ]);
 
       setData(usersRes.items || usersRes.content || []);
@@ -113,6 +118,7 @@ const Employees = () => {
       setCurrentPage(usersRes.currentPage ?? usersRes.number ?? 0);
       setJobTitles(titlesRes);
       setRoles(rolesRes);
+      setShifts(shiftsRes);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -153,7 +159,9 @@ const Employees = () => {
           joiningDate: formatDateForInput(user.profile?.joiningDate),
           instagramLink: user.profile?.instagramLink || '',
           snapchatLink: user.profile?.snapchatLink || '',
-          whatsappNumber: user.profile?.whatsappNumber || ''
+          whatsappNumber: user.profile?.whatsappNumber || '',
+          baseSalary: user.profile?.baseSalary || '',
+          shift: user.profile?.shift || null
         }
       });
       if (user.profilePicture) setAvatarPreview(`${API_BASE_URL}/products/images/${user.profilePicture}`);
@@ -172,7 +180,9 @@ const Employees = () => {
           joiningDate: '',
           instagramLink: '',
           snapchatLink: '',
-          whatsappNumber: ''
+          whatsappNumber: '',
+          baseSalary: '',
+          shift: null
         }
       });
       setAvatarPreview(null);
@@ -296,22 +306,28 @@ const Employees = () => {
 
   return (
     <div className="page-section">
-      <div className="stats-grid">
-        <div className="stat-card blue tile-wd-sm">
-          <div className="stat-icon">👥</div>
-          <div className="stat-value">{totalElements}</div>
-          <div className="stat-label">إجمالي الموظفين</div>
-        </div>
-        <div className="stat-card teal tile-sq-sm">
-          <div className="stat-icon">👔</div>
-          <div className="stat-value">{jobTitles.length}</div>
-          <div className="stat-label">المسميات الوظيفية</div>
-        </div>
-        <div className="stat-card magenta tile-sq-sm">
-          <div className="stat-icon">🛡️</div>
-          <div className="stat-value">{data.filter(u => (u.roles || []).includes('ROLE_ADMIN')).length}</div>
-          <div className="stat-label">مسؤولين</div>
-        </div>
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+        <StatTile 
+          id="emp_count"
+          label="إجمالي الموظفين"
+          value={totalElements}
+          icon="👥"
+          defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+        />
+        <StatTile 
+          id="emp_titles"
+          label="المسميات الوظيفية"
+          value={jobTitles.length}
+          icon="👔"
+          defaults={{ color: 'teal', size: 'tile-sq-sm', order: 2 }}
+        />
+        <StatTile 
+          id="emp_admins"
+          label="مسؤولين"
+          value={data.filter(u => (u.roles || []).includes('ROLE_ADMIN')).length}
+          icon="🛡️"
+          defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 3 }}
+        />
       </div>
 
       <div className="card">
@@ -393,8 +409,10 @@ const Employees = () => {
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn btn-icon btn-ghost" title="عرض التفاصيل" onClick={() => navigate(`/employees/${u.id}`)}>👁️</button>
-                          <button className="btn btn-icon btn-ghost" title="تعديل الملف الشامل" onClick={() => openForm(u)}>✏️</button>
+                          <button className="btn btn-icon btn-ghost" title="عرض التفاصيل والماليات" onClick={() => navigate(`/employees/${u.id}`)}>👁️</button>
+                          <button className="btn btn-icon btn-ghost" title="تعديل سريع (الراتب/الوردية)" onClick={() => { openForm(u); setActiveTab('financial_edit'); }}>💰</button>
+                          <button className="btn btn-icon btn-ghost" title="سجل حضور/انصراف" onClick={() => navigate(`/employees/${u.id}?tab=attendance`)}>📅</button>
+                          <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openForm(u)}>✏️</button>
                           <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}>🗑️</button>
                         </div>
                       </td>
@@ -421,6 +439,7 @@ const Employees = () => {
                 <button className={`tab-btn ${activeTab === 'personal' ? 'active' : ''}`} onClick={() => setActiveTab('personal')}>البيانات الشخصية</button>
                 <button className={`tab-btn ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => setActiveTab('contact')}>الاتصال</button>
                 <button className={`tab-btn ${activeTab === 'identity' ? 'active' : ''}`} onClick={() => setActiveTab('identity')}>الهوية</button>
+                <button className={`tab-btn ${activeTab === 'financial_edit' ? 'active' : ''}`} onClick={() => setActiveTab('financial_edit')}>الراتب والوردية ⭐</button>
                 <button className={`tab-btn ${activeTab === 'address' ? 'active' : ''}`} onClick={() => setActiveTab('address')}>العناوين</button>
                 <button className={`tab-btn ${activeTab === 'bank' ? 'active' : ''}`} onClick={() => setActiveTab('bank')}>البنك والضرائب</button>
               </div>
@@ -557,6 +576,27 @@ const Employees = () => {
                             {nationalIdPreview ? <img src={nationalIdPreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <span>انقر هنا لرفع صورة البطاقة</span>}
                             <input id="nationalIdInput" type="file" hidden onChange={(e) => handleFileChange(e, 'nationalId')} />
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'financial_edit' && (
+                    <div className="tab-pane active anim-fade-in">
+                      <div className="form-grid-2">
+                        <div className="form-group">
+                          <label>المرتب الأساسي (شهري)</label>
+                          <input type="number" className="form-control" name="baseSalary" value={form.profile.baseSalary} onChange={(e) => handleInputChange(e, true)} placeholder="0.00" />
+                        </div>
+                        <div className="form-group">
+                          <label>الوردية (Shift)</label>
+                          <select className="form-control" name="shiftId" value={form.profile.shift?.id || ''} onChange={(e) => {
+                            const selectedShift = shifts.find(s => s.id === parseInt(e.target.value));
+                            setForm(prev => ({ ...prev, profile: { ...prev.profile, shift: selectedShift ? { id: selectedShift.id } : null } }));
+                          }}>
+                            <option value="">بدون وردية</option>
+                            {shifts.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
                         </div>
                       </div>
                     </div>

@@ -6,6 +6,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
 import ScannerModal from '../components/common/ScannerModal';
+import StatTile from '../components/common/StatTile';
 
 const Products = () => {
   const { toast, confirm } = useGlobalUI();
@@ -378,72 +379,52 @@ const Products = () => {
     <>
       <div className="page-section">
 
-        {/* KPI TILES GRID — Metro Style 6-Column Grid */}
+        {/* KPI TILES GRID */}
         {stats && (
-          <div className="stats-grid">
-            {/* Row 1 — 2+4 = 6 columns */}
-            <Link to="/products/analytics" className="stat-card azure tile-sq-sm" style={{ textDecoration: 'none' }}>
-              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{stats.totalProducts}</div>
-              <div className="stat-label">إجمالي المنتجات</div>
-              <div className="stat-icon">▨</div>
-            </Link>
+          <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+            <StatTile
+              id="prod_total"
+              label="إجمالي المنتجات"
+              value={stats.totalProducts}
+              icon="📦"
+              to="/products/analytics"
+              defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+            />
 
-            <Link to="/products/analytics" className="stat-card forest tile-wd-sm" style={{ textDecoration: 'none' }}>
-              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{Number(stats.totalInventoryCapital || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>ج.م</span></div>
-              <div className="stat-label">قيمة المخزون (شراء)</div>
-              <div className="stat-icon">▧</div>
-            </Link>
+            <StatTile
+              id="prod_capital"
+              label="قيمة المخزون (شراء)"
+              value={`${Number(stats.totalInventoryCapital || 0).toLocaleString()} ج.م`}
+              icon="💰"
+              to="/products/analytics"
+              defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
+            />
 
-            {/* Row 2 — 2+4 = 6 columns */}
-            <Link to="/products/analytics" className="stat-card deep-purple tile-sq-sm" style={{ textDecoration: 'none' }}>
-              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{Number(stats.totalExpectedProfit || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>ج.م</span></div>
-              <div className="stat-label">الأرباح المتوقعة</div>
-              <div className="stat-icon">◈</div>
-            </Link>
+            <StatTile
+              id="prod_profit"
+              label="الأرباح المتوقعة"
+              value={Number(stats.totalExpectedProfit || 0).toLocaleString()}
+              icon="📈"
+              to="/products/analytics"
+              defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
+            />
 
-            <Link to="/products/analytics" className="stat-card sky tile-wd-sm" style={{ textDecoration: 'none' }}>
-              <div className="stat-value" style={{ fontSize: '1.4rem' }}>{Number(stats.totalRealizedProfit || 0).toLocaleString()} <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>ج.م</span></div>
-              <div className="stat-label">الأرباح المحققة</div>
-              <div className="stat-icon">▤</div>
-            </Link>
-
-            {/* Row 3 — Small alerts */}
-            <Link to="/products/analytics" className="stat-card crimson tile-sq-sm" style={{ textDecoration: 'none' }}>
-              <div className="stat-value" style={{ fontSize: '1.5rem' }}>{stats.outOfStockCount}</div>
-              <div className="stat-label">منتجات نفدت</div>
-              <div className="stat-icon">⚠</div>
-            </Link>
-
-            <Link to="/products/analytics" className="stat-card gold tile-sq-sm" style={{ textDecoration: 'none' }}>
-              <div className="stat-value" style={{ fontSize: '1.5rem' }}>{stats.lowStockCount}</div>
-              <div className="stat-label">مخزون منخفض</div>
-              <div className="stat-icon">⚠</div>
-            </Link>
+            <StatTile
+              id="prod_outofstock"
+              label="نفدت"
+              value={stats.outOfStockCount}
+              icon="📉"
+              to="/products/analytics"
+              defaults={{ color: 'blue', size: 'tile-sq-sm', order: 4 }}
+            />
           </div>
         )}
 
         <div className="card">
-          <div className="products-header-premium">
-
-            {/* Row 1: Add & Stats (50/50 on Mobile) */}
-            <div className="row-premium title-row desktop-only">
-              <h3 style={{ margin: 0 }}>📦 إدارة المنتجات</h3>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <Link to="/products/analytics" className="btn btn-ghost stats-btn-desktop">📊 الإحصائيات</Link>
-                {Api.can('PRODUCT_WRITE') && <button className="btn btn-primary" onClick={() => openForm(null)}>+ إضافة منتج</button>}
-              </div>
-            </div>
-
-            <div className="row-premium mobile-only">
-              {Api.can('PRODUCT_WRITE') && (
-                <button className="btn btn-primary split-btn" onClick={() => openForm(null)}>+ إضافة منتج</button>
-              )}
-              <Link to="/products/analytics" className="btn btn-ghost split-btn stats-btn-mobile">📊 الإحصائيات</Link>
-            </div>
-
-            {/* Row 2: Search & Camera */}
-            <div className="row-premium">
-              <div className="search-wrap-new">
+          <div className="card-header">
+            <h3>📦 إدارة المنتجات</h3>
+            <div className="toolbar">
+              <div className="search-input">
                 <span className="search-icon">🔍</span>
                 <input
                   type="text"
@@ -452,27 +433,37 @@ const Products = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-{/* <button className="camera-btn-new mobile-only" onClick={() => setShowScanner(true)}>📷</button> */}
-            </div>
 
-            {/* Row 3: Sort & Tool Buttons (Compact Height) */}
-            <div className="row-premium compact-row">
-              <div className="sort-wrap-new">
-                <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                  <option value="id,desc">الأحدث</option>
-                  <option value="id,asc">الأقدم</option>
-                  <option value="name,asc">أ - ي</option>
-                  <option value="salePrice,asc">السعر ↑</option>
-                  <option value="salePrice,desc">السعر ↓</option>
-                </select>
-              </div>
-              <div className="tools-wrap-new">
-                <button className="tool-btn-new" onClick={handleExportExcel} disabled={exportingExcel}>📊</button>
-                <button className="tool-btn-new" onClick={handleExportPdf} disabled={exportingPdf}>📄</button>
-                <button className="tool-btn-new" onClick={openPrinterConfig}>⚙️</button>
+              <select 
+                className="form-control" 
+                value={sort} 
+                onChange={(e) => setSort(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+              >
+                <option value="id,desc">الأحدث</option>
+                <option value="id,asc">الأقدم</option>
+                <option value="name,asc">أ - ي</option>
+                <option value="salePrice,asc">السعر ↑</option>
+                <option value="salePrice,desc">السعر ↓</option>
+              </select>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportingExcel}>
+                  {exportingExcel ? '⏳' : '📊'} إكسيل
+                </button>
+                <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportingPdf}>
+                  {exportingPdf ? '⏳' : '📄'} PDF
+                </button>
+                <button className="btn btn-secondary" onClick={openPrinterConfig} title="إعدادات الطابعة">⚙️</button>
+                
+                {Api.can('PRODUCT_WRITE') && (
+                  <button className="btn btn-primary" onClick={() => openForm(null)}>
+                    <span>+</span> إضافة منتج
+                  </button>
+                )}
+                <Link to="/products/analytics" className="btn btn-ghost stats-btn-desktop">📈 إحصائيات</Link>
               </div>
             </div>
-
           </div>
           <div className="card-body no-padding">
             <div className="table-wrapper">
@@ -803,7 +794,7 @@ const Products = () => {
         </ModalContainer>
       )}
       {/* Barcode Scanner Modal */}
-{/* 
+      {/* 
       <ScannerModal
         isOpen={showScanner}
         onClose={() => setShowScanner(false)}

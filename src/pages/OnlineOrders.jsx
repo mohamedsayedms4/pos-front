@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ReactDOM from 'react-dom';
 import Api, { API_BASE } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import ModalContainer from '../components/common/ModalContainer';
+import StatTile from '../components/common/StatTile';
 
 const StatusIcon = ({ type }) => {
   switch (type) {
@@ -18,7 +19,7 @@ const StatusIcon = ({ type }) => {
 };
 
 const statusConfig = {
-  AWAITING_PAYMENT: { label: 'في انتظار الدفع', color: '#6366f1', icon: <StatusIcon type="PENDING" />, badgeClass: 'badge-primary' },
+  AWAITING_PAYMENT: { label: 'انتظار الدفع', color: '#6366f1', icon: <StatusIcon type="PENDING" />, badgeClass: 'badge-primary' },
   PENDING: { label: 'في الانتظار', color: '#f59e0b', icon: <StatusIcon type="PENDING" />, badgeClass: 'badge-warning' },
   CONFIRMED: { label: 'مؤكد', color: '#3b82f6', icon: <StatusIcon type="CONFIRMED" />, badgeClass: 'badge-info' },
   PREPARING: { label: 'جاري التجهيز', color: '#8b5cf6', icon: <StatusIcon type="PREPARING" />, badgeClass: 'badge-primary' },
@@ -161,7 +162,7 @@ const OnlineOrders = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleString('ar-EG');
+    return new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
   };
 
   const printReceipt = (order) => {
@@ -258,313 +259,313 @@ const OnlineOrders = () => {
   };
 
   return (
-    <div className="page-section">
-      <div className="debt-page-header">
-        <div className="header-title">
-          <h1 style={{ fontWeight: 200, letterSpacing: '1px' }}>الطلبات الإلكترونية</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-            إدارة الطلبات، المتابعة، وسجل الحالات
-          </p>
+    <>
+      <div className="page-section">
+        
+        {/* Stats Dashboard */}
+        <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+          <StatTile 
+            id="ord_total"
+            label="إجمالي الطلبات"
+            value={stats.total || 0}
+            icon="📦"
+            className={activeTab === 'ALL' ? 'active-card' : ''}
+            onClick={() => { setActiveTab('ALL'); setPage(0); }}
+            defaults={{ color: 'blue', size: 'tile-sq-sm', order: 1 }}
+          />
+          <StatTile 
+            id="ord_awaiting"
+            label="انتظار الدفع"
+            value={stats.awaitingPayment || 0}
+            icon="💳"
+            className={activeTab === 'AWAITING_PAYMENT' ? 'active-card' : ''}
+            onClick={() => { setActiveTab('AWAITING_PAYMENT'); setPage(0); }}
+            defaults={{ color: 'blue', size: 'tile-sq-sm', order: 2 }}
+          />
+          <StatTile 
+            id="ord_pending"
+            label="في الانتظار"
+            value={stats.pending || 0}
+            icon="🕒"
+            className={activeTab === 'PENDING' ? 'active-card' : ''}
+            onClick={() => { setActiveTab('PENDING'); setPage(0); }}
+            defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
+          />
+          <StatTile 
+            id="ord_ready"
+            label="جاهز / تم التسليم"
+            value={(stats.ready || 0) + (stats.delivered || 0)}
+            icon="✅"
+            className={activeTab === 'READY' ? 'active-card' : ''}
+            onClick={() => { setActiveTab('READY'); setPage(0); }}
+            defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 4 }}
+          />
+          <StatTile 
+            id="ord_cancelled"
+            label="ملغي"
+            value={stats.cancelled || 0}
+            icon="🚫"
+            className={activeTab === 'CANCELLED' ? 'active-card' : ''}
+            onClick={() => { setActiveTab('CANCELLED'); setPage(0); }}
+            defaults={{ color: 'crimson', size: 'tile-sq-sm', order: 5 }}
+          />
+          <StatTile 
+            id="ord_returned"
+            label="مرتجع"
+            value={stats.returned || 0}
+            icon="🔄"
+            className={activeTab === 'RETURNED' ? 'active-card' : ''}
+            onClick={() => { setActiveTab('RETURNED'); setPage(0); }}
+            defaults={{ color: 'blue', size: 'tile-sq-sm', order: 6 }}
+          />
         </div>
-        <div className="header-actions">
-          <button className="btn btn-primary" onClick={() => window.open('/store', '_blank')}>
-            🛒 عرض المتجر أونلاين
-          </button>
-        </div>
-      </div>
 
-      <div className="debt-stats-grid mb-3">
-        <div className="stat-card blue">
-          <div className="stat-value">{stats.total || 0}</div>
-          <div className="stat-label">إجمالي الطلبات</div>
-        </div>
-        <div className="stat-card" style={{ background: 'var(--bg-elevated)', borderRight: '4px solid #6366f1' }}>
-          <div className="stat-value" style={{ color: '#6366f1' }}>{stats.awaitingPayment || 0}</div>
-          <div className="stat-label">في انتظار الدفع 💳</div>
-        </div>
-        <div className="stat-card amber">
-          <div className="stat-value">{stats.pending || 0}</div>
-          <div className="stat-label">في الانتظار</div>
-        </div>
-        <div className="stat-card emerald">
-          <div className="stat-value">{(stats.ready || 0) + (stats.delivered || 0)}</div>
-          <div className="stat-label">مكتمل / جاهز للتسليم</div>
-        </div>
-        <div className="stat-card red">
-          <div className="stat-value">{stats.cancelled || 0}</div>
-          <div className="stat-label">ألغيت</div>
-        </div>
-        <div className="stat-card" style={{ background: 'var(--bg-elevated)', borderRight: '4px solid #f97316' }}>
-          <div className="stat-value" style={{ color: '#f97316' }}>{stats.returned || 0}</div>
-          <div className="stat-label">مرتجعات</div>
-        </div>
-      </div>
 
-      <div className="debt-tabs-container mb-3">
-        {['ALL', 'AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED', 'RETURNED'].map(tab => {
-             const labels = {
-                 ALL: 'الكل',
-                 AWAITING_PAYMENT: '💳 انتظار الدفع',
-                 PENDING: 'في الانتظار',
-                 CONFIRMED: 'مؤكد',
-                 PREPARING: 'جاري التجهيز',
-                 READY: 'جاهز',
-                 DELIVERED: 'تم التسليم',
-                 CANCELLED: 'ملغي',
-                 RETURNED: 'مرتجع'
-             };
-             return (
-                 <button 
-                  key={tab}
-                  className={`btn ${activeTab === tab ? 'btn-primary' : 'btn-ghost'}`}
-                  onClick={() => { setActiveTab(tab); setPage(0); }}
-                >
-                    {labels[tab]}
+        <div className="card">
+          <div className="card-header">
+            <h3>📦 الطلبات الإلكترونية</h3>
+            <div className="toolbar">
+              <div className="search-input">
+                <span className="search-icon">🔍</span>
+                <input
+                  type="text"
+                  placeholder="بحث سريع..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <select 
+                className="form-control" 
+                value={activeTab} 
+                onChange={(e) => { setActiveTab(e.target.value); setPage(0); }}
+                style={{ width: '220px', height: '40px', padding: '0 10px' }}
+              >
+                <option value="ALL">📦 الكل (الكل في واحد)</option>
+                <option value="AWAITING_PAYMENT">💳 انتظار الدفع</option>
+                <option value="PENDING">🕒 في الانتظار</option>
+                <option value="READY">✅ جاهز / تم التسليم</option>
+                <option value="CANCELLED">🚫 ملغي</option>
+                <option value="RETURNED">🔄 مرتجع</option>
+              </select>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn btn-primary" onClick={() => window.open('/store', '_blank')}>
+                  🛒 المتجر أونلاين
                 </button>
-             );
-        })}
-      </div>
-
-      <div className="toolbar card mb-3" style={{ padding: '15px' }}>
-        <div className="debt-toolbar">
-          <div className="search-input" style={{ flex: 2 }}>
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="بحث برقم الطلب، العميل أو الهاتف..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="card">
-        <div className="table-wrapper">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>الطلب</th>
-                <th>العميل</th>
-                <th>المبلغ الإجمالي</th>
-                <th>الدفع</th>
-                <th>تاريخ الطلب</th>
-                <th>الحالة</th>
-                <th style={{ textAlign: 'center' }}>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan="7"><Loader message="جاري جلب الطلبات..." /></td></tr>
-              ) : orders.length === 0 ? (
-                <tr><td colSpan="7" className="text-center" style={{ padding: '50px', color: 'var(--text-dim)' }}>لا توجد طلبات مطابقة</td></tr>
-              ) : orders.map((order, idx) => (
-                <React.Fragment key={order.id}>
-                  <tr style={{ animationDelay: `${idx * 0.05}s`, background: 'rgba(255,255,255,0.02)' }}>
-                    <td>
-                      <div style={{ fontWeight: 700 }}>{order.orderNumber}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{order.itemCount} صنف</div>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{order.customerName}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{order.customerPhone}</div>
-                    </td>
-                    <td style={{ fontWeight: 700 }}>{Number(order.totalAmount).toFixed(2)} ج.م</td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <span style={{ fontSize: '0.78rem', padding: '2px 8px', borderRadius: '6px', background: order.paymentMethod === 'ONLINE' ? '#ede9fe' : '#f1f5f9', color: order.paymentMethod === 'ONLINE' ? '#6d28d9' : '#475569', fontWeight: 600, display: 'inline-block', width: 'fit-content' }}>
-                          {order.paymentMethod === 'ONLINE' ? '💳 أونلاين' : '💵 عند الاستلام'}
-                        </span>
-                        {order.paymentMethod === 'ONLINE' && (
-                          <span style={{ fontSize: '0.72rem', padding: '1px 6px', borderRadius: '4px', background: order.paymentStatus === 'PAID' ? '#dcfce7' : order.paymentStatus === 'FAILED' ? '#fef2f2' : '#fef9c3', color: order.paymentStatus === 'PAID' ? '#166534' : order.paymentStatus === 'FAILED' ? '#991b1b' : '#854d0e', fontWeight: 600, display: 'inline-block', width: 'fit-content' }}>
-                            {order.paymentStatus === 'PAID' ? '✅ مدفوع' : order.paymentStatus === 'FAILED' ? '❌ فشل' : order.paymentStatus === 'REFUNDED' ? '🔄 مسترد' : '⏳ لم يُدفع'}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>{formatDate(order.orderDate)}</td>
-                    <td>
-                      <span className={`badge ${statusConfig[order.status]?.badgeClass || 'badge-primary'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                        {statusConfig[order.status]?.icon} {statusConfig[order.status]?.label}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => toggleOrderDetails(order)}>
-                        {selectedOrderDetails?.id === order.id ? 'إغلاق التفاصيل ▲' : 'التفاصيل والحالات ▼'}
-                      </button>
-                    </td>
+          <div className="card-body no-padding">
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>رقم الطلب</th>
+                    <th>العميل</th>
+                    <th className="hide-tablet">المبلغ</th>
+                    <th className="hide-mobile">طريقة الدفع</th>
+                    <th className="hide-tablet">التاريخ</th>
+                    <th>الحالة</th>
+                    <th style={{ textAlign: 'center' }}>الإجراءات</th>
                   </tr>
-                  
-                  {selectedOrderDetails?.id === order.id && (
-                    <tr>
-                      <td colSpan="7" style={{ padding: '0', background: 'rgba(0,0,0,0.15)' }}>
-                        <div style={{ padding: '20px', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                            {/* Order Action Buttons */}
-                            <div style={{ width: '100%', marginBottom: '15px', display: 'flex', gap: '10px' }}>
-                                {nextStatusMap[selectedOrderDetails.status] && (
-                                  <button className="btn btn-emerald" onClick={() => handleStatusUpdate(selectedOrderDetails.id, nextStatusMap[selectedOrderDetails.status])}>
-                                    ترقية الحالة لـ: {statusConfig[nextStatusMap[selectedOrderDetails.status]].label}
-                                  </button>
-                                )}
-                                {selectedOrderDetails.status !== 'CANCELLED' && selectedOrderDetails.status !== 'DELIVERED' && selectedOrderDetails.status !== 'RETURNED' && (
-                                  <button className="btn btn-danger" onClick={() => openCancelModal(selectedOrderDetails.id)}>إلغاء الطلب</button>
-                                )}
-                                {selectedOrderDetails.status === 'DELIVERED' && (
-                                  <button className="btn" style={{ background: '#f97316', color: 'white' }} onClick={() => openReturnModal(selectedOrderDetails.id)}>إرجاع ومسح الطلب</button>
-                                )}
-                                <button className="btn btn-secondary" onClick={() => printReceipt(selectedOrderDetails)} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                  🖨️ طباعة الفاتورة (80mm)
-                                </button>
-                                {(selectedOrderDetails.status === 'CANCELLED' || selectedOrderDetails.status === 'RETURNED') && (
-                                    <div style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.9rem' }}>
-                                        الطلب مغلق (لا يمكن تغيير حالته)
-                                        {selectedOrderDetails.cancelReason && ` — سبب: ${selectedOrderDetails.cancelReason}`}
+                </thead>
+                <tbody>
+                  {loading && orders.length === 0 ? (
+                    <tr><td colSpan="7"><Loader message="جاري التحميل..." /></td></tr>
+                  ) : orders.length === 0 ? (
+                    <tr><td colSpan="7" className="text-center" style={{ padding: '80px', color: 'var(--text-dim)' }}>لا توجد طلبات في هذا القسم</td></tr>
+                  ) : orders.map((order) => (
+                    <React.Fragment key={order.id}>
+                      <tr className={selectedOrderDetails?.id === order.id ? 'active-row' : ''}>
+                        <td>
+                          <div style={{ fontWeight: 700, color: 'var(--text-white)' }}>{order.orderNumber}</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{order.itemCount} صنف</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{order.customerName}</div>
+                          <div className="hide-mobile" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.customerPhone}</div>
+                        </td>
+                        <td className="hide-tablet" style={{ fontWeight: 700 }}>{Number(order.totalAmount).toFixed(2)} ج.م</td>
+                        <td className="hide-mobile">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '0.7rem' }}>
+                              {order.paymentMethod === 'ONLINE' ? '💳 دفع إلكتروني' : '💵 عند الاستلام'}
+                            </span>
+                            {order.paymentMethod === 'ONLINE' && (
+                              <span style={{ 
+                                fontSize: '0.7rem', 
+                                color: order.paymentStatus === 'PAID' ? 'var(--metro-green)' : 'var(--metro-orange)',
+                                fontWeight: 800
+                              }}>
+                                {order.paymentStatus === 'PAID' ? '• تم الدفع' : '• انتظار'}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="hide-tablet" style={{ fontSize: '0.8rem' }}>{formatDate(order.orderDate)}</td>
+                        <td>
+                          <span className={`badge ${statusConfig[order.status]?.badgeClass}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            {statusConfig[order.status]?.icon} {statusConfig[order.status]?.label}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button 
+                            className={`btn btn-sm ${selectedOrderDetails?.id === order.id ? 'btn-primary' : 'btn-ghost'}`} 
+                            onClick={() => toggleOrderDetails(order)}
+                          >
+                            {selectedOrderDetails?.id === order.id ? 'إخفاء ▲' : 'التفاصيل ▼'}
+                          </button>
+                        </td>
+                      </tr>
+                      
+                      {selectedOrderDetails?.id === order.id && (
+                        <tr className="order-details-expanded">
+                          <td colSpan="7">
+                            <div className="expanded-content">
+                                {/* Actions Bar */}
+                                <div className="detail-actions-bar">
+                                    {nextStatusMap[selectedOrderDetails.status] && (
+                                      <button className="btn btn-emerald" onClick={() => handleStatusUpdate(selectedOrderDetails.id, nextStatusMap[selectedOrderDetails.status])}>
+                                        ترقية لـ: {statusConfig[nextStatusMap[selectedOrderDetails.status]].label}
+                                      </button>
+                                    )}
+                                    {selectedOrderDetails.status !== 'CANCELLED' && selectedOrderDetails.status !== 'DELIVERED' && selectedOrderDetails.status !== 'RETURNED' && (
+                                      <button className="btn btn-danger" onClick={() => openCancelModal(selectedOrderDetails.id)}>إلغاء الطلب</button>
+                                    )}
+                                    {selectedOrderDetails.status === 'DELIVERED' && (
+                                      <button className="btn btn-orange" onClick={() => openReturnModal(selectedOrderDetails.id)}>إرجاع المنتج</button>
+                                    )}
+                                    <button className="btn btn-ghost" onClick={() => printReceipt(selectedOrderDetails)}>
+                                      🖨️ طباعة الفاتورة
+                                    </button>
+                                </div>
+
+                                <div className="detail-grid">
+                                    {/* Items Table */}
+                                    <div className="detail-table-card">
+                                        <h4>📦 محتويات الطلب</h4>
+                                        <div className="mini-table-wrapper">
+                                            <table className="mini-data-table">
+                                                <thead>
+                                                    <tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    {selectedOrderDetails.items?.map(item => (
+                                                        <tr key={item.id}>
+                                                            <td style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                {item.imageUrl && (
+                                                                    <img src={getImageUrl(item.imageUrl)} alt={item.productName} className="prod-thumb" />
+                                                                )}
+                                                                {item.productName}
+                                                            </td>
+                                                            <td>{item.quantity}</td>
+                                                            <td>{Number(item.unitPrice).toFixed(2)}</td>
+                                                            <td style={{ fontWeight: 700 }}>{Number(item.totalPrice).toFixed(2)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Items Table */}
-                            <div style={{ flex: 2, minWidth: '300px' }}>
-                                <h4 style={{ marginBottom: '10px', fontSize: '1.1rem' }}>📦 محتويات الطلب</h4>
-                                <table className="data-table small">
-                                    <thead>
-                                        <tr>
-                                            <th>المنتج</th>
-                                            <th>الكمية</th>
-                                            <th>السعر</th>
-                                            <th>الإجمالي</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {selectedOrderDetails.items?.map(item => (
-                                            <tr key={item.id}>
-                                                <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    {item.imageUrl && (
-                                                        <img src={getImageUrl(item.imageUrl)} alt={item.productName} style={{ width: '30px', height: '30px', borderRadius: '4px', objectFit: 'cover' }} />
-                                                    )}
-                                                    {item.productName}
-                                                </td>
-                                                <td>{item.quantity}</td>
-                                                <td>{Number(item.unitPrice).toFixed(2)}</td>
-                                                <td style={{ fontWeight: 700 }}>{Number(item.totalPrice).toFixed(2)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Status History Timeline */}
-                            <div style={{ flex: 1, minWidth: '300px' }}>
-                                <h4 style={{ marginBottom: '10px', fontSize: '1.1rem' }}>📅 سجل الحالات</h4>
-                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                    {(!selectedOrderDetails.history || selectedOrderDetails.history.length === 0) ? (
-                                        <div style={{ color: 'var(--text-muted)' }}>لا توجد سجلات للحالة</div>
-                                    ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                            {selectedOrderDetails.history.map((hist, i) => (
-                                                <div key={hist.id || i} style={{ display: 'flex', gap: '10px', position: 'relative' }}>
-                                                    {i !== selectedOrderDetails.history.length - 1 && (
-                                                        <div style={{ position: 'absolute', right: '15px', top: '30px', bottom: '-15px', width: '2px', background: 'var(--border-subtle)' }}></div>
-                                                    )}
-                                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', zIndex: 1, border: '2px solid rgba(255,255,255,0.1)' }}>
-                                                        {statusConfig[hist.status]?.icon || '•'}
+                                    {/* Timeline */}
+                                    <div className="detail-timeline-card">
+                                        <h4>📅 سجل التتبع</h4>
+                                        <div className="timeline">
+                                            {selectedOrderDetails.history?.map((hist, i) => (
+                                                <div key={hist.id || i} className="timeline-item">
+                                                    <div className="timeline-icon" style={{ borderColor: statusConfig[hist.status]?.color }}>
+                                                        {statusConfig[hist.status]?.icon}
                                                     </div>
-                                                    <div>
-                                                        <div style={{ fontWeight: 700, color: statusConfig[hist.status]?.color || 'white' }}>
-                                                            {statusConfig[hist.status]?.label || hist.status}
-                                                        </div>
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                            {formatDate(hist.changedAt)}
-                                                        </div>
-                                                        <div style={{ fontSize: '0.85rem', marginTop: '4px', background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
-                                                            👤 بواسطة: <strong style={{ color: '#6ee7b7' }}>{hist.changedBy}</strong>
-                                                        </div>
-                                                        {hist.reason && (
-                                                            <div style={{ fontSize: '0.85rem', color: '#fca5a5', marginTop: '4px' }}>
-                                                                السبب: {hist.reason}
-                                                            </div>
-                                                        )}
+                                                    <div className="timeline-info">
+                                                        <div className="status-name" style={{ color: statusConfig[hist.status]?.color }}>{statusConfig[hist.status]?.label}</div>
+                                                        <div className="status-time">{formatDate(hist.changedAt)}</div>
+                                                        <div className="status-user">👤 بواسطة: {hist.changedBy}</div>
+                                                        {hist.reason && <div className="status-reason">السبب: {hist.reason}</div>}
                                                     </div>
                                                 </div>
                                             ))}
+                                            {(!selectedOrderDetails.history || selectedOrderDetails.history.length === 0) && (
+                                                <div className="empty-timeline">لا توجد سجلات</div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => setPage(prev => prev - 1)}>السابق</button>
+                <button className="active">{page + 1}</button>
+                <button className="btn btn-ghost btn-sm" disabled={page >= totalPages - 1} onClick={() => setPage(prev => prev + 1)}>التالي</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Cancel Modal */}
-      {ReactDOM.createPortal(
-        <div className={`modal-overlay ${showCancelModal ? 'active' : ''}`}>
-          <div className="modal" style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h3>إلغاء الطلب</h3>
-              <button className="modal-close" onClick={() => setShowCancelModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleCancel}>
+      {showCancelModal && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowCancelModal(false); }}>
+            <div className="modal" style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3>🚫 إلغاء الطلب</h3>
+                <button className="modal-close" onClick={() => setShowCancelModal(false)}>✕</button>
+              </div>
+              <form onSubmit={handleCancel}>
                 <div className="modal-body">
-                <div className="form-group">
-                    <label>سبب الإلغاء</label>
-                    <textarea 
-                      className="form-control" 
-                      placeholder="اكتب سبب الإلغاء هنا..."
-                      required
-                      value={cancelReason}
-                      onChange={(e) => setCancelReason(e.target.value)}
-                    ></textarea>
-                </div>
+                  <div className="form-group">
+                    <label>سبب الإلغاء *</label>
+                    <textarea className="form-control" rows="3" required value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}></textarea>
+                  </div>
                 </div>
                 <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowCancelModal(false)}>تراجع</button>
-                <button type="submit" className="btn btn-danger">تأكيد الإلغاء</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setShowCancelModal(false)}>تراجع</button>
+                  <button type="submit" className="btn btn-danger">تأكيد الإلغاء</button>
                 </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>,
-        document.body
+        </ModalContainer>
       )}
 
-      {/* Return Modal */}
-      {ReactDOM.createPortal(
-        <div className={`modal-overlay ${showReturnModal ? 'active' : ''}`}>
-          <div className="modal" style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h3>إرجاع الطلب المكتمل</h3>
-              <button className="modal-close" onClick={() => setShowReturnModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleReturn}>
+      {showReturnModal && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowReturnModal(false); }}>
+            <div className="modal" style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3>🔄 إرجاع الطلب</h3>
+                <button className="modal-close" onClick={() => setShowReturnModal(false)}>✕</button>
+              </div>
+              <form onSubmit={handleReturn}>
                 <div className="modal-body">
-                <div className="form-group">
-                    <label>سبب الإرجاع</label>
-                    <textarea 
-                      className="form-control" 
-                      placeholder="اكتب سبب إرجاع الطلب بعد التسليم..."
-                      required
-                      value={returnReason}
-                      onChange={(e) => setReturnReason(e.target.value)}
-                    ></textarea>
-                </div>
+                  <div className="form-group">
+                    <label>سبب الإرجاع *</label>
+                    <textarea className="form-control" rows="3" required value={returnReason} onChange={(e) => setReturnReason(e.target.value)}></textarea>
+                  </div>
                 </div>
                 <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowReturnModal(false)}>تراجع</button>
-                <button type="submit" className="btn" style={{ background: '#f97316', color: 'white' }}>تأكيد المرتجع المالي</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setShowReturnModal(false)}>تراجع</button>
+                  <button type="submit" className="btn btn-orange" style={{ background: '#f97316', color: 'white' }}>تأكيد المرتجع</button>
                 </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>,
-        document.body
+        </ModalContainer>
       )}
 
-    </div>
+    </>
   );
 };
 

@@ -3,6 +3,7 @@ import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
+import StatTile from '../components/common/StatTile';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 const StockReceipts = () => {
@@ -138,62 +139,65 @@ const StockReceipts = () => {
   return (
     <div className="page-section">
       {/* Stock Receipts Analytics Dashboard */}
-      <div className="analytics-dashboard-grid">
-        {/* Stat Cards Column */}
-        <div className="stat-cards-container">
-          <div className="card" style={{ flex: 1, padding: '15px', borderLeft: '4px solid var(--metro-orange)', background: 'rgba(255,165,0,0.03)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>بانتظار المورد</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, margin: '5px 0' }}>{analytics.pending} <small style={{ fontSize: '0.9rem' }}>أمر</small></div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>بضائع لم تصل بعد للموقع</div>
-          </div>
-          <div className="card" style={{ flex: 1, padding: '15px', borderLeft: '4px solid var(--metro-blue)', background: 'rgba(0,120,215,0.03)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>استلام مؤقت (لم يرحل)</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, margin: '5px 0', color: 'var(--metro-blue)' }}>{analytics.received}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>بضائع مستلمة بانتظار التخزين</div>
-          </div>
-          <div className="card" style={{ flex: 1, padding: '15px', borderLeft: '4px solid var(--metro-green)', background: 'rgba(122,185,0,0.03)' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>تم التخزين</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, margin: '5px 0', color: 'var(--metro-green)' }}>{analytics.completed}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>بضائع أضيفت للمخزون الفعلي</div>
-          </div>
-        </div>
+      {/* Analytics Dashboard */}
+      <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+        <StatTile 
+          id="stk_pending"
+          label="بانتظار المورد"
+          value={`${analytics.pending} أمر`}
+          icon="🕒"
+          defaults={{ color: 'amber', size: 'tile-wd-sm', order: 1 }}
+        />
+        <StatTile 
+          id="stk_received"
+          label="استلام مؤقت (لم يرحل)"
+          value={analytics.received}
+          icon="📦"
+          defaults={{ color: 'blue', size: 'tile-wd-sm', order: 2 }}
+        />
+        <StatTile 
+          id="stk_completed"
+          label="تم التخزين"
+          value={analytics.completed}
+          icon="✅"
+          defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 3 }}
+        />
+      </div>
 
-        {/* Trend Chart Column */}
-        <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
-          <h4 style={{ marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>📊 اتجاه التوريد (آخر 15 يوم توريد)</span>
-            {analyticsLoading && <small style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>جاري التحديث...</small>}
-          </h4>
-          <div style={{ flex: 1, width: '100%', minHeight: '250px' }}>
-            {analytics.trend.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <BarChart data={analytics.trend} stackOffset="sign">
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="date" tick={{fontSize: 9}} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
-                  <YAxis tick={{fontSize: 9}} />
-                  <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333'}} />
-                  <Legend iconType="circle" wrapperStyle={{fontSize: '11px', paddingTop: '10px'}} />
-                  <Bar dataKey="PENDING" name="بانتظار المورد" fill="var(--metro-orange)" stackId="a" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="RECEIVED" name="استلام جزئي" fill="var(--metro-blue)" stackId="a" />
-                  <Bar dataKey="COMPLETED" name="مرحل للمخزن" fill="var(--metro-green)" stackId="a" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-dim)' }}>لا توجد بيانات كافية للرسم البياني</div>
-            )}
-          </div>
+      <div className="card mb-4">
+        <div className="card-header no-border">
+          <h3>📊 اتجاه التوريد (آخر 15 يوم توريد)</h3>
+          {analyticsLoading && <small style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>جاري التحديث...</small>}
+        </div>
+        <div className="card-body" style={{ height: '280px', padding: '15px' }}>
+          {analytics.trend.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics.trend} stackOffset="sign">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="date" tick={{fontSize: 10, fill: 'var(--text-dim)'}} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
+                <YAxis tick={{fontSize: 10, fill: 'var(--text-dim)'}} />
+                <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333', borderRadius: '4px'}} />
+                <Legend iconType="circle" wrapperStyle={{fontSize: '11px', paddingTop: '10px'}} />
+                <Bar dataKey="PENDING" name="بانتظار المورد" fill="var(--metro-orange)" stackId="a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="RECEIVED" name="استلام جزئي" fill="var(--metro-blue)" stackId="a" />
+                <Bar dataKey="COMPLETED" name="مرحل للمخزن" fill="var(--metro-green)" stackId="a" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-dim)' }}>لا توجد بيانات كافية للرسم البياني</div>
+          )}
         </div>
       </div>
 
       <div className="card">
         <div className="card-header">
           <h3>📦 أذونات استلام المخزون</h3>
-          <div className="toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <div className="search-input" style={{ width: '300px' }}>
+          <div className="toolbar">
+            <div className="search-input">
               <span className="search-icon">🔍</span>
               <input
                 type="text"
-                placeholder="بحث برقم الإذن أو الفاتورة..."
+                placeholder="بحث سريع..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -201,7 +205,9 @@ const StockReceipts = () => {
                 }}
               />
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => loadReceipts()}>تحديث</button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-secondary" onClick={() => loadReceipts()}>تحديث</button>
+            </div>
           </div>
         </div>
         <div className="card-body no-padding">

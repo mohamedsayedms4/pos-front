@@ -2,7 +2,7 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-export const SERVER_URL = 'https://posapi.digitalrace.net';
+export const SERVER_URL = 'http://localhost:8080';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
@@ -717,6 +717,20 @@ const Api = {
     await this._request(`/admin/users/${id}`, { method: 'DELETE' });
   },
 
+  async updateUserProfile(id, profileData) {
+    // This is a convenience method that updates just the profile part of the user
+    // It uses the main update endpoint
+    const formData = new FormData();
+    formData.append('user', new Blob([JSON.stringify({ profile: profileData })], { type: 'application/json' }));
+    
+    const res = await this._request(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: formData,
+      headers: {}
+    });
+    return res.data;
+  },
+
   async getRoles() {
     const res = await this._request('/admin/users/roles');
     return res.data;
@@ -997,6 +1011,62 @@ const Api = {
     return res.data;
   },
 
+  // ─── Expenses ───
+  async getExpenses(page = 0, size = 10, category = '', start = '', end = '') {
+    const params = new URLSearchParams({ page, size, category, start, end });
+    const res = await this._request(`/expenses?${params.toString()}`);
+    return res.data;
+  },
+
+  async createExpense(data) {
+    const res = await this._request('/expenses', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteExpense(id) {
+    await this._request(`/expenses/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Profit & Loss ───
+  async getProfitLossReport(start = '', end = '') {
+    const params = new URLSearchParams({ start, end });
+    const res = await this._request(`/profit-loss?${params.toString()}`);
+    return res.data;
+  },
+
+  // ─── Partners ───
+  async getPartners() {
+    const res = await this._request('/partners');
+    return res.data;
+  },
+
+  async createPartner(data) {
+    const res = await this._request('/partners', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async addPartnerCapital(id, data) {
+    const res = await this._request(`/partners/${id}/capital`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async partnerWithdraw(id, data) {
+    const res = await this._request(`/partners/${id}/withdraw`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
   // ─── Barcode Scanner (Server-Side) ───
   async scanBarcodeFromImage(imageBlob) {
     const formData = new FormData();
@@ -1007,6 +1077,110 @@ const Api = {
       headers: {}
     });
     return res;
+  },
+
+  // ─── Shifts ───
+  async getShifts() {
+    const res = await this._request('/shifts');
+    return res.data;
+  },
+
+  async createShift(data) {
+    const res = await this._request('/shifts', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateShift(id, data) {
+    const res = await this._request(`/shifts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteShift(id) {
+    await this._request(`/shifts/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Employee Bonuses ───
+  async getEmployeeBonuses(userId) {
+    const res = await this._request(`/employees/${userId}/bonuses`);
+    return res.data;
+  },
+
+  async addEmployeeBonus(userId, data) {
+    const res = await this._request(`/employees/${userId}/bonuses`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async payEmployeeBonus(id) {
+    const res = await this._request(`/employees/bonuses/${id}/pay`, { method: 'PUT' });
+    return res.data;
+  },
+
+  async deleteEmployeeBonus(id) {
+    await this._request(`/employees/bonuses/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Employee Deductions ───
+  async getEmployeeDeductions(userId) {
+    const res = await this._request(`/employees/${userId}/deductions`);
+    return res.data;
+  },
+
+  async addEmployeeDeduction(userId, data) {
+    const res = await this._request(`/employees/${userId}/deductions`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteEmployeeDeduction(id) {
+    await this._request(`/employees/deductions/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Attendance ───
+  async checkInEmployee(userId) {
+    const res = await this._request(`/attendance/${userId}/check-in`, { method: 'POST' });
+    return res.data;
+  },
+
+  async checkOutEmployee(userId) {
+    const res = await this._request(`/attendance/${userId}/check-out`, { method: 'PUT' });
+    return res.data;
+  },
+
+  async getEmployeeAttendance(userId, month, year) {
+    const res = await this._request(`/attendance/${userId}?month=${month}&year=${year}`);
+    return res.data;
+  },
+
+  async markEmployeeAbsent(userId, date) {
+    const res = await this._request(`/attendance/${userId}/mark-absent?date=${date}`, { method: 'POST' });
+    return res.data;
+  },
+
+  // ─── Payroll ───
+  async generateEmployeePayroll(userId, month, year) {
+    const res = await this._request(`/payroll/generate/${userId}?month=${month}&year=${year}`, { method: 'POST' });
+    return res.data;
+  },
+
+  async getMonthlyPayrolls(month, year) {
+    const res = await this._request(`/payroll?month=${month}&year=${year}`);
+    return res.data;
+  },
+
+  async payEmployeePayroll(id) {
+    const res = await this._request(`/payroll/${id}/pay`, { method: 'PUT' });
+    return res.data;
   }
 };
 

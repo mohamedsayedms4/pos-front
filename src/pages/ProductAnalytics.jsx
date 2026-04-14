@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import StatTile from '../components/common/StatTile';
 import {
   AreaChart,
   Area,
@@ -90,39 +91,35 @@ const ProductAnalytics = () => {
       </div>
 
       {/* KPI TILES GRID — Compact Style (Like Categories) */}
-      <div className="stats-grid" style={{ marginBottom: '24px' }}>
-        <div className="stat-card azure tile-sq-sm">
-          <div className="stat-value" style={{ fontSize: '1.4rem' }}>{stats?.totalProducts || 0}</div>
-          <div className="stat-label">إجمالي المنتجات</div>
-          <div className="stat-icon">▨</div>
-        </div>
-
-        <div className="stat-card forest tile-wd-sm">
-          <div className="stat-value" style={{ fontSize: '1.4rem' }}>
-            {Number(stats?.totalInventoryCapital || 0).toLocaleString()} 
-            <span style={{ fontSize: '0.9rem', opacity: 0.7, marginRight: '5px' }}>ج.م</span>
-          </div>
-          <div className="stat-label">قيمة المخزون (شراء)</div>
-          <div className="stat-icon">▧</div>
-        </div>
-
-        <div className="stat-card deep-purple tile-sq-sm">
-          <div className="stat-value" style={{ fontSize: '1.4rem' }}>
-            {Number(stats?.totalExpectedProfit || 0).toLocaleString()} 
-            <span style={{ fontSize: '0.9rem', opacity: 0.7, marginRight: '5px' }}>ج.م</span>
-          </div>
-          <div className="stat-label">الأرباح المتوقعة</div>
-          <div className="stat-icon">◈</div>
-        </div>
-
-        <div className="stat-card sky tile-wd-sm">
-          <div className="stat-value" style={{ fontSize: '1.4rem' }}>
-            {Number(stats?.totalRealizedProfit || 0).toLocaleString()} 
-            <span style={{ fontSize: '0.9rem', opacity: 0.7, marginRight: '5px' }}>ج.م</span>
-          </div>
-          <div className="stat-label">الأرباح المحققة</div>
-          <div className="stat-icon">▤</div>
-        </div>
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '24px' }}>
+        <StatTile 
+          id="ana_total"
+          label="إجمالي المنتجات"
+          value={stats?.totalProducts || 0}
+          icon="▨"
+          defaults={{ color: 'azure', size: 'tile-sq-sm', order: 1 }}
+        />
+        <StatTile 
+          id="ana_capital"
+          label="قيمة المخزون (شراء)"
+          value={`${Number(stats?.totalInventoryCapital || 0).toLocaleString()} ج.م`}
+          icon="▧"
+          defaults={{ color: 'forest', size: 'tile-wd-sm', order: 2 }}
+        />
+        <StatTile 
+          id="ana_expected"
+          label="الأرباح المتوقعة"
+          value={`${Number(stats?.totalExpectedProfit || 0).toLocaleString()} ج.م`}
+          icon="◈"
+          defaults={{ color: 'deep-purple', size: 'tile-sq-sm', order: 3 }}
+        />
+        <StatTile 
+          id="ana_realized"
+          label="الأرباح المحققة"
+          value={`${Number(stats?.totalRealizedProfit || 0).toLocaleString()} ج.م`}
+          icon="▤"
+          defaults={{ color: 'sky', size: 'tile-wd-sm', order: 4 }}
+        />
       </div>
 
       {/* 2x2 ANALYTICS GRID */}

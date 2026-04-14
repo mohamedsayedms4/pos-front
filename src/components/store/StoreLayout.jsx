@@ -40,6 +40,8 @@ const StoreLayout = ({ children, hideHeader = false }) => {
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackError, setTrackError] = useState('');
 
+  const platformName = storeInfo?.name || STORE_NAME;
+
   React.useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     setSearch(queryParams.get('search') || '');
@@ -231,14 +233,123 @@ const StoreLayout = ({ children, hideHeader = false }) => {
         {children}
       </main>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="ec-footer">
-        <div className="ec-footer-inner">
-          <div className="ec-footer-brand">{storeInfo?.name || STORE_NAME}</div>
-          {storeInfo?.aboutUs && <p style={{ fontSize: '.85rem', marginBottom: '15px', maxWidth: '600px', margin: '0 auto 15px' }}>{storeInfo.aboutUs}</p>}
-          <p>© {new Date().getFullYear()} جميع الحقوق محفوظة</p>
-          <p style={{ marginTop: '10px', opacity: .6 }}>توصيل سريع • جودة مضمونة • دعم فني</p>
-          {storeInfo?.phone1 && <p style={{ marginTop: '10px', fontSize: '.8rem' }}>تواصل معنا: {storeInfo.phone1}</p>}
+      {/* ─── PREMIUM FOOTER ─── */}
+      <footer className="ec-footer-premium">
+        <div className="ec-footer-top">
+          <div className="ec-footer-container">
+            <div className="ec-footer-grid">
+              
+              {/* Brand Column */}
+              <div className="ec-footer-col brand">
+                <Link to="/store" className="ec-footer-logo">
+                  {storeInfo?.logoUrl ? (
+                    <img src={StoreApi.getImageUrl(storeInfo.logoUrl)} alt={storeInfo.name} />
+                  ) : (
+                    <span className="ec-logo-text-fallback light">{storeInfo?.name || STORE_NAME}</span>
+                  )}
+                </Link>
+                <p className="ec-footer-tagline">
+                  {storeInfo?.aboutUs ? (
+                    storeInfo.aboutUs.length > 150 ? storeInfo.aboutUs.substring(0, 150) + '...' : storeInfo.aboutUs
+                  ) : 'وجهتك الأولى لتسوق أفضل المنتجات بأعلى جودة وأفضل الأسعار.'}
+                </p>
+                <div className="ec-footer-socials">
+                  {storeInfo?.facebookUrl && (
+                    <a href={storeInfo.facebookUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon fb" title="فيسبوك">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
+                    </a>
+                  )}
+                  {storeInfo?.instagramUrl && (
+                    <a href={storeInfo.instagramUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon ig" title="إنستجرام">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.332 3.608 1.308.975.975 1.245 2.242 1.308 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.063 1.366-.333 2.633-1.308 3.608-.975.975-2.242 1.245-3.608 1.308-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.063-2.633-.333-3.608-1.308-.975-.975-1.245-2.242-1.308-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.332-2.633 1.308-3.608.975-.975 2.242-1.245 3.608-1.308 1.266-.058 1.646-.07 4.85-.07zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.28.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                    </a>
+                  )}
+                  {storeInfo?.tiktokUrl && (
+                    <a href={storeInfo.tiktokUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon tt" title="تيك توك">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.032 2.623-.02 3.935-.002.08 3.477 2.067 5.753 5.435 6.32v3.918c-2.427-.01-4.14-.73-5.362-2.31 0 1.933.012 3.865-.002 5.798-.052 5.093-4.185 8.336-9.117 8.256-4.93-.08-8.665-4.155-8.31-9.19.344-4.885 4.01-7.85 8.712-7.848.33 0 .66.033.987.098V9.11c-1.464-.326-3.085-.148-4.12 1.083-1.035 1.23-1.04 3.104-.263 4.417.777 1.313 2.378 1.983 3.86 1.637 1.482-.345 2.162-1.644 2.24-3.136.035-2.607.012-10.158.012-10.158z"/></svg>
+                    </a>
+                  )}
+                  {storeInfo?.whatsappNumber && (
+                    <a href={`https://wa.me/${storeInfo.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="ec-social-icon wa" title="واتساب">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c0-5.445 4.446-9.891 9.891-9.891 2.638 0 5.12 1.026 6.99 2.898a9.825 9.825 0 012.893 6.994c0 5.446-4.446 9.892-9.891 9.892m12.428-12.788C24.473 5.372 21.045 1.944 16.795.019c-4.25-1.925-9.156-1.925-13.406 0C-1.386 1.944-4.814 5.372-5.739 9.622c.925 4.251 4.353 7.679 8.604 9.604 4.25 1.925 9.156 1.925 13.406 0 6.255-2.834 11.236-9.96 11.229-12.914"/></svg>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Shopping Categories */}
+              <div className="ec-footer-col">
+                <h4 className="ec-footer-title">تسوق حسب الفئة</h4>
+                <ul className="ec-footer-links">
+                  {categories && categories.length > 0 ? (
+                    categories.slice(0, 6).map(cat => (
+                      <li key={cat.id}>
+                        <Link to={`/store/category/${cat.id}`}>{cat.name}</Link>
+                      </li>
+                    ))
+                  ) : (
+                    <>
+                      <li><Link to="/store">جميع المنتجات</Link></li>
+                      <li><Link to="/store">وصل حديثاً</Link></li>
+                      <li><Link to="/store">الأكثر مبيعاً</Link></li>
+                    </>
+                  )}
+                </ul>
+              </div>
+
+              {/* Quick Links */}
+              <div className="ec-footer-col">
+                <h4 className="ec-footer-title">روابط هامة</h4>
+                <ul className="ec-footer-links">
+                  <li><Link to="/store/account">حسابي</Link></li>
+                  <li><Link to="/store/wishlist">المفضلة</Link></li>
+                  <li><Link to="/store/privacy-policy">سياسة الخصوصية</Link></li>
+                  <li><Link to="/store/terms-of-use">شروط الاستخدام</Link></li>
+                  <li><span style={{ cursor: 'pointer' }} onClick={() => setTrackOpen(true)}>تتبع طلبك</span></li>
+                </ul>
+              </div>
+
+              {/* Contact Column */}
+              <div className="ec-footer-col">
+                <h4 className="ec-footer-title">تواصل معنا</h4>
+                <div className="ec-footer-contact">
+                  <div className="ec-contact-item">
+                    <span className="ec-contact-icon">📍</span>
+                    <span className="ec-contact-text">{storeInfo?.address || 'القاهرة، مصر'}</span>
+                  </div>
+                  <div className="ec-contact-item">
+                    <span className="ec-contact-icon">📞</span>
+                    <span className="ec-contact-text">{storeInfo?.phone1 || '15254'}</span>
+                  </div>
+                  {storeInfo?.email && (
+                    <div className="ec-contact-item">
+                      <span className="ec-contact-icon">📧</span>
+                      <span className="ec-contact-text">{storeInfo.email}</span>
+                    </div>
+                  )}
+                  <div className="ec-contact-item">
+                    <span className="ec-contact-icon">⏰</span>
+                    <span className="ec-contact-text">السبت - الخميس: 10ص - 10م</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="ec-footer-bottom">
+          <div className="ec-footer-container">
+            <div className="ec-footer-bottom-inner">
+              <div className="ec-copyright">
+                © {new Date().getFullYear()} {storeInfo?.name || STORE_NAME}. جميع الحقوق محفوظة.
+              </div>
+              <div className="ec-dev-credit">
+                تم التطوير بواسطة <span style={{ color: 'var(--ec-primary)', fontWeight: 700 }}>{platformName}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
 

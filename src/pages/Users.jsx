@@ -3,6 +3,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
+import StatTile from '../components/common/StatTile';
 
 const Users = () => {
   const { toast, confirm } = useGlobalUI();
@@ -33,7 +34,7 @@ const Users = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'http://localhost:8080/api/v1'; // Standard base for image serving 
 
   // Debounce search
   useEffect(() => {
@@ -191,22 +192,28 @@ const Users = () => {
   return (
     <>
       <div className="page-section">
-        <div className="stats-grid">
-          <div className="stat-card blue tile-wd-sm">
-            <div className="stat-icon">👥</div>
-            <div className="stat-value">{totalElements}</div>
-            <div className="stat-label">المستخدمين</div>
-          </div>
-          <div className="stat-card magenta tile-sq-sm">
-            <div className="stat-icon">🛡️</div>
-            <div className="stat-value">{data.filter(u => u.roles && u.roles.some(r => r.name === 'ADMIN')).length}</div>
-            <div className="stat-label">مسؤول</div>
-          </div>
-          <div className="stat-card teal tile-sq-sm">
-            <div className="stat-icon">✅</div>
-            <div className="stat-value">{data.length}</div>
-            <div className="stat-label">نشط</div>
-          </div>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+          <StatTile 
+            id="usr_count"
+            label="المستخدمين"
+            value={totalElements}
+            icon="👥"
+            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+          />
+          <StatTile 
+            id="usr_admins"
+            label="مسؤول"
+            value={data.filter(u => u.roles && u.roles.some(r => r.name === 'ADMIN' || r === 'ROLE_ADMIN' || r.name === 'ROLE_ADMIN')).length}
+            icon="🛡️"
+            defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 2 }}
+          />
+          <StatTile 
+            id="usr_active"
+            label="نشط"
+            value={data.filter(u => u.enabled).length}
+            icon="✅"
+            defaults={{ color: 'teal', size: 'tile-sq-sm', order: 3 }}
+          />
         </div>
 
         <div className="card">

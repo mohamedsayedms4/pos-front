@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import StatTile from '../components/common/StatTile';
 
 const DebtManagement = () => {
     const { toast, confirm } = useGlobalUI();
@@ -184,23 +185,35 @@ const DebtManagement = () => {
                 </div>
             </div>
 
-            <div className="debt-stats-grid mb-3">
-                <div className="stat-card blue">
-                    <div className="stat-value">{activeTab === 'RECEIVABLE' ? totalElements : '-'}</div>
-                    <div className="stat-label">سجلات لنا (مدين)</div>
-                </div>
-                <div className="stat-card amber">
-                    <div className="stat-value">{activeTab === 'PAYABLE' ? totalElements : '-'}</div>
-                    <div className="stat-label">سجلات علينا (دائن)</div>
-                </div>
-                <div className="stat-card emerald">
-                    <div className="stat-value">جديد</div>
-                    <div className="stat-label">أقساط سددت (اليوم)</div>
-                </div>
-                <div className="stat-card red">
-                    <div className="stat-value">⚠️</div>
-                    <div className="stat-label">أقساط متأخرة</div>
-                </div>
+            <div className="stats-grid mb-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+                <StatTile 
+                  id="debt_receive"
+                  label="سجلات لنا (مدين)"
+                  value={activeTab === 'RECEIVABLE' ? totalElements : '-'}
+                  icon=""
+                  defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+                />
+                <StatTile 
+                  id="debt_pay"
+                  label="سجلات علينا (دائن)"
+                  value={activeTab === 'PAYABLE' ? totalElements : '-'}
+                  icon="📤"
+                  defaults={{ color: 'amber', size: 'tile-wd-sm', order: 2 }}
+                />
+                <StatTile 
+                  id="debt_new"
+                  label="أقساط سددت (اليوم)"
+                  value="جديد"
+                  icon="📅"
+                  defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 3 }}
+                />
+                <StatTile 
+                  id="debt_overdue"
+                  label="أقساط متأخرة"
+                  value="⚠️"
+                  icon="⏰"
+                  defaults={{ color: 'crimson', size: 'tile-sq-sm', order: 4 }}
+                />
             </div>
 
             <div className="debt-tabs-container mb-3">

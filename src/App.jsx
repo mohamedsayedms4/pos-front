@@ -27,15 +27,25 @@ import DebtManagement from './pages/DebtManagement.jsx'
 import InstallmentCalendar from './pages/InstallmentCalendar.jsx'
 import Employees from './pages/Employees.jsx'
 import EmployeeDetails from './pages/EmployeeDetails.jsx'
+import ShiftsManagement from './pages/ShiftsManagement.jsx'
+import PayrollDashboard from './pages/PayrollDashboard.jsx'
+import AttendanceDashboard from './pages/AttendanceDashboard.jsx'
 import EcommerceStore from './pages/EcommerceStore.jsx'
 import OnlineOrders from './pages/OnlineOrders.jsx'
 import StoreProductDetail from './pages/StoreProductDetail.jsx'
 import StoreCategoryPage from './pages/StoreCategoryPage.jsx'
 import StoreAccountPage from './pages/StoreAccountPage.jsx'
 import StoreWishlistPage from './pages/StoreWishlistPage.jsx'
+import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
+import TermsOfUse from './pages/TermsOfUse.jsx'
 import Settings from './pages/Settings.jsx'
+import Expenses from './pages/Expenses.jsx'
+import ProfitLoss from './pages/ProfitLoss.jsx'
+import Partners from './pages/Partners.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
+import { TileProvider } from './context/TileContext.jsx'
+import TileEditorModal from './components/common/TileEditorModal.jsx'
 
 import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
@@ -52,7 +62,9 @@ function App() {
   return (
     <ThemeProvider>
       <GlobalUIProvider>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <TileProvider>
+          <TileEditorModal />
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<Login />} />
@@ -63,6 +75,8 @@ function App() {
         <Route path="/store/product/:id" element={<StoreAuthProvider><StoreProvider><StoreProductDetail /></StoreProvider></StoreAuthProvider>} />
         <Route path="/store/category/:id" element={<StoreAuthProvider><StoreProvider><StoreCategoryPage /></StoreProvider></StoreAuthProvider>} />
         <Route path="/store/wishlist" element={<StoreAuthProvider><StoreProvider><StoreWishlistPage /></StoreProvider></StoreAuthProvider>} />
+        <Route path="/store/privacy-policy" element={<StoreAuthProvider><StoreProvider><PrivacyPolicy /></StoreProvider></StoreAuthProvider>} />
+        <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/customer-order" element={<CustomerOrder />} />
@@ -95,14 +109,21 @@ function App() {
           <Route path="/installments-calendar" element={<InstallmentCalendar />} />
           <Route path="/employees" element={<Employees />} />
           <Route path="/employees/:id" element={<EmployeeDetails />} />
+          <Route path="/shifts" element={<ShiftsManagement />} />
+          <Route path="/payroll" element={<PayrollDashboard />} />
+          <Route path="/attendance" element={<AttendanceDashboard />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/online-orders" element={<OnlineOrders />} />
+          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/profit-loss" element={<ProfitLoss />} />
+          <Route path="/partners" element={<Partners />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
     </Routes>
-    </BrowserRouter>
-    </GlobalUIProvider>
+          </BrowserRouter>
+        </TileProvider>
+      </GlobalUIProvider>
     </ThemeProvider>
   )
 }

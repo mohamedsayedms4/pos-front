@@ -4,6 +4,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import StatTile from '../components/common/StatTile';
 import {
   ComposedChart,
   Bar,
@@ -203,31 +204,35 @@ const Suppliers = () => {
   return (
     <>
       <div className="page-section">
-        <div className="stats-grid">
-          <div className="stat-card blue tile-wd-sm">
-            <div className="stat-icon">🏭</div>
-            <div className="stat-value">{totalElements}</div>
-            <div className="stat-label">إجمالي الموردين</div>
-          </div>
-          <div className="stat-card emerald tile-wd-sm">
-            <div className="stat-icon">💳</div>
-            <div className="stat-value">
-              {Math.abs(data.reduce((sum, s) => sum + Number(s.balance || 0), 0)).toLocaleString()}
-            </div>
-            <div className="stat-label">
-              {data.reduce((sum, s) => sum + Number(s.balance || 0), 0) >= 0 ? "إجمالي المستحقات لنا" : "إجمالي المديونيات علينا"}
-            </div>
-          </div>
-          <div className="stat-card amber tile-sq-sm">
-            <div className="stat-icon">⚠️</div>
-            <div className="stat-value">{data.filter(s => Number(s.balance || 0) < 0).length}</div>
-            <div className="stat-label">عليهم مديونية</div>
-          </div>
-          <div className="stat-card magenta tile-sq-sm">
-            <div className="stat-icon">🔔</div>
-            <div className="stat-value">{data.filter(s => Number(s.balance || 0) > 0).length}</div>
-            <div className="stat-label">لهم مستحقات</div>
-          </div>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+          <StatTile
+            id="supp_total"
+            label="إجمالي الموردين"
+            value={totalElements}
+            icon="🏭"
+            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+          />
+          <StatTile
+            id="supp_balance"
+            label={data.reduce((sum, s) => sum + Number(s.balance || 0), 0) >= 0 ? "إجمالي المستحقات لنا" : "إجمالي المديونيات علينا"}
+            value={Math.abs(data.reduce((sum, s) => sum + Number(s.balance || 0), 0)).toLocaleString()}
+            icon="💳"
+            defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
+          />
+          <StatTile
+            id="supp_debt"
+            label="عليهم مديونية"
+            value={data.filter(s => Number(s.balance || 0) < 0).length}
+            icon="⚠️"
+            defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
+          />
+          <StatTile
+            id="supp_credit"
+            label="لهم مستحقات"
+            value={data.filter(s => Number(s.balance || 0) > 0).length}
+            icon="🔔"
+            defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 4 }}
+          />
         </div>
 
         {/* Daily Supplier Stats Chart */}

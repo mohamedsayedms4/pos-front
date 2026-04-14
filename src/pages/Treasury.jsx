@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import StatTile from '../components/common/StatTile';
 
 const Treasury = () => {
   const [treasury, setTreasury] = useState(null);
@@ -59,71 +60,53 @@ const Treasury = () => {
 
   return (
     <div className="page-section">
-      <div className="page-header" style={{ marginBottom: '24px' }}>
-        <div className="header-title">
-          <h1 style={{ fontWeight: 200, fontSize: '2.5rem', letterSpacing: '1px' }}>الخزنة والمالية</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>إدارة السيولة النقدية وسجل الحركات المالية</p>
-        </div>
-        <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
-          <div className="search-input" style={{ width: '300px' }}>
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="بحث في الملاحظات أو المصدر..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(0);
-              }}
-            />
-          </div>
-          <button className="btn btn-primary" onClick={() => loadData()} disabled={loading}>
-            {loading ? 'جاري التحديث...' : 'تحديث البيانات'}
-          </button>
-        </div>
-      </div>
-
-      <div className="stats-grid">
-        {/* Main Balance Tile - Large Wide */}
-        <div className="stat-card cobalt tile-wd-md">
-          <div className="tile-front">
-            <div className="stat-value" style={{ fontSize: '3.5rem' }}>
-              {treasury ? treasury.balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 }) : '0.00'}
-              <span style={{ fontSize: '1rem', marginRight: '8px', fontWeight: 400 }}>ج.م</span>
-            </div>
-            <div className="stat-label" style={{ fontSize: '1.1rem', fontWeight: 300 }}>رصيد الخزنة الحالي</div>
-            <div className="stat-icon" style={{ fontSize: '5rem', opacity: 0.1 }}>💵</div>
-          </div>
-        </div>
-
-        {/* Total In - Medium Square */}
-        <div className="stat-card emerald tile-sq-md">
-          <div className="tile-front">
-            <div className="stat-value">
-              {summary.totalIn.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
-            </div>
-            <div className="stat-label">إجمالي الوارد</div>
-            <div className="stat-subtitle">خلال آخر 100 حركة</div>
-            <div className="stat-icon">📈</div>
-          </div>
-        </div>
-
-        {/* Total Out - Medium Square */}
-        <div className="stat-card rose tile-sq-md">
-          <div className="tile-front">
-            <div className="stat-value">
-              {summary.totalOut.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
-            </div>
-            <div className="stat-label">إجمالي الصادر</div>
-            <div className="stat-subtitle">خلال آخر 100 حركة</div>
-            <div className="stat-icon">📉</div>
-          </div>
-        </div>
+      {/* Stats Dashboard */}
+      <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+        <StatTile 
+          id="trs_balance"
+          label="رصيد الخزنة الحالي"
+          value={treasury ? `${treasury.balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م` : '0.00 ج.م'}
+          icon="💰"
+          defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+        />
+        <StatTile 
+          id="trs_total_in"
+          label="إجمالي الوارد"
+          value={summary.totalIn.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+          icon="↗️"
+          defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
+        />
+        <StatTile 
+          id="trs_total_out"
+          label="إجمالي الصادر"
+          value={summary.totalOut.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+          icon="↘️"
+          defaults={{ color: 'crimson', size: 'tile-sq-sm', order: 3 }}
+        />
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 300 }}>سجل الحركات المالية الحديثة</h3>
+          <h3>🏦 سجل المعاملات المالية</h3>
+          <div className="toolbar">
+            <div className="search-input">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="بحث سريع..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(0);
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-secondary" onClick={() => loadData()} disabled={loading}>
+                {loading ? '⏳' : '🔄'} تحديث
+              </button>
+            </div>
+          </div>
         </div>
         <div className="card-body no-padding">
           <div className="table-wrapper">

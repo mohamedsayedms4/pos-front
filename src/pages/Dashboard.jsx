@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
+import StatTile from '../components/common/StatTile';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -43,7 +44,7 @@ const Dashboard = () => {
         const productsArray = Array.isArray(products) ? products : (products.content || []);
         const recent = [...productsArray].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
-        setStats({
+          setStats({
           products: products.totalElements ?? products.totalItems ?? productsArray.length,
           categories: categories.totalElements ?? categories.totalItems ?? (Array.isArray(categories) ? categories.length : (categories.content || []).length),
           suppliers: suppliers.totalElements ?? suppliers.totalItems ?? (Array.isArray(suppliers) ? suppliers.length : (suppliers.content || []).length),
@@ -57,7 +58,11 @@ const Dashboard = () => {
             count: d.invoiceCount || 0
           })) : [],
           debtSummary: debtSummary,
-          debtTrend: processDebtTrend(debtDaily)
+          debtTrend: processDebtTrend(debtDaily),
+          profitLoss: await Api.getProfitLossReport(
+            new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] + 'T00:00:00',
+            new Date().toISOString().split('T')[0] + 'T23:59:59'
+          ).catch(() => null)
         });
       } catch (err) {
         console.error(err);
@@ -95,90 +100,122 @@ const Dashboard = () => {
       {/* Metro Stat Tiles */}
       <div className="stats-grid">
         {Api.can('PRODUCT_READ') && (
-          <div className="stat-card cobalt tile-wd-md tile-flip-container">
-            <div className="tile-front">
-              <div className="stat-value">{stats.products}</div>
-              <div className="stat-label">المخزن</div>
-              <div className="stat-subtitle">إجمالي المنتجات المسجلة</div>
-              <div className="stat-icon">▨</div>
-            </div>
-            <div className="tile-back">
-              <div style={{ fontSize: '1.1rem', fontWeight: 200 }}>متوفر الآن {stats.products} صنف مختلف</div>
-            </div>
-          </div>
+          <StatTile
+            id="dash_products"
+            label="المخزن"
+            value={stats.products}
+            subtitle="إجمالي المنتجات المسجلة"
+            icon="▨"
+            defaults={{ color: 'cobalt', size: 'tile-wd-sm' }}
+            onClick={() => navigate('/products')}
+          />
         )}
 
         {Api.can('CATEGORY_READ') && (
-          <div className="stat-card emerald tile-sq-md tile-flip-container">
-            <div className="tile-front">
-              <div className="stat-value">{stats.categories}</div>
-              <div className="stat-label">الفئات</div>
-              <div className="stat-icon">▤</div>
-            </div>
-            <div className="tile-back">
-              <div style={{ fontSize: '0.85rem', fontWeight: 300 }}>{stats.categories} قسم</div>
-            </div>
-          </div>
+          <StatTile
+            id="dash_categories"
+            label="الفئات"
+            value={stats.categories}
+            icon="▤"
+            defaults={{ color: 'emerald', size: 'tile-sq-md' }}
+            onClick={() => navigate('/categories')}
+          />
         )}
 
         {Api.can('SUPPLIER_READ') && (
-          <div className="stat-card amber tile-wd-sm tile-flip-container">
-            <div className="tile-front">
-              <div className="stat-value">{stats.suppliers}</div>
-              <div className="stat-label">الموردين</div>
-              <div className="stat-icon">▧</div>
-            </div>
-            <div className="tile-back">
-              <div style={{ fontSize: '0.8rem', fontWeight: 300 }}>{stats.suppliers} مورد</div>
-            </div>
-          </div>
+          <StatTile
+            id="dash_suppliers"
+            label="الموردين"
+            value={stats.suppliers}
+            icon="▧"
+            defaults={{ color: 'amber', size: 'tile-wd-sm' }}
+            onClick={() => navigate('/suppliers')}
+          />
         )}
 
         {Api.can('ROLE_ADMIN') && (
-          <div className="stat-card rose tile-sq-sm tile-flip-container">
-            <div className="tile-front">
-              <div className="stat-value">{stats.users}</div>
-              <div className="stat-label">فريقنا</div>
-              <div className="stat-icon">◉</div>
-            </div>
-            <div className="tile-back">
-              <div style={{ fontSize: '0.7rem', fontWeight: 400 }}>{stats.users} مستخدم</div>
-            </div>
-          </div>
+          <StatTile
+            id="dash_users"
+            label="فريقنا"
+            value={stats.users}
+            icon="◉"
+            defaults={{ color: 'rose', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/users')}
+          />
         )}
 
-        <div className="stat-card purple tile-sq-sm">
-          <div className="stat-value" style={{ fontSize: '1.2rem' }}>9+</div>
-          <div className="stat-label">تنبيه</div>
-          <div className="stat-icon">◈</div>
-        </div>
+        {stats.profitLoss && (
+          <>
+            <StatTile
+              id="dash_profit"
+              label="صافي ربح الشهر"
+              value={stats.profitLoss.netProfit.toLocaleString()}
+              subtitle="تقرير P&L"
+              defaults={{ color: stats.profitLoss.netProfit >= 0 ? 'emerald' : 'magenta', size: 'tile-wd-sm' }}
+              onClick={() => navigate('/profit-loss')}
+            />
+            
+            <StatTile
+              id="dash_expenses"
+              label="مصروفات الشهر"
+              value={stats.profitLoss.totalExpenses.toLocaleString()}
+              subtitle="إجمالي المصروفات"
+              defaults={{ color: 'rose', size: 'tile-wd-sm' }}
+              onClick={() => navigate('/expenses')}
+            />
+          </>
+        )}
 
-        <div className="stat-card magenta tile-wd-lg tile-flip-container">
-          <div className="tile-front">
-            <div className="stat-value" style={{ display: 'inline-block', marginRight: '8px' }}>{stats.lowStock.length}</div>
-            <div className="stat-label" style={{ display: 'inline-block' }}>نواقص تحتاج توفير</div>
-            <div className="stat-icon">⚠</div>
-          </div>
-          <div className="tile-back">
-            <div style={{ fontSize: '0.9rem', fontWeight: 300 }}>
-              {stats.lowStock.length > 0 ? `${stats.lowStock.length} منتج بحاجة لشراء` : 'المخزون كافٍ ✓'}
-            </div>
-          </div>
-        </div>
+        <StatTile
+          id="dash_alerts"
+          label="تنبيه"
+          value="9+"
+          icon="◈"
+          defaults={{ color: 'purple', size: 'tile-sq-sm' }}
+          onClick={() => navigate('/notifications')}
+        />
 
-        <div className="stat-card teal tile-sq-sm">
-          <div className="stat-value" style={{ fontSize: '1.2rem' }}>{stats.outOfStock.length}</div>
-          <div className="stat-label">نفذ</div>
-        </div>
+        <StatTile
+          id="dash_lowstock"
+          label="نواقص تحتاج توفير"
+          value={stats.lowStock.length}
+          icon="⚠"
+          defaults={{ color: 'magenta', size: 'tile-wd-lg' }}
+          onClick={() => navigate('/products')}
+        />
+
+        <StatTile
+          id="dash_outofstock"
+          label="نفذ"
+          value={stats.outOfStock.length}
+          defaults={{ color: 'teal', size: 'tile-sq-sm' }}
+          onClick={() => navigate('/products')}
+        />
 
         {Api.can('AUDIT_READ') && (
-          <div className="stat-card cobalt tile-sq-sm" style={{ background: '#333', cursor: 'pointer' }} onClick={() => navigate('/audit')}>
+          <StatTile
+            id="dash_audit_shortcut"
+            label="المراجعة"
+            value=""
+            icon="▣"
+            defaults={{ color: 'blue', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/audit')}
+            style={{ background: '#333' }}
+          >
             <div className="stat-icon" style={{ top: '50%', right: '50%', transform: 'translate(50%,-50%)', opacity: 0.8 }}>▣</div>
-          </div>
+          </StatTile>
         )}
 
         {/* Debt Tiles */}
-        <div className="stat-card emerald tile-wd-sm tile-flip-container" style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)' }}>
+        <StatTile
+          id="dash_debt_receivable"
+          label="تحصيلات (لنا)"
+          value={`${Number(stats.debtSummary.totalReceivable).toLocaleString()}`}
+          icon="💰"
+          defaults={{ color: 'emerald', size: 'tile-wd-sm' }}
+          className="tile-flip-container"
+          style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)' }}
+        >
           <div className="tile-front">
             <div className="stat-value" style={{ fontSize: '1.5rem' }}>{Number(stats.debtSummary.totalReceivable).toLocaleString()}</div>
             <div className="stat-label">تحصيلات (لنا)</div>
@@ -187,9 +224,17 @@ const Dashboard = () => {
           <div className="tile-back">
             <div style={{ fontSize: '0.9rem' }}>جديد اليوم: {Number(stats.debtSummary.dailyReceivable).toLocaleString()} ج.م</div>
           </div>
-        </div>
+        </StatTile>
 
-        <div className="stat-card amber tile-wd-sm tile-flip-container" style={{ background: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)' }}>
+        <StatTile
+          id="dash_debt_payable"
+          label="مديونيات (علينا)"
+          value={`${Number(stats.debtSummary.totalPayable).toLocaleString()}`}
+          icon="💸"
+          defaults={{ color: 'amber', size: 'tile-wd-sm' }}
+          className="tile-flip-container"
+          style={{ background: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)' }}
+        >
           <div className="tile-front">
             <div className="stat-value" style={{ fontSize: '1.5rem' }}>{Number(stats.debtSummary.totalPayable).toLocaleString()}</div>
             <div className="stat-label">مديونيات (علينا)</div>
@@ -198,54 +243,76 @@ const Dashboard = () => {
           <div className="tile-back">
             <div style={{ fontSize: '0.9rem' }}>جديد اليوم: {Number(stats.debtSummary.dailyPayable).toLocaleString()} ج.م</div>
           </div>
-        </div>
-      </div>
+        </StatTile>
 
-      {/* Metro Quick Actions Tiles */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontWeight: 200, fontSize: '2rem', marginBottom: '12px', letterSpacing: '1px' }}>إجراءات سريعة</h1>
-        <div className="quick-actions">
-          {Api.can('PRODUCT_READ') && (
-            <Link className="quick-action-card" to="/products">
-              <div className="qa-icon">▨</div>
-              <div className="qa-label">المنتجات</div>
-            </Link>
-          )}
-          {Api.can('CATEGORY_READ') && (
-            <Link className="quick-action-card" to="/categories">
-              <div className="qa-icon">▤</div>
-              <div className="qa-label">الفئات</div>
-            </Link>
-          )}
-          {Api.can('SUPPLIER_READ') && (
-            <Link className="quick-action-card" to="/suppliers">
-              <div className="qa-icon">▧</div>
-              <div className="qa-label">الموردين</div>
-            </Link>
-          )}
-          {Api.can('ROLE_ADMIN') && (
-            <Link className="quick-action-card" to="/users">
-              <div className="qa-icon">◉</div>
-              <div className="qa-label">المستخدمين</div>
-            </Link>
-          )}
-          {Api.can('AUDIT_READ') && (
-            <Link className="quick-action-card" to="/audit">
-              <div className="qa-icon">▣</div>
-              <div className="qa-label">المراجعة</div>
-            </Link>
-          )}
-          {Api.can('SALE_READ') && (
-            <Link className="quick-action-card" to="/sales/analytics" style={{ background: 'var(--metro-purple)' }}>
-              <div className="qa-icon">📊</div>
-              <div className="qa-label">تحليلات البيع</div>
-            </Link>
-          )}
-          <Link className="quick-action-card" to="/notifications">
-            <div className="qa-icon">◈</div>
-            <div className="qa-label">الإشعارات</div>
-          </Link>
-        </div>
+        {Api.can('PRODUCT_READ') && (
+          <StatTile
+            id="dash_qa_products"
+            label="المنتجات"
+            value=""
+            icon="▨"
+            defaults={{ color: 'blue', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/products')}
+          />
+        )}
+        {Api.can('CATEGORY_READ') && (
+          <StatTile
+            id="dash_qa_categories"
+            label="الفئات"
+            value=""
+            icon="▤"
+            defaults={{ color: 'teal', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/categories')}
+          />
+        )}
+        {Api.can('SUPPLIER_READ') && (
+          <StatTile
+            id="dash_qa_suppliers"
+            label="الموردين"
+            value=""
+            icon="▧"
+            defaults={{ color: 'emerald', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/suppliers')}
+          />
+        )}
+        {Api.can('ROLE_ADMIN') && (
+          <StatTile
+            id="dash_qa_users"
+            label="المستخدمين"
+            value=""
+            icon="◉"
+            defaults={{ color: 'purple', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/users')}
+          />
+        )}
+        {Api.can('AUDIT_READ') && (
+          <StatTile
+            id="dash_qa_audit"
+            label="المراجعة"
+            value=""
+            icon="▣"
+            defaults={{ color: 'amber', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/audit')}
+          />
+        )}
+        {Api.can('SALE_READ') && (
+          <StatTile
+            id="dash_qa_analytics"
+            label="تحليلات البيع"
+            value=""
+            icon="📊"
+            defaults={{ color: 'magenta', size: 'tile-sq-sm' }}
+            onClick={() => navigate('/sales/analytics')}
+          />
+        )}
+        <StatTile
+          id="dash_qa_notifications"
+          label="الإشعارات"
+          value=""
+          icon="◈"
+          defaults={{ color: 'cobalt', size: 'tile-sq-sm' }}
+          onClick={() => navigate('/notifications')}
+        />
       </div>
 
       {/* Daily Sales Chart */}

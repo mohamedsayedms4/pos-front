@@ -3,6 +3,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import StatTile from '../components/common/StatTile';
 
 const DamagedProducts = () => {
     const { toast } = useGlobalUI();
@@ -91,17 +92,22 @@ const DamagedProducts = () => {
     return (
         <div className="page-section">
             {/* Metro Style Stats */}
-            <div className="stats-grid">
-                <div className="stat-card crimson tile-wd-sm">
-                    <div className="stat-value">{Number(totalLossValue).toLocaleString()} ج.م</div>
-                    <div className="stat-label">إجمالي خسائر التوالف (هذه الصفحة)</div>
-                    <div className="stat-icon">📉</div>
-                </div>
-                <div className="stat-card deep-purple tile-sq-sm">
-                    <div className="stat-value">{data.totalElements}</div>
-                    <div className="stat-label">عدد العمليات</div>
-                    <div className="stat-icon">📋</div>
-                </div>
+            {/* Metro Style Stats */}
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+                <StatTile
+                    id="dmg_loss"
+                    label="إجمالي خسائر التوالف (هذه الصفحة)"
+                    value={`${Number(totalLossValue).toLocaleString()} ج.م`}
+                    icon="📉"
+                    defaults={{ color: 'crimson', size: 'tile-wd-sm', order: 1 }}
+                />
+                <StatTile
+                    id="dmg_count"
+                    label="عدد العمليات"
+                    value={data.totalElements}
+                    icon="📋"
+                    defaults={{ color: 'deep-purple', size: 'tile-sq-sm', order: 2 }}
+                />
             </div>
 
             <div className="card">

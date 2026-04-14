@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import StatTile from '../components/common/StatTile';
 
 const InstallmentCalendar = () => {
   const { toast } = useGlobalUI();
@@ -222,17 +223,21 @@ const InstallmentCalendar = () => {
     const totalPay = filteredInstallments.filter(i => i.debt?.type === 'PAYABLE').reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
 
     return (
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', display: 'grid', gap: '5px', marginBottom: '24px' }}>
-        <div className="stat-card emerald">
-          <div className="stat-icon">💰</div>
-          <div className="stat-value" style={{ fontSize: '2.5rem' }}>{totalRec.toLocaleString()} <small style={{ fontSize: '1rem' }}>ج.م</small></div>
-          <div className="stat-label">إجمالي المستحقات (لنا) هذا الشهر</div>
-        </div>
-        <div className="stat-card magenta">
-          <div className="stat-icon">💸</div>
-          <div className="stat-value" style={{ fontSize: '2.5rem' }}>{totalPay.toLocaleString()} <small style={{ fontSize: '1rem' }}>ج.م</small></div>
-          <div className="stat-label">إجمالي الالتزامات (علينا) هذا الشهر</div>
-        </div>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', display: 'grid', gap: '15px', marginBottom: '24px' }}>
+        <StatTile 
+          id="cal_rec"
+          label="إجمالي المستحقات (لنا) هذا الشهر"
+          value={totalRec.toLocaleString() + ' ج.م'}
+          icon="💰"
+          defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 1 }}
+        />
+        <StatTile 
+          id="cal_pay"
+          label="إجمالي الالتزامات (علينا) هذا الشهر"
+          value={totalPay.toLocaleString() + ' ج.م'}
+          icon="💸"
+          defaults={{ color: 'magenta', size: 'tile-wd-sm', order: 2 }}
+        />
       </div>
     );
   };

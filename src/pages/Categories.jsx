@@ -4,6 +4,7 @@ import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import StatTile from '../components/common/StatTile';
 
 const Categories = () => {
   const { toast, confirm } = useGlobalUI();
@@ -198,22 +199,28 @@ const Categories = () => {
   return (
     <>
       <div className="page-section">
-        <div className="stats-grid">
-          <div className="stat-card blue tile-wd-sm">
-            <div className="stat-icon">📂</div>
-            <div className="stat-value">{flatData.length}</div>
-            <div className="stat-label">إجمالي الفئات</div>
-          </div>
-          <div className="stat-card emerald tile-sq-sm">
-            <div className="stat-icon">📁</div>
-            <div className="stat-value">{flatData.filter(c => c.level === 0).length}</div>
-            <div className="stat-label">رئيسية</div>
-          </div>
-          <div className="stat-card amber tile-sq-sm">
-            <div className="stat-icon">↳</div>
-            <div className="stat-value">{flatData.filter(c => c.level > 0).length}</div>
-            <div className="stat-label">فرعية</div>
-          </div>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+          <StatTile
+            id="cat_total"
+            label="إجمالي الفئات"
+            value={flatData.length}
+            icon="📂"
+            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+          />
+          <StatTile
+            id="cat_main"
+            label="رئيسية"
+            value={flatData.filter(c => c.level === 0).length}
+            icon="📁"
+            defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
+          />
+          <StatTile
+            id="cat_sub"
+            label="فرعية"
+            value={flatData.filter(c => c.level > 0).length}
+            icon="↳"
+            defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
+          />
         </div>
 
         <div className="card">

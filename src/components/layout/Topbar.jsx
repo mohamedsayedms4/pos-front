@@ -6,8 +6,9 @@ import { useGlobalUI } from '../common/GlobalUI';
 import { useTheme } from '../common/ThemeContext';
 import ChatService from '../../services/ChatService';
 import msgIcon from '../../assets/img/msg.png';
+import { useTileCustomizer } from '../../context/TileContext';
 
-const Topbar = ({ onMenuToggle }) => {
+const Topbar = ({ onMenuToggle, prevInfo }) => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { showToast } = useGlobalUI ? useGlobalUI() : { showToast: () => {} };
@@ -79,13 +80,32 @@ const Topbar = ({ onMenuToggle }) => {
 
   const isAdmin = (user?.roles || []).some(r => r.includes('ADMIN'));
 
+  const { isEditMode, setIsEditMode } = useTileCustomizer ? useTileCustomizer() : { isEditMode: false, setIsEditMode: () => {} };
+
   return (
     <header className="topbar">
       <div className="topbar-left">
         <button className="menu-toggle" onClick={onMenuToggle}>☰</button>
+        {prevInfo && prevInfo.path && (
+          <button 
+            className="btn-back-global" 
+            onClick={() => navigate(-1)}
+            title={`العودة لـ ${prevInfo.label}`}
+          >
+            ← عودة لـ {prevInfo.label}
+          </button>
+        )}
         <h2 className="page-title">نظام نقاط البيع</h2>
       </div>
       <div className="topbar-right">
+        <button
+          className={`topbar-btn customize-btn ${isEditMode ? 'active pulse' : ''}`}
+          title="تخصيص الواجهة"
+          onClick={() => setIsEditMode(!isEditMode)}
+        >
+          🎨
+        </button>
+
         <button
           className="topbar-btn msg-btn"
           title="الرسائل"
@@ -136,9 +156,9 @@ const Topbar = ({ onMenuToggle }) => {
         >
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
-        <button className="btn-logout" onClick={handleLogout}>
+        <button className="btn-logout" onClick={handleLogout} title="تسجيل الخروج">
           <span>⏻</span>
-          خروج
+          <span className="logout-text">خروج</span>
         </button>
       </div>
     </header>

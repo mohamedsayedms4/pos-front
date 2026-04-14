@@ -4,6 +4,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
+import StatTile from '../components/common/StatTile';
 import {
   ComposedChart,
   Bar,
@@ -155,27 +156,39 @@ const SupplierDetails = () => {
         </div>
       </div>
       
-      <div className="grid-responsive-4-to-2" style={{ marginBottom: '24px' }}>
-        <div className="stat-card cobalt" style={{ minHeight: '120px' }}>
-          <div className="stat-label">عدد الفواتير الكلي</div>
-          <div className="stat-value">{d.totalInvoices}</div>
-          <div className="stat-subtitle">هذا الشهر: <span style={{ fontWeight: 700 }}>{d.currentMonthInvoices}</span></div>
-        </div>
-        <div className="stat-card cobalt" style={{ minHeight: '120px' }}>
-          <div className="stat-label">حجم التعامل (مشتريات)</div>
-          <div className="stat-value">{Number(d.totalBusinessVolume).toFixed(2)}</div>
-          <div className="stat-subtitle">هذا الشهر: <span style={{ fontWeight: 700 }}>{Number(d.currentMonthBusinessVolume).toFixed(2)}</span></div>
-        </div>
-        <div className="stat-card rose" style={{ minHeight: '120px' }}>
-          <div className="stat-label">علينا للمورد (متبقي)</div>
-          <div className="stat-value">{Number(d.weOweSupplier).toFixed(2)}</div>
-          <div className="stat-subtitle">المديونيات المفتوحة</div>
-        </div>
-        <div className="stat-card emerald" style={{ minHeight: '120px' }}>
-          <div className="stat-label">لنا عند المورد (سلف/مدين)</div>
-          <div className="stat-value">{Number(d.supplierOwesUs).toFixed(2)}</div>
-          <div className="stat-subtitle">أرصدة مدينة على المورد</div>
-        </div>
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '24px' }}>
+        <StatTile 
+          id="spd_inv_count"
+          label="عدد الفواتير الكلي"
+          value={d.totalInvoices}
+          subtitle={`هذا الشهر: ${d.currentMonthInvoices}`}
+          icon="📄"
+          defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 1 }}
+        />
+        <StatTile 
+          id="spd_volume"
+          label="حجم التعامل (مشتريات)"
+          value={Number(d.totalBusinessVolume).toFixed(2)}
+          subtitle={`هذا الشهر: ${Number(d.currentMonthBusinessVolume).toFixed(2)}`}
+          icon="📊"
+          defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 2 }}
+        />
+        <StatTile 
+          id="spd_we_owe"
+          label="علينا للمورد (متبقي)"
+          value={Number(d.weOweSupplier).toFixed(2)}
+          subtitle="المديونيات المفتوحة"
+          icon="📤"
+          defaults={{ color: 'rose', size: 'tile-wd-sm', order: 3 }}
+        />
+        <StatTile 
+          id="spd_owes_us"
+          label="لنا عند المورد (سلف/مدين)"
+          value={Number(d.supplierOwesUs).toFixed(2)}
+          subtitle="أرصدة مدينة على المورد"
+          icon="📥"
+          defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 4 }}
+        />
       </div>
 
       <div className="details-grid">
