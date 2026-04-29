@@ -16,12 +16,14 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { useBranch } from '../context/BranchContext';
 
 
 const SupplierDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useGlobalUI();
+  const { selectedBranchId } = useBranch();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,8 +44,8 @@ const SupplierDetails = () => {
       setLoading(true);
       try {
         const [stats, historyData] = await Promise.all([
-          Api.getSupplierStatistics(id),
-          Api.getSupplierDailyStats(id, 7).catch(() => [])
+          Api.getSupplierStatistics(id, selectedBranchId),
+          Api.getSupplierDailyStats(id, 7).catch(() => []) // Daily stats might need branchId too in API if supported
         ]);
         setData(stats);
         
@@ -62,13 +64,13 @@ const SupplierDetails = () => {
     };
 
     loadData();
-  }, [id, navigate]);
+  }, [id, navigate, selectedBranchId]);
 
   const handleShowLedger = async () => {
     setIsLedgerLoading(true);
     setIsLedgerOpen(true);
     try {
-      const ledger = await Api.getSupplierLedger(id);
+      const ledger = await Api.getSupplierLedger(id, selectedBranchId);
       setLedgerData(ledger);
     } catch (err) {
       toast(err.message, 'error');
@@ -230,8 +232,8 @@ const SupplierDetails = () => {
           <div className="card-header" style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
             <h3 style={{ fontSize: '1rem', margin: 0 }}>أحدث حركات كشف الحساب</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
-               <button className="btn btn-outline-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.exportSupplierStatement(d.supplierId, d.supplierName.replace(/'/g, "\\'"))}>📊 مبسط</button>
-               <button className="btn btn-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.downloadComprehensiveReport(d.supplierId, d.supplierName.replace(/'/g, "\\'"))}>📄 شامل</button>
+               <button className="btn btn-outline-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.exportSupplierStatement(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>📊 مبسط</button>
+               <button className="btn btn-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.downloadComprehensiveReport(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>📄 شامل</button>
                <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={handleShowLedger}>التفاصيل كاملة</button>
             </div>
           </div>
@@ -279,10 +281,10 @@ const SupplierDetails = () => {
                 ) : (
                   <>
                     <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                      <button className="btn btn-outline-success btn-sm" onClick={() => Api.exportSupplierStatement(d.supplierId, d.supplierName.replace(/'/g, "\\'"))}>
+                      <button className="btn btn-outline-success btn-sm" onClick={() => Api.exportSupplierStatement(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>
                         📊 كشف حساب (مبسط)
                       </button>
-                      <button className="btn btn-success btn-sm" onClick={() => Api.downloadComprehensiveReport(d.supplierId, d.supplierName.replace(/'/g, "\\'"))}>
+                      <button className="btn btn-success btn-sm" onClick={() => Api.downloadComprehensiveReport(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>
                         📄 التقرير الشامل (Advanced)
                       </button>
                     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import JsBarcode from 'jsbarcode';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
@@ -7,9 +7,13 @@ import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
 import ScannerModal from '../components/common/ScannerModal';
 import StatTile from '../components/common/StatTile';
+import { useBranch } from '../context/BranchContext';
 
 const Products = () => {
+  const location = useLocation();
   const { toast, confirm } = useGlobalUI();
+  const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
+  
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
@@ -18,6 +22,8 @@ const Products = () => {
   const [sort, setSort] = useState('id,desc'); // Default sort
   const [loading, setLoading] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
 
   // Debounce search input
   useEffect(() => {
@@ -51,6 +57,13 @@ const Products = () => {
   const [loadingPrinters, setLoadingPrinters] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [testingPrint, setTestingPrint] = useState(false);
+
+  // Distribution Modal State
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockProduct, setStockProduct] = useState(null);
+  const [stockForm, setStockForm] = useState({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
+  const [savingStock, setSavingStock] = useState(false);
+  const [allWarehouses, setAllWarehouses] = useState([]);
 
   /**
    * Convert a blob: URL to a data: URL (base64-embedded).
@@ -145,7 +158,7 @@ const Products = () => {
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
-      await Api.exportProductsExcel(debouncedSearch, sort);
+      await Api.exportProductsExcel(debouncedSearch, sort, selectedBranchId);
       toast('تم تصدير ملف الإكسيل بنجاح', 'success');
     } catch (err) {
       toast(err.message, 'error');
@@ -157,7 +170,7 @@ const Products = () => {
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      await Api.exportProductsPdf(debouncedSearch, sort);
+      await Api.exportProductsPdf(debouncedSearch, sort, selectedBranchId);
       toast('تم تصدير ملف PDF بنجاح', 'success');
     } catch (err) {
       toast(err.message, 'error');
@@ -214,7 +227,7 @@ const Products = () => {
   const handleTestPrint = async () => {
     setTestingPrint(true);
     try {
-      const sampleImageUrl = await Api.getProductBarcodeLabel(items.length > 0 ? items[0].id : 1);
+      const sampleImageUrl = await Api.getProductBarcodeLabel(data.length > 0 ? data[0].id : 1);
       const width = printerConfig.labelWidthMm || 40;
       const height = printerConfig.labelHeightMm || 30;
 
@@ -229,13 +242,31 @@ const Products = () => {
     }
   };
 
-  const loadData = async (searchQuery = '', sortOrder = sort) => {
+  useEffect(() => {
+    const user = Api._getUser();
+    const queryParams = new URLSearchParams(location.search);
+    const branchFromUrl = queryParams.get('branchId');
+
+    if (branchFromUrl) {
+      setSelectedBranchId(branchFromUrl);
+    } else if (globalBranchId) {
+      setSelectedBranchId(globalBranchId);
+    } else if (user && user.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
+    
+    if (contextBranches && contextBranches.length > 0) {
+      setBranches(contextBranches);
+    }
+  }, [location.search, globalBranchId, contextBranches]);
+
+  const loadData = async (searchQuery = '', sortOrder = sort, branchId = selectedBranchId) => {
     setLoading(true);
     try {
       const [productsData, categoriesData, statsData] = await Promise.all([
-        Api.getProductsPaged(0, 1000, searchQuery, sortOrder).then(res => res.items).catch(() => []),
+        Api.getProductsPaged(0, 1000, searchQuery, sortOrder, branchId).then(res => res.items),
         Api.getCategories().catch(() => []),
-        Api.getProductStatistics().catch(() => null)
+        Api.getProductStatistics(branchId).catch(() => null)
       ]);
       setData(productsData);
       setCategories(categoriesData);
@@ -254,8 +285,40 @@ const Products = () => {
   };
 
   useEffect(() => {
-    loadData(debouncedSearch, sort);
-  }, [debouncedSearch, sort]);
+    loadData(debouncedSearch, sort, selectedBranchId);
+    // Pre-load warehouses for distribution modal
+    Api.getAllWarehouses().then(res => setAllWarehouses(res || [])).catch(() => {});
+  }, [debouncedSearch, sort, selectedBranchId]);
+
+  const openStockModal = (product) => {
+    setStockProduct(product);
+    setStockForm({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
+    setShowStockModal(true);
+  };
+
+  const handleUpdateStock = async (e) => {
+    e.preventDefault();
+    if (!stockForm.warehouseId || stockForm.quantity === '') {
+      toast('المخزن والكمية مطلوبان', 'warning');
+      return;
+    }
+    setSavingStock(true);
+    try {
+      await Api.addOrUpdateWarehouseStock(stockForm.warehouseId, {
+        productId: stockProduct.id,
+        quantity: parseFloat(stockForm.quantity),
+        minQuantity: stockForm.minQuantity ? parseFloat(stockForm.minQuantity) : null,
+        maxQuantity: stockForm.maxQuantity ? parseFloat(stockForm.maxQuantity) : null
+      });
+      toast('تم تحديث المخزون بنجاح', 'success');
+      setShowStockModal(false);
+      loadData(debouncedSearch, sort, selectedBranchId);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setSavingStock(false);
+    }
+  };
 
   const openForm = async (product = null) => {
     setEditProduct(product);
@@ -308,7 +371,7 @@ const Products = () => {
       if (editProduct) {
         await Api.updateProduct(editProduct.id, apiData, images);
       } else {
-        await Api.createProduct(apiData, images);
+        await Api.createProduct(apiData, images, selectedBranchId);
       }
       toast(editProduct ? 'تم تحديث المنتج بنجاح' : 'تم إضافة المنتج بنجاح', 'success');
       closeModal();
@@ -417,6 +480,24 @@ const Products = () => {
               to="/products/analytics"
               defaults={{ color: 'blue', size: 'tile-sq-sm', order: 4 }}
             />
+
+            <StatTile
+              id="prod_cart"
+              label="إضافة للسلة"
+              value={stats.totalCartCount || 0}
+              icon="🛒"
+              to="/products/analytics"
+              defaults={{ color: 'purple', size: 'tile-sq-sm', order: 5 }}
+            />
+
+            <StatTile
+              id="prod_fav"
+              label="في المفضلة"
+              value={stats.totalFavoriteCount || 0}
+              icon="❤️"
+              to="/products/analytics"
+              defaults={{ color: 'pink', size: 'tile-sq-sm', order: 6 }}
+            />
           </div>
         )}
 
@@ -424,6 +505,17 @@ const Products = () => {
           <div className="card-header">
             <h3>📦 إدارة المنتجات</h3>
             <div className="toolbar">
+              <select 
+                className="form-control" 
+                value={selectedBranchId} 
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                disabled={!Api.can('ROLE_ADMIN')}
+              >
+                <option value="">كل الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+
               <div className="search-input">
                 <span className="search-icon">🔍</span>
                 <input
@@ -486,6 +578,7 @@ const Products = () => {
                       <th>سعر الشراء</th>
                       <th>سعر البيع</th>
                       <th>المخزون</th>
+                      <th>التفاعل</th>
                       <th>الإجراءات</th>
                     </tr>
                   </thead>
@@ -526,7 +619,20 @@ const Products = () => {
                           </span>
                         </td>
                         <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span>👁️ {p.viewCount || 0}</span>
+                              <span>🛒 {p.cartCount || 0}</span>
+                              <span>❤️ {p.favoriteCount || 0}</span>
+                            </div>
+                            <div className="progress" style={{ height: '4px', width: '60px', background: 'var(--bg-elevated)', borderRadius: '2px' }}>
+                              <div className="progress-bar" style={{ width: `${Math.min(100, ((p.cartCount || 0) + (p.favoriteCount || 0)) * 2)}%`, background: 'var(--metro-blue)' }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td>
                           <div className="table-actions" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <button className="btn btn-sm btn-ghost" title="توزيع المخزون" onClick={() => openStockModal(p)} style={{ border: '1px solid var(--border-color)', color: 'var(--accent-amber)' }}>🏭 توزيع</button>
                             <button className="btn btn-sm btn-secondary" title="طباعة باركود (PDF)" onClick={() => { setPrintProduct(p); setPrintModalOpen(true); }} style={{ whiteSpace: 'nowrap' }}>🖨️ طباعة P</button>
                             {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(p)}>✏️</button>}
                             {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(p.id, p.name)}>🗑️</button>}
@@ -826,6 +932,58 @@ const Products = () => {
           .desktop-only { display: none !important; }
         }
       `}</style>
+      {/* Stock Management Modal */}
+      {showStockModal && (
+        <ModalContainer>
+          <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+            <div className="modal" style={{ width: '100%', maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>📦 توزيع المنتج: {stockProduct?.name}</h3>
+                <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
+              </div>
+              <div className="modal-body">
+                <form id="stockForm" onSubmit={handleUpdateStock}>
+                  <div className="form-group">
+                    <label>المخزن المستهدف *</label>
+                    <select className="form-control" value={stockForm.warehouseId} 
+                      onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
+                      <option value="">اختر المخزن...</option>
+                      {allWarehouses.map(w => (
+                        <option key={w.id} value={w.id}>
+                          {w.branchName} - {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>الكمية الحالية في هذا المخزن *</label>
+                    <input className="form-control" type="number" step="0.001" value={stockForm.quantity}
+                      onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
+                  </div>
+                  <div className="grid grid-2 gap-15">
+                    <div className="form-group">
+                      <label>الحد الأدنى (تنبيه)</label>
+                      <input className="form-control" type="number" step="0.001" value={stockForm.minQuantity}
+                        onChange={e => setStockForm({ ...stockForm, minQuantity: e.target.value })} placeholder="اختياري" />
+                    </div>
+                    <div className="form-group">
+                      <label>الحد الأقصى</label>
+                      <input className="form-control" type="number" step="0.001" value={stockForm.maxQuantity}
+                        onChange={e => setStockForm({ ...stockForm, maxQuantity: e.target.value })} placeholder="اختياري" />
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setShowStockModal(false)}>إلغاء</button>
+                <button type="submit" form="stockForm" className="btn btn-primary" disabled={savingStock}>
+                  {savingStock ? 'جاري الحفظ...' : 'حفظ التوزيع'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
     </>
   );
 };

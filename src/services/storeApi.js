@@ -184,6 +184,60 @@ const StoreApi = {
     return res.json();
   },
 
+  async trackInteraction(productId, type) {
+    const token = localStorage.getItem('store_access_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      const res = await fetch(`${SERVER_URL}/api/public/store/interactions/track`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ productId, type })
+      });
+      return res.json();
+    } catch (e) {
+      console.error('Failed to track interaction', e);
+    }
+  },
+
+  // ─── Customer Offers ───
+  async getMyOffers() {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/me/offers`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('store_access_token')}` }
+    });
+    if (!res.ok) throw new Error('فشل جلب العروض');
+    return res.json();
+  },
+
+  async countMyOffers() {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/me/offers/count`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('store_access_token')}` }
+    });
+    if (!res.ok) return { data: 0 };
+    return res.json();
+  },
+
+  async getMyOffersForProduct(productId) {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/me/offers/product/${productId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('store_access_token')}` }
+    });
+    if (!res.ok) return { data: [] };
+    return res.json();
+  },
+
+  async useOffer(offerId) {
+    const res = await fetch(`${SERVER_URL}/api/public/store/auth/me/offers/${offerId}/use`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('store_access_token')}` }
+    });
+    if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.message || 'فشل تطبيق العرض');
+    }
+    return res.json();
+  },
+
   getImageUrl(imageUrl) {
     if (!imageUrl) return null;
     if (imageUrl.startsWith('http')) return imageUrl;

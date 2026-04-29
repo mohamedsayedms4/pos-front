@@ -8,9 +8,8 @@ import HeroSectionManager from '../components/settings/HeroSectionManager';
 const Settings = () => {
     const { toast } = useGlobalUI();
     const [info, setInfo] = useState({
-        name: '', phone1: '', phone2: '', email: '', address: '',
-        whatsappNumber: '', facebookUrl: '', instagramUrl: '', tiktokUrl: '',
-        aboutUs: '', currency: 'جنيه', logoUrl: ''
+        aboutUs: '', currency: 'جنيه', logoUrl: '', facebookPixelId: '',
+        facebookAdAccountId: '', facebookAccessToken: ''
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -170,6 +169,61 @@ const Settings = () => {
                             <div className="form-group">
                                 <label>رابط تيك توك</label>
                                 <input type="text" className="form-control" value={info.tiktokUrl || ''} onChange={e => setInfo({...info, tiktokUrl: e.target.value})} />
+                            </div>
+
+                            {/* Facebook Pixel */}
+                            <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '1.2rem' }}>📊</span>
+                                    <strong>Facebook Pixel ID</strong>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>(اختياري — لتتبع إعلانات فيسبوك)</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    className="form-control" 
+                                    value={info.facebookPixelId || ''} 
+                                    onChange={e => setInfo({...info, facebookPixelId: e.target.value})}
+                                    placeholder="مثال: 1234567890123456"
+                                    style={{ fontFamily: 'monospace', letterSpacing: '1px' }}
+                                />
+                                <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
+                                    ستجد الـ Pixel ID في <a href="https://business.facebook.com/events_manager" target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>Facebook Events Manager</a> → Data Sources → Pixel
+                                </small>
+                            </div>
+
+                            {/* Facebook Ads Insights Config */}
+                            <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '1.2rem' }}>📈</span>
+                                    <strong>إعدادات تقارير الإعلانات (Facebook Ads Reports)</strong>
+                                </label>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px' }}>
+                                    <div className="form-group">
+                                        <label style={{ fontSize: '0.85rem' }}>Ad Account ID</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-control" 
+                                            value={info.facebookAdAccountId || ''} 
+                                            onChange={e => setInfo({...info, facebookAdAccountId: e.target.value})}
+                                            placeholder="مثال: 1234567890"
+                                            style={{ fontFamily: 'monospace' }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ fontSize: '0.85rem' }}>System User Access Token</label>
+                                        <input 
+                                            type="password" 
+                                            className="form-control" 
+                                            value={info.facebookAccessToken || ''} 
+                                            onChange={e => setInfo({...info, facebookAccessToken: e.target.value})}
+                                            placeholder="EAAB..."
+                                        />
+                                    </div>
+                                </div>
+                                <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
+                                     للحصول على الـ Token والـ ID، اتبع دليل <a href="https://developers.facebook.com/docs/marketing-api/get-started" target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>Marketing API Get Started</a>. يجب أن يحتوي الـ Token على صلاحية <code>ads_read</code>.
+                                </small>
                             </div>
 
                             {/* About Us */}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import StoreApi from '../../services/storeApi';
 import { useStore } from '../../context/StoreContext';
 import { useStoreAuth } from '../../context/StoreAuthContext';
+import * as fbPixel from '../../services/fbPixel';
 
 const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
   const { storeInfo } = useStore();
@@ -27,6 +28,9 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
         customerAddress: storeCustomer.address || prev.customerAddress
       }));
     }
+    if (isOpen && cart.length > 0) {
+      fbPixel.trackInitiateCheckout(cart, cart.reduce((s, i) => s + i.price * i.qty, 0));
+    }
   }, [isOpen, storeCustomer]);
 
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -51,7 +55,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
         ...form,
         storeCustomerId: storeCustomer?.id,
         paymentMethod,
-        items: cart.map(i => ({ productId: i.id, quantity: i.qty }))
+        items: cart.map(i => ({ productId: i.id, quantity: i.qty, appliedOfferId: i.appliedOfferId }))
       };
       const res = await StoreApi.placeOrder(payload);
       const orderData = res.data;
@@ -64,6 +68,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
 
       setOrderResult(orderData);
       setStep(4);
+      fbPixel.trackPurchase(orderData, total);
       onSuccess?.();
     } catch (e) {
       setError(e.message);
@@ -83,9 +88,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
             {step === 4 ? 'تم إرسال طلبك' : 'إتمام الطلب'}
           </h3>
           <button className="ec-modal-close-btn" onClick={onClose}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <i className="fas fa-times"></i>
           </button>
         </div>
         
@@ -94,7 +97,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
             <div className={`ec-step-item ${step >= 1 ? 'active' : ''} ${step > 1 ? 'done' : ''}`}>
               <div className="ec-step-dot">
                 {step > 1 ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <i className="fas fa-check" style={{ fontSize: '0.8rem', color: '#fff' }}></i>
                 ) : 1}
               </div>
               <span>البيانات</span>
@@ -103,7 +106,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
             <div className={`ec-step-item ${step >= 2 ? 'active' : ''} ${step > 2 ? 'done' : ''}`}>
               <div className="ec-step-dot">
                 {step > 2 ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <i className="fas fa-check" style={{ fontSize: '0.8rem', color: '#fff' }}></i>
                 ) : 2}
               </div>
               <span>الدفع</span>
@@ -121,7 +124,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
             <div className="ec-checkout-section ec-animate-in">
               {storeCustomer && (
                 <div className="ec-user-welcome-badge">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  <i className="fas fa-user-circle" style={{ marginLeft: '8px' }}></i>
                   <span>مرحباً <strong>{storeCustomer.name.split(' ')[0]}</strong>، سنستخدم بياناتك المسجلة.</span>
                 </div>
               )}
@@ -129,7 +132,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
                 <div className="ec-form-group">
                   <label>الاسم الكامل *</label>
                   <div className="ec-input-with-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <i className="fas fa-user"></i>
                     <input value={form.customerName} onChange={e => setForm({...form, customerName: e.target.value})} placeholder="مثال: أحمد محمد" />
                   </div>
                 </div>
@@ -138,7 +141,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
                 <div className="ec-form-group">
                   <label>رقم الهاتف *</label>
                   <div className="ec-input-with-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <i className="fas fa-phone-alt"></i>
                     <input value={form.customerPhone} onChange={e => setForm({...form, customerPhone: e.target.value})} placeholder="01xxxxxxxxx" />
                   </div>
                 </div>
@@ -147,7 +150,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
                 <div className="ec-form-group">
                   <label>العنوان بالتفصيل *</label>
                   <div className="ec-input-with-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <i className="fas fa-map-marker-alt"></i>
                     <textarea value={form.customerAddress} onChange={e => setForm({...form, customerAddress: e.target.value})} placeholder="المدينة، الشارع، المبنى..." rows={2} />
                   </div>
                 </div>
@@ -156,7 +159,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
                 <div className="ec-form-group">
                   <label>ملاحظات إضافية</label>
                   <div className="ec-input-with-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <i className="fas fa-edit"></i>
                     <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="أي تعليمات خاصة للتوصيل..." rows={1} />
                   </div>
                 </div>
@@ -181,7 +184,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
                     <div className="ec-check-inner" />
                   </div>
                   <div className="ec-payment-icon-box">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    <i className="fas fa-money-bill-wave"></i>
                   </div>
                   <div className="ec-payment-texts">
                     <strong>الدفع عند الاستلام</strong>
@@ -197,7 +200,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
                     <div className="ec-check-inner" />
                   </div>
                   <div className="ec-payment-icon-box">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                    <i className="fas fa-credit-card"></i>
                   </div>
                   <div className="ec-payment-texts">
                     <strong>الدفع بالبطاقة</strong>
@@ -205,7 +208,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
                   </div>
                   {paymentMethod === 'ONLINE' && (
                     <span className="ec-card-secure-tag">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <i className="fas fa-lock"></i>
                     </span>
                   )}
                 </button>
@@ -213,7 +216,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
 
               {paymentMethod === 'ONLINE' && (
                 <div className="ec-payment-trust-card">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <i className="fas fa-shield-alt"></i>
                   <div>
                     <strong>دفع مشفر وآمن</strong>
                     <p>سيتم توجيهك لبوابة الدفع (Stripe) لإتمام العملية بشكل آمن.</p>
@@ -273,9 +276,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
           {step === 4 && orderResult && (
             <div className="ec-order-done-premium ec-animate-in">
               <div className="ec-success-ring">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
+                <i className="fas fa-check"></i>
               </div>
               <h2>شكراً لطلبك!</h2>
               <p>لقد استلمنا طلبك بنجاح. نقوم حالياً بمراجعته وسنقوم بالتواصل معك قريباً لتأكيد التوصيل.</p>
@@ -286,7 +287,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
               </div>
 
               <div className="ec-done-tip">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <i className="fas fa-info-circle"></i>
                 <span>يمكنك تتبع حالة الطلب من القائمة الرئيسية لاحقاً.</span>
               </div>
             </div>
@@ -297,7 +298,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
           {step === 1 && (
             <button className="ec-btn-black-premium w-full" onClick={handleNextToPayment}>
               المتابعة لطريقة الدفع
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+              <i className="fas fa-arrow-left" style={{ marginRight: '8px' }}></i>
             </button>
           )}
           {step === 2 && (
@@ -305,7 +306,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
               <button className="ec-btn-ghost-premium" onClick={() => setStep(1)}>رجوع</button>
               <button className="ec-btn-black-premium flex-1" onClick={handleNextToReview}>
                 المتابعة للمراجعة
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+                <i className="fas fa-arrow-left" style={{ marginRight: '8px' }}></i>
               </button>
             </div>
           )}

@@ -9,8 +9,11 @@ import StatTile from '../components/common/StatTile';
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const isAdmin = Api.isAdminOrBranchManager();
   const [showModal, setShowModal] = useState(false);
-  const [currentCustomer, setCurrentCustomer] = useState({ name: '', phone: '', email: '', address: '' });
+  const [currentCustomer, setCurrentCustomer] = useState({ name: '', phone: '', email: '', address: '', branchIds: [] });
   const [isEditing, setIsEditing] = useState(false);
   const { toast, confirm } = useGlobalUI();
   const [query, setQuery] = useState('');
@@ -35,16 +38,20 @@ const Customers = () => {
   const [activeInvoice, setActiveInvoice] = useState(null);
 
   useEffect(() => {
-    loadCustomers(currentPage, pageSize, query);
-  }, [currentPage]);
+    loadCustomers(currentPage, pageSize, query, selectedBranchId);
+  }, [currentPage, selectedBranchId]);
 
-  const loadCustomers = async (page = 0, size = 10, searchQuery = query) => {
+  const loadCustomers = async (page = currentPage, size = pageSize, searchQuery = query, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const res = await Api.getCustomers(page, size, searchQuery);
+      const [res, branchesData] = await Promise.all([
+        Api.getCustomers(page, size, searchQuery, branchId),
+        branches.length === 0 ? Api.getBranches().catch(() => []) : Promise.resolve(branches)
+      ]);
       setCustomers(res.items || res.content || []);
       setTotalPages(res.totalPages || 0);
-      setTotalElements(res.totalElements || 0);
+      setTotalElements(res.totalElements || res.totalItems || 0);
+      if (branches.length === 0) setBranches(branchesData);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -82,13 +89,16 @@ const Customers = () => {
   };
 
   const openAddModal = () => {
-    setCurrentCustomer({ name: '', phone: '', email: '', address: '' });
+    setCurrentCustomer({ name: '', phone: '', email: '', address: '', branchIds: [] });
     setIsEditing(false);
     setShowModal(true);
   };
 
   const openEditModal = (customer) => {
-    setCurrentCustomer(customer);
+    setCurrentCustomer({
+      ...customer,
+      branchIds: customer.branches ? customer.branches.map(b => b.id) : []
+    });
     setIsEditing(true);
     setShowModal(true);
   };
@@ -96,7 +106,7 @@ const Customers = () => {
   const handleViewDebt = async (customerId) => {
     setLoading(true);
     try {
-      const summary = await Api.getCustomerDebt(customerId);
+      const summary = await Api.getCustomerDebt(customerId, selectedBranchId);
       setDebtSummary(summary);
       setPaymentAmount('');
       setPaymentNotes('');
@@ -119,7 +129,8 @@ const Customers = () => {
     try {
       const updatedSummary = await Api.collectCustomerPayment(debtSummary.customerId, {
         amount: Number(paymentAmount),
-        notes: paymentNotes
+        notes: paymentNotes,
+        branchId: selectedBranchId
       });
       setDebtSummary(updatedSummary);
       setPaymentAmount('');
@@ -215,6 +226,12 @@ const Customers = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
+                {isAdmin && (
+                  <select className="form-control" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)} style={{ width: '150px' }}>
+                    <option value="">جميع الفروع</option>
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                )}
                 {Api.can('CUSTOMER_WRITE') !== false && (
                   <button className="btn btn-primary" onClick={openAddModal}>
                     <span>+</span> عميل جديد
@@ -327,6 +344,26 @@ const Customers = () => {
                   <div className="form-group">
                     <label>العنوان التفصيلي</label>
                     <textarea className="form-control" rows="2" value={currentCustomer.address} onChange={e => setCurrentCustomer({ ...currentCustomer, address: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label>الفروع المرتبطة *</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', marginTop: '5px' }}>
+                      {branches.map(branch => (
+                        <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={currentCustomer.branchIds?.includes(branch.id)} 
+                            onChange={(e) => {
+                              const newIds = e.target.checked 
+                                ? [...(currentCustomer.branchIds || []), branch.id]
+                                : (currentCustomer.branchIds || []).filter(id => id !== branch.id);
+                              setCurrentCustomer({ ...currentCustomer, branchIds: newIds });
+                            }} 
+                          />
+                          {branch.name}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="modal-footer">

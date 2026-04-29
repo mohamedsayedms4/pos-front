@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
@@ -16,10 +16,13 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { useBranch } from '../context/BranchContext';
 
 
 const Suppliers = () => {
   const { toast, confirm } = useGlobalUI();
+  const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
+
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -32,6 +35,9 @@ const Suppliers = () => {
   const [totalElements, setTotalElements] = useState(0);
   const pageSize = 10;
   const navigate = useNavigate();
+  const location = useLocation();
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
 
   // Debounce search
   useEffect(() => {
@@ -49,7 +55,7 @@ const Suppliers = () => {
   const [activeSupplier, setActiveSupplier] = useState(null);
 
   // Form state
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', taxNumber: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', taxNumber: '', branchIds: [] });
 
   // Payment state
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -60,8 +66,8 @@ const Suppliers = () => {
   const handleExportExcel = async () => {
     setExportingExcel(true);
     try {
-      await Api.exportSuppliersExcel(debouncedSearch, sort);
-      toast('تم التصدير إلى Excel بنجاح', 'success');
+      await Api.exportSuppliersExcel(debouncedSearch, sort, selectedBranchId);
+      toast('تم تصدير ملف الإكسيل بنجاح', 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -72,8 +78,8 @@ const Suppliers = () => {
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      await Api.exportSuppliersPdf(debouncedSearch, sort);
-      toast('تم التصدير إلى PDF بنجاح', 'success');
+      await Api.exportSuppliersPdf(debouncedSearch, sort, selectedBranchId);
+      toast('تم تصدير ملف PDF بنجاح', 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -81,12 +87,12 @@ const Suppliers = () => {
     }
   };
 
-  const loadData = async (page = 0, size = 10, query = debouncedSearch, sortParam = sort) => {
+  const loadData = async (page = 0, size = 10, query = debouncedSearch, sortParam = sort, branchId = selectedBranchId) => {
     setLoading(true);
     try {
       const [res, statsData] = await Promise.all([
-        Api.getSuppliers(page, size, query, sortParam),
-        Api.getDailySupplierStats(7).catch(() => [])
+        Api.getSuppliers(page, size, query, sortParam, branchId),
+        Api.getDailySupplierStats(7, branchId).catch(() => [])
       ]);
       setData(res.content || res.items || []);
       setTotalPages(res.totalPages || 0);
@@ -109,8 +115,26 @@ const Suppliers = () => {
 
 
   useEffect(() => {
-    loadData(currentPage, pageSize, debouncedSearch, sort);
-  }, [currentPage, debouncedSearch, sort]);
+    const user = Api._getUser();
+    const queryParams = new URLSearchParams(location.search);
+    const branchFromUrl = queryParams.get('branchId');
+
+    if (branchFromUrl) {
+      setSelectedBranchId(branchFromUrl);
+    } else if (globalBranchId) {
+      setSelectedBranchId(globalBranchId);
+    } else if (user && user.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
+
+    if (contextBranches && contextBranches.length > 0) {
+      setBranches(contextBranches);
+    }
+  }, [location.search, globalBranchId, contextBranches]);
+
+  useEffect(() => {
+    loadData(currentPage, pageSize, debouncedSearch, sort, selectedBranchId);
+  }, [currentPage, debouncedSearch, sort, selectedBranchId]);
 
   // Server-side filtering is now handled in loadData
 
@@ -122,10 +146,11 @@ const Suppliers = () => {
         phone: supplier.phone || '',
         email: supplier.email || '',
         address: supplier.address || '',
-        taxNumber: supplier.taxNumber || ''
+        taxNumber: supplier.taxNumber || '',
+        branchIds: supplier.branches ? supplier.branches.map(b => b.id) : []
       });
     } else {
-      setFormData({ name: '', phone: '', email: '', address: '', taxNumber: '' });
+      setFormData({ name: '', phone: '', email: '', address: '', taxNumber: '', branchIds: [] });
     }
     setModalType('form');
   };
@@ -154,7 +179,7 @@ const Suppliers = () => {
       if (activeSupplier) {
         await Api.updateSupplier(activeSupplier.id, formData);
       } else {
-        await Api.createSupplier(formData);
+        await Api.createSupplier(formData, selectedBranchId);
       }
       toast(activeSupplier ? 'تم تحديث المورد بنجاح' : 'تم إضافة المورد بنجاح', 'success');
       closeModal();
@@ -176,7 +201,7 @@ const Suppliers = () => {
 
     setSaving(true);
     try {
-      await Api.paySupplier(activeSupplier.id, amount, paymentDesc || 'Manual Payment');
+      await Api.paySupplier(activeSupplier.id, amount, paymentDesc || 'Manual Payment', selectedBranchId);
       toast('تم تسجيل الدفعة بنجاح', 'success');
       closeModal();
       loadData();
@@ -283,6 +308,17 @@ const Suppliers = () => {
           <div className="card-header">
             <h3>🏭 إدارة الموردين</h3>
             <div className="toolbar">
+              <select 
+                className="form-control" 
+                value={selectedBranchId} 
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                disabled={!Api.can('ROLE_ADMIN')}
+              >
+                <option value="">كل الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+
               <div className="search-input">
                 <span className="search-icon">🔍</span>
                 <input 
@@ -385,7 +421,14 @@ const Suppliers = () => {
                             </div>
                           </td>
                           <td>{s.phone || '—'}</td>
-                          <td>{s.email || '—'}</td>
+                          <td>
+                            {s.branch ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '20px', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', fontSize: '0.8rem', fontWeight: 600 }}>
+                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-emerald)', display: 'inline-block' }}></span>
+                                {s.branch.name}
+                              </span>
+                            ) : <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>—</span>}
+                          </td>
                           <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{s.taxNumber || '—'}</code></td>
                           <td className={balanceClass} style={{ fontWeight: 700 }}>{balance.toFixed(2)}</td>
                           <td>
@@ -465,6 +508,26 @@ const Suppliers = () => {
                   <div className="form-group">
                     <label>الرقم الضريبي</label>
                     <input className="form-control" name="taxNumber" value={formData.taxNumber} onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label>الفروع المرتبطة *</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', marginTop: '5px' }}>
+                      {branches.map(branch => (
+                        <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.branchIds.includes(branch.id)} 
+                            onChange={(e) => {
+                              const newIds = e.target.checked 
+                                ? [...formData.branchIds, branch.id]
+                                : formData.branchIds.filter(id => id !== branch.id);
+                              setFormData({ ...formData, branchIds: newIds });
+                            }} 
+                          />
+                          {branch.name}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </form>
               </div>

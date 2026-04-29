@@ -12,6 +12,7 @@
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",
     "axios": "^1.6.8",
+    "dexie": "^4.4.2",
     "html5-qrcode": "^2.3.8",
     "jsbarcode": "^3.12.3",
     "react": "^18.2.0",

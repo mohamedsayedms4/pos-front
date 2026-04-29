@@ -5,12 +5,13 @@ import Loader from '../components/common/Loader';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import ThermalReceipt from '../components/common/ThermalReceipt';
-import ScannerModal from '../components/common/ScannerModal';
+import { useBranch } from '../context/BranchContext';
+import { db, saveOfflineSale } from '../services/db';
+import SyncService from '../services/SyncService';
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 24;
 
-/* ─── Helper: Image Resolver ─── */
 const getProductImage = (product) => {
   if (product.imageUrls && product.imageUrls.length > 0) {
     const url = product.imageUrls[0];
@@ -21,79 +22,169 @@ const getProductImage = (product) => {
   return null;
 };
 
-/* ─── Product Card Component ─── */
-const ProductCard = ({ product, onAdd }) => {
-  const imgSrc = getProductImage(product);
-  const outOfStock = product.stock <= 0;
-  return (
-    <div className={`pos-product-card${outOfStock ? ' out-of-stock' : ''}`} onClick={() => !outOfStock && onAdd(product)}>
-      <div className="pos-product-img-wrap">
-        {imgSrc ? <img src={imgSrc} alt={product.name} className="pos-product-img" /> : <div className="pos-product-img-placeholder">📦</div>}
-        {outOfStock && <div className="pos-out-badge">نفذ</div>}
-      </div>
-      <div className="pos-product-info">
-        <div className="pos-product-name">{product.name}</div>
-        <div className="pos-product-price">{Number(product.salePrice).toFixed(2)} <span>ج.م</span></div>
-      </div>
-    </div>
-  );
-};
-
 const POS = () => {
+  const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
   const [connected, setConnected] = useState(false);
-  const [showBrowser, setShowBrowser] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [cart, setCart] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [lastInvoice, setLastInvoice] = useState(null);
-  const [showScanner, setShowScanner] = useState(false);
-  const { toast } = useGlobalUI();
+
+  const [branches, setBranches] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
+
+  const { toast, confirm } = useGlobalUI();
   const searchInputRef = useRef(null);
   const stompClientRef = useRef(null);
 
-  /* ─── Product browser state ─── */
   const [browseProducts, setBrowseProducts] = useState([]);
   const [browsePage, setBrowsePage] = useState(0);
   const [browseTotalPages, setBrowseTotalPages] = useState(1);
   const [browseLoading, setBrowseLoading] = useState(false);
   const [browseSearch, setBrowseSearch] = useState('');
-  const [searchProducts, setSearchProducts] = useState([]);
+  const [pendingSalesCount, setPendingSalesCount] = useState(0);
   const observerTarget = useRef(null);
 
+  // Initialize
   useEffect(() => {
-    Promise.all([loadCustomers(), loadBrowsePage(0, '', false)]).finally(() => setLoading(false));
-  }, []);
+    const user = Api._getUser();
+    if (globalBranchId) {
+      setSelectedBranchId(globalBranchId);
+    } else if (user && user.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
+    if (contextBranches && contextBranches.length > 0) {
+      setBranches(contextBranches);
+    } else {
+      // Try local branches
+      db.branches.toArray().then(data => {
+        if (data.length > 0) setBranches(data);
+      });
+    }
+    
+    // Init Sync Service
+    SyncService.initAutoSync();
+    if (navigator.onLine) {
+      SyncService.pullDataFromServer(globalBranchId);
+    }
+    
+    // Check pending count
+    const updatePendingCount = async () => {
+      const count = await db.offlineSales.where('status').equals('pending').count();
+      setPendingSalesCount(count);
+    };
+    updatePendingCount();
+    const interval = setInterval(updatePendingCount, 5000);
+
+    loadCustomers().finally(() => setLoading(false));
+    return () => clearInterval(interval);
+  }, [globalBranchId, contextBranches]);
+
+  const loadWarehouses = async (branchId) => {
+    try {
+      let data = [];
+      if (navigator.onLine) {
+        data = await Api.getWarehousesByBranch(branchId);
+      } else {
+        data = await db.warehouses.where('branchId').equals(Number(branchId)).toArray();
+      }
+      setWarehouses(data);
+      if (data.length > 0) setSelectedWarehouseId(data[0].id);
+    } catch (e) {
+      console.error("Failed to load warehouses", e);
+      // Fallback
+      const local = await db.warehouses.where('branchId').equals(Number(branchId)).toArray();
+      setWarehouses(local);
+    }
+  };
 
   const loadCustomers = async () => {
     try {
-      const cData = await Api.getCustomers(0, 100);
-      setCustomers(cData.items || cData.content || []);
-    } catch (e) { }
+      const cData = await Api.getCustomers(0, 100, '', selectedBranchId);
+      const items = cData.items || cData.content || [];
+      setCustomers(items);
+    } catch (e) {
+      console.warn("Falling back to local customers...");
+      const localCustomers = await db.customers.toArray();
+      setCustomers(localCustomers);
+    }
   };
 
-  const loadBrowsePage = useCallback(async (page, search, append = false) => {
+  const loadBrowsePage = useCallback(async (page, search, append = false, warehouseId = selectedWarehouseId) => {
+    if (!warehouseId && !search) {
+      if (!append) setBrowseProducts([]);
+      return;
+    }
     setBrowseLoading(true);
+    
+    const fetchLocal = async () => {
+      const lowerSearch = search?.toLowerCase() || '';
+      let localItems = [];
+      if (lowerSearch) {
+        localItems = await db.products
+          .filter(p => 
+            p.name.toLowerCase().includes(lowerSearch) || 
+            (p.barcode && p.barcode.includes(search))
+          )
+          .offset(page * PAGE_SIZE)
+          .limit(PAGE_SIZE)
+          .toArray();
+      } else {
+        localItems = await db.products.offset(page * PAGE_SIZE).limit(PAGE_SIZE).toArray();
+      }
+      setBrowseProducts(prev => append ? [...prev, ...localItems] : localItems);
+      setBrowseTotalPages(1);
+      setBrowsePage(page);
+    };
+
     try {
-      const data = await Api.getProductsPaged(page, PAGE_SIZE, search);
+      const data = await Api.getWarehouseProducts(warehouseId, page, PAGE_SIZE, search, 'id,desc');
       setBrowseProducts(prev => append ? [...prev, ...data.items] : data.items);
       setBrowseTotalPages(data.totalPages);
       setBrowsePage(page);
-    } catch (e) { toast('فشل تحميل المنتجات', 'error'); }
-    finally { setBrowseLoading(false); }
-  }, [toast]);
+    } catch (e) {
+      console.warn("Network error, loading products from local DB...");
+      await fetchLocal();
+      if (navigator.onLine) {
+        toast('السيرفر غير متاح حالياً.. يتم العرض من الذاكرة المحلية', 'info');
+      }
+    } finally {
+      setBrowseLoading(false);
+    }
+  }, [toast, selectedWarehouseId]);
+
+  // Handle warehouse loading
+  useEffect(() => {
+    if (selectedBranchId) {
+      loadWarehouses(selectedBranchId);
+    } else {
+      setWarehouses([]);
+      setSelectedWarehouseId('');
+    }
+  }, [selectedBranchId]);
+
+  // Handle warehouse change -> load products
+  useEffect(() => {
+    if (selectedWarehouseId) {
+      loadBrowsePage(0, browseSearch, false, selectedWarehouseId);
+    } else {
+      setBrowseProducts([]);
+    }
+  }, [selectedWarehouseId]);
 
   const handleBrowseSearch = (val) => {
     setBrowseSearch(val);
     loadBrowsePage(0, val, false);
   };
 
+  // Infinite scroll
   useEffect(() => {
-    if (!showBrowser) return;
     const observer = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !browseLoading && browsePage < browseTotalPages - 1) {
         loadBrowsePage(browsePage + 1, browseSearch, true);
@@ -101,59 +192,48 @@ const POS = () => {
     }, { threshold: 1.0 });
     if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
-  }, [showBrowser, browseLoading, browsePage, browseTotalPages, browseSearch, loadBrowsePage]);
+  }, [browseLoading, browsePage, browseTotalPages, browseSearch, loadBrowsePage]);
 
-  const handleSearchChange = async (value) => {
-    setSearchQuery(value);
-    if (!value) { setSearchProducts([]); return; }
-    try {
-      const data = await Api.getProductsPaged(0, 50, value);
-      setSearchProducts(data.items);
-    } catch { setSearchProducts([]); }
-  };
-
-  const handleBarcodeScan = async (barcode) => {
-    if (!barcode) return;
-    try {
-      setCheckoutLoading(true); // Reuse loader overlay
-      const data = await Api.getProductsPaged(0, 2, barcode);
-      const results = data.items || [];
-      
-      if (results.length === 1) {
-        addToCart(results[0]);
-        toast(`تمت إضافة ${results[0].name}`, 'success', true); // Silent toast, camera already beeped
-      } else if (results.length > 1) {
-        setSearchQuery(barcode);
-        setSearchProducts(results);
-        toast('تم العثور على أكثر من منتج', 'info');
-      } else {
-        toast('المنتج غير موجود', 'error');
+  // Barcode / Auto-search effect (Simulated via debounced search for barcode readers)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!browseSearch || browseSearch.length < 3) return;
+      // If exact barcode match, auto-add
+      const exactMatch = browseProducts.find(p => p.barcode === browseSearch || p.name === browseSearch);
+      if (exactMatch && browseProducts.length === 1) {
+        addToCart(exactMatch);
+        setBrowseSearch('');
       }
-    } catch (e) {
-      toast('خطأ في البحث عن المنتج', 'error');
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [browseSearch, browseProducts]);
 
   const addToCart = useCallback((product) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) {
-        if (existing.qty + 1 > product.stock) { toast('تجاوزت المخزن', 'warning'); return prev; }
+        if (existing.qty + 1 > product.stock) {
+          setTimeout(() => toast('تجاوزت الرصيد المتاح', 'warning'), 10);
+          return prev;
+        }
         return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
       }
-      if (product.stock <= 0) { toast('نفذ المخزن', 'warning'); return prev; }
+      if (product.stock <= 0) {
+        setTimeout(() => toast('نفذ المخزون', 'warning'), 10);
+        return prev;
+      }
       return [...prev, { id: product.id, name: product.name, price: product.salePrice, qty: 1, stock: product.stock, unitName: product.unitName }];
     });
-    setSearchQuery(''); setSearchProducts([]);
     if (searchInputRef.current) searchInputRef.current.focus();
   }, [toast]);
 
   const updateQty = (id, newQty) => {
     setCart(prev => {
       const item = prev.find(i => i.id === id);
-      if (newQty > item.stock) { toast('تجاوزت المتاح', 'warning'); return prev; }
+      if (newQty > item.stock) {
+        setTimeout(() => toast('تجاوزت المتاح', 'warning'), 10);
+        return prev;
+      }
       if (newQty <= 0) return prev.filter(i => i.id !== id);
       return prev.map(i => i.id === id ? { ...i, qty: newQty } : i);
     });
@@ -161,17 +241,7 @@ const POS = () => {
 
   const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
 
-  /* ─── Keyboard shortcuts ─── */
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setShowBrowser(false);
-      if (e.key === 'F2') setShowBrowser(true);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  /* ─── WebSocket Sync ─── */
+  // WebSocket Sync
   useEffect(() => {
     const token = localStorage.getItem('pos_access_token');
     if (!token) return;
@@ -194,241 +264,703 @@ const POS = () => {
   const total = subtotal - discount;
   const change = paidAmount - total;
 
-  useEffect(() => { setPaidAmount(cart.length > 0 ? total : 0); }, [total, cart.length]);
+  useEffect(() => {
+    setPaidAmount(cart.length > 0 ? total : 0);
+  }, [total, cart.length]);
 
   const handleCheckout = async () => {
-    setCheckoutLoading(true);
-    try {
-      const resp = await Api.createSale({ customerId: selectedCustomerId || null, discount, paidAmount, items: cart.map(i => ({ productId: i.id, quantity: i.qty, unitPrice: i.price })) });
-      const invoiceData = resp.data || resp;
-      setLastInvoice(invoiceData);
-
-      toast('تمت العملية بنجاح', 'success');
-
-      // Automatic Print Trigger
-      setTimeout(() => {
-        window.print();
-        // Clear last invoice after a while to avoid accidental reprints if user refreshes
-        setTimeout(() => setLastInvoice(null), 5000);
-      }, 500);
-
-      // Send refresh signal to customer
-      if (stompClientRef.current?.connected) {
-        stompClientRef.current.publish({
-          destination: '/app/order-complete',
-          body: JSON.stringify({ status: 'COMPLETED', invoiceId: invoiceData.id, ts: Date.now() })
-        });
-      }
-
-      setCart([]); setDiscount(0); setPaidAmount(0);
-    } catch (e) {
-      console.error("Checkout Error:", e);
-      toast('فشلت العملية', 'error');
+    if (!selectedBranchId || !selectedWarehouseId) {
+      toast('يرجى اختيار الفرع والمخزن أولاً', 'warning');
+      return;
     }
-    finally { setCheckoutLoading(false); }
+
+    confirm('تأكيد إتمام الطلب وطباعة الفاتورة؟', async () => {
+      setCheckoutLoading(true);
+      const saleData = {
+        customerId: selectedCustomerId || null,
+        discount,
+        paidAmount,
+        branchId: selectedBranchId,
+        warehouseId: selectedWarehouseId,
+        items: cart.map(i => ({ productId: i.id, quantity: i.qty, unitPrice: i.price }))
+      };
+
+      try {
+        if (!navigator.onLine) throw new Error('OFFLINE');
+
+        const resp = await Api.createSale(saleData);
+        const invoiceData = resp.data || resp;
+        setLastInvoice(invoiceData);
+
+        toast('تمت العملية بنجاح', 'success');
+
+        setTimeout(() => {
+          window.print();
+          setTimeout(() => setLastInvoice(null), 5000);
+        }, 500);
+
+        if (stompClientRef.current?.connected) {
+          stompClientRef.current.publish({
+            destination: '/app/order-complete',
+            body: JSON.stringify({ status: 'COMPLETED', invoiceId: invoiceData.id, ts: Date.now() })
+          });
+        }
+
+        setCart([]); setDiscount(0); setPaidAmount(0);
+        loadBrowsePage(0, browseSearch, false);
+      } catch (e) {
+        if (e.message === 'OFFLINE' || e.message.includes('الاتصال')) {
+          // Save Offline
+          try {
+            const offlineId = await saveOfflineSale(saleData);
+            
+            // Create a fake invoice object for printing
+            const fakeInvoice = {
+              id: `OFF-${offlineId}-${Date.now()}`,
+              customerName: customers.find(c => c.id == selectedCustomerId)?.name || 'عميل نقدي',
+              totalAmount: total,
+              paidAmount: paidAmount,
+              discount: discount,
+              items: cart.map(i => ({ productName: i.name, quantity: i.qty, unitPrice: i.price, totalPrice: i.qty * i.price })),
+              createdAt: new Date().toISOString(),
+              branchName: branches.find(b => b.id == selectedBranchId)?.name || '',
+              warehouseName: warehouses.find(w => w.id == selectedWarehouseId)?.name || ''
+            };
+            
+            setLastInvoice(fakeInvoice);
+            toast('تم حفظ الفاتورة محلياً (أوفلاين)', 'info');
+            
+            setTimeout(() => {
+              window.print();
+              setTimeout(() => setLastInvoice(null), 5000);
+            }, 500);
+
+            setCart([]); setDiscount(0); setPaidAmount(0);
+          } catch (err) {
+            toast('فشل الحفظ المحلي أيضاً!', 'error');
+          }
+        } else {
+          console.error("Checkout Error:", e);
+          toast(e.message || 'فشلت عملية الدفع', 'error');
+        }
+      } finally {
+        setCheckoutLoading(false);
+      }
+    });
   };
 
-  if (loading) return <Loader message="جاري التحميل..." />;
+  if (loading) return <Loader message="جاري تجهيز الكاشير..." />;
 
   return (
-    <div className="pos-container no-sidebar-layout" style={{ position: 'relative' }}>
-      {checkoutLoading && <div className="loader-overlay"><Loader message="جاري الحفظ..." /></div>}
+    <div className="pos-premium-container">
+      {checkoutLoading && <div className="loader-overlay"><Loader message="جاري إتمام الدفع..." /></div>}
 
-      <div className="pos-main">
-        {/* Header Controls */}
-        <div className="card" style={{ marginBottom: '16px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem' }}>🧾 فاتورة المبيعات</h2>
-            <div className={`sync-badge ${connected ? 'active' : ''}`}>{connected ? 'متصل بالعميل' : 'غير متصل'}</div>
+      {/* LEFT: PRODUCTS BROWSER */}
+      <div className="pos-products-pane">
+        <div className="pos-header-glass">
+          <div className="pos-search-wrapper">
+            <span className="search-icon">🔍</span>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="ابحث بالاسم أو امسح الباركود..."
+              value={browseSearch}
+              onChange={e => handleBrowseSearch(e.target.value)}
+              autoFocus
+            />
           </div>
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              console.log("Opening Browser...");
-              setShowBrowser(true);
-            }}
-            style={{ padding: '12px 40px', fontWeight: 900, fontSize: '1rem', background: 'var(--metro-blue)', color: '#fff', border: 'none', cursor: 'pointer', zIndex: 10 }}
+          <div className={`sync-indicator ${connected ? 'active' : ''}`}>
+            {connected ? '🟢 متصل' : '🔴 أوفلاين'}
+            {pendingSalesCount > 0 && <span className="pending-badge">({pendingSalesCount} معلقة)</span>}
+          </div>
+        </div>
+
+        <div className="pos-grid-container">
+          <div className="pos-grid">
+            {browseProducts.map(p => {
+              const outOfStock = p.stock <= 0;
+              const imgSrc = getProductImage(p);
+              return (
+                <div key={p.id} className={`pos-item-card ${outOfStock ? 'out-stock' : ''}`} onClick={() => !outOfStock && addToCart(p)}>
+                  <div className="pos-item-image">
+                    {imgSrc ? <img src={imgSrc} alt={p.name} /> : <div className="placeholder-icon">📦</div>}
+                    <div className="stock-badge">{outOfStock ? 'نفذ' : `${p.stock} متوفر`}</div>
+                  </div>
+                  <div className="pos-item-details">
+                    <div className="pos-item-name" title={p.name}>{p.name}</div>
+                    <div className="pos-item-price">{p.salePrice.toFixed(2)} ج.م</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div ref={observerTarget} style={{ height: '20px', width: '100%' }}></div>
+          {browseLoading && <div style={{ textAlign: 'center', padding: '10px', color: 'var(--text-dim)' }}>جاري التحميل...</div>}
+        </div>
+      </div>
+
+      {/* RIGHT: CART & CHECKOUT */}
+      <div className="pos-cart-pane">
+        <div className="cart-header">
+          <h3>🛒 الطلب الحالي</h3>
+          <span className="items-count">{cart.length} أصناف</span>
+        </div>
+
+        <div className="cart-controls">
+          <select
+            className="form-control pos-select"
+            value={selectedBranchId}
+            onChange={e => setSelectedBranchId(e.target.value)}
+            disabled={!Api.can('ROLE_ADMIN')}
           >
-            🛍️ فتح قائمة المنتجات (F2)
+            <option value="">-- الفرع --</option>
+            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          <select className="form-control pos-select" value={selectedWarehouseId} onChange={e => setSelectedWarehouseId(e.target.value)}>
+            <option value="">-- المخزن --</option>
+            {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+          <select className="form-control pos-select" value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+            <option value="">عميل نقدي (كاش)</option>
+            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div className="cart-items-list">
+          {cart.length === 0 ? (
+            <div className="empty-cart-state">
+              <span className="icon">🛒</span>
+              <p>السلة فارغة</p>
+              <small>قم بإضافة منتجات من القائمة</small>
+            </div>
+          ) : (
+            cart.map(item => (
+              <div key={item.id} className="cart-item">
+                <div className="item-info">
+                  <div className="item-title">{item.name}</div>
+                  <div className="item-price">{item.price.toFixed(2)} ج.م</div>
+                </div>
+                <div className="item-actions">
+                  <div className="qty-spinner">
+                    <button onClick={() => updateQty(item.id, item.qty - 1)}>-</button>
+                    <input type="number" value={item.qty} onChange={e => updateQty(item.id, parseFloat(e.target.value) || 0)} />
+                    <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+                  </div>
+                  <div className="item-total">{(item.price * item.qty).toFixed(2)}</div>
+                  <button className="remove-btn" onClick={() => removeFromCart(item.id)}>✕</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="cart-summary-box">
+          <div className="summary-row">
+            <span>الإجمالي الفرعي</span>
+            <span>{subtotal.toFixed(2)} ج.م</span>
+          </div>
+          <div className="summary-row highlight">
+            <span>الخصم</span>
+            <div className="discount-input">
+              <input type="number" value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} />
+            </div>
+          </div>
+          <div className="summary-total">
+            <span>المطلوب</span>
+            <span className="amount">{total.toFixed(2)} <small>ج.م</small></span>
+          </div>
+        </div>
+
+        <div className="payment-box">
+          <div className="payment-input-group">
+            <label>المبلغ المدفوع</label>
+            <input type="number" value={paidAmount} onChange={e => setPaidAmount(parseFloat(e.target.value) || 0)} />
+            <button className="exact-btn" onClick={() => setPaidAmount(total)}>الضبط</button>
+          </div>
+          <div className="change-row">
+            <span>الباقي للعميل</span>
+            <span className={`change-amount ${change < 0 ? 'negative' : ''}`}>{change.toFixed(2)}</span>
+          </div>
+          
+          <button 
+            className="checkout-btn" 
+            onClick={handleCheckout} 
+            disabled={checkoutLoading || cart.length === 0}
+          >
+            💳 إتمام الدفع والطباعة
           </button>
         </div>
-
-        <div className="card" style={{ marginBottom: '16px', padding: '0' }}>
-          <div className="premium-search-wrapper">
-            <span className="search-icon">🔍</span>
-            <input 
-              ref={searchInputRef} 
-              type="text" 
-              placeholder="ابحث هنا لإضافة منتج سريعاً..." 
-              value={searchQuery} 
-              onChange={e => handleSearchChange(e.target.value)} 
-            />
-            {searchProducts.length > 0 && (
-              <div className="search-results-dropdown card">
-                {searchProducts.map(p => (
-                  <div key={p.id} className="search-result-item" onClick={() => addToCart(p)}>
-                    <span>{p.name}</span>
-                    <span style={{ fontWeight: 700 }}>{p.salePrice.toFixed(2)} ج.م</span>
-                  </div>
-                ))}
-              </div>
-            )}
-{/* 
-            <button 
-              className="mobile-only camera-trigger" 
-              onClick={() => setShowScanner(true)}
-              title="سحب بالكاميرا"
-            >
-              📷
-            </button>
-            */}
-          </div>
-        </div>
-
-        {/* Main Invoice Table */}
-        <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div className="card-header">
-            <h3>🛒 محتويات الفاتورة ({cart.length})</h3>
-            <button className="btn btn-danger btn-sm" onClick={() => setCart([])}>تفريغ</button>
-          </div>
-          <div className="table-wrapper" style={{ flex: 1 }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>المنتج</th>
-                  <th style={{ textAlign: 'center' }}>السعر</th>
-                  <th style={{ textAlign: 'center' }}>الكمية</th>
-                  <th style={{ textAlign: 'center' }}>الإجمالي</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cart.length === 0 ? (
-                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '100px', color: '#444' }}>
-                    <div style={{ fontSize: '4rem' }}>📑</div>
-                    <h3>لا توجد أصناف في الفاتورة</h3>
-                    <p>ابدأ بإضافة منتجات من القائمة أو عبر البحث</p>
-                  </td></tr>
-                ) : cart.map(item => (
-                  <tr key={item.id}>
-                    <td><div style={{ fontWeight: 600 }}>{item.name}</div><div style={{ fontSize: '0.8rem', color: '#777' }}>{item.unitName}</div></td>
-                    <td style={{ textAlign: 'center' }}>{item.price.toFixed(2)}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div className="qty-control" style={{ display: 'inline-flex', border: '1px solid #333', background: '#000', borderRadius: '4px' }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => updateQty(item.id, item.qty - 1)}>-</button>
-                        <input type="number" value={item.qty} onChange={e => updateQty(item.id, parseFloat(e.target.value) || 0)} style={{ width: '40px', border: 'none', background: 'transparent', textAlign: 'center', color: '#fff' }} />
-                        <button className="btn btn-ghost btn-sm" onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--metro-blue)' }}>{(item.price * item.qty).toFixed(2)}</td>
-                    <td style={{ textAlign: 'center' }}><button className="btn btn-ghost btn-sm" onClick={() => removeFromCart(item.id)} style={{ color: 'var(--metro-red)' }}>✕</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
 
-      <div className="pos-sidebar">
-        <div className="card pos-panel" style={{ height: '100%', padding: '20px' }}>
-          <div className="form-group mb-4">
-            <label>العميل</label>
-            <select className="form-control" value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
-              <option value="">عميل نقدي (Cash)</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-
-          <div className="pos-summary card mb-4" style={{ padding: '15px' }}>
-            <div className="d-flex justify-content-between mb-2"><span>الفرعي</span><span>{subtotal.toFixed(2)}</span></div>
-            <div className="d-flex justify-content-between align-items-center">
-              <span>الخصم</span>
-              <input type="number" className="form-control" style={{ width: '80px' }} value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} />
-            </div>
-          </div>
-
-          <div className="total-display mb-4">
-            <label>الإجمالي النهائي</label>
-            <div className="total-amount" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--metro-blue)' }}>{total.toFixed(2)} <small style={{ fontSize: '0.8rem' }}>ج.م</small></div>
-          </div>
-
-          <div className="card mb-4" style={{ padding: '15px', background: '#111' }}>
-            <label>المدفوع</label>
-            <div className="d-flex gap-2">
-              <input type="number" className="form-control" value={paidAmount} onChange={e => setPaidAmount(parseFloat(e.target.value) || 0)} style={{ fontSize: '1.5rem', fontWeight: 700 }} />
-              <button className="btn btn-ghost" onClick={() => setPaidAmount(total)}>كل</button>
-            </div>
-            <div className="d-flex justify-content-between mt-3">
-              <span style={{ color: '#777' }}>الباقي</span>
-              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: change >= 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}>{change.toFixed(2)}</span>
-            </div>
-          </div>
-
-          <button className="btn btn-primary btn-block btn-lg" onClick={handleCheckout} disabled={checkoutLoading || cart.length === 0} style={{ padding: '15px' }}>إتمام العملية</button>
-        </div>
-      </div>
-
-      {/* Browser Modal - MOVED TO THE BOTTOM FOR Z-INDEX SAFETY */}
-      {showBrowser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="card" style={{ width: '95%', maxWidth: '1200px', height: '90vh', display: 'flex', flexDirection: 'column', border: '2px solid #333' }}>
-            <div className="card-header" style={{ padding: '20px', background: '#1a1a1a' }}>
-              <h3 style={{ margin: 0 }}>🛍️ قائمة المنتجات</h3>
-              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <input type="text" className="form-control" placeholder="بحث..." value={browseSearch} onChange={e => handleBrowseSearch(e.target.value)} style={{ width: '300px' }} autoFocus />
-                <button className="btn btn-danger" onClick={() => setShowBrowser(false)} style={{ padding: '10px 20px' }}>إغلاق ✕</button>
-              </div>
-            </div>
-            <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#000' }}>
-              <div className="pos-product-grid" style={{ maxHeight: 'none', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
-                {browseProducts.map(p => (
-                  <div key={p.id} className="pos-product-card" onClick={() => { addToCart(p); console.log("Added from modal"); }}>
-                    <div className="pos-product-img-wrap" style={{ paddingTop: '80%', position: 'relative' }}>
-                      {getProductImage(p) ? <img src={getProductImage(p)} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', fontSize: '2rem' }}>📦</div>}
-                    </div>
-                    <div style={{ padding: '10px' }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', height: '40px', overflow: 'hidden' }}>{p.name}</div>
-                      <div style={{ color: 'var(--metro-blue)', fontWeight: 700, fontSize: '1.1rem', marginTop: '5px' }}>{p.salePrice.toFixed(2)} ج.م</div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={observerTarget} style={{ height: '20px', gridColumn: '1 / -1' }}></div>
-              </div>
-              {browseLoading && <div style={{ color: '#fff', textAlign: 'center', padding: '20px' }}>جاري تحميل المزيد...</div>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden Thermal Receipt for Printing */}
       {lastInvoice && (
         <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
           <ThermalReceipt invoice={lastInvoice} />
         </div>
       )}
 
-      {/* Barcode Scanner Modal */}
-{/* 
-      <ScannerModal 
-        isOpen={showScanner} 
-        onClose={() => setShowScanner(false)} 
-        onScan={handleBarcodeScan} 
-      />
-      */}
-
       <style>{`
-        .pos-container { display: flex; gap: 15px; height: calc(100vh - 120px); padding: 5px; }
-        .pos-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .pos-sidebar { width: 350px; }
-        .sync-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; background: rgba(239,68,68,0.1); color: #ef4444; }
-        .sync-badge.active { background: rgba(16,185,129,0.1); color: #10b981; }
-        .pos-product-grid { display: grid; gap: 15px; }
-        .pos-product-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: 0.2s; overflow: hidden; }
-        .pos-product-card:hover { border-color: var(--metro-blue); transform: translateY(-3px); }
-        .loader-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        /* Premium POS Layout */
+        .pos-premium-container {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: 20px;
+          height: calc(100vh - 80px);
+          padding: 10px;
+          background: var(--bg-body);
+          font-family: 'Cairo', 'Inter', sans-serif;
+          overflow: hidden;
+        }
+
+        /* Loaders */
+        .loader-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(5px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        /* Left Pane: Products */
+        .pos-products-pane {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          overflow: hidden;
+          background: var(--bg-card);
+          border-radius: 16px;
+          border: 1px solid var(--border-color);
+          box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+
+        .pos-header-glass {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px 25px;
+          background: rgba(255,255,255,0.03);
+          border-bottom: 1px solid var(--border-color);
+          backdrop-filter: blur(10px);
+        }
+
+        .pos-search-wrapper {
+          position: relative;
+          width: 50%;
+          min-width: 300px;
+        }
+
+        .pos-search-wrapper .search-icon {
+          position: absolute;
+          right: 15px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-dim);
+          font-size: 1.1rem;
+        }
+
+        .pos-search-wrapper input {
+          width: 100%;
+          padding: 12px 15px 12px 40px;
+          border-radius: 30px;
+          background: rgba(0,0,0,0.2);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: #fff;
+          font-size: 1rem;
+          transition: 0.3s all;
+        }
+
+        .pos-search-wrapper input:focus {
+          outline: none;
+          background: rgba(0,0,0,0.4);
+          border-color: var(--metro-blue);
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .sync-indicator {
+          padding: 6px 15px;
+          border-radius: 20px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .sync-indicator.active {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+          border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .pending-badge {
+          margin-right: 8px;
+          background: #f59e0b;
+          color: #fff;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: bold;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+
+        .pos-grid-container {
+          flex: 1;
+          overflow-y: auto;
+          padding: 20px;
+        }
+
+        /* Hide Scrollbar but keep functionality */
+        .pos-grid-container::-webkit-scrollbar, .cart-items-list::-webkit-scrollbar {
+          width: 8px;
+        }
+        .pos-grid-container::-webkit-scrollbar-track, .cart-items-list::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.1);
+          border-radius: 10px;
+          margin: 10px 0;
+        }
+        .pos-grid-container::-webkit-scrollbar-thumb, .cart-items-list::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.15);
+          border-radius: 10px;
+        }
+        .pos-grid-container::-webkit-scrollbar-thumb:hover, .cart-items-list::-webkit-scrollbar-thumb:hover {
+          background: rgba(255,255,255,0.3);
+        }
+
+        .pos-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 15px;
+        }
+
+        .pos-item-card {
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 12px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .pos-item-card:hover {
+          transform: translateY(-4px);
+          border-color: var(--metro-blue);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+          background: rgba(255,255,255,0.05);
+        }
+
+        .pos-item-card:active {
+          transform: translateY(0);
+        }
+
+        .pos-item-card.out-stock {
+          opacity: 0.5;
+          filter: grayscale(1);
+          cursor: not-allowed;
+        }
+
+        .pos-item-image {
+          position: relative;
+          padding-top: 80%;
+          background: #111;
+        }
+
+        .pos-item-image img {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .placeholder-icon {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2.5rem;
+          color: rgba(255,255,255,0.2);
+        }
+
+        .stock-badge {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: rgba(0,0,0,0.7);
+          color: #fff;
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          backdrop-filter: blur(4px);
+        }
+
+        .pos-item-details {
+          padding: 12px;
+        }
+
+        .pos-item-name {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #fff;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-bottom: 6px;
+        }
+
+        .pos-item-price {
+          color: var(--metro-blue);
+          font-weight: 800;
+          font-size: 1.1rem;
+        }
+
+        /* Right Pane: Cart */
+        .pos-cart-pane {
+          background: var(--bg-card);
+          border-radius: 16px;
+          border: 1px solid var(--border-color);
+          box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .cart-header {
+          padding: 20px;
+          background: rgba(255,255,255,0.02);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .cart-header h3 { margin: 0; font-size: 1.2rem; }
+        .items-count { background: var(--metro-blue); color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+
+        .cart-controls {
+          padding: 15px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .pos-select {
+          background: rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px;
+          padding: 8px 12px;
+          color: #fff;
+          font-size: 0.9rem;
+        }
+
+        .cart-items-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 15px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .empty-cart-state {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-dim);
+          opacity: 0.5;
+        }
+        .empty-cart-state .icon { font-size: 4rem; margin-bottom: 10px; }
+
+        .cart-item {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding: 12px;
+          background: rgba(255,255,255,0.03);
+          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .cart-item .item-info {
+          display: flex;
+          justify-content: space-between;
+        }
+        .item-title { font-weight: 600; font-size: 0.95rem; }
+        .item-price { color: var(--text-dim); font-size: 0.85rem; }
+
+        .cart-item .item-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .qty-spinner {
+          display: flex;
+          background: rgba(0,0,0,0.5);
+          border-radius: 6px;
+          overflow: hidden;
+        }
+        .qty-spinner button {
+          background: transparent;
+          border: none;
+          color: #fff;
+          padding: 4px 10px;
+          cursor: pointer;
+        }
+        .qty-spinner button:hover { background: rgba(255,255,255,0.1); }
+        .qty-spinner input {
+          width: 40px;
+          text-align: center;
+          background: transparent;
+          border: none;
+          color: #fff;
+          font-weight: 600;
+          border-left: 1px solid rgba(255,255,255,0.1);
+          border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .item-total { font-weight: 800; color: var(--metro-blue); }
+        .remove-btn { background: transparent; border: none; color: var(--metro-red); cursor: pointer; padding: 4px; border-radius: 4px; }
+        .remove-btn:hover { background: rgba(239,68,68,0.1); }
+
+        .cart-summary-box {
+          padding: 15px;
+          background: rgba(0,0,0,0.2);
+          border-top: 1px solid var(--border-color);
+        }
+
+        .summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+          color: var(--text-dim);
+          font-size: 0.95rem;
+        }
+
+        .summary-row.highlight { color: #fff; }
+
+        .discount-input input {
+          width: 70px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: var(--metro-orange);
+          padding: 4px 8px;
+          border-radius: 4px;
+          text-align: center;
+          font-weight: 600;
+        }
+
+        .summary-total {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 15px;
+          padding-top: 15px;
+          border-top: 1px dashed rgba(255,255,255,0.1);
+        }
+
+        .summary-total span:first-child { font-size: 1.2rem; font-weight: 700; }
+        .summary-total .amount { font-size: 2rem; font-weight: 800; color: var(--metro-blue); }
+
+        .payment-box {
+          padding: 15px;
+          background: rgba(255,255,255,0.02);
+        }
+
+        .payment-input-group {
+          position: relative;
+          margin-bottom: 10px;
+        }
+        .payment-input-group label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 5px; }
+        .payment-input-group input {
+          width: 100%;
+          background: #000;
+          border: 1px solid var(--border-color);
+          padding: 12px;
+          border-radius: 8px;
+          color: #fff;
+          font-size: 1.5rem;
+          font-weight: 800;
+        }
+        .exact-btn {
+          position: absolute;
+          left: 8px;
+          bottom: 8px;
+          background: rgba(255,255,255,0.1);
+          border: none;
+          color: #fff;
+          padding: 6px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        .exact-btn:hover { background: var(--metro-blue); }
+
+        .change-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+          padding: 10px;
+          background: rgba(0,0,0,0.3);
+          border-radius: 8px;
+        }
+        .change-amount { font-size: 1.2rem; font-weight: 800; color: var(--metro-green); }
+        .change-amount.negative { color: var(--metro-red); }
+
+        .checkout-btn {
+          width: 100%;
+          background: linear-gradient(135deg, var(--metro-blue), #2563eb);
+          color: #fff;
+          border: none;
+          padding: 15px;
+          font-size: 1.2rem;
+          font-weight: 800;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+        }
+        .checkout-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(59,130,246,0.5);
+        }
+        .checkout-btn:disabled {
+          background: #333;
+          color: #777;
+          box-shadow: none;
+          cursor: not-allowed;
+        }
+
+        /* Responsive Layout */
+        @media (max-width: 1024px) {
+          .pos-premium-container {
+            grid-template-columns: 1fr 300px;
+          }
+        }
         @media (max-width: 768px) {
-          .mobile-hide { display: none; }
+          .pos-premium-container {
+            grid-template-columns: 1fr;
+            height: auto;
+          }
+          .pos-products-pane {
+            height: 60vh;
+          }
         }
       `}</style>
     </div>

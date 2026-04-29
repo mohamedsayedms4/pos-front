@@ -127,8 +127,8 @@ const TermsOfUse = () => {
             <section>
               <h2>13. التواصل معنا</h2>
               <div className="ec-contact-info">
-                {email && <p>📧 <strong>البريد الإلكتروني:</strong> {email}</p>}
-                {whatsappNumber && <p>💬 <strong>واتساب:</strong> {whatsappNumber}</p>}
+                {email && <p><i className="fas fa-envelope" style={{ marginLeft: '8px' }}></i> <strong>البريد الإلكتروني:</strong> {email}</p>}
+                {whatsappNumber && <p><i className="fab fa-whatsapp" style={{ marginLeft: '8px', color: '#25D366' }}></i> <strong>واتساب:</strong> {whatsappNumber}</p>}
                 <p>🌐 <strong>الموقع الإلكتروني:</strong> <a href={websiteUrl} style={{ color: 'var(--ec-primary)', textDecoration: 'none', fontWeight: 'bold' }}>{websiteUrl}</a></p>
               </div>
             </section>

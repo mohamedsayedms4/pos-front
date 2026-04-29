@@ -8,6 +8,8 @@ import Suppliers from './pages/Suppliers.jsx'
 import ProductAnalytics from './pages/ProductAnalytics.jsx'
 import Purchases from './pages/Purchases.jsx'
 import Users from './pages/Users.jsx'
+import ProductInteractions from './pages/ProductInteractions.jsx'
+import CustomerOffers from './pages/CustomerOffers.jsx'
 import Audit from './pages/Audit.jsx'
 import Notifications from './pages/Notifications.jsx'
 import ProductDetails from './pages/ProductDetails.jsx'
@@ -20,6 +22,7 @@ import Customers from './pages/Customers.jsx'
 import Sales from './pages/Sales.jsx'
 import Returns from './pages/Returns.jsx'
 import Treasury from './pages/Treasury.jsx'
+import TreasuryManagement from './pages/TreasuryManagement.jsx'
 import CustomerOrder from './pages/CustomerOrder.jsx'
 import DamagedProducts from './pages/DamagedProducts.jsx'
 import SalesAnalytics from './pages/SalesAnalytics.jsx'
@@ -42,6 +45,12 @@ import Settings from './pages/Settings.jsx'
 import Expenses from './pages/Expenses.jsx'
 import ProfitLoss from './pages/ProfitLoss.jsx'
 import Partners from './pages/Partners.jsx'
+import Branches from './pages/Branches.jsx'
+import BranchManagement from './pages/BranchManagement.jsx'
+import Warehouses from './pages/Warehouses.jsx'
+import InventoryReport from './pages/InventoryReport.jsx'
+import FacebookAdsDashboard from './pages/FacebookAdsDashboard.jsx'
+import OfflineAudit from './pages/OfflineAudit.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -55,6 +64,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 
 import { GlobalUIProvider } from './components/common/GlobalUI'
 import { ThemeProvider } from './components/common/ThemeContext'
+import { BranchProvider } from './context/BranchContext.jsx'
 
 import Messages from './pages/Messages.jsx'
 
@@ -62,67 +72,78 @@ function App() {
   return (
     <ThemeProvider>
       <GlobalUIProvider>
-        <TileProvider>
-          <TileEditorModal />
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<Login />} />
-        
-        {/* Public Store Routes with Context */}
-        <Route path="/store" element={<StoreAuthProvider><StoreProvider><EcommerceStore /></StoreProvider></StoreAuthProvider>} />
-        <Route path="/store/account" element={<StoreAuthProvider><StoreProvider><StoreAccountPage /></StoreProvider></StoreAuthProvider>} />
-        <Route path="/store/product/:id" element={<StoreAuthProvider><StoreProvider><StoreProductDetail /></StoreProvider></StoreAuthProvider>} />
-        <Route path="/store/category/:id" element={<StoreAuthProvider><StoreProvider><StoreCategoryPage /></StoreProvider></StoreAuthProvider>} />
-        <Route path="/store/wishlist" element={<StoreAuthProvider><StoreProvider><StoreWishlistPage /></StoreProvider></StoreAuthProvider>} />
-        <Route path="/store/privacy-policy" element={<StoreAuthProvider><StoreProvider><PrivacyPolicy /></StoreProvider></StoreAuthProvider>} />
-        <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
-        
-        <Route element={<ProtectedRoute />}>
-          <Route path="/customer-order" element={<CustomerOrder />} />
-          <Route path="/order-customer" element={<OrderCustomer />} />
-          <Route path="/order-cashier" element={<OrderCashier />} />
-          <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/pos" element={<POS />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/suppliers" element={<Suppliers />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/purchases" element={<Purchases />} />
-          <Route path="/purchases/:supplierName" element={<Purchases />} />
-          <Route path="/sales" element={<Sales />} />
-          <Route path="/sales/analytics" element={<SalesAnalytics />} />
-          <Route path="/returns" element={<Returns />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/audit" element={<Audit />} />
-          <Route path="/audit/:id" element={<AuditDetails />} />
-          <Route path="/roles" element={<Roles />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/products/:id" element={<ProductDetails />} />
-          <Route path="/products/analytics" element={<ProductAnalytics />} />
-          <Route path="/damaged" element={<DamagedProducts />} />
-          <Route path="/suppliers/:id" element={<SupplierDetails />} />
-          <Route path="/stock-receipts" element={<StockReceipts />} />
-          <Route path="/treasury" element={<Treasury />} />
-          <Route path="/debts" element={<DebtManagement />} />
-          <Route path="/installments-calendar" element={<InstallmentCalendar />} />
-          <Route path="/employees" element={<Employees />} />
-          <Route path="/employees/:id" element={<EmployeeDetails />} />
-          <Route path="/shifts" element={<ShiftsManagement />} />
-          <Route path="/payroll" element={<PayrollDashboard />} />
-          <Route path="/attendance" element={<AttendanceDashboard />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/online-orders" element={<OnlineOrders />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/profit-loss" element={<ProfitLoss />} />
-          <Route path="/partners" element={<Partners />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Route>
-    </Routes>
-          </BrowserRouter>
-        </TileProvider>
+        <BranchProvider>
+          <TileProvider>
+            <TileEditorModal />
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/login" element={<Login />} />
+                
+                {/* Public Store Routes with Context */}
+                <Route path="/store" element={<StoreAuthProvider><StoreProvider><EcommerceStore /></StoreProvider></StoreAuthProvider>} />
+                <Route path="/store/account" element={<StoreAuthProvider><StoreProvider><StoreAccountPage /></StoreProvider></StoreAuthProvider>} />
+                <Route path="/store/product/:id" element={<StoreAuthProvider><StoreProvider><StoreProductDetail /></StoreProvider></StoreAuthProvider>} />
+                <Route path="/store/category/:id" element={<StoreAuthProvider><StoreProvider><StoreCategoryPage /></StoreProvider></StoreAuthProvider>} />
+                <Route path="/store/wishlist" element={<StoreAuthProvider><StoreProvider><StoreWishlistPage /></StoreProvider></StoreAuthProvider>} />
+                <Route path="/store/privacy-policy" element={<StoreAuthProvider><StoreProvider><PrivacyPolicy /></StoreProvider></StoreAuthProvider>} />
+                <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
+                
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/customer-order" element={<CustomerOrder />} />
+                  <Route path="/order-customer" element={<OrderCustomer />} />
+                  <Route path="/order-cashier" element={<OrderCashier />} />
+                  <Route element={<MainLayout />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/pos" element={<POS />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/categories" element={<Categories />} />
+                    <Route path="/suppliers" element={<Suppliers />} />
+                    <Route path="/customers" element={<Customers />} />
+                    <Route path="/purchases" element={<Purchases />} />
+                    <Route path="/purchases/:supplierName" element={<Purchases />} />
+                    <Route path="/sales" element={<Sales />} />
+                    <Route path="/sales/analytics" element={<SalesAnalytics />} />
+                    <Route path="/returns" element={<Returns />} />
+                    <Route path="/users" element={<Users />} />
+                    <Route path="/audit" element={<Audit />} />
+                    <Route path="/audit/:id" element={<AuditDetails />} />
+                    <Route path="/roles" element={<Roles />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/products/:id" element={<ProductDetails />} />
+                    <Route path="/products/analytics" element={<ProductAnalytics />} />
+                    <Route path="/products/interactions" element={<ProductInteractions />} />
+                    <Route path="/products/offers" element={<CustomerOffers />} />
+                    <Route path="/damaged" element={<DamagedProducts />} />
+                    <Route path="/suppliers/:id" element={<SupplierDetails />} />
+                    <Route path="/stock-receipts" element={<StockReceipts />} />
+                    <Route path="/treasury" element={<Treasury />} />
+                    <Route path="/treasury-management" element={<TreasuryManagement />} />
+                    <Route path="/debts" element={<DebtManagement />} />
+                    <Route path="/installments-calendar" element={<InstallmentCalendar />} />
+                    <Route path="/employees" element={<Employees />} />
+                    <Route path="/employees/:id" element={<EmployeeDetails />} />
+                    <Route path="/shifts" element={<ShiftsManagement />} />
+                    <Route path="/payroll" element={<PayrollDashboard />} />
+                    <Route path="/attendance" element={<AttendanceDashboard />} />
+                    <Route path="/messages" element={<Messages />} />
+                    <Route path="/online-orders" element={<OnlineOrders />} />
+                    <Route path="/expenses" element={<Expenses />} />
+                    <Route path="/profit-loss" element={<ProfitLoss />} />
+                    <Route path="/partners" element={<Partners />} />
+                    <Route path="/branches" element={<Branches />} />
+                    <Route path="/branches/:id/manage" element={<BranchManagement />} />
+                    <Route path="/warehouses" element={<Warehouses />} />
+                    <Route path="/inventory/report" element={<InventoryReport />} />
+                    <Route path="/facebook-ads" element={<FacebookAdsDashboard />} />
+                    <Route path="/offline-audit" element={<OfflineAudit />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Route>
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </TileProvider>
+        </BranchProvider>
       </GlobalUIProvider>
     </ThemeProvider>
   )

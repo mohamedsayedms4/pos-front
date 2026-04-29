@@ -2,7 +2,7 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-export const SERVER_URL = 'https://linuxstoreapi.digitalrace.net';
+export const SERVER_URL = 'https://posapi.digitalrace.net';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
@@ -40,11 +40,53 @@ const Api = {
 
   /**
    * Check if current user has a specific permission.
-   * Admins (ROLE_ADMIN) have all permissions.
+   * Admins (ROLE_ADMIN) and Branch Managers (ROLE_BRANCH_MANAGER) get their respective permissions.
    */
-  // Stock Receipts
-  async getStockReceipts(page = 0, size = 10, query = '') {
-    const res = await this._request(`/stock-receipts?page=${page}&size=${size}&query=${query}`);
+  can(permission) {
+    const user = this._getUser();
+    if (!user) return false;
+
+    const roles = user.roles || [];
+    const perms = user.permissions || [];
+
+    // Admin override — full access
+    if (roles.includes('ROLE_ADMIN')) return true;
+
+    // Check specific permission (works for ROLE_BRANCH_MANAGER with its perms)
+    return perms.includes(permission);
+  },
+
+  /**
+   * Returns true if current user is a System Admin.
+   */
+  isAdmin() {
+    const user = this._getUser();
+    if (!user) return false;
+    return (user.roles || []).includes('ROLE_ADMIN');
+  },
+
+  /**
+   * Returns true if current user is a Branch Manager.
+   */
+  isBranchManager() {
+    const user = this._getUser();
+    if (!user) return false;
+    return (user.roles || []).includes('ROLE_BRANCH_MANAGER');
+  },
+
+  /**
+   * Returns true if current user is Admin OR Branch Manager.
+   * Use this to show branch-selector dropdowns.
+   */
+  isAdminOrBranchManager() {
+    return this.isAdmin() || this.isBranchManager();
+  },
+
+  // ─── Stock Receipts ──────────────────────────────────────────────────────────
+  async getStockReceipts(page = 0, size = 10, query = '', branchId = null) {
+    const params = new URLSearchParams({ page, size, query });
+    if (branchId) params.append('branchId', branchId);
+    const res = await this._request(`/stock-receipts?${params.toString()}`);
     return res.data;
   },
 
@@ -60,20 +102,7 @@ const Api = {
       method: 'POST'
     });
   },
-
-  can(permission) {
-    const user = this._getUser();
-    if (!user) return false;
-
-    const roles = user.roles || [];
-    const perms = user.permissions || [];
-
-    // Admin override
-    if (roles.includes('ROLE_ADMIN')) return true;
-
-    // Check specific permission
-    return perms.includes(permission);
-  },
+  // ─────────────────────────────────────────────────────────────────────────────
 
   async _request(path, options = {}) {
     const url = `${API_BASE}${path}`;
@@ -124,6 +153,12 @@ const Api = {
       }
       throw err;
     }
+  },
+
+  async getProfitLossReport(startDate, endDate, branchId = null) {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/expenses/profit-loss?startDate=${startDate}&endDate=${endDate}${branchQuery}`);
+    return res.data;
   },
 
   async getCalendarInstallments(start, end) {
@@ -187,10 +222,11 @@ const Api = {
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
   },
 
-  async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc') {
-    const query = search ? `&search=${encodeURIComponent(search)}` : '';
+  async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc', branchId = null) {
+    const searchQuery = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const res = await this._request(`/products?page=${page}&size=${size}${query}${sortQuery}`);
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/products?page=${page}&size=${size}${searchQuery}${sortQuery}${branchQuery}`);
     const raw = res.data;
     if (Array.isArray(raw)) {
       return { items: raw, totalPages: 1, totalElements: raw.length, page: 0 };
@@ -208,15 +244,13 @@ const Api = {
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
   },
 
-  async getProductStatistics() {
-    const res = await this._request('/products/statistics');
-    return res.data;
-  },
 
-  async exportProductsExcel(search = '', sort = 'id,desc') {
+
+  async exportProductsExcel(search = '', sort = 'id,desc', branchId = null) {
     const query = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const res = await fetch(`${API_BASE}/products/export/excel?${query}${sortQuery}`, {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${API_BASE}/products/export/excel?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
     if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
@@ -229,10 +263,11 @@ const Api = {
     window.URL.revokeObjectURL(url);
   },
 
-  async exportProductsPdf(search = '', sort = 'id,desc') {
+  async exportProductsPdf(search = '', sort = 'id,desc', branchId = null) {
     const query = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const res = await fetch(`${API_BASE}/products/export/pdf?${query}${sortQuery}`, {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${API_BASE}/products/export/pdf?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
     if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
@@ -301,8 +336,9 @@ const Api = {
     window.URL.revokeObjectURL(url);
   },
 
-  async getProductStatistics() {
-    const res = await this._request('/products/statistics');
+  async getProductStatistics(branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/products/statistics${branchQuery}`);
     return res.data;
   },
 
@@ -343,7 +379,7 @@ const Api = {
     return res.data;
   },
 
-  async createProduct(productData, images) {
+  async createProduct(productData, images, branchId = null) {
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(productData)], { type: 'application/json' }));
     if (images) {
@@ -351,7 +387,8 @@ const Api = {
         formData.append('images', img);
       }
     }
-    const res = await this._request('/products', {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/products${branchQuery}`, {
       method: 'POST',
       body: formData,
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
@@ -377,16 +414,6 @@ const Api = {
 
   async deleteProduct(id) {
     await this._request(`/products/${id}`, { method: 'DELETE' });
-  },
-
-  async getProductBarcode(id) {
-    const res = await this._request(`/products/${id}/barcode`);
-    return res.data;
-  },
-
-  async getProductQrCode(id) {
-    const res = await this._request(`/products/${id}/qrcode`);
-    return res.data;
   },
 
   // ─── Printer Config ───
@@ -461,8 +488,11 @@ const Api = {
   },
 
   // ─── Suppliers ───
-  async getSuppliers(page = 0, size = 10, query = '', sort = 'name,asc') {
-    const res = await this._request(`/suppliers?page=${page}&size=${size}&query=${encodeURIComponent(query)}&sort=${sort}`);
+  async getSuppliers(page = 0, size = 10, search = '', type = '', branchId = null) {
+    const searchQuery = search ? `&search=${encodeURIComponent(search)}` : '';
+    const typeQuery = type ? `&type=${type}` : '';
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/suppliers?page=${page}&size=${size}${searchQuery}${typeQuery}${branchQuery}`);
     return res.data;
   },
 
@@ -471,8 +501,9 @@ const Api = {
     return res.data;
   },
 
-  async createSupplier(data) {
-    const res = await this._request('/suppliers', {
+  async createSupplier(data, branchId = null) {
+    const url = branchId ? `/suppliers?branchId=${branchId}` : '/suppliers';
+    const res = await this._request(url, {
       method: 'POST',
       body: JSON.stringify(data)
     });
@@ -491,10 +522,11 @@ const Api = {
     await this._request(`/suppliers/${id}`, { method: 'DELETE' });
   },
 
-  async exportSuppliersExcel(search = '', sort = 'name,asc') {
+  async exportSuppliersExcel(search = '', sort = 'name,asc', branchId = null) {
     const query = search ? `&query=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const res = await fetch(`${API_BASE}/suppliers/export/excel?${query}${sortQuery}`, {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${API_BASE}/suppliers/export/excel?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
     if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
@@ -507,10 +539,11 @@ const Api = {
     window.URL.revokeObjectURL(url);
   },
 
-  async exportSuppliersPdf(search = '', sort = 'name,asc') {
+  async exportSuppliersPdf(search = '', sort = 'name,asc', branchId = null) {
     const query = search ? `&query=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const res = await fetch(`${API_BASE}/suppliers/export/pdf?${query}${sortQuery}`, {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${API_BASE}/suppliers/export/pdf?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
     if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
@@ -523,18 +556,21 @@ const Api = {
     window.URL.revokeObjectURL(url);
   },
 
-  async getSupplierLedger(id) {
-    const res = await this._request(`/suppliers/${id}/ledger`);
+  async getSupplierLedger(id, branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/suppliers/${id}/ledger${branchQuery}`);
     return res.data;
   },
 
-  async getSupplierStatistics(id) {
-    const res = await this._request(`/suppliers/${id}/statistics`);
+  async getSupplierStatistics(id, branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/suppliers/${id}/statistics${branchQuery}`);
     return res.data;
   },
 
-  async getDailySupplierStats(days = 30) {
-    const res = await this._request(`/suppliers/daily-stats?days=${days}`);
+  async getDailySupplierStats(days = 30, branchId = null) {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/suppliers/daily-stats?days=${days}${branchQuery}`);
     return res.data;
   },
 
@@ -543,8 +579,9 @@ const Api = {
     return res.data;
   },
 
-  async exportSupplierStatement(id, supplierName) {
-    const url = `${API_BASE}/suppliers/${id}/export`;
+  async exportSupplierStatement(id, supplierName, branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const url = `${API_BASE}/suppliers/${id}/export${branchQuery}`;
     const token = this._getToken();
     const headers = {
       'Authorization': `Bearer ${token}`,
@@ -567,8 +604,9 @@ const Api = {
     a.remove();
   },
 
-  async downloadComprehensiveReport(id, supplierName) {
-    const url = `${API_BASE}/suppliers/${id}/report`;
+  async downloadComprehensiveReport(id, supplierName, branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const url = `${API_BASE}/suppliers/${id}/report${branchQuery}`;
     const token = this._getToken();
     const headers = {
       'Authorization': `Bearer ${token}`,
@@ -591,16 +629,17 @@ const Api = {
     a.remove();
   },
 
-  async paySupplier(id, amount, description) {
+  async paySupplier(id, amount, description, branchId = null) {
     await this._request(`/suppliers/${id}/pay`, {
       method: 'POST',
-      body: JSON.stringify({ amount, description })
+      body: JSON.stringify({ amount, description, branchId })
     });
   },
 
   // ─── Purchases ───
-  async getPurchases(page = 0, size = 10, query = '') {
-    const res = await this._request(`/purchases?page=${page}&size=${size}&query=${query}`);
+  async getPurchases(page = 0, size = 10, query = '', branchId = null) {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/purchases?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchQuery}`);
     return res.data;
   },
 
@@ -609,8 +648,9 @@ const Api = {
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
   },
 
-  async getPurchaseAnalytics() {
-    const res = await this._request('/purchases/analytics');
+  async getPurchaseAnalytics(branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/purchases/analytics${branchQuery}`);
     return res.data;
   },
 
@@ -660,8 +700,9 @@ const Api = {
   },
 
   // ─── Users ───
-  async getUsers(page = 0, size = 10, query = '') {
-    const res = await this._request(`/admin/users?page=${page}&size=${size}&query=${query}`);
+  async getUsers(page = 0, size = 10, query = '', branchId = '') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/admin/users?page=${page}&size=${size}&query=${query}${branchQuery}`);
     return res.data;
   },
 
@@ -841,8 +882,9 @@ const Api = {
   },
 
   // ─── Debt Management ───
-  async getDebts(page = 0, size = 10, type = '', status = '', entityType = '', query = '') {
+  async getDebts(page = 0, size = 10, type = '', status = '', entityType = '', query = '', branchId = null) {
     const params = new URLSearchParams({ page, size, type, status, entityType, query });
+    if (branchId) params.append('branchId', branchId);
     const res = await this._request(`/debts?${params.toString()}`);
     return res.data;
   },
@@ -866,13 +908,15 @@ const Api = {
     });
   },
 
-  async getDebtStats() {
-    const res = await this._request('/debts/stats');
+  async getDebtStats(branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/debts/stats${branchQuery}`);
     return res.data;
   },
 
-  async getDailyDebtStats(days = 7) {
-    const res = await this._request(`/debts/stats/daily?days=${days}`);
+  async getDailyDebtStats(days = 7, branchId = null) {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/debts/stats/daily?days=${days}${branchQuery}`);
     return res.data;
   },
 
@@ -906,8 +950,9 @@ const Api = {
   },
 
   // ─── Customers ───
-  async getCustomers(page = 0, size = 10, query = '') {
-    const res = await this._request(`/customers?page=${page}&size=${size}&query=${query}`);
+  async getCustomers(page = 0, size = 10, query = '', branchId = null) {
+    const branchParam = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/customers?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchParam}`);
     return res.data;
   },
 
@@ -931,8 +976,9 @@ const Api = {
     await this._request(`/customers/${id}`, { method: 'DELETE' });
   },
 
-  async getCustomerDebt(id) {
-    const res = await this._request(`/customers/${id}/debt`);
+  async getCustomerDebt(id, branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/customers/${id}/debt${branchQuery}`);
     return res.data;
   },
 
@@ -955,8 +1001,9 @@ const Api = {
   },
 
   // ─── Sales ───
-  async getSales(page = 0, size = 10, query = '') {
-    const res = await this._request(`/sales?page=${page}&size=${size}&query=${query}`);
+  async getSales(page = 0, size = 10, query = '', branchId = '') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/sales?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchQuery}`);
     return res.data;
   },
 
@@ -976,24 +1023,29 @@ const Api = {
     return res.data;
   },
 
-  async getReturns(page = 0, size = 10, query = '') {
-    const res = await this._request(`/sales/returns?page=${page}&size=${size}&query=${query}`);
+  async getReturns(page = 0, size = 10, query = '', branchId = null) {
+    const params = new URLSearchParams({ page, size, query });
+    if (branchId) params.append('branchId', branchId);
+    const res = await this._request(`/sales/returns?${params.toString()}`);
     return res.data;
   },
 
-  async getDailySaleStats(days = 30) {
-    const res = await this._request(`/sales/daily-stats?days=${days}`);
+  async getDailySaleStats(days = 7, branchId = null) {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/sales/daily-stats?days=${days}${branchQuery}`);
     return res.data;
   },
 
   // ─── Treasury ───
-  async getMainTreasury() {
-    const res = await this._request('/treasury/main');
+  async getMainTreasury(branchId = '') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/treasury/main?_=1${branchQuery}`);
     return res.data;
   },
 
-  async getTreasuryTransactions(page = 0, size = 20, query = '') {
-    const res = await this._request(`/treasury/transactions?page=${page}&size=${size}&query=${query}`);
+  async getTreasuryTransactions(page = 0, size = 20, query = '', branchId = '') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/treasury/transactions?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchQuery}`);
     return res.data;
   },
 
@@ -1012,13 +1064,15 @@ const Api = {
   },
 
   // ─── Expenses ───
-  async getExpenses(page = 0, size = 10, category = '', start = '', end = '') {
+  async getExpenses(page = 0, size = 10, category = '', start = '', end = '', branchId = '') {
     const params = new URLSearchParams({ page, size, category, start, end });
+    if (branchId) params.append('branchId', branchId);
     const res = await this._request(`/expenses?${params.toString()}`);
     return res.data;
   },
 
-  async createExpense(data) {
+  async createExpense(data, branchId = '') {
+    if (branchId) data.branchId = branchId;
     const res = await this._request('/expenses', {
       method: 'POST',
       body: JSON.stringify(data)
@@ -1031,8 +1085,9 @@ const Api = {
   },
 
   // ─── Profit & Loss ───
-  async getProfitLossReport(start = '', end = '') {
+  async getProfitLossReport(start = '', end = '', branchId = '') {
     const params = new URLSearchParams({ start, end });
+    if (branchId) params.append('branchId', branchId);
     const res = await this._request(`/profit-loss?${params.toString()}`);
     return res.data;
   },
@@ -1173,13 +1228,121 @@ const Api = {
     return res.data;
   },
 
-  async getMonthlyPayrolls(month, year) {
-    const res = await this._request(`/payroll?month=${month}&year=${year}`);
+  async getMonthlyPayrolls(month, year, branchId = '') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/payroll?month=${month}&year=${year}${branchQuery}`);
     return res.data;
   },
 
   async payEmployeePayroll(id) {
     const res = await this._request(`/payroll/${id}/pay`, { method: 'PUT' });
+    return res.data;
+  },
+
+  // ─── Branches & Warehouses ───
+  async getBranches() {
+    const res = await this._request('/branches');
+    return res.data;
+  },
+
+  async getWarehousesByBranch(branchId) {
+    const res = await this._request(`/warehouses?branchId=${branchId}`);
+    return res.data;
+  },
+
+  async getWarehouseProducts(warehouseId, page = 0, size = 10, search = '', sort = 'id,desc') {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('size', size);
+    if (sort) params.append('sort', sort);
+    if (search) params.append('search', search);
+
+    const res = await this._request(`/warehouses/${warehouseId}/products?${params.toString()}`);
+    return res.data;
+  },
+
+  async getBranchStats(id) {
+    const res = await this._request(`/branches/${id}/stats`);
+    return res.data;
+  },
+
+  async getInteractions(page = 0, size = 20, sort = 'timestamp,desc') {
+    const res = await this._request(`/interactions?page=${page}&size=${size}&sort=${sort}`);
+    return res.data;
+  },
+
+  async getInventoryReport(search = '', branchId = null, page = 0, size = 20) {
+    let url = `/inventory/report?page=${page}&size=${size}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (branchId) url += `&branchId=${branchId}`;
+    const res = await this._request(url);
+    return res.data;
+  },
+
+  async updateWarehouseStock(warehouseId, productId, quantity) {
+    return this._request(`/warehouses/${warehouseId}/stock?productId=${productId}&quantity=${quantity}`, {
+      method: 'POST'
+    });
+  },
+
+  async getProductStockDistribution(productId) {
+    const res = await this._request(`/warehouses/products/${productId}/distribution`);
+    return res.data;
+  },
+
+  async addOrUpdateWarehouseStock(warehouseId, { productId, quantity, minQuantity, maxQuantity }) {
+    const params = new URLSearchParams();
+    params.append('productId', productId);
+    params.append('quantity', quantity);
+    if (minQuantity) params.append('minQuantity', minQuantity);
+    if (maxQuantity) params.append('maxQuantity', maxQuantity);
+
+    const res = await this._request(`/warehouses/${warehouseId}/stock?${params.toString()}`, {
+      method: 'POST'
+    });
+    return res.data;
+  },
+
+  async getAllWarehouses() {
+    const res = await this._request('/warehouses');
+    return res.data;
+  },
+
+  // ─── Treasury ───
+  async getTreasuryOverview() {
+    const res = await this._request('/treasury/overview');
+    return res.data;
+  },
+
+  async transferToCentral(data) {
+    const res = await this._request('/treasury/transfer', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  // ─── Customer Offers (Targeted Discounts) ───
+  async createCustomerOffer(data) {
+    const res = await this._request('/offers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async getAllOffers(page = 0, size = 20) {
+    const res = await this._request(`/offers?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async getCustomerOffers(customerId, page = 0, size = 20) {
+    const res = await this._request(`/offers/customers/${customerId}?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async deactivateOffer(offerId) {
+    const res = await this._request(`/offers/${offerId}`, { method: 'DELETE' });
     return res.data;
   }
 };

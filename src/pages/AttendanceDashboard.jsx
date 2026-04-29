@@ -10,21 +10,26 @@ const AttendanceDashboard = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [shifts, setShifts] = useState([]);
   const [selectedShift, setSelectedShift] = useState('');
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const isAdmin = Api.isAdminOrBranchManager();
 
   useEffect(() => {
     fetchData();
-  }, [date, selectedShift]);
+  }, [date, selectedShift, selectedBranchId]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [empRes, shiftRes] = await Promise.all([
-        Api.getUsers(0, 1000),
-        Api.getShifts()
+      const [empRes, shiftRes, branchesData] = await Promise.all([
+        Api.getUsers(0, 1000, '', selectedBranchId),
+        Api.getShifts(),
+        branches.length === 0 ? Api.getBranches().catch(() => []) : Promise.resolve(branches)
       ]);
       
       const allEmps = empRes.items || empRes.content || [];
       setShifts(shiftRes);
+      if (branches.length === 0) setBranches(branchesData);
       
       // Filter by shift if selected
       const filtered = selectedShift 
@@ -83,6 +88,15 @@ const AttendanceDashboard = () => {
         </div>
         
         <div style={{ display: 'flex', gap: '15px' }}>
+          {isAdmin && (
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '5px', display: 'block' }}>الفرع</label>
+              <select className="form-control" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '48px' }}>
+                <option value="">جميع الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '5px', display: 'block' }}>تاريخ كشف الحضور</label>
             <input type="date" className="form-control" value={date} onChange={e => setDate(e.target.value)} style={{ width: '200px', height: '48px' }} />

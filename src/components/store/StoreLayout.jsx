@@ -7,6 +7,7 @@ import CheckoutModal from './CheckoutModal';
 import StoreLoginModal from './StoreLoginModal';
 import { useStoreAuth } from '../../context/StoreAuthContext';
 import '../../styles/ecommerce.css';
+import * as fbPixel from '../../services/fbPixel';
 
 const STORE_NAME = 'مهلهل جروب';
 
@@ -39,8 +40,28 @@ const StoreLayout = ({ children, hideHeader = false }) => {
   const [trackResult, setTrackResult] = useState(null);
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackError, setTrackError] = useState('');
+  const [offersCount, setOffersCount] = useState(0);
 
   const platformName = storeInfo?.name || STORE_NAME;
+
+  // ── Facebook Pixel: init once when storeInfo is loaded ──
+  React.useEffect(() => {
+    if (storeInfo?.facebookPixelId) {
+      fbPixel.initPixel(storeInfo.facebookPixelId);
+    }
+  }, [storeInfo?.facebookPixelId]);
+
+  React.useEffect(() => {
+    fbPixel.trackPageView();
+  }, [location.pathname]);
+
+  React.useEffect(() => {
+    if (storeCustomer) {
+      StoreApi.countMyOffers().then(res => setOffersCount(res.data || 0)).catch(e => console.error(e));
+    } else {
+      setOffersCount(0);
+    }
+  }, [storeCustomer]);
 
   React.useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -75,6 +96,7 @@ const StoreLayout = ({ children, hideHeader = false }) => {
     if (e && e.preventDefault) e.preventDefault();
     setShowSuggestions(false);
     if (search.trim()) {
+      fbPixel.trackSearch(search.trim());
       navigate(`/store?search=${encodeURIComponent(search.trim())}`);
     } else {
       navigate('/store');
@@ -103,17 +125,18 @@ const StoreLayout = ({ children, hideHeader = false }) => {
             <span className="ec-sep desktop-only">|</span>
             <a href="#" className="ec-topbar-link">أماكن الفروع</a>
             <span className="ec-sep">|</span>
-            <a href={`https://wa.me/${storeInfo?.whatsappNumber}`} className="ec-topbar-link">
-              <span style={{ color: '#25D366' }}>🟢</span> دعم من خلال الواتساب
+            <a href={`https://wa.me/${storeInfo?.whatsappNumber}`} className="ec-topbar-link" target="_blank" rel="noopener noreferrer">
+              <i className="fab fa-whatsapp" style={{ color: '#25D366', marginLeft: '5px' }}></i>
+              دعم الواتساب
             </a>
             <span className="ec-sep">|</span>
-            <span className="ec-topbar-text">📞 {storeInfo?.phone1 || '15254'}</span>
+            <span className="ec-topbar-text"><i className="fas fa-phone-alt" style={{ marginLeft: '5px', fontSize: '0.7rem' }}></i> {storeInfo?.phone1 || '15254'}</span>
           </div>
           <div className="ec-topbar-left">
             <div className="ec-lang-selector">
               <span>العربية</span>
               <img src="https://flagcdn.com/w20/eg.png" alt="Egypt" style={{ width: '18px', height: '12px' }} />
-              <span className="ec-chevron-down">⌄</span>
+              <i className="fas fa-chevron-down" style={{ fontSize: '0.7rem', marginRight: '5px' }}></i>
             </div>
           </div>
         </div>
@@ -152,7 +175,7 @@ const StoreLayout = ({ children, hideHeader = false }) => {
                     onClick={() => { setSearch(''); navigate('/store'); }}
                     title="مسح البحث"
                   >
-                    ✕
+                    <i className="fas fa-times"></i>
                   </button>
                 )}
                 <button type="submit" className="ec-search-submit-btn">
@@ -201,24 +224,29 @@ const StoreLayout = ({ children, hideHeader = false }) => {
 
             {/* Actions (Left side) */}
             <div className="ec-header-left">
-              <button className="ec-cart-btn-premium" onClick={() => navigate('/store/wishlist')} style={{ background: 'transparent', border: '1px solid #e2e8f0', color: location.pathname === '/store/wishlist' ? '#2b3481' : '#64748b', padding: '10px 15px', borderRadius: '8px' }}>
-                <span style={{ fontSize: '1.2rem' }}>{location.pathname === '/store/wishlist' ? '❤️' : '🤍'}</span>
+              <button className="ec-cart-btn-premium" onClick={() => navigate('/store/wishlist')} style={{ background: 'transparent', border: '1px solid #e2e8f0', color: location.pathname === '/store/wishlist' ? '#2b3481' : '#64748b', padding: '6px 15px', borderRadius: '50px' }}>
+                <span style={{ fontSize: '1rem' }}>{location.pathname === '/store/wishlist' ? <i className="fas fa-heart"></i> : <i className="far fa-heart"></i>}</span>
                 <span style={{ fontWeight: 700, marginLeft: '5px' }}>المفضلة ({wishlist?.length || 0})</span>
               </button>
               <button className="ec-cart-btn-premium" onClick={() => setCartOpen(true)}>
-                <span className="ec-btn-icon">🛒</span>
+                <span className="ec-btn-icon"><i className="fas fa-shopping-cart"></i></span>
                 <span>عربة التسوق ({cartCount})</span>
               </button>
               {storeCustomer ? (
                 <div className="ec-nav-dropdown-container" style={{ position: 'relative' }}>
-                  <button className="ec-account-btn" onClick={() => navigate('/store/account')} style={{ gap: '5px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', color: 'var(--ec-primary)' }}>
-                    <span className="ec-btn-icon">👤</span>
+                  <button className="ec-account-btn" onClick={() => navigate('/store/account')} style={{ gap: '5px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', color: 'var(--ec-primary)', position: 'relative' }}>
+                    <span className="ec-btn-icon"><i className="fas fa-user-circle"></i></span>
                     <span>{storeCustomer.name.split(' ')[0]}</span>
+                    {offersCount > 0 && (
+                      <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#f59e0b', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', border: '2px solid #fff' }}>
+                        {offersCount}
+                      </span>
+                    )}
                   </button>
                 </div>
               ) : (
                 <button className="ec-account-btn" onClick={() => setLoginModalOpen(true)}>
-                  <span className="ec-btn-icon">👤</span>
+                  <span className="ec-btn-icon"><i className="fas fa-sign-in-alt"></i></span>
                   <span>تسجيل الدخول</span>
                 </button>
               )}
@@ -256,22 +284,22 @@ const StoreLayout = ({ children, hideHeader = false }) => {
                 <div className="ec-footer-socials">
                   {storeInfo?.facebookUrl && (
                     <a href={storeInfo.facebookUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon fb" title="فيسبوك">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
+                      <i className="fab fa-facebook-f"></i>
                     </a>
                   )}
                   {storeInfo?.instagramUrl && (
                     <a href={storeInfo.instagramUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon ig" title="إنستجرام">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.332 3.608 1.308.975.975 1.245 2.242 1.308 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.063 1.366-.333 2.633-1.308 3.608-.975.975-2.242 1.245-3.608 1.308-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.063-2.633-.333-3.608-1.308-.975-.975-1.245-2.242-1.308-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.332-2.633 1.308-3.608.975-.975 2.242-1.245 3.608-1.308 1.266-.058 1.646-.07 4.85-.07zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.28.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                      <i className="fab fa-instagram"></i>
                     </a>
                   )}
                   {storeInfo?.tiktokUrl && (
                     <a href={storeInfo.tiktokUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon tt" title="تيك توك">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.032 2.623-.02 3.935-.002.08 3.477 2.067 5.753 5.435 6.32v3.918c-2.427-.01-4.14-.73-5.362-2.31 0 1.933.012 3.865-.002 5.798-.052 5.093-4.185 8.336-9.117 8.256-4.93-.08-8.665-4.155-8.31-9.19.344-4.885 4.01-7.85 8.712-7.848.33 0 .66.033.987.098V9.11c-1.464-.326-3.085-.148-4.12 1.083-1.035 1.23-1.04 3.104-.263 4.417.777 1.313 2.378 1.983 3.86 1.637 1.482-.345 2.162-1.644 2.24-3.136.035-2.607.012-10.158.012-10.158z"/></svg>
+                      <i className="fab fa-tiktok"></i>
                     </a>
                   )}
                   {storeInfo?.whatsappNumber && (
                     <a href={`https://wa.me/${storeInfo.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="ec-social-icon wa" title="واتساب">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c0-5.445 4.446-9.891 9.891-9.891 2.638 0 5.12 1.026 6.99 2.898a9.825 9.825 0 012.893 6.994c0 5.446-4.446 9.892-9.891 9.892m12.428-12.788C24.473 5.372 21.045 1.944 16.795.019c-4.25-1.925-9.156-1.925-13.406 0C-1.386 1.944-4.814 5.372-5.739 9.622c.925 4.251 4.353 7.679 8.604 9.604 4.25 1.925 9.156 1.925 13.406 0 6.255-2.834 11.236-9.96 11.229-12.914"/></svg>
+                      <i className="fab fa-whatsapp"></i>
                     </a>
                   )}
                 </div>
@@ -314,21 +342,21 @@ const StoreLayout = ({ children, hideHeader = false }) => {
                 <h4 className="ec-footer-title">تواصل معنا</h4>
                 <div className="ec-footer-contact">
                   <div className="ec-contact-item">
-                    <span className="ec-contact-icon">📍</span>
+                    <span className="ec-contact-icon"><i className="fas fa-map-marker-alt"></i></span>
                     <span className="ec-contact-text">{storeInfo?.address || 'القاهرة، مصر'}</span>
                   </div>
                   <div className="ec-contact-item">
-                    <span className="ec-contact-icon">📞</span>
+                    <span className="ec-contact-icon"><i className="fas fa-phone-alt"></i></span>
                     <span className="ec-contact-text">{storeInfo?.phone1 || '15254'}</span>
                   </div>
                   {storeInfo?.email && (
                     <div className="ec-contact-item">
-                      <span className="ec-contact-icon">📧</span>
+                      <span className="ec-contact-icon"><i className="fas fa-envelope"></i></span>
                       <span className="ec-contact-text">{storeInfo.email}</span>
                     </div>
                   )}
                   <div className="ec-contact-item">
-                    <span className="ec-contact-icon">⏰</span>
+                    <span className="ec-contact-icon"><i className="fas fa-clock"></i></span>
                     <span className="ec-contact-text">السبت - الخميس: 10ص - 10م</span>
                   </div>
                 </div>
@@ -357,32 +385,32 @@ const StoreLayout = ({ children, hideHeader = false }) => {
       <div className="ec-mobile-nav">
         <Link to="/store" className={`ec-mobile-nav-item ${location.pathname === '/store' ? 'active' : ''}`}>
           <div className="ec-mobile-nav-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <i className="fas fa-home"></i>
           </div>
           <span>الرئيسية</span>
         </Link>
         <button className="ec-mobile-nav-item" onClick={() => navigate('/store')}>
           <div className="ec-mobile-nav-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+            <i className="fas fa-th-large"></i>
           </div>
           <span>القائمة</span>
         </button>
-        <a href={`https://wa.me/${storeInfo?.whatsappNumber}`} className="ec-mobile-nav-item whatsapp">
+        <a href={`https://wa.me/${storeInfo?.whatsappNumber}`} className="ec-mobile-nav-item whatsapp" target="_blank" rel="noopener noreferrer">
           <div className="ec-mobile-nav-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <i className="fab fa-whatsapp"></i>
           </div>
           <span>اسألنا</span>
         </a>
         <button className="ec-mobile-nav-item" onClick={() => setCartOpen(true)}>
           <div className="ec-mobile-nav-icon cart">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            <i className="fas fa-shopping-bag"></i>
             {cartCount > 0 && <span className="ec-mobile-cart-badge">{cartCount}</span>}
           </div>
           <span>عربة التسوق</span>
         </button>
         <button className={`ec-mobile-nav-item ${location.pathname === '/store/wishlist' ? 'active-blue' : ''}`} onClick={() => navigate('/store/wishlist')}>
           <div className="ec-mobile-nav-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill={location.pathname === '/store/wishlist' ? "#2b3481" : "none"} stroke={location.pathname === '/store/wishlist' ? "#2b3481" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.72-8.72 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <i className={location.pathname === '/store/wishlist' ? 'fas fa-heart' : 'far fa-heart'}></i>
             {wishlist?.length > 0 && <span className="ec-mobile-cart-badge" style={{ background: '#2b3481', borderColor: '#fff' }}>{wishlist.length}</span>}
           </div>
           <span>المفضلة</span>
@@ -390,19 +418,33 @@ const StoreLayout = ({ children, hideHeader = false }) => {
         {storeCustomer ? (
           <button className={`ec-mobile-nav-item ${location.pathname === '/store/account' ? 'active-blue' : ''}`} onClick={() => navigate('/store/account')}>
             <div className="ec-mobile-nav-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill={location.pathname === '/store/account' ? "#2b3481" : "none"} stroke={location.pathname === '/store/account' ? "#2b3481" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <i className="fas fa-user"></i>
+              {offersCount > 0 && <span className="ec-mobile-cart-badge" style={{ background: '#f59e0b', borderColor: '#fff' }}>{offersCount}</span>}
             </div>
             <span>حسابي</span>
           </button>
         ) : (
           <button className="ec-mobile-nav-item" onClick={() => setLoginModalOpen(true)}>
             <div className="ec-mobile-nav-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <i className="fas fa-sign-in-alt"></i>
             </div>
             <span>دخول</span>
           </button>
         )}
       </div>
+
+      {/* ─── FLOATING WHATSAPP BUTTON ─── */}
+      {storeInfo?.whatsappNumber && (
+        <a 
+          href={`https://wa.me/${storeInfo.whatsappNumber}`} 
+          className="ec-whatsapp-float" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          title="تواصل معنا عبر واتساب"
+        >
+          <i className="fab fa-whatsapp"></i>
+        </a>
+      )}
 
       {/* ─── OVERLAYS ─── */}
       <CartDrawer
@@ -426,8 +468,8 @@ const StoreLayout = ({ children, hideHeader = false }) => {
         <div className="ec-modal-overlay">
           <div className="ec-modal">
             <div className="ec-modal-header">
-              <h3>📦 تتبع حالة طلبك</h3>
-              <button onClick={() => { setTrackOpen(false); setTrackResult(null); setTrackNum(''); }}>✕</button>
+              <h3><i className="fas fa-box" style={{ marginLeft: '10px' }}></i> تتبع حالة طلبك</h3>
+              <button onClick={() => { setTrackOpen(false); setTrackResult(null); setTrackNum(''); }}><i className="fas fa-times"></i></button>
             </div>
             <div className="ec-modal-body">
               <div className="ec-form-group">

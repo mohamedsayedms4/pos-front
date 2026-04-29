@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
 
 const Treasury = () => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [treasury, setTreasury] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useGlobalUI();
+
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
 
   // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
@@ -27,18 +33,35 @@ const Treasury = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    loadData(currentPage, pageSize, debouncedSearch);
-  }, [currentPage, debouncedSearch]);
+    const user = Api._getUser();
+    const branchFromUrl = searchParams.get('branchId');
+    
+    if (branchFromUrl) {
+      setSelectedBranchId(branchFromUrl);
+    } else if (user && user.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
 
-  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch) => {
+    const loadBranches = async () => {
+      try {
+        const data = await Api.getBranches();
+        setBranches(data);
+      } catch (e) { }
+    };
+    loadBranches();
+  }, [location.search]);
+
+  useEffect(() => {
+    loadData(currentPage, pageSize, debouncedSearch, selectedBranchId);
+  }, [currentPage, debouncedSearch, selectedBranchId]);
+
+  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      if (page === 0) {
-        const tData = await Api.getMainTreasury();
-        setTreasury(tData);
-      }
+      const tData = await Api.getMainTreasury(branchId);
+      setTreasury(tData);
 
-      const res = await Api.getTreasuryTransactions(page, size, query);
+      const res = await Api.getTreasuryTransactions(page, size, query, branchId);
       setTransactions(res.items || res.content || []);
       setTotalPages(res.totalPages || 0);
       setTotalElements(res.totalItems || res.totalElements || 0);
@@ -59,8 +82,7 @@ const Treasury = () => {
   const summary = calculateSummary();
 
   return (
-    <div className="page-section">
-      {/* Stats Dashboard */}
+    <div className="page-section" style={{ direction: 'rtl' }}>
       <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
         <StatTile 
           id="trs_balance"
@@ -71,14 +93,14 @@ const Treasury = () => {
         />
         <StatTile 
           id="trs_total_in"
-          label="إجمالي الوارد"
+          label="إجمالي الوارد (بالصفحة)"
           value={summary.totalIn.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
           icon="↗️"
           defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
         />
         <StatTile 
           id="trs_total_out"
-          label="إجمالي الصادر"
+          label="إجمالي الصادر (بالصفحة)"
           value={summary.totalOut.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
           icon="↘️"
           defaults={{ color: 'crimson', size: 'tile-sq-sm', order: 3 }}
@@ -89,6 +111,17 @@ const Treasury = () => {
         <div className="card-header">
           <h3>🏦 سجل المعاملات المالية</h3>
           <div className="toolbar">
+            <select 
+              className="form-control" 
+              value={selectedBranchId} 
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              style={{ width: '180px', height: '40px', padding: '0 10px' }}
+              disabled={!Api.can('ROLE_ADMIN')}
+            >
+              <option value="">الخزنة المركزية</option>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+
             <div className="search-input">
               <span className="search-icon">🔍</span>
               <input
@@ -135,7 +168,7 @@ const Treasury = () => {
                     </td>
                   </tr>
                 ) : transactions.map((t, idx) => (
-                  <tr key={t.id || idx} style={{ animationDelay: `${idx * 0.05}s` }}>
+                  <tr key={t.id || idx}>
                     <td style={{ fontWeight: 600, color: 'var(--text-white)' }}>
                       {new Date(t.transactionDate).toLocaleString('ar-EG', {
                         year: 'numeric', month: 'short', day: 'numeric',

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import ReactDOM from 'react-dom';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import { useBranch } from '../context/BranchContext';
 
 const Sales = () => {
+    const { toast, confirm } = useGlobalUI();
+    const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeSale, setActiveSale] = useState(null);
@@ -13,7 +16,11 @@ const Sales = () => {
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [returnItems, setReturnItems] = useState([]);
     const [returnNotes, setReturnNotes] = useState('');
-    const { toast, confirm } = useGlobalUI();
+
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const [branches, setBranches] = useState([]);
+    const [selectedBranchId, setSelectedBranchId] = useState('');
 
     // Pagination & Search state
     const [currentPage, setCurrentPage] = useState(0);
@@ -33,13 +40,30 @@ const Sales = () => {
     }, [searchTerm]);
 
     useEffect(() => {
-        loadSales(currentPage, pageSize, debouncedSearch);
-    }, [currentPage, debouncedSearch]);
+        const user = Api._getUser();
+        const branchFromUrl = searchParams.get('branchId');
+        
+        if (branchFromUrl) {
+          setSelectedBranchId(branchFromUrl);
+        } else if (globalBranchId) {
+          setSelectedBranchId(globalBranchId);
+        } else if (user && user.branchId) {
+          setSelectedBranchId(user.branchId);
+        }
 
-    const loadSales = async (page = 0, size = 10, query = debouncedSearch) => {
+        if (contextBranches && contextBranches.length > 0) {
+          setBranches(contextBranches);
+        }
+    }, [location.search, globalBranchId, contextBranches]);
+
+    useEffect(() => {
+        loadSales(currentPage, pageSize, debouncedSearch, selectedBranchId);
+    }, [currentPage, debouncedSearch, selectedBranchId]);
+
+    const loadSales = async (page = 0, size = 10, query = debouncedSearch, branchId = selectedBranchId) => {
         setLoading(true);
         try {
-            const res = await Api.getSales(page, size, query);
+            const res = await Api.getSales(page, size, query, branchId);
             setSales(res.items || res.content || []);
             setTotalPages(res.totalPages || 0);
             setTotalElements(res.totalItems || res.totalElements || 0);
@@ -95,11 +119,22 @@ const Sales = () => {
     };
 
     return (
-        <div className="page-section">
+        <div className="page-section" style={{ direction: 'rtl' }}>
             <div className="card">
                 <div className="card-header">
                     <h3>🧾 سجل فواتير المبيعات</h3>
                     <div className="toolbar">
+                        <select 
+                          className="form-control" 
+                          value={selectedBranchId} 
+                          onChange={(e) => setSelectedBranchId(e.target.value)}
+                          style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                          disabled={!Api.can('ROLE_ADMIN')}
+                        >
+                          <option value="">كل الفروع</option>
+                          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+
                         <div className="search-input">
                             <span className="search-icon">🔍</span>
                             <input

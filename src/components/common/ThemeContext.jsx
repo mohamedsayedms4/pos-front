@@ -1,26 +1,32 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import * as React from 'react';
 
-const ThemeContext = createContext();
+const ThemeContext = React.createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = React.useState(() => {
     // Check localStorage or system preference
-    const savedTheme = localStorage.getItem('app-theme');
-    if (savedTheme) return savedTheme;
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('app-theme');
+      if (savedTheme) return savedTheme;
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    return 'dark';
   });
 
-  useEffect(() => {
-    // Apply theme to document element
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('app-theme', theme);
-    
-    // Smooth transition effect
-    document.documentElement.classList.add('theme-transition');
-    const timer = setTimeout(() => {
-      document.documentElement.classList.remove('theme-transition');
-    }, 400);
-    return () => clearTimeout(timer);
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Apply theme to document element
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('app-theme', theme);
+      
+      // Smooth transition effect
+      document.documentElement.classList.add('theme-transition');
+      const timer = setTimeout(() => {
+        document.documentElement.classList.remove('theme-transition');
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
   }, [theme]);
 
   const toggleTheme = () => {
@@ -35,7 +41,7 @@ export const ThemeProvider = ({ children }) => {
 };
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext);
+  const context = React.useContext(ThemeContext);
   if (!context) throw new Error('useTheme must be used within ThemeProvider');
   return context;
 };

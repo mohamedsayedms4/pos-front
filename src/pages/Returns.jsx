@@ -13,6 +13,9 @@ const Returns = () => {
     const [showDetails, setShowDetails] = useState(false);
     const [analytics, setAnalytics] = useState({ trend: [], totalRefund: 0, totalCount: 0 });
     const { toast } = useGlobalUI();
+    const [branches, setBranches] = useState([]);
+    const [selectedBranchId, setSelectedBranchId] = useState('');
+    const isAdmin = Api.isAdminOrBranchManager();
 
     // Pagination & Search state
     const [currentPage, setCurrentPage] = useState(0);
@@ -30,10 +33,10 @@ const Returns = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    const loadReturns = async (page = 0, size = 10, query = debouncedSearch) => {
+    const loadReturns = async (page = 0, size = 10, query = debouncedSearch, branchId = selectedBranchId) => {
         setLoading(true);
         try {
-            const res = await Api.getReturns(page, size, query);
+            const res = await Api.getReturns(page, size, query, branchId);
             setReturns(res.items || res.content || []);
             setTotalPages(res.totalPages || 0);
             setTotalElements(res.totalItems || res.totalElements || 0);
@@ -58,8 +61,14 @@ const Returns = () => {
     };
 
     useEffect(() => {
-        loadReturns(currentPage, pageSize, debouncedSearch);
-    }, [currentPage, debouncedSearch]);
+        loadReturns(currentPage, pageSize, debouncedSearch, selectedBranchId);
+    }, [currentPage, debouncedSearch, selectedBranchId]);
+
+    useEffect(() => {
+        if (isAdmin && branches.length === 0) {
+            Api.getBranches().then(setBranches).catch(() => {});
+        }
+    }, []);
 
     const openDetails = (ret) => {
         setActiveReturn(ret);
@@ -93,6 +102,12 @@ const Returns = () => {
                     <div className="card-header">
                         <h3>🔄 سجل مرتجعات المبيعات</h3>
                         <div className="toolbar">
+                            {isAdmin && (
+                              <select className="form-control" value={selectedBranchId} onChange={e => { setSelectedBranchId(e.target.value); setCurrentPage(0); }} style={{ width: '150px', height: '40px' }}>
+                                <option value="">جميع الفروع</option>
+                                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                              </select>
+                            )}
                             <div className="search-input">
                                 <span className="search-icon">🔍</span>
                                 <input

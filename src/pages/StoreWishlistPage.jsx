@@ -39,7 +39,7 @@ const StoreWishlistPage = () => {
             <div className="ec-wishlist-page">
                 <div className="ec-page-header-premium">
                     <div className="ec-container">
-                        <h1>قائمة الأمنيات ❤️</h1>
+                        <h1>قائمة الأمنيات <i className="fas fa-heart" style={{ color: '#ef4444', marginRight: '10px' }}></i></h1>
                         <p>المنتجات التي نالت إعجابك وتود العودة إليها لاحقاً.</p>
                     </div>
                 </div>
@@ -62,7 +62,7 @@ const StoreWishlistPage = () => {
                         </div>
                     ) : (
                         <div className="ec-empty-state">
-                            <div className="ec-empty-icon">🤍</div>
+                            <div className="ec-empty-icon"><i className="far fa-heart" style={{ fontSize: '4rem', opacity: 0.1 }}></i></div>
                             <h2>قائمة الأمنيات فارغة</h2>
                             <p>لم تقم بإضافة أي منتجات للمفضلة بعد.</p>
                             <Link to="/store" className="ec-btn ec-btn-primary" style={{ marginTop: '20px', display: 'inline-block' }}>

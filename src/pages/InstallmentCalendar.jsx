@@ -19,9 +19,11 @@ const InstallmentCalendar = () => {
     setLoading(true);
     try {
       const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const start = new Date(year, month, 1).toISOString().split('T')[0];
-      const end = new Date(year, month, daysInMonth(year, month)).toISOString().split('T')[0];
+      const monthNum = currentDate.getMonth() + 1;
+      const monthStr = String(monthNum).padStart(2, '0');
+      const start = `${year}-${monthStr}-01`;
+      const lastDay = daysInMonth(year, currentDate.getMonth());
+      const end = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
       
       const data = await Api.getCalendarInstallments(start, end);
       setInstallments(data);
@@ -46,10 +48,17 @@ const InstallmentCalendar = () => {
 
   const getDayInstallments = (day) => {
     return filteredInstallments.filter(inst => {
-      const dueDate = new Date(inst.dueDate);
-      return dueDate.getDate() === day && 
-             dueDate.getMonth() === currentDate.getMonth() && 
-             dueDate.getFullYear() === currentDate.getFullYear();
+      if (!inst.dueDate) return false;
+      const parts = inst.dueDate.split('-');
+      if (parts.length !== 3) return false;
+      
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1; // 0-based month
+      const d = parseInt(parts[2], 10);
+      
+      return d === day && 
+             m === currentDate.getMonth() && 
+             y === currentDate.getFullYear();
     });
   };
 

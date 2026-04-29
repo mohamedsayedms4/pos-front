@@ -4,8 +4,10 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
+import { useBranch } from '../context/BranchContext';
 
 const Dashboard = () => {
+  const { selectedBranchId: globalBranchId } = useBranch();
   const [stats, setStats] = useState({
     products: 0,
     categories: 0,
@@ -23,31 +25,33 @@ const Dashboard = () => {
 
   useEffect(() => {
     const loadStats = async () => {
+      setLoading(true);
       try {
         const [products, categories, suppliers, dailySales, debtSummary, debtDaily] = await Promise.all([
-          Api.getProducts().catch(() => []),
+          Api.getProductsPaged(0, 1000, '', 'id,desc', globalBranchId).catch(() => ({ items: [] })),
           Api.getCategories().catch(() => []),
-          Api.getSuppliers().catch(() => []),
-          Api.getDailySaleStats(7).catch(() => []),
-          Api.getDebtStats().catch(() => ({})),
-          Api.getDailyDebtStats(7).catch(() => [])
+          Api.getSuppliers(0, 1000, '', '', globalBranchId).catch(() => ({ items: [] })),
+          Api.getDailySaleStats(7, globalBranchId).catch(() => []),
+          Api.getDebtStats(globalBranchId).catch(() => ({})),
+          Api.getDailyDebtStats(7, globalBranchId).catch(() => [])
         ]);
 
         let users = [];
-        if (Api.can('ROLE_ADMIN')) {
+        if (Api.isAdminOrBranchManager()) {
           try { users = await Api.getUsers(); } catch { }
         }
 
-        const lowStockItems = Array.isArray(products) ? products.filter(p => Number(p.stock) < 10 && Number(p.stock) > 0) : (products.content || []).filter(p => Number(p.stock) < 10 && Number(p.stock) > 0);
-        const outOfStockItems = Array.isArray(products) ? products.filter(p => Number(p.stock) <= 0) : (products.content || []).filter(p => Number(p.stock) <= 0);
-        
-        const productsArray = Array.isArray(products) ? products : (products.content || []);
+        const productsArray = products.items || [];
+        const lowStockItems = productsArray.filter(p => Number(p.stock) < 10 && Number(p.stock) > 0);
+        const outOfStockItems = productsArray.filter(p => Number(p.stock) <= 0);
         const recent = [...productsArray].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
-          setStats({
-          products: products.totalElements ?? products.totalItems ?? productsArray.length,
+        const suppliersArray = suppliers.items || suppliers.content || (Array.isArray(suppliers) ? suppliers : []);
+
+        setStats({
+          products: products.totalElements || productsArray.length,
           categories: categories.totalElements ?? categories.totalItems ?? (Array.isArray(categories) ? categories.length : (categories.content || []).length),
-          suppliers: suppliers.totalElements ?? suppliers.totalItems ?? (Array.isArray(suppliers) ? suppliers.length : (suppliers.content || []).length),
+          suppliers: suppliers.totalElements || suppliersArray.length,
           users: Array.isArray(users) ? users.length : (users.totalElements || users.length || 0),
           lowStock: lowStockItems,
           outOfStock: outOfStockItems,
@@ -61,7 +65,8 @@ const Dashboard = () => {
           debtTrend: processDebtTrend(debtDaily),
           profitLoss: await Api.getProfitLossReport(
             new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] + 'T00:00:00',
-            new Date().toISOString().split('T')[0] + 'T23:59:59'
+            new Date().toISOString().split('T')[0] + 'T23:59:59',
+            globalBranchId
           ).catch(() => null)
         });
       } catch (err) {
@@ -72,7 +77,7 @@ const Dashboard = () => {
     };
 
     loadStats();
-  }, []);
+  }, [globalBranchId]);
 
   const processDebtTrend = (data) => {
     if (!Array.isArray(data)) return [];
@@ -133,7 +138,7 @@ const Dashboard = () => {
           />
         )}
 
-        {Api.can('ROLE_ADMIN') && (
+        {Api.isAdminOrBranchManager() && (
           <StatTile
             id="dash_users"
             label="فريقنا"
@@ -275,7 +280,7 @@ const Dashboard = () => {
             onClick={() => navigate('/suppliers')}
           />
         )}
-        {Api.can('ROLE_ADMIN') && (
+        {Api.isAdminOrBranchManager() && (
           <StatTile
             id="dash_qa_users"
             label="المستخدمين"
@@ -322,7 +327,7 @@ const Dashboard = () => {
         </div>
         <div className="card-body" style={{ height: '300px', width: '100%' }}>
           {stats.dailySales.length > 0 ? (
-            <ResponsiveContainer>
+            <ResponsiveContainer minWidth={0} minHeight={0}>
               <AreaChart data={stats.dailySales} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorSalesTrend" x1="0" y1="0" x2="0" y2="1">
@@ -352,7 +357,7 @@ const Dashboard = () => {
         </div>
         <div className="card-body" style={{ height: '300px', width: '100%' }}>
             {stats.debtTrend.length > 0 ? (
-                <ResponsiveContainer>
+                <ResponsiveContainer minWidth={0} minHeight={0}>
                     <AreaChart data={stats.debtTrend} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">

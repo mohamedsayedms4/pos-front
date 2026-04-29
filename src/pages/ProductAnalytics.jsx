@@ -4,6 +4,7 @@ import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import StatTile from '../components/common/StatTile';
+import { useBranch } from '../context/BranchContext';
 import {
   AreaChart,
   Area,
@@ -25,6 +26,7 @@ import {
 
 const ProductAnalytics = () => {
   const navigate = useNavigate();
+  const { selectedBranchId } = useBranch();
   const { toast } = useGlobalUI();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,10 +42,10 @@ const ProductAnalytics = () => {
     const fetchAllData = async () => {
       try {
         const [statData, latestData, viewedData, priceyData, dailyData] = await Promise.all([
-          Api.getProductStatistics(),
-          Api.getProductsPaged(0, 5, '', 'id,desc'),
-          Api.getProductsPaged(0, 5, '', 'viewCount,desc'),
-          Api.getProductsPaged(0, 5, '', 'purchasePrice,desc'),
+          Api.getProductStatistics(selectedBranchId),
+          Api.getProductsPaged(0, 5, '', 'id,desc', selectedBranchId),
+          Api.getProductsPaged(0, 5, '', 'viewCount,desc', selectedBranchId),
+          Api.getProductsPaged(0, 5, '', 'purchasePrice,desc', selectedBranchId),
           Api.getDailyProductStats(7).catch(() => [])
         ]);
         
@@ -119,6 +121,20 @@ const ProductAnalytics = () => {
           value={`${Number(stats?.totalRealizedProfit || 0).toLocaleString()} ج.م`}
           icon="▤"
           defaults={{ color: 'sky', size: 'tile-wd-sm', order: 4 }}
+        />
+        <StatTile 
+          id="ana_cart"
+          label="إضافة للسلة"
+          value={stats?.totalCartCount || 0}
+          icon="🛒"
+          defaults={{ color: 'purple', size: 'tile-sq-sm', order: 5 }}
+        />
+        <StatTile 
+          id="ana_fav"
+          label="في المفضلة"
+          value={stats?.totalFavoriteCount || 0}
+          icon="❤️"
+          defaults={{ color: 'pink', size: 'tile-sq-sm', order: 6 }}
         />
       </div>
 

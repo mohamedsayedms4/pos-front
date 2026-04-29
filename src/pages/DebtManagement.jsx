@@ -4,9 +4,12 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
+import { useBranch } from '../context/BranchContext';
 
 const DebtManagement = () => {
     const { toast, confirm } = useGlobalUI();
+    const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
+    
     const [debts, setDebts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('RECEIVABLE'); // RECEIVABLE or PAYABLE
@@ -17,6 +20,8 @@ const DebtManagement = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const [pageSize] = useState(10);
+    const [selectedBranchId, setSelectedBranchId] = useState('');
+    const [branches, setBranches] = useState([]);
 
     // Modals
     const [showAddModal, setShowAddModal] = useState(false);
@@ -35,16 +40,29 @@ const DebtManagement = () => {
         entityId: null,
         totalAmount: '',
         reason: '',
-        installments: [{ amount: '', dueDate: new Date().toISOString().split('T')[0] }]
+        installments: [{ amount: '', dueDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })() }]
     });
 
     const [entities, setEntities] = useState([]); // For selection
     const [loadingEntities, setLoadingEntities] = useState(false);
 
-    const loadDebts = useCallback(async (page = 0, type = activeTab) => {
+    useEffect(() => {
+        const user = Api._getUser();
+        if (globalBranchId) {
+            setSelectedBranchId(globalBranchId);
+        } else if (user && user.branchId) {
+            setSelectedBranchId(user.branchId);
+        }
+        
+        if (contextBranches && contextBranches.length > 0) {
+            setBranches(contextBranches);
+        }
+    }, [globalBranchId, contextBranches]);
+
+    const loadDebts = useCallback(async (page = 0, type = activeTab, branchId = selectedBranchId) => {
         setLoading(true);
         try {
-            const res = await Api.getDebts(page, pageSize, type, statusFilter, entityTypeFilter, query);
+            const res = await Api.getDebts(page, pageSize, type, statusFilter, entityTypeFilter, query, branchId);
             setDebts(res.content || []);
             setTotalPages(res.totalPages || 0);
             setTotalElements(res.totalElements || 0);
@@ -53,11 +71,11 @@ const DebtManagement = () => {
         } finally {
             setLoading(false);
         }
-    }, [activeTab, statusFilter, entityTypeFilter, query, pageSize, toast]);
+    }, [activeTab, statusFilter, entityTypeFilter, query, pageSize, toast, selectedBranchId]);
 
     useEffect(() => {
-        loadDebts(currentPage);
-    }, [loadDebts, currentPage]);
+        loadDebts(currentPage, activeTab, selectedBranchId);
+    }, [loadDebts, currentPage, activeTab, selectedBranchId]);
 
     const handleTabChange = (type) => {
         setActiveTab(type);
@@ -68,10 +86,10 @@ const DebtManagement = () => {
         setLoadingEntities(true);
         try {
             if (type === 'CUSTOMER') {
-                const res = await Api.getCustomers(0, 1000, '');
+                const res = await Api.getCustomers(0, 1000, '', selectedBranchId);
                 setEntities(res.items || res.content || []);
             } else if (type === 'SUPPLIER') {
-                const res = await Api.getSuppliers(0, 1000, '');
+                const res = await Api.getSuppliers(0, 1000, '', '', selectedBranchId);
                 setEntities(res.items || res.content || []);
             } else {
                 setEntities([]);
@@ -232,7 +250,18 @@ const DebtManagement = () => {
             </div>
 
             <div className="toolbar card mb-3" style={{ padding: '15px' }}>
-                <div className="debt-toolbar">
+                <div className="debt-toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <select 
+                        className="form-control" 
+                        value={selectedBranchId} 
+                        onChange={(e) => setSelectedBranchId(e.target.value)}
+                        style={{ width: '180px' }}
+                        disabled={!Api.can('ROLE_ADMIN')}
+                    >
+                        <option value="">كل الفروع</option>
+                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+
                     <div className="search-input" style={{ flex: 2 }}>
                         <span className="search-icon">🔍</span>
                         <input

@@ -11,6 +11,9 @@ const Users = () => {
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const isAdmin = Api.isAdminOrBranchManager();
 
   // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
@@ -25,7 +28,7 @@ const Users = () => {
   const [activeUser, setActiveUser] = useState(null);
 
   // Add/Edit User Form
-  const [userForm, setUserForm] = useState({ name: '', email: '', password: '', roles: [], enabled: true, profilePicture: '' });
+  const [userForm, setUserForm] = useState({ name: '', email: '', password: '', roles: [], enabled: true, profilePicture: '', branchId: '' });
 
   // Access Form
   const [accessForm, setAccessForm] = useState({ roles: [], permissions: [] });
@@ -34,7 +37,7 @@ const Users = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'https://linuxstoreapi.digitalrace.net/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1'; // Standard base for image serving 
 
   // Debounce search
   useEffect(() => {
@@ -45,16 +48,17 @@ const Users = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    loadData(currentPage, pageSize, debouncedSearch);
-  }, [currentPage, debouncedSearch]);
+    loadData(currentPage, pageSize, debouncedSearch, selectedBranchId);
+  }, [currentPage, debouncedSearch, selectedBranchId]);
 
-  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch) => {
+  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const [usersRes, rolesData, permsData] = await Promise.all([
-        Api.getUsers(page, size, query),
+      const [usersRes, rolesData, permsData, branchesData] = await Promise.all([
+        Api.getUsers(page, size, query, branchId),
         roles.length === 0 ? Api.getRoles().catch(() => []) : Promise.resolve(roles),
-        permissions.length === 0 ? Api.getPermissions().catch(() => []) : Promise.resolve(permissions)
+        permissions.length === 0 ? Api.getPermissions().catch(() => []) : Promise.resolve(permissions),
+        branches.length === 0 ? Api.getBranches().catch(() => []) : Promise.resolve(branches)
       ]);
 
       setData(usersRes.items || usersRes.content || []);
@@ -64,6 +68,7 @@ const Users = () => {
 
       if (roles.length === 0) setRoles(rolesData);
       if (permissions.length === 0) setPermissions(permsData);
+      if (branches.length === 0) setBranches(branchesData);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -72,7 +77,7 @@ const Users = () => {
   };
 
   const openForm = () => {
-    setUserForm({ name: '', email: '', password: '', roles: [], enabled: true, profilePicture: '' });
+    setUserForm({ name: '', email: '', password: '', roles: [], enabled: true, profilePicture: '', branchId: '' });
     setActiveUser(null);
     setModalType('form');
   };
@@ -84,7 +89,8 @@ const Users = () => {
       password: '', // Keep empty for security, only change if provided
       roles: user.roles || [],
       enabled: user.enabled,
-      profilePicture: user.profilePicture || ''
+      profilePicture: user.profilePicture || '',
+      branchId: user.branchId || ''
     });
     setActiveUser(user);
     setModalType('form');
@@ -202,8 +208,8 @@ const Users = () => {
           />
           <StatTile
             id="usr_admins"
-            label="مسؤول"
-            value={data.filter(u => u.roles && u.roles.some(r => r.name === 'ADMIN' || r === 'ROLE_ADMIN' || r.name === 'ROLE_ADMIN')).length}
+            label="مسؤول / مدير فرع"
+            value={data.filter(u => u.roles && u.roles.some(r => r.includes('ADMIN') || r.includes('BRANCH_MANAGER'))).length}
             icon="🛡️"
             defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 2 }}
           />
@@ -220,6 +226,12 @@ const Users = () => {
           <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0 }}>👥 إدارة المستخدمين</h3>
             <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', flex: '1 1 100%', justifyContent: 'flex-end', alignItems: 'center' }}>
+              {isAdmin && (
+                <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
+                  <option value="">جميع الفروع</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
               <div className="search-input" style={{ flex: '1 1 200px', minWidth: '200px', maxWidth: '350px' }}>
                 <span className="search-icon">🔍</span>
                 <input
@@ -268,11 +280,12 @@ const Users = () => {
                               {u.profilePicture ? (
                                 <img src={`${API_BASE_URL}/products/images/${u.profilePicture}`} alt={u.name} className="user-avatar-img" />
                               ) : (
-                                <div className="user-avatar-placeholder" style={{ background: (u.roles || []).some(r => r.includes('ADMIN')) ? 'var(--gradient-primary)' : 'var(--gradient-emerald)' }}>
+                                <div className="user-avatar-placeholder" style={{ background: (u.roles || []).some(r => r.includes('ADMIN')) ? 'var(--gradient-primary)' : (u.roles || []).some(r => r.includes('BRANCH_MANAGER')) ? 'linear-gradient(135deg,#d97706,#f59e0b)' : 'var(--gradient-emerald)' }}>
                                   {(u.name || 'U').charAt(0).toUpperCase()}
                                 </div>
                               )}
                               {(u.roles || []).some(r => r.includes('ADMIN')) && <span className="admin-badge-dot" title="مسؤول النظام">⭐</span>}
+                              {!(u.roles || []).some(r => r.includes('ADMIN')) && (u.roles || []).some(r => r.includes('BRANCH_MANAGER')) && <span className="admin-badge-dot" title="مدير فرع" style={{ background: '#d97706' }}>🏢</span>}
                             </div>
                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</span>
                           </div>
@@ -367,6 +380,13 @@ const Users = () => {
                         <input id="avatarInput" type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                       </div>
                     </div>
+                  </div>
+                  <div className="form-group">
+                    <label>الفرع (مكان العمل)</label>
+                    <select className="form-control" name="branchId" value={userForm.branchId} onChange={(e) => setUserForm({ ...userForm, branchId: e.target.value })}>
+                      <option value="">-- اختر الفرع --</option>
+                      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
                   </div>
                   <div className="form-group">
                     <label>كلمة المرور {activeUser ? '(اتركه فارغاً للإبقاء على الحالية)' : '*'}</label>

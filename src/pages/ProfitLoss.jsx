@@ -4,22 +4,39 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
+import { useBranch } from '../context/BranchContext';
 
 const ProfitLoss = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useGlobalUI();
+  const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
 
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [branches, setBranches] = useState([]);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
   useEffect(() => {
+    const user = Api._getUser();
+    if (globalBranchId) {
+      setSelectedBranchId(globalBranchId);
+    } else if (user && user.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
+    
+    if (contextBranches && contextBranches.length > 0) {
+      setBranches(contextBranches);
+    }
+  }, [globalBranchId, contextBranches]);
+
+  useEffect(() => {
     fetchReport();
-  }, []);
+  }, [selectedBranchId]);
 
   const fetchReport = async () => {
     setLoading(true);
@@ -27,7 +44,7 @@ const ProfitLoss = () => {
       // API expects ISO strings or format that matches
       const startTime = dateRange.start + 'T00:00:00';
       const endTime = dateRange.end + 'T23:59:59';
-      const res = await Api.getProfitLossReport(startTime, endTime);
+      const res = await Api.getProfitLossReport(startTime, endTime, selectedBranchId);
       setData(res);
     } catch (err) {
       toast(err.message, 'error');
@@ -84,7 +101,18 @@ const ProfitLoss = () => {
         <div className="card-header">
           <h3>📊 فلترة التقرير المالي</h3>
           <div className="toolbar">
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <select 
+                className="form-control" 
+                value={selectedBranchId} 
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                style={{ width: '180px', height: '40px' }}
+                disabled={!Api.can('ROLE_ADMIN')}
+              >
+                <option value="">كل الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+
               <input 
                 type="date" 
                 className="form-control" 
@@ -111,8 +139,8 @@ const ProfitLoss = () => {
         {/* Main Stats Chart */}
         <div className="card">
           <div className="card-header"><h3>🔄 الهيكل المالي</h3></div>
-          <div className="card-body" style={{ height: '300px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="card-body" style={{ height: '300px', width: '100%', minHeight: '300px' }}>
+            <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={mainStats}>
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -130,9 +158,9 @@ const ProfitLoss = () => {
         {/* Expense Breakdown */}
         <div className="card">
           <div className="card-header"><h3>🍕 توزيع المصروفات</h3></div>
-          <div className="card-body" style={{ height: '300px' }}>
+          <div className="card-body" style={{ height: '300px', width: '100%', minHeight: '300px' }}>
             {expenseData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
                   <Pie
                     data={expenseData}

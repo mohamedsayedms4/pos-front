@@ -12,17 +12,21 @@ const PayrollDashboard = () => {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [generating, setGenerating] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const isAdmin = Api.isAdminOrBranchManager();
 
   useEffect(() => {
     loadData();
-  }, [month, year]);
+  }, [month, year, selectedBranchId]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [payrollData, usersData] = await Promise.all([
-        Api.getMonthlyPayrolls(month, year),
-        Api.getUsers(0, 1000) // Get all users to map names
+      const [payrollData, usersData, branchesData] = await Promise.all([
+        Api.getMonthlyPayrolls(month, year, selectedBranchId),
+        Api.getUsers(0, 1000), // Get all users to map names
+        branches.length === 0 ? Api.getBranches().catch(() => []) : Promise.resolve(branches)
       ]);
       
       const userMap = {};
@@ -33,6 +37,7 @@ const PayrollDashboard = () => {
       
       setUsers(userMap);
       setPayrolls(payrollData);
+      if (branches.length === 0) setBranches(branchesData);
     } catch (err) {
       toast('فشل في تحميل البيانات: ' + err.message, 'error');
     } finally {
@@ -125,6 +130,15 @@ const PayrollDashboard = () => {
         </div>
         
         <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
+          {isAdmin && (
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label style={{ fontSize: '0.8rem' }}>الفرع</label>
+              <select className="form-control" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
+                <option value="">جميع الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label style={{ fontSize: '0.8rem' }}>الشهر</label>
             <select className="form-control" value={month} onChange={e => setMonth(parseInt(e.target.value))}>

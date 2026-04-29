@@ -5,12 +5,16 @@ import StoreApi from '../services/storeApi';
 import { useStore } from '../context/StoreContext';
 import StoreLayout from '../components/store/StoreLayout';
 import ProductCard from '../components/store/ProductCard';
+import { useStoreAuth } from '../context/StoreAuthContext';
+import * as fbPixel from '../services/fbPixel';
 
 const StoreProductDetail = () => {
   const { id } = useParams();
   const { addToCart, storeInfo, setCheckoutOpen } = useStore();
+  const { storeCustomer } = useStoreAuth();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
+  const [productOffers, setProductOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mainImage, setMainImage] = useState(null);
@@ -19,6 +23,28 @@ const StoreProductDetail = () => {
   const handleBuyNow = () => {
     addToCart(product);
     setCheckoutOpen(true);
+  };
+
+  const handleUseOffer = (offer) => {
+    let newPrice = product.salePrice;
+    if (offer.discountType === 'PERCENTAGE') {
+        newPrice = product.salePrice - (product.salePrice * (offer.discountValue / 100));
+    } else {
+        newPrice = product.salePrice - offer.discountValue;
+    }
+    if (newPrice < 0) newPrice = 0;
+
+    const discountedProduct = {
+        ...product,
+        originalPrice: product.salePrice,
+        salePrice: newPrice,
+        appliedOfferId: offer.id,
+        appliedOfferLabel: offer.titleAr
+    };
+
+    setProduct(discountedProduct);
+    alert('تم تفعيل العرض بنجاح! السعر الجديد يظهر الآن ويمكنك إضافته للسلة.');
+    setProductOffers(prev => prev.filter(o => o.id !== offer.id));
   };
 
   const scrollRelated = (dir) => {
@@ -35,18 +61,28 @@ const StoreProductDetail = () => {
         const p = await StoreApi.getProduct(id);
         setProduct(p);
         if (p.imageUrls?.length > 0) setMainImage(StoreApi.getImageUrl(p.imageUrls[0]));
+        fbPixel.trackViewContent(p);
 
         // Load related products from same category
         if (p.categoryId) {
           const rel = await StoreApi.getProducts(0, 10, '', p.categoryId);
           setRelated(rel.items.filter(i => i.id !== p.id));
         }
+
+        if (storeCustomer) {
+            try {
+                const offersRes = await StoreApi.getMyOffersForProduct(p.id);
+                setProductOffers(offersRes.data || []);
+            } catch(e) {
+                console.error("Failed to fetch product offers", e);
+            }
+        }
       } catch (e) { setError(e.message); }
       finally { setLoading(false); }
     };
     load();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [id, storeCustomer]);
 
   if (loading) return (
     <StoreLayout>
@@ -60,7 +96,7 @@ const StoreProductDetail = () => {
   if (error || !product) return (
     <StoreLayout>
       <div className="ec-empty" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <span style={{ fontSize: '4rem' }}>⚠️</span>
+        <span style={{ fontSize: '4rem', color: '#e2e8f0' }}><i className="fas fa-exclamation-triangle"></i></span>
         <h3>عذراً، المنتج غير موجود</h3>
         <Link to="/store" className="ec-btn ec-btn-primary" style={{ marginTop: '20px', textDecoration: 'none' }}>العودة للمتجر</Link>
       </div>
@@ -83,7 +119,7 @@ const StoreProductDetail = () => {
           {/* Gallery */}
           <div className="ec-detail-gallery">
             <div className="ec-detail-main-img-wrapper">
-              {mainImage ? <img src={mainImage} alt={product.name} /> : <span style={{ fontSize: '3rem' }}>📦</span>}
+              {mainImage ? <img src={mainImage} alt={product.name} /> : <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box"></i></span>}
             </div>
             {product.imageUrls?.length > 1 && (
               <div className="ec-detail-thumbnails">
@@ -115,6 +151,33 @@ const StoreProductDetail = () => {
 
             <h1 className="ec-detail-title">{product.name}</h1>
 
+            {productOffers.length > 0 && (
+                <div style={{ background: '#fef3c7', border: '2px dashed #f59e0b', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '1.5rem', color: '#f59e0b' }}><i className="fas fa-gift"></i></span>
+                        <h3 style={{ margin: 0, color: '#b45309' }}>عروض مخصصة لك!</h3>
+                    </div>
+                    {productOffers.map(offer => (
+                        <div key={offer.id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <strong style={{ color: '#d97706', display: 'block' }}>{offer.titleAr}</strong>
+                                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{offer.messageAr}</span>
+                                <div style={{ fontWeight: 'bold', marginTop: '5px' }}>
+                                    خصم: {offer.discountType === 'PERCENTAGE' ? `${offer.discountValue}%` : `${offer.discountValue} ج.م`}
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => handleUseOffer(offer)}
+                                className="ec-btn ec-btn-primary" 
+                                style={{ padding: '8px 15px', fontSize: '0.9rem' }}
+                            >
+                                تطبيق العرض
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <div className="ec-detail-price-wrapper">
               <span className="ec-detail-price">{Number(product.salePrice).toLocaleString()}</span>
               <span className="ec-detail-currency">{storeInfo?.currency || 'جنيه'}</span>
@@ -122,7 +185,17 @@ const StoreProductDetail = () => {
 
             <div className={`ec-detail-stock-badge ${product.inStock ? 'ec-detail-stock-in' : 'ec-detail-stock-out'}`}>
               <strong>
-                {product.inStock ? '✅ متوفر - جاهز للشحن' : '❌ عذراً، غير متوفر حالياً'}
+                {product.inStock ? (
+                  <>
+                    <i className="fas fa-check-circle" style={{ marginLeft: '8px' }}></i>
+                    متوفر - جاهز للشحن
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-times-circle" style={{ marginLeft: '8px' }}></i>
+                    عذراً، غير متوفر حالياً
+                  </>
+                )}
               </strong>
             </div>
 
@@ -136,6 +209,7 @@ const StoreProductDetail = () => {
                 onClick={handleBuyNow}
                 disabled={!product.inStock}
               >
+                <i className="fas fa-bolt" style={{ marginLeft: '8px' }}></i>
                 اشتري الآن
               </button>
               <button
@@ -143,6 +217,7 @@ const StoreProductDetail = () => {
                 onClick={() => addToCart(product)}
                 disabled={!product.inStock}
               >
+                <i className="fas fa-shopping-cart" style={{ marginLeft: '8px' }}></i>
                 أضف للسلة
               </button>
             </div>
@@ -158,7 +233,7 @@ const StoreProductDetail = () => {
               <div className="ec-section-line" />
             </div>
             <div className="ec-products-carousel-outer">
-              <button className="ec-carousel-nav prev" onClick={() => scrollRelated('right')}><span>›</span></button>
+              <button className="ec-carousel-nav prev" onClick={() => scrollRelated('right')}><i className="fas fa-chevron-right"></i></button>
               <div className="ec-products-carousel-scroll" ref={relatedScrollRef}>
                 {related.map(p => (
                   <div key={p.id} className="ec-product-carousel-item">
@@ -166,7 +241,7 @@ const StoreProductDetail = () => {
                   </div>
                 ))}
               </div>
-              <button className="ec-carousel-nav next" onClick={() => scrollRelated('left')}><span>‹</span></button>
+              <button className="ec-carousel-nav next" onClick={() => scrollRelated('left')}><i className="fas fa-chevron-left"></i></button>
             </div>
           </div>
         )}

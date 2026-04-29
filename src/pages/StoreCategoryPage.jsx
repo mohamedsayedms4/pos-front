@@ -96,7 +96,7 @@ const StoreCategoryPage = () => {
 
         {products.length === 0 ? (
           <div className="ec-empty" style={{ minHeight: '30vh' }}>
-            <span style={{ fontSize: '3rem' }}>📦</span>
+            <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box-open"></i></span>
             <p>لا توجد منتجات في هذا القسم حالياً</p>
             <Link to="/store" className="ec-btn ec-btn-ghost" style={{ marginTop: '20px', display: 'inline-block', textDecoration: 'none' }}>تصفح منتجات أخرى</Link>
           </div>

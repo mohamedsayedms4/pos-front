@@ -15,6 +15,9 @@ const StockReceipts = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analytics, setAnalytics] = useState({ pending: 0, received: 0, completed: 0, trend: [] });
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const isAdmin = Api.isAdminOrBranchManager();
   
   // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
@@ -33,13 +36,13 @@ const StockReceipts = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    loadReceipts(currentPage, pageSize, debouncedSearch);
-  }, [currentPage, debouncedSearch]);
+    loadReceipts(currentPage, pageSize, debouncedSearch, selectedBranchId);
+  }, [currentPage, debouncedSearch, selectedBranchId]);
 
-  const loadReceipts = async (pageIndex = currentPage, size = pageSize, query = debouncedSearch) => {
+  const loadReceipts = async (pageIndex = currentPage, size = pageSize, query = debouncedSearch, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const response = await Api.getStockReceipts(pageIndex, size, query);
+      const response = await Api.getStockReceipts(pageIndex, size, query, branchId);
       setReceipts(response?.items || []);
       setTotalPages(response?.totalPages || 1);
       setTotalElements(response?.totalItems || 0);
@@ -82,7 +85,12 @@ const StockReceipts = () => {
     }
   };
 
-  useEffect(() => { loadAnalytics(); }, []);
+  useEffect(() => {
+    loadAnalytics();
+    if (isAdmin && branches.length === 0) {
+      Api.getBranches().then(setBranches).catch(() => {});
+    }
+  }, []);
 
   const handleSaveQuantities = async (receiptId, qtys = null) => {
     confirm('هل أنت متأكد من تسجيل هذه الكميات؟ سيتم حفظها دون تحديث المخزون الفعلي.', async () => {
@@ -169,9 +177,9 @@ const StockReceipts = () => {
           <h3>📊 اتجاه التوريد (آخر 15 يوم توريد)</h3>
           {analyticsLoading && <small style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>جاري التحديث...</small>}
         </div>
-        <div className="card-body" style={{ height: '280px', padding: '15px' }}>
+        <div className="card-body" style={{ minHeight: '300px', height: '300px', padding: '15px', position: 'relative' }}>
           {analytics.trend.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={analytics.trend} stackOffset="sign">
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="date" tick={{fontSize: 10, fill: 'var(--text-dim)'}} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
@@ -193,6 +201,12 @@ const StockReceipts = () => {
         <div className="card-header">
           <h3>📦 أذونات استلام المخزون</h3>
           <div className="toolbar">
+            {isAdmin && (
+              <select className="form-control" value={selectedBranchId} onChange={e => { setSelectedBranchId(e.target.value); setCurrentPage(0); }} style={{ width: '150px', height: '40px' }}>
+                <option value="">جميع الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
             <div className="search-input">
               <span className="search-icon">🔍</span>
               <input

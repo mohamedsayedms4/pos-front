@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
@@ -9,6 +10,12 @@ const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const { toast, confirm } = useGlobalUI();
+  const [searchParams] = useSearchParams();
+
+  // Branch Selection
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [branches, setBranches] = useState([]);
+  const isAdmin = Api.isAdminOrBranchManager();
 
   // Filters & Pagination
   const [currentPage, setCurrentPage] = useState(0);
@@ -39,13 +46,28 @@ const Expenses = () => {
   ];
 
   useEffect(() => {
+    const user = Api._getUser();
+    const branchFromUrl = searchParams.get('branchId');
+
+    if (branchFromUrl) {
+      setSelectedBranchId(branchFromUrl);
+    } else if (user?.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
+
+    if (isAdmin) {
+      Api._request('/branches').then(res => setBranches(res.data || [])).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
     loadExpenses();
-  }, [currentPage, category, startDate, endDate]);
+  }, [currentPage, category, startDate, endDate, selectedBranchId]);
 
   const loadExpenses = async () => {
     setLoading(true);
     try {
-      const res = await Api.getExpenses(currentPage, 12, category, startDate, endDate);
+      const res = await Api.getExpenses(currentPage, 12, category, startDate, endDate, selectedBranchId);
       setExpenses(res.content || []);
       setTotalPages(res.totalPages || 0);
     } catch (err) {
@@ -58,7 +80,7 @@ const Expenses = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await Api.createExpense(form);
+      await Api.createExpense(form, selectedBranchId);
       toast('تم تسجيل المصروف بنجاح', 'success');
       setShowModal(false);
       setForm({
@@ -121,6 +143,12 @@ const Expenses = () => {
           <h3>🏢 إدارة المصروفات</h3>
           <div className="toolbar">
             <div style={{ display: 'flex', gap: '10px' }}>
+              {isAdmin && (
+                  <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
+                    <option value="">جميع الفروع</option>
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+              )}
               <select className="form-control" value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '180px', height: '40px', padding: '0 10px' }}>
                 <option value="">جميع التصنيفات</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}

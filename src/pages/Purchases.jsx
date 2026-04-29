@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, useSearchParams } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
@@ -18,11 +18,15 @@ import {
   Pie,
   Cell
 } from 'recharts';
-
+import { useBranch } from '../context/BranchContext';
 
 const Purchases = () => {
   const { toast } = useGlobalUI();
   const { supplierName } = useParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
+  
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState(supplierName || '');
   const [debouncedSearch, setDebouncedSearch] = useState(supplierName || '');
@@ -36,6 +40,8 @@ const Purchases = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
 
   // Debounce search
   useEffect(() => {
@@ -58,6 +64,10 @@ const Purchases = () => {
     paidAmount: 0
   });
   const [invoiceItems, setInvoiceItems] = useState([]);
+  const [availableBranches, setAvailableBranches] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [formSelectedBranchId, setFormSelectedBranchId] = useState('');
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
 
   // Item form — includes unit selection
   const [itemForm, setItemForm] = useState({
@@ -74,10 +84,28 @@ const Purchases = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
 
   // ─── Data Loading ─────────────────────────────────────────────────────────
-  const loadData = async (page = 0, size = 10, query = debouncedSearch) => {
+  useEffect(() => {
+    const user = Api._getUser();
+    const branchFromUrl = searchParams.get('branchId');
+    
+    if (branchFromUrl) {
+      setSelectedBranchId(branchFromUrl);
+    } else if (globalBranchId) {
+      setSelectedBranchId(globalBranchId);
+    } else if (user && user.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
+
+    if (contextBranches && contextBranches.length > 0) {
+      setBranches(contextBranches);
+      setAvailableBranches(contextBranches);
+    }
+  }, [location.search, globalBranchId, contextBranches]);
+
+  const loadData = async (page = 0, size = 10, query = debouncedSearch, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const res = await Api.getPurchases(page, size, query);
+      const res = await Api.getPurchases(page, size, query, branchId);
       // Support both PaginatedResponse and direct content
       const itemsArray = res.items || res.content || (Array.isArray(res) ? res : []);
       setData(itemsArray);
@@ -91,10 +119,10 @@ const Purchases = () => {
     }
   };
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = async (branchId = selectedBranchId) => {
     setLoadingAnalytics(true);
     try {
-      const res = await Api.getPurchaseAnalytics();
+      const res = await Api.getPurchaseAnalytics(branchId);
       setAnalytics(res);
     } catch (err) {
       console.error('Failed to load purchase analytics', err);
@@ -104,11 +132,11 @@ const Purchases = () => {
   };
 
   useEffect(() => {
-    loadData(currentPage, pageSize, debouncedSearch);
+    loadData(currentPage, pageSize, debouncedSearch, selectedBranchId);
     if (currentPage === 0 && !debouncedSearch) {
-      loadAnalytics();
+      loadAnalytics(selectedBranchId);
     }
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage, debouncedSearch, selectedBranchId]);
 
   useEffect(() => {
     if (supplierName) {
@@ -117,21 +145,33 @@ const Purchases = () => {
     }
   }, [supplierName]);
 
-  // Server-side filtering is now handled in loadData
-
   // ─── Form Open ────────────────────────────────────────────────────────────
   const openForm = async () => {
     try {
+      const user = Api._getUser();
+      const initialBranchId = selectedBranchId || user?.branchId || '';
+      setFormSelectedBranchId(initialBranchId);
+
       const [sups, prods] = await Promise.all([
-        Api.getSuppliers(0, 1000), // Fetch more for selection
-        Api.getProducts(0, 1000)
+        Api.getSuppliers(0, 1000, '', '', initialBranchId), 
+        Api.getProductsPaged(0, 1000, '', '', initialBranchId)
       ]);
-      // Extract array from response (support both array and Page object)
+      
       const supsArray = Array.isArray(sups) ? sups : (sups.items || sups.content || sups);
       const prodsArray = Array.isArray(prods) ? prods : (prods.items || prods.content || prods);
 
       setSuppliers(supsArray);
       setProducts(prodsArray);
+
+      if (initialBranchId) {
+        const whs = await Api.getWarehousesByBranch(initialBranchId);
+        setWarehouses(whs);
+        if (whs.length > 0) setSelectedWarehouseId(whs[0].id);
+      } else {
+        setWarehouses([]);
+        setSelectedWarehouseId('');
+      }
+
       setInvoiceForm({ supplierId: '', invoiceDate: new Date().toISOString().split('T')[0], paidAmount: 0 });
       setInvoiceItems([]);
       setItemForm({ productId: '', unitId: '', quantity: 1, unitPrice: 0 });
@@ -139,6 +179,33 @@ const Purchases = () => {
       setModalType('form');
     } catch (err) {
       toast('فشل في جلب البيانات الأساسية', 'error');
+    }
+  };
+
+  const handleBranchChange = async (branchId) => {
+    setFormSelectedBranchId(branchId);
+    if (branchId) {
+      try {
+        const whs = await Api.getWarehousesByBranch(branchId);
+        setWarehouses(whs);
+        if (whs.length > 0) setSelectedWarehouseId(whs[0].id);
+        else setSelectedWarehouseId('');
+
+        // Reload suppliers and products for the new branch
+        const [sups, prods] = await Promise.all([
+          Api.getSuppliers(0, 1000, '', '', branchId), 
+          Api.getProductsPaged(0, 1000, '', '', branchId)
+        ]);
+        setSuppliers(Array.isArray(sups) ? sups : (sups.items || sups.content || sups));
+        setProducts(Array.isArray(prods) ? prods : (prods.items || prods.content || prods));
+
+      } catch {
+        setWarehouses([]);
+        setSelectedWarehouseId('');
+      }
+    } else {
+      setWarehouses([]);
+      setSelectedWarehouseId('');
     }
   };
 
@@ -253,9 +320,17 @@ const Purchases = () => {
     if (!invoiceForm.supplierId) { toast('يرجى اختيار المورد', 'warning'); return; }
     if (invoiceItems.length === 0) { toast('يجب إضافة منتج واحد على الأقل', 'warning'); return; }
 
+    if (!formSelectedBranchId || !selectedWarehouseId) {
+      toast('يرجى اختيار الفرع والمخزن', 'warning');
+      setSaving(false);
+      return;
+    }
+
     setSaving(true);
     const payload = {
       supplierId: parseInt(invoiceForm.supplierId),
+      branchId: parseInt(formSelectedBranchId),
+      warehouseId: parseInt(selectedWarehouseId),
       invoiceDate: new Date(invoiceForm.invoiceDate).toISOString(),
       paidAmount: parseFloat(invoiceForm.paidAmount) || 0,
       items: invoiceItems.map(item => ({
@@ -306,7 +381,7 @@ const Purchases = () => {
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="page-section">
+      <div className="page-section" style={{ direction: 'rtl' }}>
         {/* Analytics Dashboard */}
         {!loadingAnalytics && analytics && (
           <div className="analytics-section" style={{ marginBottom: '24px' }}>
@@ -319,7 +394,7 @@ const Purchases = () => {
                 </div>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
                   <div style={{ width: '180px', height: '180px' }}>
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       <PieChart>
                         <Pie
                           data={['PAID', 'PARTIAL', 'UNPAID'].map(status => {
@@ -419,7 +494,7 @@ const Purchases = () => {
                 <h4 style={{ fontSize: '0.9rem', margin: 0 }}>📈 إجمالي المشتريات اليومية (أخر 30 يوم)</h4>
               </div>
               <div style={{ height: '200px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <ComposedChart data={analytics.dailyTrend.map(d => ({
                     date: new Date(d.statDate).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
                     total: d.totalPurchases
@@ -444,6 +519,17 @@ const Purchases = () => {
           <div className="card-header">
             <h3>🛒 إدارة المشتريات</h3>
             <div className="toolbar">
+              <select 
+                className="form-control" 
+                value={selectedBranchId} 
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                disabled={!Api.can('ROLE_ADMIN')}
+              >
+                <option value="">كل الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+
               <div className="search-input">
                 <span className="search-icon">🔍</span>
                 <input
@@ -562,6 +648,34 @@ const Purchases = () => {
               </div>
               <div className="modal-body">
                 <form id="purchaseForm" onSubmit={handleSaveInvoice}>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>الفرع *</label>
+                      <select 
+                        className="form-control" 
+                        value={formSelectedBranchId} 
+                        onChange={(e) => handleBranchChange(e.target.value)}
+                        disabled={!Api.can('ROLE_ADMIN')}
+                        required
+                      >
+                        <option value="">-- اختر الفرع --</option>
+                        {availableBranches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>المخزن (المستلم) *</label>
+                      <select 
+                        className="form-control" 
+                        value={selectedWarehouseId} 
+                        onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                        required
+                      >
+                        <option value="">-- اختر المخزن --</option>
+                        {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
 
                   {/* Header fields */}
                   <div className="form-row">
@@ -724,50 +838,28 @@ const Purchases = () => {
                         </thead>
                         <tbody>
                           {invoiceItems.length === 0 ? (
-                            <tr>
-                              <td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
-                                لم يتم إضافة منتجات بعد
+                            <tr><td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>لا توجد أصناف مضافة</td></tr>
+                          ) : invoiceItems.map((item, idx) => (
+                            <tr key={idx}>
+                              <td>{item.name}</td>
+                              <td><small>{item.unitLabel}</small></td>
+                              <td>{item.quantity}</td>
+                              <td>{item.qtyInBase} {item.unitName}</td>
+                              <td>{item.unitPrice.toFixed(2)}</td>
+                              <td style={{ fontWeight: 600 }}>{item.totalPrice.toFixed(2)}</td>
+                              <td>
+                                <button type="button" className="btn btn-icon btn-ghost" onClick={() => handleRemoveItem(idx)}>🗑️</button>
                               </td>
                             </tr>
-                          ) : (
-                            invoiceItems.map((item, index) => (
-                              <tr key={index}>
-                                <td style={{ fontWeight: 600 }}>{item.name}</td>
-                                <td>
-                                  <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{item.unitLabel}</div>
-                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.packagingDesc}</div>
-                                </td>
-                                <td style={{ textAlign: 'center' }}>{item.quantity}</td>
-                                <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
-                                  {item.qtyInBase.toFixed(2)} {item.unitName}
-                                </td>
-                                <td>{Number(item.unitPrice).toFixed(2)}</td>
-                                <td style={{ fontWeight: 700 }}>
-                                  {(item.totalPrice).toFixed(2)}
-                                </td>
-                                <td>
-                                  <button
-                                    type="button"
-                                    className="btn btn-icon btn-ghost"
-                                    style={{ color: 'var(--metro-red)' }}
-                                    onClick={() => handleRemoveItem(index)}
-                                  >
-                                    ✕
-                                  </button>
-                                </td>
-                              </tr>
-                            ))
-                          )}
+                          ))}
                         </tbody>
-                        {invoiceItems.length > 0 && (
-                          <tfoot>
-                            <tr>
-                              <th colSpan="5" style={{ textAlign: 'left' }}>إجمالي الفاتورة:</th>
-                              <th>{invoiceTotal.toFixed(2)}</th>
-                              <th></th>
-                            </tr>
-                          </tfoot>
-                        )}
+                        <tfoot>
+                          <tr style={{ background: 'var(--bg-elevated)', fontWeight: 800 }}>
+                            <td colSpan="5" style={{ textAlign: 'left' }}>إجمالي الفاتورة:</td>
+                            <td style={{ color: 'var(--metro-blue)', fontSize: '1.1rem' }}>{invoiceTotal.toFixed(2)}</td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
                       </table>
                     </div>
                   </div>
@@ -785,38 +877,37 @@ const Purchases = () => {
       )}
 
       {/* ═══ Modal: Payment ══════════════════════════════════════════════════ */}
-      {modalType === 'payment' && activePurchase && (
+      {modalType === 'payment' && (
         <ModalContainer>
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal" style={{ maxWidth: '400px' }}>
+            <div className="modal" style={{ maxWidth: '450px' }}>
               <div className="modal-header">
-                <h3>سداد دفعة: {activePurchase.invoiceNumber}</h3>
+                <h3>تسجيل دفعة للمورد — {activePurchase.supplierName}</h3>
                 <button className="modal-close" onClick={closeModal}>✕</button>
               </div>
               <div className="modal-body">
-                <form id="purchasePaymentForm" onSubmit={handleSavePayment}>
+                <p style={{ marginBottom: '15px' }}>رقم الفاتورة: <strong>{activePurchase.invoiceNumber}</strong></p>
+                <p style={{ marginBottom: '15px' }}>المتبقي: <strong style={{ color: 'var(--metro-red)' }}>{Number(activePurchase.remainingAmount).toFixed(2)} ج.م</strong></p>
+                
+                <form id="paymentForm" onSubmit={handleSavePayment}>
                   <div className="form-group">
-                    <label>المتبقي من الفاتورة</label>
-                    <input className="form-control" type="text" value={Number(activePurchase.remainingAmount).toFixed(2)} disabled />
-                  </div>
-                  <div className="form-group">
-                    <label>المبلغ المراد سداده *</label>
+                    <label>المبلغ المدفوع *</label>
                     <input
                       className="form-control"
                       type="number"
                       step="0.01"
+                      max={activePurchase.remainingAmount}
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
                       required
-                      max={activePurchase.remainingAmount}
                     />
                   </div>
                 </form>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="purchasePaymentForm" className="btn btn-success" disabled={saving}>
-                  {saving ? 'جاري الدفع...' : 'تأكيد الدفع'}
+                <button type="submit" form="paymentForm" className="btn btn-success" disabled={saving}>
+                  {saving ? 'جاري الحفظ...' : 'تأكيد الدفع'}
                 </button>
               </div>
             </div>
@@ -824,135 +915,68 @@ const Purchases = () => {
         </ModalContainer>
       )}
 
-      {/* ═══ Modal: Invoice Details ══════════════════════════════════════════ */}
-      {modalType === 'details' && activePurchase && (
+      {/* ═══ Modal: Details ══════════════════════════════════════════════════ */}
+      {modalType === 'details' && (
         <ModalContainer>
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal" style={{ maxWidth: '680px' }}>
+            <div className="modal" style={{ maxWidth: '700px' }}>
               <div className="modal-header">
-                <h3>📋 تفاصيل الفاتورة: {activePurchase.invoiceNumber}</h3>
+                <h3>تفاصيل فاتورة المشتريات</h3>
                 <button className="modal-close" onClick={closeModal}>✕</button>
               </div>
               <div className="modal-body">
-
-                {/* Invoice summary */}
-                <div style={{
-                  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px',
-                  marginBottom: '20px', padding: '16px',
-                  background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)'
-                }}>
-                  <div><small style={{ color: 'var(--text-muted)' }}>المورد</small><div style={{ fontWeight: 600 }}>{activePurchase.supplierName}</div></div>
-                  <div><small style={{ color: 'var(--text-muted)' }}>التاريخ</small><div style={{ fontWeight: 600 }}>{activePurchase.invoiceDate ? new Date(activePurchase.invoiceDate).toLocaleDateString('ar-EG') : '—'}</div></div>
-                  <div><small style={{ color: 'var(--text-muted)' }}>المدفوع</small><div style={{ fontWeight: 600, color: 'var(--accent-emerald)' }}>{Number(activePurchase.paidAmount).toFixed(2)}</div></div>
-                  <div><small style={{ color: 'var(--text-muted)' }}>المتبقي</small><div style={{ fontWeight: 600, color: 'var(--metro-red)' }}>{Number(activePurchase.remainingAmount).toFixed(2)}</div></div>
+                <div className="invoice-header-info" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
                   <div>
-                    <small style={{ color: 'var(--text-muted)' }}>حالة الاستلام</small>
-                    <div>
-                      {activePurchase.receiptStatus === 'RECEIVED' ? 
-                        <span className="badge badge-success">تم الاستلام</span> : 
-                        <span className="badge badge-warning">بانتظار الاستلام</span>
-                      }
-                    </div>
+                    <p>رقم الفاتورة: <strong>{activePurchase.invoiceNumber}</strong></p>
+                    <p>المورد: <strong>{activePurchase.supplierName}</strong></p>
+                    <p>الفرع: <strong>{activePurchase.branchName || '—'}</strong></p>
+                  </div>
+                  <div>
+                    <p>التاريخ: <strong>{new Date(activePurchase.invoiceDate).toLocaleDateString('ar-EG')}</strong></p>
+                    <p>المخزن: <strong>{activePurchase.warehouseName || '—'}</strong></p>
+                    <p>الحالة: <strong>{activePurchase.status === 'PAID' ? 'مدفوعة' : 'آجلة/جزئي'}</strong></p>
                   </div>
                 </div>
 
-                {/* Items */}
-                <h4 style={{ marginBottom: '10px' }}>قائمة المنتجات المستلمة</h4>
-                {(!activePurchase.items || !activePurchase.items.length) ? (
-                  <div className="empty-state" style={{ padding: '20px' }}>لا توجد منتجات</div>
-                ) : (
+                <div className="table-wrapper">
                   <table className="data-table">
                     <thead>
                       <tr>
                         <th>المنتج</th>
-                        <th>الوحدة</th>
                         <th>الكمية</th>
-                        <th>يعادل</th>
-                        <th>السعر</th>
+                        <th>سعر الوحدة</th>
                         <th>الإجمالي</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {activePurchase.items.map((item, idx) => {
-                        const factor = item.conversionFactor ? Number(item.conversionFactor) : 1;
-                        const qtyBase = item.quantityInBaseUnit ?? (item.quantity * factor);
-                        const isBaseUnit = !item.unitId || factor === 1;
-                        return (
-                          <tr key={idx}>
-                            <td style={{ fontWeight: 600 }}>{item.productName}</td>
-                            <td>
-                              <div style={{ fontWeight: 600 }}>{item.unitName}</div>
-                              {!isBaseUnit && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>كل وحدة تحتوي على {factor} قطعة</div>}
-                            </td>
-                            <td>{item.quantity}</td>
-                            <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
-                              {Number(qtyBase).toFixed(2)} قطعة
-                            </td>
-                            <td>{Number(item.unitPrice).toFixed(2)}</td>
-                            <td style={{ fontWeight: 700 }}>{Number(item.totalPrice).toFixed(2)}</td>
-                          </tr>
-                        );
-                      })}
+                      {activePurchase.items?.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>{item.productName}</td>
+                          <td>{item.quantity} {item.unitName}</td>
+                          <td>{item.unitPrice.toFixed(2)}</td>
+                          <td style={{ fontWeight: 600 }}>{item.totalPrice.toFixed(2)}</td>
+                        </tr>
+                      ))}
                     </tbody>
                     <tfoot>
+                      <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                        <td colSpan="3" style={{ textAlign: 'left' }}>إجمالي الفاتورة:</td>
+                        <td style={{ fontWeight: 800, fontSize: '1.1rem' }}>{Number(activePurchase.totalAmount).toFixed(2)} ج.م</td>
+                      </tr>
                       <tr>
-                        <th colSpan="5" style={{ textAlign: 'left' }}>الإجمالي النهائي:</th>
-                        <th>{Number(activePurchase.totalAmount).toFixed(2)}</th>
+                        <td colSpan="3" style={{ textAlign: 'left' }}>المدفوع:</td>
+                        <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>{Number(activePurchase.paidAmount).toFixed(2)} ج.م</td>
+                      </tr>
+                      <tr>
+                        <td colSpan="3" style={{ textAlign: 'left' }}>المتبقي:</td>
+                        <td style={{ color: 'var(--metro-red)', fontWeight: 800 }}>{Number(activePurchase.remainingAmount).toFixed(2)} ج.م</td>
                       </tr>
                     </tfoot>
                   </table>
-                )}
+                </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إغلاق</button>
-                {activePurchase.receiptStatus === 'PENDING' && Api.can('STOCK_WRITE') && (
-                  <button 
-                    type="button"
-                    className="btn btn-primary" 
-                    onClick={async () => {
-                      try {
-                        const res = await Api.getStockReceipts(0, 100);
-                        // Find the PENDING receipt for this invoice
-                        const receipt = res.items.find(r => r.purchaseInvoiceId === activePurchase.id && r.status === 'PENDING');
-                        if (receipt) {
-                          confirm('هل أنت متأكد من تسجيل استلام هذه الشحنة؟ سيتم حفظ الكميات دون تحديث المخزون حالياً.', async () => {
-                            await Api.saveStockReceiptQuantities(receipt.id);
-                            toast('تم تسجيل الاستلام بنجاح. يمكنك الآن الإضافة للمخزن.', 'success');
-                            loadData();
-                            closeModal();
-                          });
-                        } else {
-                          toast('لم يتم العثور على إذن استلام لهذه الفاتورة', 'error');
-                        }
-                      } catch (err) { toast(err.message, 'error'); }
-                    }}
-                  >
-                    📦 تسجيل الاستلام
-                  </button>
-                )}
-                {activePurchase.receiptStatus === 'RECEIVED' && Api.can('STOCK_WRITE') && (
-                  <button 
-                    type="button"
-                    className="btn btn-success" 
-                    onClick={async () => {
-                      try {
-                        const res = await Api.getStockReceipts(0, 100);
-                        // Find the RECEIVED receipt for this invoice
-                        const receipt = res.items.find(r => r.purchaseInvoiceId === activePurchase.id && r.status === 'RECEIVED');
-                        if (receipt) {
-                          confirm('هل أنت متأكد من إضافة الأصناف للمخزن وتحديث الرصيد الفعلي؟', async () => {
-                            await Api.commitStockReceiptToInventory(receipt.id);
-                            toast('تمت إضافة الكميات للمخزن بنجاح', 'success');
-                            loadData();
-                            closeModal();
-                          });
-                        }
-                      } catch (err) { toast(err.message, 'error'); }
-                    }}
-                  >
-                    ➕ إضافة للمخزن
-                  </button>
-                )}
+                <button className="btn btn-secondary" onClick={closeModal}>إغلاق</button>
               </div>
             </div>
           </div>

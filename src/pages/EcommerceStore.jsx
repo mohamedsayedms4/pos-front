@@ -31,12 +31,12 @@ const CategoryRow = ({ category, addToCart, onSeeAll, currency }) => {
       <div className="ec-category-row-header">
         <h3>{category.name}</h3>
         <button onClick={() => onSeeAll(category.id)} className="ec-see-all-btn">
-          عرض الكل <span>←</span>
+          عرض الكل <i className="fas fa-arrow-left" style={{ marginRight: '5px', fontSize: '0.8rem' }}></i>
         </button>
       </div>
 
       <div className="ec-row-carousel-container">
-        <button className="ec-row-nav-btn prev" onClick={() => scroll('right')}><span>›</span></button>
+        <button className="ec-row-nav-btn prev" onClick={() => scroll('right')}><i className="fas fa-chevron-right"></i></button>
         <div className="ec-row-carousel-scroll" ref={scrollRef}>
           {loading ? (
             [...Array(4)].map((_, i) => (
@@ -52,7 +52,7 @@ const CategoryRow = ({ category, addToCart, onSeeAll, currency }) => {
             ))
           )}
         </div>
-        <button className="ec-row-nav-btn next" onClick={() => scroll('left')}><span>‹</span></button>
+        <button className="ec-row-nav-btn next" onClick={() => scroll('left')}><i className="fas fa-chevron-left"></i></button>
       </div>
     </div>
   );
@@ -172,11 +172,11 @@ const EcommerceStore = () => {
       {showPaymentBanner && paymentStatus && (
         <div className={`ec-payment-banner ${paymentStatus}`}>
           {paymentStatus === 'success' ? (
-            <span>✅ تم الدفع بنجاح! طلبك رقم <strong>{paymentOrderNumber}</strong> قيد المراجعة.</span>
+            <span><i className="fas fa-check-circle" style={{ marginLeft: '8px' }}></i> تم الدفع بنجاح! طلبك رقم <strong>{paymentOrderNumber}</strong> قيد المراجعة.</span>
           ) : (
-            <span>❌ تم إلغاء عملية الدفع للطلب <strong>{paymentOrderNumber}</strong>. يمكنك المحاولة مرة أخرى.</span>
+            <span><i className="fas fa-times-circle" style={{ marginLeft: '8px' }}></i> تم إلغاء عملية الدفع للطلب <strong>{paymentOrderNumber}</strong>. يمكنك المحاولة مرة أخرى.</span>
           )}
-          <button className="ec-payment-banner-close" onClick={() => { setShowPaymentBanner(false); window.history.replaceState({}, '', '/store'); }}>✕</button>
+          <button className="ec-payment-banner-close" onClick={() => { setShowPaymentBanner(false); window.history.replaceState({}, '', '/store'); }}><i className="fas fa-times"></i></button>
         </div>
       )}
 
@@ -213,7 +213,7 @@ const EcommerceStore = () => {
             <h2 className="ec-section-title-premium">تسوق بالفئة</h2>
             <div className="ec-cat-icons-wrapper">
               <button className="ec-cat-arrow prev" onClick={() => scrollCategories('right')}>
-                <span className="ec-arrow-icon">›</span>
+                <span className="ec-arrow-icon"><i className="fas fa-chevron-right"></i></span>
               </button>
 
               <div className="ec-cat-icons-scroll" ref={catScrollRef}>
@@ -227,7 +227,7 @@ const EcommerceStore = () => {
                       {cat.imageUrl ? (
                         <img src={`${SERVER_URL}${cat.imageUrl}`} alt={cat.name} />
                       ) : (
-                        <span className="ec-cat-fallback">📁</span>
+                        <span className="ec-cat-fallback"><i className="fas fa-folder"></i></span>
                       )}
                     </div>
                     <span className="ec-cat-name-premium">{cat.name}</span>
@@ -235,7 +235,7 @@ const EcommerceStore = () => {
                 ))}
               </div>
               <button className="ec-cat-arrow next" onClick={() => scrollCategories('left')}>
-                <span className="ec-arrow-icon">‹</span>
+                <span className="ec-arrow-icon"><i className="fas fa-chevron-left"></i></span>
               </button>
             </div>
           </section>
@@ -284,12 +284,12 @@ const EcommerceStore = () => {
               </div>
             ) : products.length === 0 ? (
               <div className="ec-empty">
-                <span style={{ fontSize: '3rem' }}>📦</span>
+                <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box-open"></i></span>
                 <p>لا توجد منتجات</p>
               </div>
             ) : (
               <div className="ec-products-carousel-outer">
-                <button className="ec-carousel-nav prev" onClick={() => scrollProds('right')}><span>›</span></button>
+                <button className="ec-carousel-nav prev" onClick={() => scrollProds('right')}><i className="fas fa-chevron-right"></i></button>
                 <div className="ec-products-carousel-scroll" ref={prodScrollRef}>
                   {products.map(p => (
                     <div key={p.id} className="ec-product-carousel-item">
@@ -300,7 +300,7 @@ const EcommerceStore = () => {
                     {loadingMore && <div className="ec-spinner small" />}
                   </div>
                 </div>
-                <button className="ec-carousel-nav next" onClick={() => scrollProds('left')}><span>‹</span></button>
+                <button className="ec-carousel-nav next" onClick={() => scrollProds('left')}><i className="fas fa-chevron-left"></i></button>
               </div>
             )}
           </>

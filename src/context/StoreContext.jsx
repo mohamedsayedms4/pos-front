@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import StoreApi from '../services/storeApi';
+import * as fbPixel from '../services/fbPixel';
 
 const StoreContext = createContext();
 
@@ -60,6 +61,8 @@ export const StoreProvider = ({ children }) => {
         return prev.map(i => i.id === product.id ? { 
           ...i, 
           qty: i.qty + quantity,
+          price: product.appliedOfferId ? Number(product.salePrice) : i.price,
+          appliedOfferId: product.appliedOfferId || i.appliedOfferId,
           image: i.image || resolvedImage
         } : i);
       }
@@ -68,9 +71,12 @@ export const StoreProvider = ({ children }) => {
         name: product.name,
         price: Number(product.salePrice),
         qty: quantity,
-        image: resolvedImage
+        image: resolvedImage,
+        appliedOfferId: product.appliedOfferId
       }];
     });
+    StoreApi.trackInteraction(product.id, 'CART');
+    fbPixel.trackAddToCart(product);
     showToast(`تمت إضافة ${product.name} للسلة ✅`);
   };
 
@@ -92,6 +98,8 @@ export const StoreProvider = ({ children }) => {
         showToast("تمت الإزالة من المفضلة 🤍");
         return prev.filter(id => id !== productId);
       } else {
+        StoreApi.trackInteraction(productId, 'FAVORITE');
+        fbPixel.trackAddToWishlist({ id: productId });
         showToast("تمت الإضافة للمفضلة ❤️");
         return [...prev, productId];
       }

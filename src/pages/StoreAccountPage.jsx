@@ -7,9 +7,10 @@ import StoreApi from '../services/storeApi';
 const StoreAccountPage = () => {
   const { storeCustomer, storeLogout, isStoreAuthLoading } = useStoreAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('orders'); // 'info', 'orders'
+  const [activeTab, setActiveTab] = useState('orders'); // 'info', 'orders', 'offers'
 
   const [orders, setOrders] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -43,8 +44,19 @@ const StoreAccountPage = () => {
   useEffect(() => {
     if (activeTab === 'orders' && storeCustomer) {
       loadOrders();
+    } else if (activeTab === 'offers' && storeCustomer) {
+      loadOffers();
     }
   }, [activeTab, storeCustomer]);
+
+  const loadOffers = async () => {
+    try {
+      const res = await StoreApi.getMyOffers();
+      setOffers(res.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const loadOrders = async () => {
     setIsLoadingOrders(true);
@@ -71,7 +83,7 @@ const StoreAccountPage = () => {
           <div style={{ flex: '1 1 250px', background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', height: 'fit-content' }}>
             <div style={{ textAlign: 'center', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #e2e8f0' }}>
               <div style={{ width: '60px', height: '60px', background: 'var(--ec-primary)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 10px' }}>
-                👤
+                <i className="fas fa-user"></i>
               </div>
               <h3 style={{ margin: 0, color: '#1e293b' }}>{storeCustomer.name}</h3>
               <p style={{ margin: '5px 0 0', color: '#64748b', fontSize: '0.9rem' }}>{storeCustomer.phone}</p>
@@ -82,19 +94,25 @@ const StoreAccountPage = () => {
                 onClick={() => setActiveTab('orders')}
                 style={{ textAlign: 'right', padding: '10px 15px', borderRadius: '8px', border: 'none', background: activeTab === 'orders' ? '#f1f5f9' : 'transparent', color: activeTab === 'orders' ? 'var(--ec-primary)' : '#475569', fontWeight: activeTab === 'orders' ? 'bold' : 'normal', cursor: 'pointer' }}
               >
-                📦 طلباتي
+                <i className="fas fa-box" style={{ marginLeft: '10px' }}></i> طلباتي
               </button>
               <button
                 onClick={() => setActiveTab('info')}
                 style={{ textAlign: 'right', padding: '10px 15px', borderRadius: '8px', border: 'none', background: activeTab === 'info' ? '#f1f5f9' : 'transparent', color: activeTab === 'info' ? 'var(--ec-primary)' : '#475569', fontWeight: activeTab === 'info' ? 'bold' : 'normal', cursor: 'pointer' }}
               >
-                ⚙️ إعدادات الحساب
+                <i className="fas fa-cog" style={{ marginLeft: '10px' }}></i> إعدادات الحساب
+              </button>
+              <button
+                onClick={() => setActiveTab('offers')}
+                style={{ textAlign: 'right', padding: '10px 15px', borderRadius: '8px', border: 'none', background: activeTab === 'offers' ? '#f1f5f9' : 'transparent', color: activeTab === 'offers' ? 'var(--ec-primary)' : '#475569', fontWeight: activeTab === 'offers' ? 'bold' : 'normal', cursor: 'pointer' }}
+              >
+                <i className="fas fa-gift" style={{ marginLeft: '10px' }}></i> عروضي الخاصة
               </button>
               <button
                 onClick={() => { storeLogout(); navigate('/store'); }}
                 style={{ textAlign: 'right', padding: '10px 15px', borderRadius: '8px', border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', marginTop: '20px' }}
               >
-                🚪 تسجيل خروج
+                <i className="fas fa-sign-out-alt" style={{ marginLeft: '10px' }}></i> تسجيل خروج
               </button>
             </div>
           </div>
@@ -110,7 +128,7 @@ const StoreAccountPage = () => {
                   <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>جاري تحميل الطلبات...</div>
                 ) : orders.length === 0 ? (
                   <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '40px', marginBottom: '10px' }}>📦</div>
+                    <div style={{ fontSize: '40px', marginBottom: '10px', color: '#e2e8f0' }}><i className="fas fa-box-open"></i></div>
                     <p>لم تقم بأي طلبات بعد.</p>
                   </div>
                 ) : (
@@ -133,13 +151,13 @@ const StoreAccountPage = () => {
                           </span>
                         </div>
                         <p style={{ margin: '0 0 5px', fontSize: '0.9rem', color: '#64748b' }}>
-                          📅 {new Date(order.orderDate).toLocaleString('ar-EG')}
+                          <i className="fas fa-calendar-alt" style={{ marginLeft: '5px' }}></i> {new Date(order.orderDate).toLocaleString('ar-EG')}
                         </p>
                         <p style={{ margin: 0, fontWeight: 'bold', color: '#1e293b' }}>
                           الإجمالي: {Number(order.totalAmount).toFixed(2)} ج.م
                         </p>
                         <div style={{ position: 'absolute', left: '15px', bottom: '15px', color: 'var(--ec-primary)', fontSize: '0.8rem' }}>
-                          عرض التفاصيل ←
+                          عرض التفاصيل <i className="fas fa-arrow-left"></i>
                         </div>
                       </div>
                     ))}
@@ -168,6 +186,62 @@ const StoreAccountPage = () => {
               </div>
             )}
 
+            {activeTab === 'offers' && (
+              <div className="ec-animate-in">
+                <h2 style={{ marginBottom: '20px', color: '#1e293b' }}>عروضي الخاصة</h2>
+                {offers.length === 0 ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '40px', marginBottom: '10px', color: '#e2e8f0' }}><i className="fas fa-gift"></i></div>
+                    <p>لا توجد عروض خاصة لك في الوقت الحالي.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '15px' }}>
+                    {offers.map(offer => (
+                      <div
+                        key={offer.id}
+                        style={{ border: '2px solid var(--ec-primary)', borderRadius: '12px', padding: '20px', background: '#fff', position: 'relative', overflow: 'hidden' }}
+                      >
+                        <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--ec-primary)', color: 'white', padding: '5px 15px', borderBottomLeftRadius: '12px', fontWeight: 'bold' }}>
+                          عرض خاص <i className="fas fa-star" style={{ marginRight: '5px' }}></i>
+                        </div>
+                        <h3 style={{ margin: '0 0 10px', color: 'var(--ec-primary)', marginTop: '15px' }}>{offer.titleAr}</h3>
+                        <p style={{ margin: '0 0 15px', color: '#475569' }}>{offer.messageAr}</p>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                          <div>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#64748b', marginBottom: '5px' }}>قيمة الخصم</span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#1e293b' }}>
+                              {offer.discountType === 'PERCENTAGE' ? `${offer.discountValue}%` : `${offer.discountValue} ج.م`}
+                            </span>
+                          </div>
+                          {offer.productId ? (
+                            <button
+                              onClick={() => navigate(`/store/product/${offer.productId}`)}
+                              className="ec-btn ec-btn-primary"
+                            >
+                              استخدام العرض
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => navigate('/store')}
+                              className="ec-btn ec-btn-primary"
+                            >
+                              تسوق الآن
+                            </button>
+                          )}
+                        </div>
+                        {offer.expiresAt && (
+                          <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#ef4444' }}>
+                            <i className="fas fa-clock" style={{ marginLeft: '5px' }}></i> ينتهي في: {new Date(offer.expiresAt).toLocaleString('ar-EG')}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
 
         </div>
@@ -179,7 +253,7 @@ const StoreAccountPage = () => {
           <div className="ec-modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
             <div className="ec-modal-header">
               <h3>تفاصيل الطلب {selectedOrder.orderNumber}</h3>
-              <button onClick={() => setIsDetailsModalOpen(false)}>✕</button>
+              <button onClick={() => setIsDetailsModalOpen(false)}><i className="fas fa-times"></i></button>
             </div>
             <div className="ec-modal-body">
               {/* Order Info Summary */}
@@ -201,7 +275,7 @@ const StoreAccountPage = () => {
 
               {/* Customer Info */}
               <div style={{ marginBottom: '25px' }}>
-                <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>👤 بيانات التوصيل</h4>
+                <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="fas fa-user-circle"></i> بيانات التوصيل</h4>
                 <div style={{ padding: '15px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '0.9rem' }}>
                   <p style={{ margin: '0 0 8px' }}><strong>الاسم:</strong> {selectedOrder.customerName}</p>
                   <p style={{ margin: '0 0 8px' }}><strong>الهاتف:</strong> {selectedOrder.customerPhone}</p>
@@ -211,7 +285,7 @@ const StoreAccountPage = () => {
 
               {/* Items List */}
               <div style={{ marginBottom: '25px' }}>
-                <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>🛍️ المنتجات ({selectedOrder.itemCount})</h4>
+                <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="fas fa-shopping-bag"></i> المنتجات ({selectedOrder.itemCount})</h4>
                 <div style={{ display: 'grid', gap: '12px' }}>
                   {selectedOrder.items?.map(item => (
                     <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '10px', background: '#fff', border: '1px solid #f1f5f9', borderRadius: '10px' }}>
@@ -219,7 +293,7 @@ const StoreAccountPage = () => {
                         {item.imageUrl ? (
                           <img src={StoreApi.getImageUrl(item.imageUrl)} alt={item.productName} style={{ width: '100%', height: '100%', object_fit: 'contain' }} />
                         ) : (
-                          <span style={{ fontSize: '20px' }}>📦</span>
+                          <span style={{ fontSize: '20px' }}><i className="fas fa-box"></i></span>
                         )}
                       </div>
                       <div style={{ flex: 1 }}>
@@ -237,7 +311,7 @@ const StoreAccountPage = () => {
               {/* Status History / Timeline */}
               {selectedOrder.history && selectedOrder.history.length > 0 && (
                 <div style={{ marginBottom: '25px' }}>
-                  <h4 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>🕒 سجل الحالات</h4>
+                  <h4 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="fas fa-history"></i> سجل الحالات</h4>
                   <div style={{ paddingRight: '15px', borderRight: '2px solid #e2e8f0', marginLeft: '10px' }}>
                     {selectedOrder.history.map((h, idx) => (
                       <div key={h.id} style={{ position: 'relative', marginBottom: '15px', paddingRight: '20px' }}>

@@ -22,6 +22,11 @@ const ProductDetails = () => {
     isDefaultPurchase: false, isDefaultSale: false
   });
   const [savingUnit, setSavingUnit] = useState(false);
+  const [distribution, setDistribution] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockForm, setStockForm] = useState({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
+  const [savingStock, setSavingStock] = useState(false);
 
   const loadUnits = async () => {
     try {
@@ -91,6 +96,47 @@ const ProductDetails = () => {
     }
   };
 
+  const loadDistribution = async () => {
+    try {
+      const data = await Api.getProductStockDistribution(id);
+      setDistribution(data || []);
+    } catch { /* ignore */ }
+  };
+
+  const loadWarehouses = async () => {
+    try {
+      const data = await Api.getAllWarehouses();
+      setWarehouses(data || []);
+    } catch { /* ignore */ }
+  };
+
+  const handleUpdateStock = async (e) => {
+    e.preventDefault();
+    if (!stockForm.warehouseId || stockForm.quantity === '') {
+      toast('المخزن والكمية مطلوبان', 'warning');
+      return;
+    }
+    setSavingStock(true);
+    try {
+      await Api.addOrUpdateWarehouseStock(stockForm.warehouseId, {
+        productId: id,
+        quantity: parseFloat(stockForm.quantity),
+        minQuantity: stockForm.minQuantity ? parseFloat(stockForm.minQuantity) : null,
+        maxQuantity: stockForm.maxQuantity ? parseFloat(stockForm.maxQuantity) : null
+      });
+      toast('تم تحديث المخزون بنجاح', 'success');
+      setShowStockModal(false);
+      loadDistribution();
+      // Also reload product to update global stock
+      const prod = await Api.getProduct(id);
+      setProduct(prod);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setSavingStock(false);
+    }
+  };
+
   useEffect(() => {
     const loadProduct = async () => {
       setLoading(true);
@@ -113,6 +159,8 @@ const ProductDetails = () => {
     if (id) {
       loadProduct();
       loadUnits();
+      loadDistribution();
+      loadWarehouses();
     }
   }, [id]);
 
@@ -453,6 +501,120 @@ const ProductDetails = () => {
           )}
         </div>
       </div>
+      {/* ═══ Stock Distribution Section ══════════════════════════════════════════ */}
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0 }}>🏭 توزيع المخزون على الفروع والمخازن</h3>
+          <button className="btn btn-primary btn-sm" onClick={() => {
+            setStockForm({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
+            setShowStockModal(true);
+          }}>+ إضافة/تعديل مخزون</button>
+        </div>
+        <div className="card-body no-padding">
+          <div className="table-wrapper">
+            {distribution.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px' }}>
+                هذا المنتج غير موجود حالياً في أي مخزن.
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>الفرع</th>
+                    <th>المخزن</th>
+                    <th>الكمية المتوفرة</th>
+                    <th>الحد الأدنى</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {distribution.map((item, idx) => {
+                    const isLow = item.minQuantity != null && Number(item.quantity) <= Number(item.minQuantity);
+                    return (
+                      <tr key={`${item.warehouseId}-${idx}`}>
+                        <td>📍 {item.branchName}</td>
+                        <td style={{ fontWeight: 600 }}>🏭 {item.warehouseName}</td>
+                        <td>{Number(item.quantity).toFixed(2)} {product.unitName || 'قطعة'}</td>
+                        <td>{item.minQuantity != null ? Number(item.minQuantity).toFixed(2) : '—'}</td>
+                        <td>
+                          {isLow ? (
+                            <span className="badge badge-danger">⚠️ مخزون منخفض</span>
+                          ) : (
+                            <span className="badge badge-success">✅ متوفر</span>
+                          )}
+                        </td>
+                        <td>
+                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => {
+                            setStockForm({
+                              warehouseId: item.warehouseId,
+                              quantity: item.quantity,
+                              minQuantity: item.minQuantity || '',
+                              maxQuantity: item.maxQuantity || ''
+                            });
+                            setShowStockModal(true);
+                          }}>✏️</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Stock Management Modal */}
+      {showStockModal && (
+        <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal" style={{ width: '100%', maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3>توزيع المخزون</h3>
+              <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <form id="stockForm" onSubmit={handleUpdateStock}>
+                <div className="form-group">
+                  <label>المخزن المستهدف *</label>
+                  <select className="form-control" value={stockForm.warehouseId} 
+                    onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
+                    <option value="">اختر المخزن...</option>
+                    {warehouses.map(w => (
+                      <option key={w.id} value={w.id}>
+                        {w.branchName} - {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>الكمية الحالية في هذا المخزن *</label>
+                  <input className="form-control" type="number" step="0.001" value={stockForm.quantity}
+                    onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
+                </div>
+                <div className="grid grid-2 gap-15">
+                  <div className="form-group">
+                    <label>الحد الأدنى (تنبيه)</label>
+                    <input className="form-control" type="number" step="0.001" value={stockForm.minQuantity}
+                      onChange={e => setStockForm({ ...stockForm, minQuantity: e.target.value })} placeholder="اختياري" />
+                  </div>
+                  <div className="form-group">
+                    <label>الحد الأقصى</label>
+                    <input className="form-control" type="number" step="0.001" value={stockForm.maxQuantity}
+                      onChange={e => setStockForm({ ...stockForm, maxQuantity: e.target.value })} placeholder="اختياري" />
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost" onClick={() => setShowStockModal(false)}>إلغاء</button>
+              <button type="submit" form="stockForm" className="btn btn-primary" disabled={savingStock}>
+                {savingStock ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

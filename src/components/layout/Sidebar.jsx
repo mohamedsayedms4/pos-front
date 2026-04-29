@@ -39,6 +39,10 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span className="nav-icon">▨</span>
           <span>المنتجات</span>
         </NavLink>
+        <NavLink to="/products/interactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+          <span className="nav-icon">📊</span>
+          <span>تفاعل العملاء</span>
+        </NavLink>
 
         {(isAdmin || Api.can('DAMAGED_GOODS_MANAGE')) && (
           <NavLink to="/damaged" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
@@ -102,8 +106,14 @@ const Sidebar = ({ isOpen, onClose }) => {
             <div className="nav-section-title">الحسابات والتقارير</div>
             <NavLink to="/treasury" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">💰</span>
-              <span>الخزنة</span>
+              <span>خزنة الفرع</span>
             </NavLink>
+            {isAdmin && (
+              <NavLink to="/treasury-management" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🏛️</span>
+                <span>إدارة الخزائن المركزية</span>
+              </NavLink>
+            )}
             <NavLink to="/expenses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">💸</span>
               <span>المصروفات</span>
@@ -119,6 +129,10 @@ const Sidebar = ({ isOpen, onClose }) => {
             <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">📊</span>
               <span>إدارة الآجل والأقساط</span>
+            </NavLink>
+            <NavLink to="/facebook-ads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🔵</span>
+              <span>تقارير إعلانات فيسبوك</span>
             </NavLink>
             <NavLink to="/installments-calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">📅</span>
@@ -175,12 +189,26 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>سجل المراجعة</span>
               </NavLink>
             )}
-            {isAdmin && (
+              <NavLink to="/branches" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🏢</span>
+                <span>إدارة الفروع</span>
+              </NavLink>
+              <NavLink to="/warehouses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📦</span>
+                <span>إدارة المخازن</span>
+              </NavLink>
+              <NavLink to="/inventory/report" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📋</span>
+                <span>الجرد التفصيلي</span>
+              </NavLink>
               <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">⚙️</span>
                 <span>إعدادات المتجر</span>
               </NavLink>
-            )}
+              <NavLink to="/offline-audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🔍</span>
+                <span>فحص البيانات المحلية</span>
+              </NavLink>
           </>
         )}
       </nav>

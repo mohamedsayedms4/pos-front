@@ -7,9 +7,11 @@ import { useTheme } from '../common/ThemeContext';
 import ChatService from '../../services/ChatService';
 import msgIcon from '../../assets/img/msg.png';
 import { useTileCustomizer } from '../../context/TileContext';
+import { useBranch } from '../../context/BranchContext';
 
 const Topbar = ({ onMenuToggle, prevInfo }) => {
   const { theme, toggleTheme } = useTheme();
+  const { branches, selectedBranchId, selectBranch } = useBranch();
   const navigate = useNavigate();
   const { showToast } = useGlobalUI ? useGlobalUI() : { showToast: () => {} };
   const { unreadCount: notifUnreadCount, connected } = useNotifications({
@@ -64,8 +66,6 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
   }, []);
 
   const handleLogout = async () => {
-
-
     try {
       await Api.logout();
     } catch (e) {
@@ -95,7 +95,28 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
             ← عودة لـ {prevInfo.label}
           </button>
         )}
-        <h2 className="page-title">نظام نقاط البيع</h2>
+        <h2 className="page-title desktop-only" style={{ marginLeft: '10px' }}>نظام نقاط البيع</h2>
+        
+        <div className="branch-selector-wrapper" style={{ marginRight: '10px', minWidth: '160px' }}>
+          <select 
+            className="form-control" 
+            value={selectedBranchId || ''} 
+            onChange={(e) => selectBranch(e.target.value ? parseInt(e.target.value) : null)}
+            style={{ 
+              height: '32px', 
+              padding: '0 10px', 
+              fontSize: '0.85rem',
+              background: 'var(--bg-elevated)',
+              borderColor: 'var(--border-input)',
+              color: 'var(--text-white)'
+            }}
+          >
+            {isAdmin && <option value="">🏢 كل الفروع</option>}
+            {branches.map(b => (
+              <option key={b.id} value={b.id}>📍 {b.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="topbar-right">
         <button

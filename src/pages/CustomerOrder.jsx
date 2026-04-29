@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Api, { API_BASE } from '../services/api';
@@ -35,7 +37,10 @@ const CustomerProductCard = ({ product, onSelect }) => {
 };
 
 const CustomerOrder = () => {
+  const [searchParams] = useSearchParams();
+  const branchId = searchParams.get('branchId');
   const [products, setProducts] = useState([]);
+
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -67,8 +72,9 @@ const CustomerOrder = () => {
     if (loading) return;
     setLoading(true);
     try {
-      const res = await Api.getProductsPaged(p, PAGE_SIZE, q);
+      const res = await Api.getProductsPaged(p, PAGE_SIZE, q, 'id,desc', branchId);
       setProducts(prev => append ? [...prev, ...res.items] : res.items);
+
       setTotalPages(res.totalPages);
       setPage(res.page);
     } catch (err) {
@@ -76,7 +82,8 @@ const CustomerOrder = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading, toast]);
+  }, [loading, toast, branchId]);
+
 
   useEffect(() => {
     loadProducts(0, search, false);

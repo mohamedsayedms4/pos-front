@@ -14,6 +14,9 @@ const Employees = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [shifts, setShifts] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const isAdmin = Api.isAdminOrBranchManager();
 
   // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
@@ -77,7 +80,7 @@ const Employees = () => {
   const [editJobTitle, setEditJobTitle] = useState(null);
   const [jtSaving, setJtSaving] = useState(false);
 
-  const API_BASE_URL = 'https://linuxstoreapi.digitalrace.net/api/v1';
+  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1';
 
   // Helper to format date for HTML5 date input (handles [y,m,d] array, ISO string, or null)
   const formatDateForInput = (date) => {
@@ -99,17 +102,18 @@ const Employees = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-    loadData(currentPage, pageSize, debouncedSearch);
-  }, [currentPage, debouncedSearch]);
+    loadData(currentPage, pageSize, debouncedSearch, selectedBranchId);
+  }, [currentPage, debouncedSearch, selectedBranchId]);
 
-  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch) => {
+  const loadData = async (page = currentPage, size = pageSize, query = debouncedSearch, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const [usersRes, titlesRes, rolesRes, shiftsRes] = await Promise.all([
-        Api.getUsers(page, size, query),
+      const [usersRes, titlesRes, rolesRes, shiftsRes, branchesData] = await Promise.all([
+        Api.getUsers(page, size, query, branchId),
         Api.getJobTitles().catch(() => []),
         Api.getRoles().catch(() => []),
-        Api.getShifts().catch(() => [])
+        Api.getShifts().catch(() => []),
+        branches.length === 0 ? Api.getBranches().catch(() => []) : Promise.resolve(branches)
       ]);
 
       setData(usersRes.items || usersRes.content || []);
@@ -119,6 +123,7 @@ const Employees = () => {
       setJobTitles(titlesRes);
       setRoles(rolesRes);
       setShifts(shiftsRes);
+      if (branches.length === 0) setBranches(branchesData);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -334,6 +339,12 @@ const Employees = () => {
         <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>👤 إدارة شؤون الموظفين</h3>
           <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', flex: '1 1 100%', justifyContent: 'flex-end', alignItems: 'center' }}>
+            {isAdmin && (
+              <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
+                <option value="">جميع الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
             <div className="search-input" style={{ flex: '1 1 200px', minWidth: '200px', maxWidth: '350px' }}>
               <span className="search-icon">🔍</span>
               <input

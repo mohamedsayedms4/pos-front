@@ -46,6 +46,9 @@ const OnlineOrders = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const isAdmin = Api.isAdminOrBranchManager();
   
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -58,19 +61,28 @@ const OnlineOrders = () => {
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await Api._request(`/online-orders?page=${page}&size=20${activeTab !== 'ALL' ? `&status=${activeTab}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`);
+      const branchQuery = selectedBranchId ? `&branchId=${selectedBranchId}` : '';
+      const res = await Api._request(`/online-orders?page=${page}&size=20${activeTab !== 'ALL' ? `&status=${activeTab}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}${branchQuery}`);
       const data = res.data;
       setOrders(data.items || []);
       setTotalPages(data.totalPages || 1);
     } catch (e) { toast(e.response?.data?.message || e.message, 'error'); }
     finally { setLoading(false); }
-  }, [page, activeTab, search, toast]);
+  }, [page, activeTab, search, toast, selectedBranchId]);
 
   const loadStats = useCallback(async () => {
     try {
-      const res = await Api._request('/online-orders/stats');
+      const branchQuery = selectedBranchId ? `?branchId=${selectedBranchId}` : '';
+      const res = await Api._request(`/online-orders/stats${branchQuery}`);
       setStats(res.data || {});
     } catch (e) { console.error(e); }
+  }, [selectedBranchId]);
+
+  // Load branches once
+  useEffect(() => {
+    if (isAdmin && branches.length === 0) {
+      Api.getBranches().then(setBranches).catch(() => {});
+    }
   }, []);
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
@@ -334,6 +346,18 @@ const OnlineOrders = () => {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+
+              {isAdmin && (
+                <select
+                  className="form-control"
+                  value={selectedBranchId}
+                  onChange={(e) => { setSelectedBranchId(e.target.value); setPage(0); }}
+                  style={{ width: '150px', height: '40px' }}
+                >
+                  <option value="">جميع الفروع</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
 
               <select 
                 className="form-control" 
