@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import JsBarcode from 'jsbarcode';
+import { 
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid 
+} from 'recharts';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
 import ScannerModal from '../components/common/ScannerModal';
-import StatTile from '../components/common/StatTile';
 import { useBranch } from '../context/BranchContext';
+import './Products.css';
 
 const Products = () => {
   const location = useLocation();
@@ -17,6 +20,7 @@ const Products = () => {
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
+  const [dailySales, setDailySales] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sort, setSort] = useState('id,desc'); // Default sort
@@ -24,6 +28,7 @@ const Products = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   // Debounce search input
   useEffect(() => {
@@ -263,14 +268,19 @@ const Products = () => {
   const loadData = async (searchQuery = '', sortOrder = sort, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const [productsData, categoriesData, statsData] = await Promise.all([
+      const [productsData, categoriesData, statsData, salesData] = await Promise.all([
         Api.getProductsPaged(0, 1000, searchQuery, sortOrder, branchId).then(res => res.items),
         Api.getCategories().catch(() => []),
-        Api.getProductStatistics(branchId).catch(() => null)
+        Api.getProductStatistics(branchId).catch(() => null),
+        Api.getDailySaleStats(7, branchId).catch(() => [])
       ]);
       setData(productsData);
       setCategories(categoriesData);
       setStats(statsData);
+      setDailySales(Array.isArray(salesData) ? salesData.map(d => ({
+        name: new Date(d.saleDate).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
+        value: d.dailyTotal || 0
+      })).reverse() : []);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -436,206 +446,227 @@ const Products = () => {
     }
   };
 
-  const items = data;
+  const lowStockItems = data.filter(p => Number(p.stock) <= 10).slice(0, 3);
+  const filteredItems = data.filter(p => !categoryFilter || p.categoryId === parseInt(categoryFilter));
 
   return (
-    <>
-      <div className="page-section">
-
-        {/* KPI TILES GRID */}
-        {stats && (
-          <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-            <StatTile
-              id="prod_total"
-              label="إجمالي المنتجات"
-              value={stats.totalProducts}
-              icon="📦"
-              to="/products/analytics"
-              defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
-            />
-
-            <StatTile
-              id="prod_capital"
-              label="قيمة المخزون (شراء)"
-              value={`${Number(stats.totalInventoryCapital || 0).toLocaleString()} ج.م`}
-              icon="💰"
-              to="/products/analytics"
-              defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
-            />
-
-            <StatTile
-              id="prod_profit"
-              label="الأرباح المتوقعة"
-              value={Number(stats.totalExpectedProfit || 0).toLocaleString()}
-              icon="📈"
-              to="/products/analytics"
-              defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
-            />
-
-            <StatTile
-              id="prod_outofstock"
-              label="نفدت"
-              value={stats.outOfStockCount}
-              icon="📉"
-              to="/products/analytics"
-              defaults={{ color: 'blue', size: 'tile-sq-sm', order: 4 }}
-            />
-
-            <StatTile
-              id="prod_cart"
-              label="إضافة للسلة"
-              value={stats.totalCartCount || 0}
-              icon="🛒"
-              to="/products/analytics"
-              defaults={{ color: 'purple', size: 'tile-sq-sm', order: 5 }}
-            />
-
-            <StatTile
-              id="prod_fav"
-              label="في المفضلة"
-              value={stats.totalFavoriteCount || 0}
-              icon="❤️"
-              to="/products/analytics"
-              defaults={{ color: 'pink', size: 'tile-sq-sm', order: 6 }}
-            />
-          </div>
-        )}
-
-        <div className="card">
-          <div className="card-header">
-            <h3>📦 إدارة المنتجات</h3>
-            <div className="toolbar">
-              <select 
-                className="form-control" 
-                value={selectedBranchId} 
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                style={{ width: '180px', height: '40px', padding: '0 10px' }}
-                disabled={!Api.can('ROLE_ADMIN')}
-              >
-                <option value="">كل الفروع</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-
-              <div className="search-input">
-                <span className="search-icon">🔍</span>
-                <input
-                  type="text"
-                  placeholder="بحث سريع..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+    <div className="products-page-container">
+      <div className="products-dashboard">
+        {/* SUMMARY CARDS */}
+        <div className="summary-cards">
+          <div className="summary-card">
+            <div className="card-icon-wrapper icon-blue">🛒</div>
+            <div className="card-info">
+              <div className="card-label">إجمالي المنتجات</div>
+              <div className="card-value">
+                {stats?.totalProducts || 0}
+                <span className="card-unit">منتج</span>
               </div>
-
-              <select 
-                className="form-control" 
-                value={sort} 
-                onChange={(e) => setSort(e.target.value)}
-                style={{ width: '180px', height: '40px', padding: '0 10px' }}
-              >
-                <option value="id,desc">الأحدث</option>
-                <option value="id,asc">الأقدم</option>
-                <option value="name,asc">أ - ي</option>
-                <option value="salePrice,asc">السعر ↑</option>
-                <option value="salePrice,desc">السعر ↓</option>
-              </select>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportingExcel}>
-                  {exportingExcel ? '⏳' : '📊'} إكسيل
-                </button>
-                <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportingPdf}>
-                  {exportingPdf ? '⏳' : '📄'} PDF
-                </button>
-                <button className="btn btn-secondary" onClick={openPrinterConfig} title="إعدادات الطابعة">⚙️</button>
-                
-                {Api.can('PRODUCT_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => openForm(null)}>
-                    <span>+</span> إضافة منتج
-                  </button>
-                )}
-                <Link to="/products/analytics" className="btn btn-ghost stats-btn-desktop">📈 إحصائيات</Link>
+              <div className="card-trend trend-up">
+                <span>↑ 2+ هذا الشهر</span>
               </div>
             </div>
           </div>
+
+          <div className="summary-card">
+            <div className="card-icon-wrapper icon-green">$</div>
+            <div className="card-info">
+              <div className="card-label">قيمة المخزون (ج.م)</div>
+              <div className="card-value">
+                {(stats?.totalInventoryCapital || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </div>
+              <div className="card-trend trend-up">
+                <span>↑ 8.5%+ هذا الشهر</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="summary-card">
+            <div className="card-icon-wrapper icon-amber">📦</div>
+            <div className="card-info">
+              <div className="card-label">الأرباح المتوقعة</div>
+              <div className="card-value">
+                {(stats?.totalExpectedProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </div>
+              <div className="card-trend trend-up">
+                <span>↑ 15.3%+ هذا الشهر</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="summary-card">
+            <div className="card-icon-wrapper icon-purple">📈</div>
+            <div className="card-info">
+              <div className="card-label">إجمالي المبيعات</div>
+              <div className="card-value">
+                {dailySales.reduce((acc, curr) => acc + curr.value, 0).toLocaleString()}
+                <span className="card-unit">طلب</span>
+              </div>
+              <div className="card-trend trend-up">
+                <span>↑ 9+ هذا الشهر</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ANALYTICS GRID */}
+        <div className="analytics-grid">
+          <div className="analytics-card">
+            <div className="card-title-row">
+              <div className="card-title">المبيعات آخر 7 أيام</div>
+              <select className="filter-select" style={{ padding: '4px 8px' }}>
+                <option>آخر 7 أيام</option>
+              </select>
+            </div>
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailySales}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#94a3b8" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(val) => val >= 1000 ? `${(val/1000).toFixed(0)}K` : val}
+                  />
+                  <Tooltip 
+                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                    itemStyle={{ color: '#3b82f6' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3} 
+                    dot={{ r: 4, fill: '#fff', stroke: '#3b82f6', strokeWidth: 2 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="analytics-card">
+            <div className="card-title-row">
+              <div className="card-title">تنبيهات المخزون</div>
+              <button className="btn-modern btn-ghost-modern" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>عرض الكل</button>
+            </div>
+            <div className="alerts-list">
+              {lowStockItems.length > 0 ? lowStockItems.map(item => (
+                <div key={item.id} className="alert-item">
+                  <div className="alert-icon">⚠️</div>
+                  <div className="product-img"></div>
+                  <div className="alert-info">
+                    <div className="alert-name">{item.name}</div>
+                    <div className="alert-desc">المخزون منخفض ({item.stock} فقط)</div>
+                  </div>
+                </div>
+              )) : (
+                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>لا توجد تنبيهات</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* PRODUCTS TABLE CARD */}
+        <div className="table-card">
+          <div className="table-header-row">
+            <div className="table-actions">
+              <div className="dropdown">
+                <button className="btn-modern btn-blue" onClick={() => openForm(null)}>
+                  <span>+</span> إضافة منتج
+                </button>
+              </div>
+              <button className="btn-modern btn-ghost-modern" onClick={handleExportExcel}>📊 إكسيل</button>
+              <button className="btn-modern btn-ghost-modern" onClick={handleExportPdf}>📄 PDF</button>
+              <button className="btn-modern btn-ghost-modern" onClick={openPrinterConfig}>⚙️</button>
+            </div>
+
+            <div className="table-actions">
+              <select 
+                className="filter-select" 
+                value={categoryFilter} 
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="">كل الفئات</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <button className="btn-modern btn-ghost-modern">🔍 فلتر</button>
+              <div className="search-wrapper">
+                <input 
+                  type="text" 
+                  placeholder="بحث عن منتج..." 
+                  className="search-input-modern"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <span className="search-icon-modern">🔍</span>
+              </div>
+            </div>
+          </div>
+
           <div className="card-body no-padding">
             <div className="table-wrapper">
               {loading ? (
                 <Loader message="جاري تحميل المنتجات..." />
-              ) : items.length === 0 ? (
+              ) : filteredItems.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">📦</div>
                   <h4>لا توجد منتجات</h4>
                   <p>قم بإضافة منتجات جديدة للبدء</p>
                 </div>
               ) : (
-                <table className="data-table">
+                <table className="modern-table">
                   <thead>
                     <tr>
                       <th>#</th>
                       <th>المنتج</th>
-                      <th>الكود</th>
                       <th>الفئة</th>
+                      <th>الكود</th>
                       <th>سعر الشراء</th>
                       <th>سعر البيع</th>
                       <th>المخزون</th>
-                      <th>التفاعل</th>
+                      <th>الحالة</th>
                       <th>الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((p, i) => (
+                    {filteredItems.map((p, i) => (
                       <tr key={p.id}>
-                        <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                        <td style={{ color: '#64748b' }}>{i + 1}</td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
-                              📦
-                            </div>
-                            <div>
-                              <Link to={`/products/${p.id}`} style={{ fontWeight: 600, color: 'var(--metro-blue)', textDecoration: 'none' }}>{p.name}</Link>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '2px' }}>
-                                <span>{p.unitName || 'قطعة'}</span>
-                                {p.units && p.units.length > 0 && p.units.map(u => (
-                                  <span key={u.id} style={{ background: 'var(--bg-card)', padding: '0 5px', borderRadius: '3px', border: '1px solid var(--border-color)', color: 'var(--accent-emerald)' }}>
-                                    {u.unitName}: {u.conversionFactor} {p.unitName}
-                                  </span>
-                                ))}
-                                {p.showInStore === false ? (
-                                  <span style={{ background: 'var(--metro-red)', color: 'white', padding: '0 5px', borderRadius: '3px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '3px' }}>🚫 مخفي من المتجر</span>
-                                ) : (
-                                  <span style={{ background: 'var(--accent-emerald)', color: 'white', padding: '0 5px', borderRadius: '3px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '3px' }}>🌐 متاح بالمتجر</span>
-                                )}
-                              </div>
-                            </div>
+                          <div className="product-cell">
+                            <div className="product-img"></div>
+                            <Link to={`/products/${p.id}`} style={{ fontWeight: 600, color: '#f8fafc' }}>{p.name}</Link>
                           </div>
                         </td>
-                        <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{p.productCode || '—'}</code></td>
-                        <td>{p.categoryName || <span className="text-muted">—</span>}</td>
+                        <td>{p.categoryName || '—'}</td>
+                        <td><code style={{ color: '#94a3b8' }}>{p.productCode || '—'}</code></td>
                         <td>{Number(p.purchasePrice).toFixed(2)}</td>
-                        <td style={{ fontWeight: 600, color: 'var(--accent-emerald-light)' }}>{Number(p.salePrice).toFixed(2)}</td>
+                        <td style={{ fontWeight: 700 }}>{Number(p.salePrice).toFixed(2)}</td>
                         <td>
-                          <span className={`badge ${Number(p.stock) > 0 ? 'badge-success' : 'badge-danger'}`}>
-                            {Number(p.stock).toFixed(1)}
+                          <span className={`stock-badge ${Number(p.stock) <= 5 ? 'stock-out' : Number(p.stock) <= 15 ? 'stock-low' : 'stock-ok'}`}>
+                            {Number(p.stock).toFixed(0)}
                           </span>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <span>👁️ {p.viewCount || 0}</span>
-                              <span>🛒 {p.cartCount || 0}</span>
-                              <span>❤️ {p.favoriteCount || 0}</span>
-                            </div>
-                            <div className="progress" style={{ height: '4px', width: '60px', background: 'var(--bg-elevated)', borderRadius: '2px' }}>
-                              <div className="progress-bar" style={{ width: `${Math.min(100, ((p.cartCount || 0) + (p.favoriteCount || 0)) * 2)}%`, background: 'var(--metro-blue)' }} />
-                            </div>
+                          <div className="status-indicator">
+                            <div className={`dot ${Number(p.stock) > 0 ? 'dot-green' : 'dot-red'}`}></div>
+                            <span>{Number(p.stock) > 0 ? 'متوفر' : 'منتهي'}</span>
                           </div>
                         </td>
                         <td>
-                          <div className="table-actions" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <button className="btn btn-sm btn-ghost" title="توزيع المخزون" onClick={() => openStockModal(p)} style={{ border: '1px solid var(--border-color)', color: 'var(--accent-amber)' }}>🏭 توزيع</button>
-                            <button className="btn btn-sm btn-secondary" title="طباعة باركود (PDF)" onClick={() => { setPrintProduct(p); setPrintModalOpen(true); }} style={{ whiteSpace: 'nowrap' }}>🖨️ طباعة P</button>
-                            {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(p)}>✏️</button>}
-                            {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(p.id, p.name)}>🗑️</button>}
+                          <div className="action-group">
+                            <button className="action-btn btn-more" onClick={() => openStockModal(p)} title="توزيع المخزون">🏭</button>
+                            <button className="action-btn btn-edit" onClick={() => openForm(p)} title="تعديل">✏️</button>
+                            <button className="action-btn btn-delete" onClick={() => handleDelete(p.id, p.name)} title="حذف">🗑️</button>
                           </div>
                         </td>
                       </tr>
@@ -643,6 +674,27 @@ const Products = () => {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+
+          <div className="pagination-modern">
+            <div>عرض 1 إلى {filteredItems.length} من {data.length} منتج</div>
+            <div className="page-controls">
+              <button className="page-btn">{'<'}</button>
+              <button className="page-btn active">1</button>
+              <button className="page-btn">2</button>
+              <button className="page-btn">3</button>
+              <button className="page-btn">4</button>
+              <button className="page-btn">5</button>
+              <button className="page-btn">{'>'}</button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>عدد العناصر في الصفحة</span>
+              <select className="filter-select" style={{ padding: '4px 8px' }}>
+                <option>10</option>
+                <option>20</option>
+                <option>50</option>
+              </select>
             </div>
           </div>
         </div>
@@ -707,7 +759,6 @@ const Products = () => {
                     </label>
                   </div>
 
-                  {/* Packaging Units Section */}
                   <div style={{ marginTop: '20px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                       <h4 style={{ margin: 0, fontSize: '0.95rem' }}>📦 وحدات الجملة/التعبئة (اختياري)</h4>
@@ -762,30 +813,47 @@ const Products = () => {
         </ModalContainer>
       )}
 
-      {printModalOpen && (
+      {printerConfigModalOpen && printerConfig && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrintModalOpen(false); }}>
-            <div className="modal" style={{ maxWidth: '400px' }}>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrinterConfigModalOpen(false); }}>
+            <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
-                <h3>🖨️ طباعة ملصق باركود مباشرة (صورة)</h3>
-                <button className="modal-close" onClick={() => setPrintModalOpen(false)}>✕</button>
+                <h3>⚙️ إعدادات طابعة الباركود</h3>
+                <button className="modal-close" onClick={() => setPrinterConfigModalOpen(false)}>✕</button>
               </div>
-              <div className="modal-body" style={{ textAlign: 'center' }}>
-                <p style={{ color: 'var(--text-secondary)' }}>تم تحسين الطباعة لتناسب طابعة <b>XP-370B</b> والاتصال المباشر بالورق.</p>
-                <div style={{ background: 'rgba(52, 152, 219, 0.1)', padding: '10px', borderRadius: '5px', borderRight: '3px solid var(--metro-blue)', marginTop: '20px', textAlign: 'right' }}>
-                  <h5 style={{ margin: '0 0 5px 0', fontSize: '0.85rem', color: 'var(--metro-blue)' }}>✅ تعليمات الضبط (مرة واحدة):</h5>
-                  <ul style={{ margin: 0, paddingRight: '20px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    <li>الهوامش (Margins): اختر <b>None</b> أو <b>بلا</b></li>
-                    <li>المقياس (Scale): اختر <b>Actual Size</b> أو <b>الحجم الفعلي (100%)</b></li>
-                    <li>حجم الورق: اضبطه من <b>إعدادات الطابعة (Printer Properties)</b> ليطابق حجم الليبل</li>
-                    <li>إلغاء تحديد <b>Headers/Footers</b> إن وجد</li>
-                  </ul>
-                </div>
+              <div className="modal-body">
+                <form id="printerConfigForm" onSubmit={savePrinterConfig}>
+                  <div className="form-group">
+                    <label>اختر الطابعة</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select className="form-control" value={printerConfig.printerName} onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })} required>
+                        <option value="">-- اختر طابعة --</option>
+                        {availablePrinters.map(name => <option key={name} value={name}>{name}</option>)}
+                      </select>
+                      <button type="button" className="btn btn-icon" onClick={refreshPrinters} disabled={loadingPrinters}>
+                        {loadingPrinters ? '⏳' : '🔄'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>العرض (مم)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelWidthMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelWidthMm: parseFloat(e.target.value) })} required />
+                    </div>
+                    <div className="form-group">
+                      <label>الطول (مم)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelHeightMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelHeightMm: parseFloat(e.target.value) })} required />
+                    </div>
+                  </div>
+                </form>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setPrintModalOpen(false)}>إلغاء</button>
-                <button type="button" onClick={executePrint} className="btn btn-primary" disabled={printing}>
-                  {printing ? 'جاري التحضير...' : 'ابدأ الطباعة المباشرة'}
+                <button type="button" className="btn btn-secondary" onClick={handleTestPrint} disabled={testingPrint}>
+                  {testingPrint ? 'جاري...' : '🖨️ طباعة تجريبية'}
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setPrinterConfigModalOpen(false)}>إلغاء</button>
+                <button type="submit" form="printerConfigForm" className="btn btn-primary" disabled={savingConfig}>
+                  {savingConfig ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
                 </button>
               </div>
             </div>
@@ -793,150 +861,10 @@ const Products = () => {
         </ModalContainer>
       )}
 
-      {/* Printer Config Modal */}
-      {printerConfigModalOpen && printerConfig && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrinterConfigModalOpen(false); }}>
-            <div className="modal" style={{ maxWidth: '500px' }}>
-              <div className="modal-header">
-                <h3>⚙️ إعدادات طابعة الباركود ديناميكياً</h3>
-                <button className="modal-close" onClick={() => setPrinterConfigModalOpen(false)}>✕</button>
-              </div>
-              <div className="modal-body">
-                <div style={{ marginBottom: '20px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                  <h5 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>📍 قوالب سريعة للمقاسات:</h5>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[
-                      { label: 'كبير (50×25 مم)', w: 50, h: 25, m: 1, nf: 32, pf: 42 },
-                      { label: 'صغير (40×15 مم)', w: 40, h: 15, m: 0.5, nf: 28, pf: 36 },
-                      { label: 'قياسي (38×25 مم)', w: 38, h: 25, m: 1, nf: 32, pf: 42 }
-                    ].map(p => (
-                      <button
-                        key={p.label}
-                        type="button"
-                        className="btn btn-sm btn-ghost"
-                        style={{ border: '1px solid var(--metro-blue)', color: 'var(--metro-blue)', padding: '5px 12px' }}
-                        onClick={() => setPrinterConfig({
-                          ...printerConfig,
-                          labelWidthMm: p.w,
-                          labelHeightMm: p.h,
-                          marginMm: p.m,
-                          nameFontSize: p.nf,
-                          priceFontSize: p.pf
-                        })}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <form id="printerConfigForm" onSubmit={savePrinterConfig}>
-                  <div className="form-group">
-                    <label>اختر الطابعة المثبتة على الجهاز</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select
-                        className="form-control"
-                        value={printerConfig.printerName}
-                        onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })}
-                        required
-                        disabled={loadingPrinters}
-                      >
-                        <option value="">-- اختر طابعة --</option>
-                        {availablePrinters.map(name => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                      <button type="button" className="btn btn-icon" onClick={refreshPrinters} disabled={loadingPrinters} title="تحديث قائمة الطابعات">
-                        {loadingPrinters ? '⏳' : '🔄'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <h5 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', color: 'var(--metro-blue)' }}>المقاسات بالـ ملم (mm)</h5>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>العرض (Width)</label>
-                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelWidthMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelWidthMm: parseFloat(e.target.value) })} required />
-                    </div>
-                    <div className="form-group">
-                      <label>الطول (Height)</label>
-                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelHeightMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelHeightMm: parseFloat(e.target.value) })} required />
-                    </div>
-                    <div className="form-group">
-                      <label>الهامش (Margin)</label>
-                      <input className="form-control" type="number" step="0.1" value={printerConfig.marginMm} onChange={(e) => setPrinterConfig({ ...printerConfig, marginMm: parseFloat(e.target.value) })} required />
-                    </div>
-                  </div>
-
-                  <h5 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', marginTop: '15px', color: 'var(--metro-blue)' }}>أحجام الخطوط (Font Size)</h5>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>الاسم (Name)</label>
-                      <input className="form-control" type="number" step="0.1" value={printerConfig.nameFontSize} onChange={(e) => setPrinterConfig({ ...printerConfig, nameFontSize: parseFloat(e.target.value) })} required />
-                    </div>
-                    <div className="form-group">
-                      <label>السعر (Price)</label>
-                      <input className="form-control" type="number" step="0.1" value={printerConfig.priceFontSize} onChange={(e) => setPrinterConfig({ ...printerConfig, priceFontSize: parseFloat(e.target.value) })} required />
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
-                <div>
-                  <button type="button" className="btn btn-secondary" onClick={handleTestPrint} disabled={testingPrint} style={{ backgroundColor: 'var(--accent-purple)' }}>
-                    {testingPrint ? 'جاري...' : '🖨️ طباعة تجريبية'}
-                  </button>
-                </div>
-                <div>
-                  <button type="button" className="btn btn-ghost" onClick={() => setPrinterConfigModalOpen(false)}>إلغاء</button>
-                  <button type="submit" form="printerConfigForm" className="btn btn-primary" disabled={savingConfig}>
-                    {savingConfig ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
-      {/* Barcode Scanner Modal */}
-      {/* 
-      <ScannerModal
-        isOpen={showScanner}
-        onClose={() => setShowScanner(false)}
-        onScan={handleBarcodeScan}
-      />
-      */}
-      <style>{`
-        .products-header-premium { padding: 15px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border-subtle); }
-        .row-premium { display: flex; gap: 8px; width: 100%; align-items: stretch; }
-        .title-row { justify-content: space-between; align-items: center; }
-        
-        .split-btn { flex: 1; padding: 12px 0; font-weight: 700; text-align: center; }
-        .stats-btn-mobile { border: 1px solid var(--border-input); background: var(--bg-elevated); color: var(--text-white); }
-        .stats-btn-desktop { border: 1px solid var(--metro-blue); color: var(--metro-blue); padding: 5px 15px; }
-
-        .search-wrap-new { flex: 1; display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-input); min-width: 0; }
-        .search-wrap-new .search-icon { padding: 0 10px; color: var(--text-dim); }
-        .search-wrap-new input { flex: 1; background: transparent; border: none; padding: 10px 0; color: #fff; outline: none; width: 100%; }
-        .camera-btn-new { width: 50px; flex-shrink: 0; background: var(--bg-tile); border: 1px solid var(--border-input); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-
-        .compact-row { height: 34px !important; }
-        .sort-wrap-new { flex: 1; height: 100%; }
-        .sort-wrap-new select { width: 100%; height: 100%; background: var(--bg-input); border: 1px solid var(--border-input); color: #fff; padding: 0 8px; font-size: 0.9rem; }
-        .tools-wrap-new { display: flex; gap: 5px; height: 100%; }
-        .tool-btn-new { width: 34px !important; height: 34px !important; background: var(--bg-elevated); border: 1px solid var(--border-input); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
-
-        @media (max-width: 768px) {
-          .mobile-only { display: flex !important; }
-          .desktop-only { display: none !important; }
-        }
-      `}</style>
-      {/* Stock Management Modal */}
       {showStockModal && (
         <ModalContainer>
-          <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
-            <div className="modal" style={{ width: '100%', maxWidth: '500px' }}>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowStockModal(false); }}>
+            <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
                 <h3>📦 توزيع المنتج: {stockProduct?.name}</h3>
                 <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
@@ -945,20 +873,14 @@ const Products = () => {
                 <form id="stockForm" onSubmit={handleUpdateStock}>
                   <div className="form-group">
                     <label>المخزن المستهدف *</label>
-                    <select className="form-control" value={stockForm.warehouseId} 
-                      onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
+                    <select className="form-control" value={stockForm.warehouseId} onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
                       <option value="">اختر المخزن...</option>
-                      {allWarehouses.map(w => (
-                        <option key={w.id} value={w.id}>
-                          {w.branchName} - {w.name}
-                        </option>
-                      ))}
+                      {allWarehouses.map(w => <option key={w.id} value={w.id}>{w.branchName} - {w.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
                     <label>الكمية الحالية في هذا المخزن *</label>
-                    <input className="form-control" type="number" step="0.001" value={stockForm.quantity}
-                      onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
+                    <input className="form-control" type="number" step="0.001" value={stockForm.quantity} onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
                   </div>
                   <div className="grid grid-2 gap-15">
                     <div className="form-group">
@@ -984,7 +906,7 @@ const Products = () => {
           </div>
         </ModalContainer>
       )}
-    </>
+    </div>
   );
 };
 

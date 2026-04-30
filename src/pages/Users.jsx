@@ -37,7 +37,7 @@ const Users = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'http://localhost:8080/api/v1'; // Standard base for image serving 
 
   // Debounce search
   useEffect(() => {
@@ -244,9 +244,11 @@ const Users = () => {
                   }}
                 />
               </div>
-              <button className="btn btn-primary" onClick={openForm}>
-                <span>+</span> إضافة مستخدم
-              </button>
+              {Api.can('USER_WRITE') && (
+                <button className="btn btn-primary" onClick={openForm}>
+                  <span>+</span> إضافة مستخدم
+                </button>
+              )}
             </div>
           </div>
           <div className="card-body no-padding">
@@ -303,12 +305,14 @@ const Users = () => {
                         </td>
                         <td>
                           <div className="table-actions">
-                            <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openEditForm(u)}>✏️</button>
-                            <button className="btn btn-icon btn-ghost" title={u.enabled ? 'تعطيل' : 'تفعيل'} onClick={() => toggleEnabled(u.id, !u.enabled)}>
-                              {u.enabled ? '🔒' : '🔓'}
-                            </button>
-                            <button className="btn btn-icon btn-ghost" title="الأدوار والصلاحيات" onClick={() => openAccessForm(u)}>🔑</button>
-                            <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}>🗑️</button>
+                            {Api.can('USER_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openEditForm(u)}>✏️</button>}
+                            {Api.can('USER_WRITE') && (
+                              <button className="btn btn-icon btn-ghost" title={u.enabled ? 'تعطيل' : 'تفعيل'} onClick={() => toggleEnabled(u.id, !u.enabled)}>
+                                {u.enabled ? '🔒' : '🔓'}
+                              </button>
+                            )}
+                            {Api.can('ROLE_WRITE') && <button className="btn btn-icon btn-ghost" title="الأدوار والصلاحيات" onClick={() => openAccessForm(u)}>🔑</button>}
+                            {Api.can('USER_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}>🗑️</button>}
                           </div>
                         </td>
                       </tr>

@@ -35,26 +35,29 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
-        <NavLink to="/products" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-          <span className="nav-icon">▨</span>
-          <span>المنتجات</span>
-        </NavLink>
-        <NavLink to="/products/interactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-          <span className="nav-icon">📊</span>
-          <span>تفاعل العملاء</span>
-        </NavLink>
+        {Api.can('PRODUCT_READ') && (
+          <>
+            <NavLink to="/products" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">▨</span>
+              <span>المنتجات</span>
+            </NavLink>
+            <NavLink to="/products/interactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">📊</span>
+              <span>تفاعل العملاء</span>
+            </NavLink>
+            <NavLink to="/categories" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">▤</span>
+              <span>الفئات</span>
+            </NavLink>
+          </>
+        )}
 
-        {(isAdmin || Api.can('DAMAGED_GOODS_MANAGE')) && (
+        {Api.can('DAMAGED_GOODS_MANAGE') && (
           <NavLink to="/damaged" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🗑️</span>
             <span>التوالف والهوالك</span>
           </NavLink>
         )}
-
-        <NavLink to="/categories" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-          <span className="nav-icon">▤</span>
-          <span>الفئات</span>
-        </NavLink>
 
         {Api.can('SUPPLIER_READ') && (
           <NavLink to="/suppliers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
@@ -101,51 +104,85 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
-        {Api.can('TREASURY_READ') && (
+        {(Api.can('TREASURY_READ') || Api.can('EXPENSE_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ')) && (
           <>
             <div className="nav-section-title">الحسابات والتقارير</div>
-            <NavLink to="/treasury" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">💰</span>
-              <span>خزنة الفرع</span>
-            </NavLink>
-            {isAdmin && (
-              <NavLink to="/treasury-management" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">🏛️</span>
-                <span>إدارة الخزائن المركزية</span>
+            {Api.can('TREASURY_READ') && (
+              <>
+                <NavLink to="/treasury" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">💰</span>
+                  <span>خزنة الفرع</span>
+                </NavLink>
+                {isAdmin && (
+                  <NavLink to="/treasury-management" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <span className="nav-icon">🏛️</span>
+                    <span>إدارة الخزائن المركزية</span>
+                  </NavLink>
+                )}
+              </>
+            )}
+            {Api.can('EXPENSE_READ') && (
+              <NavLink to="/expenses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">💸</span>
+                <span>المصروفات</span>
               </NavLink>
             )}
-            <NavLink to="/expenses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">💸</span>
-              <span>المصروفات</span>
-            </NavLink>
-            <NavLink to="/profit-loss" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">📈</span>
-              <span>الأرپاح والخسائر</span>
-            </NavLink>
-            <NavLink to="/partners" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">🤝</span>
-              <span>الشركاء</span>
-            </NavLink>
-            <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">📊</span>
-              <span>إدارة الآجل والأقساط</span>
-            </NavLink>
-            <NavLink to="/facebook-ads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">🔵</span>
-              <span>تقارير إعلانات فيسبوك</span>
-            </NavLink>
-            <NavLink to="/installments-calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">📅</span>
-              <span>تقويم الأقساط</span>
-            </NavLink>
-            <NavLink to="/payroll" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">💸</span>
-              <span>مسير الرواتب</span>
-            </NavLink>
+            {Api.can('FIXED_ASSET_READ') && (
+              <NavLink to="/fixed-assets" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🏗️</span>
+                <span>الأصول الثابتة</span>
+              </NavLink>
+            )}
+            {Api.can('TREASURY_READ') && (
+              <>
+                <NavLink to="/profit-loss" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">📈</span>
+                  <span>الأرباح والخسائر</span>
+                </NavLink>
+                <NavLink to="/trial-balance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">⚖️</span>
+                  <span>ميزان المراجعة (GL)</span>
+                </NavLink>
+                <NavLink to="/financial-accounts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">🏦</span>
+                  <span>إدارة البنوك والحسابات</span>
+                </NavLink>
+                <NavLink to="/financial-analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">📊</span>
+                  <span>التحليل المالي الموحد</span>
+                </NavLink>
+                <NavLink to="/checks" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">📑</span>
+                  <span>سجل الشيكات</span>
+                </NavLink>
+                <NavLink to="/partners" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">🤝</span>
+                  <span>الشركاء</span>
+                </NavLink>
+                <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">📊</span>
+                  <span>إدارة الآجل والأقساط</span>
+                </NavLink>
+                <NavLink to="/facebook-ads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">🔵</span>
+                  <span>تقارير إعلانات فيسبوك</span>
+                </NavLink>
+                <NavLink to="/installments-calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                  <span className="nav-icon">📅</span>
+                  <span>تقويم الأقساط</span>
+                </NavLink>
+              </>
+            )}
+            {Api.can('PAYROLL_READ') && (
+              <NavLink to="/payroll" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">💸</span>
+                <span>مسير الرواتب</span>
+              </NavLink>
+            )}
           </>
         )}
 
-        {(Api.can('USER_READ') || Api.can('ROLE_READ') || Api.can('AUDIT_READ')) && (
+        {(Api.can('USER_READ') || Api.can('ROLE_READ') || Api.can('AUDIT_READ') || Api.can('BRANCH_READ') || Api.can('WAREHOUSE_READ')) && (
           <>
             <div className="nav-section-title">الإدارة</div>
             {Api.can('USER_READ') && (
@@ -154,29 +191,55 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon">👤</span>
                   <span>المستخدمين</span>
                 </NavLink>
+              </>
+            )}
+            
+            {(Api.can('EMPLOYEE_READ') || Api.can('ATTENDANCE_READ') || Api.can('LEAVE_READ') || Api.can('SHIFT_MANAGE')) && (
+              <>
                 <div className="nav-section-title">الموظفين والموارد البشرية</div>
-                <NavLink to="/employees" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">👥</span>
-                  <span>قائمة الموظفين</span>
-                </NavLink>
-                <NavLink to="/attendance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">📅</span>
-                  <span>الحضور والانصراف اليومي</span>
-                </NavLink>
-                <NavLink to="/payroll" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">💸</span>
-                  <span>مسير الرواتب</span>
-                </NavLink>
-                <NavLink to="/shifts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">🕒</span>
-                  <span>إدارة الورديات</span>
-                </NavLink>
+                {Api.can('EMPLOYEE_READ') && (
+                  <NavLink to="/employees" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <span className="nav-icon">👥</span>
+                    <span>قائمة الموظفين</span>
+                  </NavLink>
+                )}
+                {Api.can('ATTENDANCE_READ') && (
+                  <NavLink to="/attendance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <span className="nav-icon">📅</span>
+                    <span>الحضور والانصراف اليومي</span>
+                  </NavLink>
+                )}
+                {Api.can('LEAVE_READ') && (
+                  <NavLink to="/leave-requests" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <span className="nav-icon">🏖️</span>
+                    <span>إدارة الإجازات</span>
+                  </NavLink>
+                )}
+                {isAdmin && (
+                  <NavLink to="/leave-types" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <span className="nav-icon">⚙️</span>
+                    <span>إعدادات الإجازات</span>
+                  </NavLink>
+                )}
+                {Api.can('USER_READ') && (
+                  <NavLink to="/custody" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <span className="nav-icon">🛡️</span>
+                    <span>العهد الشخصية</span>
+                  </NavLink>
+                )}
+                {Api.can('SHIFT_MANAGE') && (
+                  <NavLink to="/shifts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <span className="nav-icon">🕒</span>
+                    <span>إدارة الورديات</span>
+                  </NavLink>
+                )}
                 <NavLink to="/messages" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                   <span className="nav-icon">💬</span>
                   <span>الرسائل</span>
                 </NavLink>
               </>
             )}
+
             {Api.can('ROLE_READ') && (
               <NavLink to="/roles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">🔑</span>
@@ -189,28 +252,39 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>سجل المراجعة</span>
               </NavLink>
             )}
+            {Api.can('BRANCH_READ') && (
               <NavLink to="/branches" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">🏢</span>
                 <span>إدارة الفروع</span>
               </NavLink>
+            )}
+            {Api.can('WAREHOUSE_READ') && (
               <NavLink to="/warehouses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">📦</span>
                 <span>إدارة المخازن</span>
               </NavLink>
+            )}
+            {Api.can('PRODUCT_READ') && (
               <NavLink to="/inventory/report" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">📋</span>
                 <span>الجرد التفصيلي</span>
               </NavLink>
+            )}
+            {isAdmin && (
               <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">⚙️</span>
                 <span>إعدادات المتجر</span>
               </NavLink>
+            )}
+            {Api.can('AUDIT_READ') && (
               <NavLink to="/offline-audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">🔍</span>
                 <span>فحص البيانات المحلية</span>
               </NavLink>
+            )}
           </>
         )}
+
       </nav>
 
       <div className="sidebar-footer">

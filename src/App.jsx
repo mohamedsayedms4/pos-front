@@ -41,8 +41,13 @@ import StoreAccountPage from './pages/StoreAccountPage.jsx'
 import StoreWishlistPage from './pages/StoreWishlistPage.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsOfUse from './pages/TermsOfUse.jsx'
+import FixedAssets from './pages/FixedAssets.jsx'
+import LeaveTypes from './pages/LeaveTypes.jsx'
+import LeaveRequests from './pages/LeaveRequests.jsx'
 import Settings from './pages/Settings.jsx'
 import Expenses from './pages/Expenses.jsx'
+import FinancialAccounts from './pages/FinancialAccounts.jsx'
+import CheckManagement from './pages/CheckManagement.jsx'
 import ProfitLoss from './pages/ProfitLoss.jsx'
 import Partners from './pages/Partners.jsx'
 import Branches from './pages/Branches.jsx'
@@ -51,6 +56,9 @@ import Warehouses from './pages/Warehouses.jsx'
 import InventoryReport from './pages/InventoryReport.jsx'
 import FacebookAdsDashboard from './pages/FacebookAdsDashboard.jsx'
 import OfflineAudit from './pages/OfflineAudit.jsx'
+import EmployeeCustody from './pages/EmployeeCustody.jsx'
+import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
+import TrialBalance from './pages/TrialBalance.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -95,48 +103,114 @@ function App() {
                   <Route path="/order-cashier" element={<OrderCashier />} />
                   <Route element={<MainLayout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/pos" element={<POS />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/suppliers" element={<Suppliers />} />
-                    <Route path="/customers" element={<Customers />} />
-                    <Route path="/purchases" element={<Purchases />} />
-                    <Route path="/purchases/:supplierName" element={<Purchases />} />
-                    <Route path="/sales" element={<Sales />} />
-                    <Route path="/sales/analytics" element={<SalesAnalytics />} />
-                    <Route path="/returns" element={<Returns />} />
-                    <Route path="/users" element={<Users />} />
-                    <Route path="/audit" element={<Audit />} />
-                    <Route path="/audit/:id" element={<AuditDetails />} />
-                    <Route path="/roles" element={<Roles />} />
+                    
+                    {/* Sales & POS */}
+                    <Route element={<ProtectedRoute permission="SALE_READ" />}>
+                      <Route path="/pos" element={<POS />} />
+                      <Route path="/sales" element={<Sales />} />
+                      <Route path="/sales/analytics" element={<SalesAnalytics />} />
+                      <Route path="/returns" element={<Returns />} />
+                      <Route path="/online-orders" element={<OnlineOrders />} />
+                    </Route>
+
+                    {/* Products & Inventory */}
+                    <Route element={<ProtectedRoute permission="PRODUCT_READ" />}>
+                      <Route path="/products" element={<Products />} />
+                      <Route path="/products/:id" element={<ProductDetails />} />
+                      <Route path="/products/analytics" element={<ProductAnalytics />} />
+                      <Route path="/products/interactions" element={<ProductInteractions />} />
+                      <Route path="/products/offers" element={<CustomerOffers />} />
+                      <Route path="/categories" element={<Categories />} />
+                      <Route path="/inventory/report" element={<InventoryReport />} />
+                    </Route>
+
+                    {/* Damaged Goods */}
+                    <Route element={<ProtectedRoute permission="DAMAGED_GOODS_MANAGE" />}>
+                      <Route path="/damaged" element={<DamagedProducts />} />
+                    </Route>
+
+                    {/* Suppliers & Purchases */}
+                    <Route element={<ProtectedRoute permission="SUPPLIER_READ" />}>
+                      <Route path="/suppliers" element={<Suppliers />} />
+                      <Route path="/suppliers/:id" element={<SupplierDetails />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="PURCHASE_READ" />}>
+                      <Route path="/purchases" element={<Purchases />} />
+                      <Route path="/purchases/:supplierName" element={<Purchases />} />
+                      <Route path="/stock-receipts" element={<StockReceipts />} />
+                    </Route>
+
+                    {/* Customers */}
+                    <Route element={<ProtectedRoute permission="CUSTOMER_READ" />}>
+                      <Route path="/customers" element={<Customers />} />
+                    </Route>
+
+                    {/* Treasury & Finance */}
+                    <Route element={<ProtectedRoute permission="TREASURY_READ" />}>
+                      <Route path="/treasury" element={<Treasury />} />
+                      <Route path="/financial-accounts" element={<FinancialAccounts />} />
+                      <Route path="/financial-analytics" element={<FinancialAnalytics />} />
+                      <Route path="/checks" element={<CheckManagement />} />
+                      <Route path="/treasury-management" element={<TreasuryManagement />} />
+                      <Route path="/debts" element={<DebtManagement />} />
+                      <Route path="/installments-calendar" element={<InstallmentCalendar />} />
+                      <Route path="/profit-loss" element={<ProfitLoss />} />
+                      <Route path="/partners" element={<Partners />} />
+                      <Route path="/facebook-ads" element={<FacebookAdsDashboard />} />
+                      <Route path="/trial-balance" element={<TrialBalance />} />
+                    </Route>
+
+                    <Route element={<ProtectedRoute permission="EXPENSE_READ" />}>
+                      <Route path="/expenses" element={<Expenses />} />
+                    </Route>
+
+                    <Route element={<ProtectedRoute permission="FIXED_ASSET_READ" />}>
+                      <Route path="/fixed-assets" element={<FixedAssets />} />
+                    </Route>
+
+                    {/* HR & Employees */}
+                    <Route element={<ProtectedRoute permission="EMPLOYEE_READ" />}>
+                      <Route path="/employees" element={<Employees />} />
+                      <Route path="/employees/:id" element={<EmployeeDetails />} />
+                      <Route path="/custody" element={<EmployeeCustody />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="ATTENDANCE_READ" />}>
+                      <Route path="/attendance" element={<AttendanceDashboard />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="LEAVE_READ" />}>
+                      <Route path="/leave-requests" element={<LeaveRequests />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="PAYROLL_READ" />}>
+                      <Route path="/payroll" element={<PayrollDashboard />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="SHIFT_MANAGE" />}>
+                      <Route path="/shifts" element={<ShiftsManagement />} />
+                    </Route>
+
+                    {/* Administration */}
+                    <Route element={<ProtectedRoute permission="USER_READ" />}>
+                      <Route path="/users" element={<Users />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="ROLE_READ" />}>
+                      <Route path="/roles" element={<Roles />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="AUDIT_READ" />}>
+                      <Route path="/audit" element={<Audit />} />
+                      <Route path="/audit/:id" element={<AuditDetails />} />
+                      <Route path="/offline-audit" element={<OfflineAudit />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="BRANCH_READ" />}>
+                      <Route path="/branches" element={<Branches />} />
+                      <Route path="/branches/:id/manage" element={<BranchManagement />} />
+                    </Route>
+                    <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>
+                      <Route path="/warehouses" element={<Warehouses />} />
+                    </Route>
+
+                    {/* Generic */}
                     <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/products/:id" element={<ProductDetails />} />
-                    <Route path="/products/analytics" element={<ProductAnalytics />} />
-                    <Route path="/products/interactions" element={<ProductInteractions />} />
-                    <Route path="/products/offers" element={<CustomerOffers />} />
-                    <Route path="/damaged" element={<DamagedProducts />} />
-                    <Route path="/suppliers/:id" element={<SupplierDetails />} />
-                    <Route path="/stock-receipts" element={<StockReceipts />} />
-                    <Route path="/treasury" element={<Treasury />} />
-                    <Route path="/treasury-management" element={<TreasuryManagement />} />
-                    <Route path="/debts" element={<DebtManagement />} />
-                    <Route path="/installments-calendar" element={<InstallmentCalendar />} />
-                    <Route path="/employees" element={<Employees />} />
-                    <Route path="/employees/:id" element={<EmployeeDetails />} />
-                    <Route path="/shifts" element={<ShiftsManagement />} />
-                    <Route path="/payroll" element={<PayrollDashboard />} />
-                    <Route path="/attendance" element={<AttendanceDashboard />} />
                     <Route path="/messages" element={<Messages />} />
-                    <Route path="/online-orders" element={<OnlineOrders />} />
-                    <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/profit-loss" element={<ProfitLoss />} />
-                    <Route path="/partners" element={<Partners />} />
-                    <Route path="/branches" element={<Branches />} />
-                    <Route path="/branches/:id/manage" element={<BranchManagement />} />
-                    <Route path="/warehouses" element={<Warehouses />} />
-                    <Route path="/inventory/report" element={<InventoryReport />} />
-                    <Route path="/facebook-ads" element={<FacebookAdsDashboard />} />
-                    <Route path="/offline-audit" element={<OfflineAudit />} />
+                    <Route path="/leave-types" element={<LeaveTypes />} />
                     <Route path="/settings" element={<Settings />} />
                   </Route>
                 </Route>

@@ -2,7 +2,7 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-export const SERVER_URL = 'https://posapi.digitalrace.net';
+export const SERVER_URL = 'http://localhost:8080';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
@@ -81,6 +81,66 @@ const Api = {
   isAdminOrBranchManager() {
     return this.isAdmin() || this.isBranchManager();
   },
+
+  // ─── Leaves Management ───────────────────────────────────────────────────────
+  async getLeaveTypes() {
+    const res = await this._request('/leaves/types');
+    return res.data;
+  },
+
+  async createLeaveType(data) {
+    const res = await this._request('/leaves/types', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateLeaveType(id, data) {
+    const res = await this._request(`/leaves/types/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteLeaveType(id) {
+    await this._request(`/leaves/types/${id}`, { method: 'DELETE' });
+  },
+
+  async getAllLeaveRequests() {
+    const res = await this._request('/leaves/requests');
+    return res.data;
+  },
+
+  async getMyLeaveRequests(userId) {
+    const res = await this._request(`/leaves/my-requests/${userId}`);
+    return res.data;
+  },
+
+  async submitLeaveRequest(data) {
+    const res = await this._request('/leaves/requests', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async approveLeaveRequest(id) {
+    const res = await this._request(`/leaves/requests/${id}/approve`, { method: 'POST' });
+    return res.data;
+  },
+
+  async rejectLeaveRequest(id) {
+    const res = await this._request(`/leaves/requests/${id}/reject`, { method: 'POST' });
+    return res.data;
+  },
+
+  async getMyLeaveBalances(userId, year = new Date().getFullYear()) {
+    const res = await this._request(`/leaves/balances/${userId}/${year}`);
+    return res.data;
+  },
+  // ─────────────────────────────────────────────────────────────────────────────
 
   // ─── Stock Receipts ──────────────────────────────────────────────────────────
   async getStockReceipts(page = 0, size = 10, query = '', branchId = null) {
@@ -1322,6 +1382,50 @@ const Api = {
     return res.data;
   },
 
+  async createFinancialAccount(data) {
+    const res = await this._request('/treasury/accounts', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async transferBetweenAccounts(data) {
+    const res = await this._request('/treasury/account-transfer', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  // ─── Checks ───
+  async getChecks(page = 0, size = 10) {
+    const res = await this._request(`/checks?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async registerCheck(data) {
+    const res = await this._request('/checks', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateCheckStatus(id, status) {
+    const res = await this._request(`/checks/${id}/status?status=${status}`, {
+      method: 'PATCH'
+    });
+    return res.data;
+  },
+
+  async endorseCheck(id, endorsee) {
+    const res = await this._request(`/checks/${id}/endorse?endorsee=${encodeURIComponent(endorsee)}`, {
+      method: 'POST'
+    });
+    return res.data;
+  },
+
   // ─── Customer Offers (Targeted Discounts) ───
   async createCustomerOffer(data) {
     const res = await this._request('/offers', {
@@ -1343,6 +1447,83 @@ const Api = {
 
   async deactivateOffer(offerId) {
     const res = await this._request(`/offers/${offerId}`, { method: 'DELETE' });
+    return res.data;
+  },
+
+  // ─── Fixed Assets ───
+  async getFixedAssets(branchId = null, warehouseId = null) {
+    let path = '/fixed-assets';
+    if (warehouseId) path = `/fixed-assets/warehouse/${warehouseId}`;
+    else if (branchId) path = `/fixed-assets/branch/${branchId}`;
+
+    const res = await this._request(path);
+    return res.data;
+  },
+
+  async getFixedAsset(id) {
+    const res = await this._request(`/fixed-assets/${id}`);
+    return res.data;
+  },
+
+  async createFixedAsset(data) {
+    const res = await this._request('/fixed-assets', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateFixedAsset(id, data) {
+    const res = await this._request(`/fixed-assets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteFixedAsset(id) {
+    await this._request(`/fixed-assets/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Employee Custody (العهد الشخصية) ───
+  async getCustody(page = 0, size = 10, query = '') {
+    const res = await this._request(`/custody?page=${page}&size=${size}&query=${encodeURIComponent(query)}`);
+    return res.data;
+  },
+
+  async issueCustody(data) {
+    const res = await this._request('/custody', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async returnCustody(id, notes) {
+    const res = await this._request(`/custody/${id}/return`, {
+      method: 'POST',
+      body: JSON.stringify({ notes })
+    });
+    return res.data;
+  },
+
+  async deleteCustody(id) {
+    await this._request(`/custody/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Accounting (American Journal) ──────────────────────────────────────────
+  async getTrialBalance() {
+    const res = await this._request('/accounting/trial-balance');
+    return res.data;
+  },
+
+  async getAccountingAccounts() {
+    const res = await this._request('/accounting/accounts');
+    return res.data;
+  },
+
+  async getAccountingEntries(page = 0, size = 10) {
+    const res = await this._request(`/accounting/entries?page=${page}&size=${size}`);
     return res.data;
   }
 };

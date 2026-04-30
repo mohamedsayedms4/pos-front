@@ -38,7 +38,7 @@ class ChatService {
       this.connecting = false;
       console.log('>>> [STOMP] Connected: ' + frame);
 
-      const user = JSON.parse(localStorage.getItem('pos_user'));
+      const user = Api._getUser();
       if (user) {
         // Subscribe to private message queue (Spring maps /user/queue/messages to the current principal)
         this.client.subscribe('/user/queue/messages', (message) => {
@@ -96,7 +96,7 @@ class ChatService {
       return;
     }
 
-    const user = JSON.parse(localStorage.getItem('pos_user'));
+    const user = Api._getUser();
     this.client.publish({
       destination: '/app/chat',
       body: JSON.stringify({

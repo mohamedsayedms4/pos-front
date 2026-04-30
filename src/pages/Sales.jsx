@@ -206,7 +206,9 @@ const Sales = () => {
                                 </td>
                                 <td data-label="الإجراءات">
                                     <button className="btn btn-secondary btn-sm" onClick={() => openDetails(s)}>التفاصيل</button>
-                                    <button className="btn btn-danger btn-sm" onClick={() => openReturnModal(s)}>↩ مرتجع</button>
+                                    {Api.can('SALE_WRITE') && (
+                                        <button className="btn btn-danger btn-sm" onClick={() => openReturnModal(s)}>↩ مرتجع</button>
+                                    )}
                                 </td>
                                 </tr>
                             ))}
