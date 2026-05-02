@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Api from '../services/api';
+import Api, { SERVER_URL } from '../services/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -42,7 +42,7 @@ const Login = () => {
   const findTenantByEmail = async (emailAddr) => {
     setIsResolving(true);
     try {
-      const res = await fetch(`https://posapi.digitalrace.net/api/public/tenants/find-by-email/${emailAddr}`);
+      const res = await fetch(`${SERVER_URL}/api/public/tenants/find-by-email/${emailAddr}`);
       if (res.ok) {
         const tenants = await res.json();
         if (tenants.length === 1) {
@@ -66,7 +66,7 @@ const Login = () => {
   const resolveAndSetTenant = async (slug) => {
     setIsResolving(true);
     try {
-      const resolveRes = await fetch(`https://posapi.digitalrace.net/api/public/tenants/resolve/${slug}`);
+      const resolveRes = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${slug}`);
       if (resolveRes.ok) {
         const data = await resolveRes.json();
         setBusinessName(data.name);
