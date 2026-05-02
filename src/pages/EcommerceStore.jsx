@@ -191,7 +191,12 @@ const EcommerceStore = () => {
                       className={`ec-hero-slide ${idx === activeHeroIdx ? 'active' : ''}`}
                       style={{ backgroundImage: `url(${StoreApi.getImageUrl(hero.imageUrl)})` }}
                     >
-                      <div className="ec-hero-overlay" />
+                      <div className="ec-hero-overlay">
+                        <div className="ec-hero-content">
+                          <h1>{hero.title}</h1>
+                          <p>{hero.subtitle}</p>
+                        </div>
+                      </div>
                     </div>
                   );
 

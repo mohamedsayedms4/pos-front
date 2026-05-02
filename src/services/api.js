@@ -22,10 +22,19 @@ const Api = {
     localStorage.setItem('pos_refresh_token', refresh);
   },
 
+  _getTenantId() {
+    return localStorage.getItem('pos_tenant_id');
+  },
+
+  _setTenantId(id) {
+    if (id) localStorage.setItem('pos_tenant_id', id);
+  },
+
   _clearTokens() {
     localStorage.removeItem('pos_access_token');
     localStorage.removeItem('pos_refresh_token');
     localStorage.removeItem('pos_user');
+    localStorage.removeItem('pos_tenant_id');
   },
 
   _getUser() {
@@ -179,6 +188,12 @@ const Api = {
 
     headers['Accept-Language'] = 'ar';
 
+    const tenantId = this._getTenantId();
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+    }
+
+    console.log(`[Request] ${options.method || 'GET'} ${url}`, { tenantId, headers });
     try {
       let response = await fetch(url, { ...options, headers });
 
@@ -245,13 +260,19 @@ const Api = {
   },
 
   // ─── Auth ───
-  async login(email, password) {
+  async login(email, password, tenantId = null) {
+    if (tenantId) {
+      this._setTenantId(tenantId);
+    }
     const res = await this._request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
     this._setTokens(res.data.accessToken, res.data.refreshToken);
     this._setUser(res.data.user);
+    if (res.data.user && res.data.user.tenantId) {
+      this._setTenantId(res.data.user.tenantId);
+    }
     return res.data;
   },
 
@@ -990,23 +1011,35 @@ const Api = {
     return res;
   },
 
-  // ─── Installments ───
-  async generateInstallmentPlan(data) {
-    const res = await this._request('/installments/generate', {
+  // ─── Unified Debt & Installments ───
+  async generateInstallmentPlan(invoiceId, months, downPayment, startDate, isSale = false) {
+    const source = isSale ? 'SALE' : 'PURCHASE';
+    // First, find the debt record for this invoice
+    const installments = await this.getInstallmentsForInvoice(invoiceId, isSale);
+    // If debt exists, generate plan
+    // This is a simplification; in a real app we'd need the Debt ID.
+    // For now, we assume the backend can find it by source.
+    // Actually, I added a /debts/{id}/generate-plan endpoint, but for convenience I'll add a source-based one if needed.
+    // Let's use the source-based lookup first to get the ID.
+    const res = await this._request(`/debts?source=${source}&sourceId=${invoiceId}`);
+    const debt = res.data.content[0];
+    if (!debt) throw new Error('Debt record not found for this invoice');
+
+    return await this._request(`/debts/${debt.id}/generate-plan`, {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify({ months, downPayment, startDate })
     });
-    return res;
   },
 
-  async payInstallment(id) {
-    const res = await this._request(`/installments/${id}/pay`, { method: 'POST' });
-    return res;
+  async payInstallment(id, amount) {
+    // Systems A uses /debts/installments/{id}/pay
+    return await this._request(`/debts/installments/${id}/pay?amount=${amount}`, { method: 'POST' });
   },
 
-  async getInstallmentsForInvoice(invoiceId) {
-    const res = await this._request(`/installments/invoice/${invoiceId}`);
-    return res;
+  async getInstallmentsForInvoice(invoiceId, isSale = false) {
+    const source = isSale ? 'SALE' : 'PURCHASE';
+    const res = await this._request(`/debts/source/${source}/${invoiceId}/installments`);
+    return res.data;
   },
 
   // ─── Customers ───

@@ -3,8 +3,23 @@ import { SERVER_URL, API_BASE } from './api';
 const PAGE_SIZE = 20;
 
 const StoreApi = {
+  _getTenantId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTenant = urlParams.get('tenantId');
+    if (urlTenant) {
+        localStorage.setItem('public_tenant_id', urlTenant);
+        return urlTenant;
+    }
+    return localStorage.getItem('public_tenant_id') || '1';
+  },
+
   async _get(path) {
-    const res = await fetch(`${SERVER_URL}/api/public/store${path}`);
+    const tenantId = this._getTenantId();
+    const res = await fetch(`${SERVER_URL}/api/public/store${path}`, {
+      headers: {
+        'X-Tenant-ID': tenantId
+      }
+    });
     if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.message || 'Request failed');
@@ -31,9 +46,13 @@ const StoreApi = {
   },
 
   async placeOrder(data) {
+    const tenantId = this._getTenantId();
     const res = await fetch(`${SERVER_URL}/api/public/store/orders`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Tenant-ID': tenantId
+      },
       body: JSON.stringify(data)
     });
     if (!res.ok) {
@@ -61,9 +80,13 @@ const StoreApi = {
 
   // ─── STORE AUTHENTICATION ───
   async storeRegister(data) {
+    const tenantId = this._getTenantId();
     const res = await fetch(`${SERVER_URL}/api/public/store/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Tenant-ID': tenantId
+      },
       body: JSON.stringify(data)
     });
     if (!res.ok) {
@@ -74,9 +97,13 @@ const StoreApi = {
   },
 
   async storeLogin(phone, password) {
+    const tenantId = this._getTenantId();
     const res = await fetch(`${SERVER_URL}/api/public/store/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Tenant-ID': tenantId
+      },
       body: JSON.stringify({ phone, password })
     });
     if (!res.ok) {

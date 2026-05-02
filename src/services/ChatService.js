@@ -47,8 +47,9 @@ class ChatService {
           this.notifyCountUpdate(); // Automatically trigger count refresh on new message
         });
 
-        // Subscribe to global presence channel
-        this.client.subscribe('/topic/presence', (status) => {
+        // Subscribe to tenant-scoped presence channel
+        const tenantId = Api._getTenantId() || 'global';
+        this.client.subscribe(`/topic/${tenantId}/presence`, (status) => {
           const update = JSON.parse(status.body);
           this.presenceListeners.forEach(listener => listener(update));
         });

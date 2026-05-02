@@ -153,9 +153,10 @@ export function useNotifications(options = {}) {
 
         // Subscribe to role-based topics
         const user = Api._getUser();
+        const tenantId = Api._getTenantId() || 'global';
         if (user?.roles) {
           user.roles.forEach(role => {
-            client.subscribe(`/topic/notifications/${role}`, (message) => {
+            client.subscribe(`/topic/${tenantId}/notifications/${role}`, (message) => {
               try { addIncoming(JSON.parse(message.body)); } catch { /* ignore */ }
             });
           });

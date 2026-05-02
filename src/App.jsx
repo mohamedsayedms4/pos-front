@@ -57,6 +57,7 @@ import InventoryReport from './pages/InventoryReport.jsx'
 import FacebookAdsDashboard from './pages/FacebookAdsDashboard.jsx'
 import OfflineAudit from './pages/OfflineAudit.jsx'
 import EmployeeCustody from './pages/EmployeeCustody.jsx'
+import TenantRegister from './pages/TenantRegister.jsx'
 import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
@@ -87,6 +88,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<TenantRegister />} />
                 
                 {/* Public Store Routes with Context */}
                 <Route path="/store" element={<StoreAuthProvider><StoreProvider><EcommerceStore /></StoreProvider></StoreAuthProvider>} />
@@ -96,6 +98,8 @@ function App() {
                 <Route path="/store/wishlist" element={<StoreAuthProvider><StoreProvider><StoreWishlistPage /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/store/privacy-policy" element={<StoreAuthProvider><StoreProvider><PrivacyPolicy /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
+                <Route path="/terms" element={<TermsOfUse />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
                 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/customer-order" element={<CustomerOrder />} />

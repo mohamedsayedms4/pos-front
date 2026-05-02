@@ -22,9 +22,10 @@ const Warehouses = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    location: '',
+    code: '',
     branchId: '',
-    isMain: false
+    isDefault: false,
+    active: true
   });
 
   const loadData = async () => {
@@ -52,16 +53,18 @@ const Warehouses = () => {
     if (wh) {
       setFormData({
         name: wh.name || '',
-        location: wh.location || '',
+        code: wh.code || '',
         branchId: wh.branchId || '',
-        isMain: wh.isMain || false
+        isDefault: wh.isDefault || false,
+        active: wh.active ?? true
       });
     } else {
       setFormData({
         name: '',
-        location: '',
+        code: '',
         branchId: branches.length > 0 ? branches[0].id : '',
-        isMain: false
+        isDefault: false,
+        active: true
       });
     }
     setModalType('form');
@@ -153,8 +156,8 @@ const Warehouses = () => {
         />
         <StatTile
           id="wh_main"
-          label="مخازن رئيسية"
-          value={data.filter(w => w.isMain).length}
+          label="مخازن افتراضية"
+          value={data.filter(w => w.isDefault).length}
           icon="⭐"
           defaults={{ color: 'blue', size: 'tile-sq-sm', order: 2 }}
         />
@@ -180,10 +183,11 @@ const Warehouses = () => {
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>الكود</th>
                     <th>المخزن</th>
                     <th>الفرع التابع له</th>
-                    <th>الموقع</th>
-                    <th>رئيسي</th>
+                    <th>افتراضي</th>
+                    <th>الحالة</th>
                     <th>الإجراءات</th>
                   </tr>
                 </thead>
@@ -191,11 +195,14 @@ const Warehouses = () => {
                   {data.map((w, i) => (
                     <tr key={w.id}>
                       <td>{i + 1}</td>
+                      <td style={{ fontWeight: 500, color: 'var(--text-muted)' }}>{w.code}</td>
                       <td style={{ fontWeight: 600 }}>{w.name}</td>
                       <td>{w.branchName || branches.find(b => b.id === w.branchId)?.name || '—'}</td>
-                      <td>{w.location || '—'}</td>
                       <td>
-                        {w.isMain ? <span className="badge badge-success">نعم</span> : <span className="badge badge-secondary">لا</span>}
+                        {w.isDefault ? <span className="badge badge-success">نعم</span> : <span className="badge badge-secondary">لا</span>}
+                      </td>
+                      <td>
+                        {w.active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">متوقف</span>}
                       </td>
                       <td>
                         <div className="table-actions">
@@ -227,26 +234,35 @@ const Warehouses = () => {
                     <input className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
                   </div>
                   <div className="form-group">
+                    <label>كود المخزن *</label>
+                    <input className="form-control" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} required placeholder="مثال: WH-001" />
+                  </div>
+                  <div className="form-group">
                     <label>الفرع التابع له *</label>
                     <select className="form-control" value={formData.branchId} onChange={e => setFormData({...formData, branchId: e.target.value})} required>
                       <option value="">-- اختر الفرع --</option>
                       {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label>الموقع / العنوان</label>
-                    <input className="form-control" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                  <div className="form-group" style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                    <div>
+                        <label>مخزن افتراضي للفرع</label>
+                        <label className="toggle-switch">
+                        <input type="checkbox" checked={formData.isDefault} onChange={e => setFormData({...formData, isDefault: e.target.checked})} />
+                        <span className="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>نشط</label>
+                        <label className="toggle-switch">
+                        <input type="checkbox" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} />
+                        <span className="toggle-slider"></span>
+                        </label>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>مخزن رئيسي للفرع</label>
-                    <label className="toggle-switch">
-                      <input type="checkbox" checked={formData.isMain} onChange={e => setFormData({...formData, isMain: e.target.checked})} />
-                      <span className="toggle-slider"></span>
-                    </label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '5px' }}>
-                      المخزن الرئيسي هو الذي يتم خصم/إضافة الكميات منه افتراضياً في هذا الفرع.
-                    </p>
-                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '5px' }}>
+                    المخزن الافتراضي هو الذي يتم خصم/إضافة الكميات منه تلقائياً في هذا الفرع.
+                  </p>
                 </form>
               </div>
               <div className="modal-footer">
