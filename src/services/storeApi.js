@@ -3,18 +3,65 @@ import { SERVER_URL, API_BASE } from './api';
 const PAGE_SIZE = 20;
 
 const StoreApi = {
-  _getTenantId() {
+  _resolvingPromise: null,
+
+  async _getTenantId() {
+    // 1. Check URL param first
     const urlParams = new URLSearchParams(window.location.search);
     const urlTenant = urlParams.get('tenantId');
     if (urlTenant) {
         localStorage.setItem('public_tenant_id', urlTenant);
         return urlTenant;
     }
-    return localStorage.getItem('public_tenant_id') || '1';
+
+    // 2. Check local storage
+    let saved = localStorage.getItem('public_tenant_id');
+    
+    // 3. Resolve by subdomain if needed
+    const hostname = window.location.hostname;
+    const isDR = hostname.endsWith('digitalrace.net');
+    const isMobily = hostname.endsWith('mobily.cloud');
+    
+    if (isDR || isMobily) {
+        const parts = hostname.split('.');
+        if (parts.length >= 3 && parts[0] !== 'www') {
+            const slug = parts[0];
+            
+            // If the slug changed or we don't have a saved ID, resolve it
+            if (!saved || localStorage.getItem('public_tenant_slug') !== slug) {
+                // Singleton pattern: if we are already resolving, wait for that
+                if (this._resolvingPromise) {
+                    return this._resolvingPromise;
+                }
+
+                this._resolvingPromise = (async () => {
+                    try {
+                        console.log(`[StoreApi] Resolving slug: ${slug}`);
+                        const res = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${slug}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            localStorage.setItem('public_tenant_id', data.id);
+                            localStorage.setItem('public_tenant_slug', slug);
+                            this._resolvingPromise = null;
+                            return data.id;
+                        }
+                    } catch (e) {
+                        console.error('Failed to resolve tenant by subdomain', e);
+                    }
+                    this._resolvingPromise = null;
+                    return saved || '1';
+                })();
+                
+                return this._resolvingPromise;
+            }
+        }
+    }
+
+    return saved || '1';
   },
 
   async _get(path) {
-    const tenantId = this._getTenantId();
+    const tenantId = await this._getTenantId();
     const res = await fetch(`${SERVER_URL}/api/public/store${path}`, {
       headers: {
         'X-Tenant-ID': tenantId
@@ -46,7 +93,7 @@ const StoreApi = {
   },
 
   async placeOrder(data) {
-    const tenantId = this._getTenantId();
+    const tenantId = await this._getTenantId();
     const res = await fetch(`${SERVER_URL}/api/public/store/orders`, {
       method: 'POST',
       headers: { 
@@ -80,7 +127,7 @@ const StoreApi = {
 
   // ─── STORE AUTHENTICATION ───
   async storeRegister(data) {
-    const tenantId = this._getTenantId();
+    const tenantId = await this._getTenantId();
     const res = await fetch(`${SERVER_URL}/api/public/store/auth/register`, {
       method: 'POST',
       headers: { 
@@ -97,7 +144,7 @@ const StoreApi = {
   },
 
   async storeLogin(phone, password) {
-    const tenantId = this._getTenantId();
+    const tenantId = await this._getTenantId();
     const res = await fetch(`${SERVER_URL}/api/public/store/auth/login`, {
       method: 'POST',
       headers: { 
@@ -160,7 +207,10 @@ const StoreApi = {
 
   // ─── HERO SECTIONS ───
   async getHeroSections() {
-    const res = await fetch(`${SERVER_URL}/api/public/store/hero-sections`);
+    const tenantId = await this._getTenantId();
+    const res = await fetch(`${SERVER_URL}/api/public/store/hero-sections`, {
+      headers: { 'X-Tenant-ID': tenantId }
+    });
     const data = await res.json();
     return data.data;
   },
@@ -213,7 +263,11 @@ const StoreApi = {
 
   async trackInteraction(productId, type) {
     const token = localStorage.getItem('store_access_token');
-    const headers = { 'Content-Type': 'application/json' };
+    const tenantId = await this._getTenantId();
+    const headers = { 
+      'Content-Type': 'application/json',
+      'X-Tenant-ID': tenantId
+    };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     try {
