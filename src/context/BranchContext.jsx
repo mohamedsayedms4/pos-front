@@ -13,6 +13,11 @@ export const BranchProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchBranches = async () => {
+      const token = Api._getToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       try {
         const data = await Api.getBranches();
         setBranches(data || []);

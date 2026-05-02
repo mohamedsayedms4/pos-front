@@ -21,9 +21,16 @@ const Login = () => {
       const parts = hostname.split('.');
       if (parts.length >= 3 && parts[0] !== 'www' && hostname.includes('digitalrace.net')) {
         const slug = parts[0];
-        setTenantSlug(slug);
-        setIsAutoTenant(true);
-        await resolveAndSetTenant(slug);
+        console.log(`[Subdomain Detected] Slug: ${slug}`);
+        const resolvedId = await resolveAndSetTenant(slug);
+        if (resolvedId) {
+          setTenantSlug(slug);
+          setIsAutoTenant(true);
+        } else {
+          console.warn(`[Subdomain Failed] Slug '${slug}' not found. Falling back to email discovery.`);
+          setIsAutoTenant(false);
+          setTenantSlug('');
+        }
       }
     };
     detectBySubdomain();
@@ -37,7 +44,7 @@ const Login = () => {
       }
     }, 1000); // 1 second debounce
     return () => clearTimeout(timer);
-  }, [email]);
+  }, [email, isAutoTenant]);
 
   const findTenantByEmail = async (emailAddr) => {
     setIsResolving(true);
@@ -64,6 +71,7 @@ const Login = () => {
   };
 
   const resolveAndSetTenant = async (slug) => {
+    if (!slug) return null;
     setIsResolving(true);
     try {
       const resolveRes = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${encodeURIComponent(slug)}`);
@@ -73,11 +81,10 @@ const Login = () => {
         localStorage.setItem('pos_tenant_slug', slug);
         return data.id;
       } else {
-        throw new Error('المؤسسة غير موجودة');
+        return null;
       }
     } catch (e) {
-      console.error(e);
-      if (isAutoTenant) setError('عذراً، هذا الرابط غير مسجل في نظامنا.');
+      console.error('Resolution error:', e);
       return null;
     } finally {
       setIsResolving(false);
