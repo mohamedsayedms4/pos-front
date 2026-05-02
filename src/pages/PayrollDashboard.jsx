@@ -5,8 +5,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import '../styles/pages/PayrollPremium.css';
 
-const CustomSelect = ({ options, value, onChange, icon })
-  => {
+const CustomSelect = ({ options, value, onChange, icon }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find(o => o.value === value) || options[0];
   return (
