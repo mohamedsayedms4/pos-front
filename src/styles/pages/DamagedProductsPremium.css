@@ -1,0 +1,270 @@
+/* 
+  Damaged Products — Premium Glassmorphism UI
+  Prefix: dmg-
+*/
+
+:root {
+    --dmg-primary: #ef4444;
+    --dmg-primary-light: #f87171;
+    --dmg-glass: rgba(255, 255, 255, 0.03);
+    --dmg-glass-border: rgba(255, 255, 255, 0.08);
+    --dmg-text-primary: #ffffff;
+    --dmg-text-secondary: #cbd5e1;
+    --dmg-bg-dark: #0f172a;
+    --dmg-card-bg: rgba(30, 41, 59, 0.7);
+    --dmg-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+[data-theme='light'] {
+    --dmg-glass: rgba(255, 255, 255, 0.8);
+    --dmg-glass-border: #e2e8f0;
+    --dmg-text-primary: #0f172a;
+    --dmg-text-secondary: #475569;
+    --dmg-bg-dark: #f8fafc;
+    --dmg-card-bg: #ffffff;
+    --dmg-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.damaged-page-container {
+    padding: 24px;
+    background: var(--dmg-bg-dark);
+    min-height: 100vh;
+    font-family: 'Inter', 'Outfit', sans-serif;
+    color: var(--dmg-text-primary);
+    transition: all 0.3s ease;
+}
+
+/* Header & Toolbar */
+.dmg-header-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.dmg-title-area h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(to right, #ff4d4d, #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.dmg-search-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.dmg-search-input {
+    width: 100%;
+    background: var(--dmg-glass);
+    border: 1px solid var(--dmg-glass-border);
+    padding: 12px 45px 12px 15px;
+    border-radius: 14px;
+    color: var(--dmg-text-primary);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s;
+}
+
+.dmg-search-input:focus {
+    border-color: var(--dmg-primary);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+    outline: none;
+}
+
+.dmg-search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--dmg-text-secondary);
+}
+
+/* KPI Grid */
+.dmg-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.dmg-kpi-card {
+    background: var(--dmg-card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--dmg-glass-border);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--dmg-shadow);
+    transition: transform 0.3s;
+}
+
+.dmg-kpi-card:hover {
+    transform: translateY(-5px);
+}
+
+.dmg-kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--dmg-glass);
+    border: 1px solid var(--dmg-glass-border);
+}
+
+.dmg-kpi-info .label {
+    font-size: 0.85rem;
+    color: var(--dmg-text-secondary);
+    margin-bottom: 5px;
+}
+
+.dmg-kpi-info .value {
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+/* Main Table Container */
+.dmg-main-card {
+    background: var(--dmg-card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--dmg-glass-border);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: var(--dmg-shadow);
+}
+
+/* Form Styling within Modals */
+.dmg-form-group {
+    margin-bottom: 20px;
+}
+
+.dmg-label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--dmg-text-secondary);
+}
+
+.dmg-input, .dmg-select, .dmg-textarea {
+    width: 100%;
+    background: var(--dmg-glass);
+    border: 1px solid var(--dmg-glass-border);
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--dmg-text-primary);
+    font-size: 1rem;
+    transition: all 0.3s;
+    appearance: none;
+}
+
+.dmg-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 12px center;
+    background-size: 20px;
+    padding-left: 45px;
+}
+
+.dmg-input:focus, .dmg-select:focus, .dmg-textarea:focus {
+    border-color: var(--det-primary, #3b82f6);
+    outline: none;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+    background: var(--dmg-card-bg);
+}
+
+.dmg-select option {
+    background: #1e293b;
+    color: #fff;
+    padding: 12px;
+}
+
+[data-theme='light'] .dmg-select option {
+    background: #fff;
+    color: #0f172a;
+}
+
+.dmg-alert-warning {
+    margin-top: 24px;
+    padding: 16px;
+    background: rgba(239, 68, 68, 0.08);
+    border-right: 4px solid var(--dmg-primary);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: var(--dmg-text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.dmg-alert-warning i {
+    color: var(--dmg-primary);
+    margin-top: 2px;
+}
+
+/* Table Style */
+.dmg-table-wrapper {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--dmg-glass-border);
+}
+
+.dmg-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+}
+
+.dmg-table th {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dmg-text-secondary);
+    border-bottom: 1px solid var(--dmg-glass-border);
+}
+
+.dmg-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--dmg-glass-border);
+}
+
+.dmg-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Responsive Table (Cards on Mobile) */
+@media (max-width: 768px) {
+    .dmg-header-toolbar { flex-direction: column; align-items: stretch; text-align: center; }
+    .dmg-search-wrapper { max-width: 100%; }
+    .dmg-kpi-grid { grid-template-columns: 1fr; }
+    
+    .dmg-table thead { display: none; }
+    .dmg-table, .dmg-table tbody, .dmg-table tr, .dmg-table td { display: block; width: 100%; }
+    .dmg-table tr { margin-bottom: 16px; border: 1px solid var(--dmg-glass-border); border-radius: 16px; background: rgba(255,255,255,0.01); }
+    .dmg-table td { 
+        padding: 12px 16px; 
+        border-bottom: 1px solid var(--dmg-glass-border); 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+    .dmg-table td:last-child { border-bottom: none; }
+    .dmg-table td::before { 
+        content: attr(data-label); 
+        font-weight: 600; 
+        color: var(--dmg-text-secondary); 
+        margin-right: 12px;
+    }
+}

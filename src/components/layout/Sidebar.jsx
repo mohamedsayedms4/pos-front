@@ -193,7 +193,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </NavLink>
               </>
             )}
-            
+
             {(Api.can('EMPLOYEE_READ') || Api.can('ATTENDANCE_READ') || Api.can('LEAVE_READ') || Api.can('SHIFT_MANAGE')) && (
               <>
                 <div className="nav-section-title">الموظفين والموارد البشرية</div>

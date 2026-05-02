@@ -4,7 +4,7 @@ import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
-import StatTile from '../components/common/StatTile';
+import '../styles/pages/Categories.css';
 
 const Categories = () => {
   const { toast, confirm } = useGlobalUI();
@@ -12,6 +12,8 @@ const Categories = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState('name,asc');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [stats, setStats] = useState({ totalCount: 0, mainCount: 0, subCount: 0, totalTrend: 0, mainTrend: 0, subTrend: 0 });
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,12 +23,26 @@ const Categories = () => {
   const [saving, setSaving] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
-  const [exportingCompExcel, setExportingCompExcel] = useState(false);
-  const [exportingCompPdf, setExportingCompPdf] = useState(false);
 
-  // Dropdown states
-  const [showExcelDropdown, setShowExcelDropdown] = useState(false);
-  const [showPdfDropdown, setShowPdfDropdown] = useState(false);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [categoriesData, statsData] = await Promise.all([
+        Api.getCategories(true),
+        Api.getCategoryStatistics()
+      ]);
+      setData(categoriesData);
+      setStats(statsData);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleExportExcel = async () => {
     setExportingExcel(true);
@@ -52,50 +68,9 @@ const Categories = () => {
     }
   };
 
-  const handleExportCompExcel = async () => {
-    setExportingCompExcel(true);
-    try {
-      await Api.exportComprehensiveCategoriesExcel();
-      toast('تم تصدير تقرير الجرد الشامل بنجاح', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setExportingCompExcel(false);
-    }
-  };
-
-  const handleExportCompPdf = async () => {
-    setExportingCompPdf(true);
-    try {
-      await Api.exportComprehensiveCategoriesPdf();
-      toast('تم تصدير تقرير الجرد الشامل بنجاح', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setExportingCompPdf(false);
-    }
-  };
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const categoriesData = await Api.getCategories(true);
-      setData(categoriesData);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const flattenCategories = (cats, level = 0) => {
     if (!cats) return [];
     
-    // Create a copy to sort
     const sortedCats = [...cats].sort((a, b) => {
       const [field, direction] = sort.split(',');
       const factor = direction === 'desc' ? -1 : 1;
@@ -120,7 +95,7 @@ const Categories = () => {
     return result;
   };
 
-  const openForm = async (category = null) => {
+  const openForm = (category = null) => {
     setEditCategory(category);
     if (category) {
       setFormData({
@@ -189,248 +164,325 @@ const Categories = () => {
     });
   };
 
+  // Custom Dropdown Component
+  const CustomSelect = ({ options, value, onChange, icon }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const selectedOption = options.find(o => o.value === value) || options[0];
+
+    return (
+      <div className="cat-custom-select-container">
+        <div className={`cat-custom-select-header ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)}>
+          <i className={`fas ${icon} icon-start`}></i>
+          <span className="selected-text">{selectedOption.label}</span>
+          <i className={`fas fa-chevron-down icon-end ${isOpen ? 'rotate' : ''}`}></i>
+        </div>
+        {isOpen && (
+          <>
+            <div className="cat-custom-select-overlay" onClick={() => setIsOpen(false)}></div>
+            <div className="cat-custom-select-dropdown">
+              {options.map(opt => (
+                <div 
+                  key={opt.value} 
+                  className={`cat-custom-select-item ${opt.value === value ? 'active' : ''}`}
+                  onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                >
+                  {opt.label}
+                  {opt.value === value && <i className="fas fa-check"></i>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const flatData = flattenCategories(data);
-  const filteredData = flatData.filter(c => 
-    !searchTerm || 
-    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = flatData.filter(c => {
+    const matchesSearch = !searchTerm || 
+      (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = typeFilter === 'all' || 
+      (typeFilter === 'main' && c.level === 0) || 
+      (typeFilter === 'sub' && c.level > 0);
+      
+    return matchesSearch && matchesType;
+  });
+
+  // Simple SVG Trend Chart Component
+  const TrendChart = ({ color }) => (
+    <svg className="cat-stat-chart" viewBox="0 0 100 40">
+      <path
+        d="M0 35 Q 25 10, 50 25 T 100 5"
+        fill="none"
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 
   return (
-    <>
-      <div className="page-section">
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-          <StatTile
-            id="cat_total"
-            label="إجمالي الفئات"
-            value={flatData.length}
-            icon="📂"
-            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
-          />
-          <StatTile
-            id="cat_main"
-            label="رئيسية"
-            value={flatData.filter(c => c.level === 0).length}
-            icon="📁"
-            defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
-          />
-          <StatTile
-            id="cat_sub"
-            label="فرعية"
-            value={flatData.filter(c => c.level > 0).length}
-            icon="↳"
-            defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
-          />
-        </div>
-
-        <div className="card">
-          <div className="card-header">
-            <h3>📂 إدارة الفئات</h3>
-            <div className="toolbar">
-              <div className="search-input">
-                <span className="search-icon">🔍</span>
-                <input type="text" placeholder="بحث عن فئة..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+    <div className="categories-container">
+      {/* 1. Breadcrumbs & Header */}
+      <div className="cat-header-row">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="cat-breadcrumbs">
+                  <Link to="/dashboard">الرئيسية</Link> / <Link to="/products">المنتجات</Link> / <span>الفئات</span>
               </div>
-
-              <select 
-                className="form-control" 
-                value={sort} 
-                onChange={(e) => setSort(e.target.value)}
-                style={{ width: '180px', height: '40px', padding: '0 10px' }}
-              >
-                <option value="name,asc">الاسم (أ-ي)</option>
-                <option value="name,desc">الاسم (ي-أ)</option>
-                <option value="productCount,desc">الأكثر منتجات 🔥</option>
-                <option value="productCount,asc">الأقل منتجات</option>
-                <option value="createdAt,desc">الأحدث 🆕</option>
-                <option value="createdAt,asc">الأقدم</option>
-              </select>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {/* Excel Dropdown */}
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => { setShowExcelDropdown(!showExcelDropdown); setShowPdfDropdown(false); }}
-                    disabled={exportingExcel || exportingCompExcel || data.length === 0}
-                  >
-                    {exportingExcel || exportingCompExcel ? '⏳' : '📊'} إكسيل
-                  </button>
-                  {showExcelDropdown && (
-                    <div style={{ 
-                      position: 'absolute', top: '100%', right: 0, zIndex: 100, 
-                      backgroundColor: 'var(--bg-elevated)', borderRadius: '0', 
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
-                      marginTop: '4px', minWidth: '180px', overflow: 'hidden', 
-                      border: '1px solid var(--metro-blue)'
-                    }}>
-                      <div 
-                        onClick={() => { handleExportExcel(); setShowExcelDropdown(false); }}
-                        className="metro-dropdown-item"
-                        style={{ 
-                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
-                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px',
-                          borderBottom: '1px solid var(--border-subtle)'
-                        }}
-                      >
-                        <span style={{ fontSize: '1.1rem' }}>📂</span> قائمة الفئات
-                      </div>
-                      <div 
-                        onClick={() => { handleExportCompExcel(); setShowExcelDropdown(false); }}
-                        className="metro-dropdown-item"
-                        style={{ 
-                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
-                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px'
-                        }}
-                      >
-                        <span style={{ fontSize: '1.1rem' }}>📋</span> جرد شامل (منتجات)
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* PDF Dropdown */}
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => { setShowPdfDropdown(!showPdfDropdown); setShowExcelDropdown(false); }}
-                    disabled={exportingPdf || exportingCompPdf || data.length === 0}
-                  >
-                    {exportingPdf || exportingCompPdf ? '⏳' : '📄'} PDF
-                  </button>
-                  {showPdfDropdown && (
-                    <div style={{ 
-                      position: 'absolute', top: '100%', right: 0, zIndex: 100, 
-                      backgroundColor: 'var(--bg-elevated)', borderRadius: '0', 
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
-                      marginTop: '4px', minWidth: '180px', overflow: 'hidden', 
-                      border: '1px solid var(--metro-blue)'
-                    }}>
-                      <div 
-                        onClick={() => { handleExportPdf(); setShowPdfDropdown(false); }}
-                        className="metro-dropdown-item"
-                        style={{ 
-                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
-                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px',
-                          borderBottom: '1px solid var(--border-subtle)'
-                        }}
-                      >
-                        <span style={{ fontSize: '1.1rem' }}>📄</span> تقرير الفئات
-                      </div>
-                      <div 
-                        onClick={() => { handleExportCompPdf(); setShowPdfDropdown(false); }}
-                        className="metro-dropdown-item"
-                        style={{ 
-                          padding: '12px 16px', cursor: 'pointer', fontSize: '0.9rem', 
-                          color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px'
-                        }}
-                      >
-                        <span style={{ fontSize: '1.1rem' }}>📋</span> جرد شامل (منتجات)
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {Api.can('CATEGORY_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => openForm(null)}>
-                    <span>+</span> إضافة فئة
-                  </button>
-                )}
-              </div>
-            </div>
+              <h1>الفئات</h1>
           </div>
-          <div className="card-body no-padding">
-            <div className="table-wrapper">
-              {loading ? (
-                <Loader message="جاري تحميل الفئات..." />
-              ) : flatData.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">📂</div>
-                  <h4>لا توجد فئات</h4>
-                  <p>قم بإضافة فئات لتنظيم المنتجات</p>
-                </div>
-              ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>صورة</th>
-                      <th>الفئة</th>
-                      <th>الوصف</th>
-                      <th>الفئة الأم</th>
-                      <th>عدد المنتجات</th>
-                      <th>الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData.map((c, i) => (
-                      <tr key={c.id}>
-                        <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                        <td>
-                          {c.imageUrl ? (
-                            <img src={SERVER_URL + c.imageUrl} alt={c.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
-                          ) : (
-                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📁</div>
-                          )}
-                        </td>
-                        <td>
-                          <div style={{ paddingLeft: `${c.level * 24}px`, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span>{c.level > 0 ? '↳' : ''}</span>
-                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ color: 'var(--text-secondary)' }}>{c.description || '—'}</td>
-                        <td>{c.parentName || <span className="text-muted">—</span>}</td>
-                        <td><span className="badge badge-info">{c.productCount || 0}</span></td>
-                        <td>
-                          <div className="table-actions">
-                            <Link className="btn btn-icon btn-ghost" title="عرض المنتجات" to={`/categories/${c.id}/products`}>📦</Link>
-                            {Api.can('CATEGORY_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(c)}>✏️</button>}
-                            {Api.can('CATEGORY_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(c.id, c.name)}>🗑️</button>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="cat-header-actions">
+              {Api.can('CATEGORY_WRITE') && (
+                  <button className="cat-btn-premium cat-btn-blue" onClick={() => openForm(null)}>
+                      <i className="fas fa-plus"></i> <span style={{ marginRight: '8px' }}>إضافة فئة</span>
+                  </button>
               )}
-            </div>
+              <div className="desktop-only" style={{ display: 'flex', gap: '10px' }}>
+                  <button className="cat-btn-premium cat-btn-outline" onClick={handleExportExcel} disabled={exportingExcel}>
+                      <i className="fas fa-file-excel"></i> إكسل
+                  </button>
+                  <button className="cat-btn-premium cat-btn-outline" onClick={handleExportPdf} disabled={exportingPdf}>
+                      <i className="fas fa-file-pdf"></i> PDF
+                  </button>
+              </div>
           </div>
-        </div>
-
       </div>
 
+      {/* 2. KPI Stats Grid */}
+      <div className="cat-stats-grid">
+          <div className="cat-stat-card">
+              <div className="cat-stat-info">
+                  <h4>إجمالي الفئات</h4>
+                  <div className="cat-stat-value">{stats.totalCount}</div>
+                  <div className="cat-stat-trend" style={{ color: stats.totalTrend >= 0 ? 'var(--cat-accent-green)' : '#ef4444' }}>
+                      <i className={`fas fa-arrow-${stats.totalTrend >= 0 ? 'up' : 'down'}`}></i> {Math.abs(stats.totalTrend).toFixed(0)}% هذا الشهر
+                  </div>
+              </div>
+              <div className="cat-stat-visual">
+                  <div className="cat-stat-icon icon-blue">
+                      <i className="fas fa-layer-group"></i>
+                  </div>
+                  <TrendChart color="var(--cat-accent-blue)" />
+              </div>
+          </div>
+
+          <div className="cat-stat-card">
+              <div className="cat-stat-info">
+                  <h4>الفئات الرئيسية</h4>
+                  <div className="cat-stat-value">{stats.mainCount}</div>
+                  <div className="cat-stat-trend" style={{ color: stats.mainTrend >= 0 ? 'var(--cat-accent-green)' : '#ef4444' }}>
+                      <i className={`fas fa-arrow-${stats.mainTrend >= 0 ? 'up' : 'down'}`}></i> {Math.abs(stats.mainTrend).toFixed(0)}% هذا الشهر
+                  </div>
+              </div>
+              <div className="cat-stat-visual">
+                  <div className="cat-stat-icon icon-green">
+                      <i className="fas fa-folder"></i>
+                  </div>
+                  <TrendChart color="var(--cat-accent-green)" />
+              </div>
+          </div>
+
+          <div className="cat-stat-card">
+              <div className="cat-stat-info">
+                  <h4>الفئات الفرعية</h4>
+                  <div className="cat-stat-value">{stats.subCount}</div>
+                  <div className="cat-stat-trend" style={{ color: stats.subTrend === 0 ? 'var(--cat-text-secondary)' : stats.subTrend > 0 ? 'var(--cat-accent-green)' : '#ef4444' }}>
+                      {stats.subTrend === 0 ? 'لا توجد تغييرات' : (
+                          <>
+                            <i className={`fas fa-arrow-${stats.subTrend > 0 ? 'up' : 'down'}`}></i> {Math.abs(stats.subTrend).toFixed(0)}% هذا الشهر
+                          </>
+                      )}
+                  </div>
+              </div>
+              <div className="cat-stat-visual">
+                  <div className="cat-stat-icon icon-amber">
+                      <i className="fas fa-folder-open"></i>
+                  </div>
+                  <TrendChart color="var(--cat-accent-amber)" />
+              </div>
+          </div>
+      </div>
+
+      {/* 3. Main Content Card (Toolbar + Table) */}
+      <div className="cat-toolbar-card">
+          <div className="cat-toolbar-left">
+              <CustomSelect 
+                icon="fa-sort-amount-down"
+                value={sort}
+                onChange={setSort}
+                options={[
+                  { value: 'createdAt,desc', label: 'ترتيب: الأحدث' },
+                  { value: 'name,asc', label: 'ترتيب: الاسم (أ-ي)' },
+                  { value: 'productCount,desc', label: 'ترتيب: الأكثر منتجات' }
+                ]}
+              />
+              <CustomSelect 
+                icon="fa-filter"
+                value={typeFilter}
+                onChange={setTypeFilter}
+                options={[
+                  { value: 'all', label: 'كل الفئات' },
+                  { value: 'main', label: 'رئيسية فقط' },
+                  { value: 'sub', label: 'فرعية فقط' }
+                ]}
+              />
+          </div>
+
+          <div className="cat-toolbar-right">
+              <div className="cat-search-box">
+                  <i className="fas fa-search"></i>
+                  <input 
+                    type="text" 
+                    placeholder="ابحث عن فئة..." 
+                    value={searchTerm} 
+                    onChange={(e) => setSearchTerm(e.target.value)} 
+                  />
+              </div>
+          </div>
+      </div>
+
+      <div className="cat-table-card">
+          <div className="cat-table-container">
+              {loading ? (
+                  <div style={{ padding: '40px' }}><Loader message="جاري التحميل..." /></div>
+              ) : (
+                  <table className="cat-table">
+                      <thead>
+                          <tr>
+                              <th>#</th>
+                              <th>الصورة</th>
+                              <th>اسم الفئة</th>
+                              <th>النوع</th>
+                              <th>الوصف</th>
+                              <th>عدد المنتجات</th>
+                              <th>تاريخ الإنشاء</th>
+                              <th>الإجراءات</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {filteredData.map((c, idx) => (
+                              <tr key={c.id}>
+                                  <td>{idx + 1}</td>
+                                  <td>
+                                      {c.imageUrl ? (
+                                          <img src={SERVER_URL + c.imageUrl} alt={c.name} className="cat-img-preview" />
+                                      ) : (
+                                          <div className="cat-img-preview" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', background: 'var(--cat-bg)' }}>
+                                              <i className="far fa-folder"></i>
+                                          </div>
+                                      )}
+                                  </td>
+                                  <td>
+                                      <div style={{ paddingRight: `${c.level * 20}px`, fontWeight: 700 }}>
+                                          {c.level > 0 && <span style={{ marginLeft: '8px', color: 'var(--cat-text-secondary)' }}>↳</span>}
+                                          {c.name}
+                                          <div style={{ fontSize: '0.7rem', color: 'var(--cat-text-secondary)', fontWeight: 400 }}>معرف: CAT-{String(c.id).padStart(5, '0')}</div>
+                                      </div>
+                                  </td>
+                                  <td>
+                                      <span className={`cat-type-badge ${c.level === 0 ? 'badge-green' : 'badge-blue'}`}>
+                                          <i className={`fas ${c.level === 0 ? 'fa-circle' : 'fa-info-circle'}`} style={{ fontSize: '0.5rem' }}></i>
+                                          {c.level === 0 ? 'رئيسية' : 'فرعية'}
+                                      </span>
+                                  </td>
+                                  <td>{c.description || '—'}</td>
+                                  <td>
+                                      <span className="cat-product-count">{c.productCount || 0}</span>
+                                  </td>
+                                  <td>{c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</td>
+                                  <td>
+                                      <div className="cat-actions">
+                                          <button className="cat-action-btn" title="خيارات إضافية"><i className="fas fa-ellipsis-h"></i></button>
+                                          {Api.can('CATEGORY_WRITE') && (
+                                              <button className="cat-action-btn" onClick={() => openForm(c)} title="تعديل"><i className="fas fa-pen"></i></button>
+                                          )}
+                                          {Api.can('CATEGORY_DELETE') && (
+                                              <button className="cat-action-btn delete" onClick={() => handleDelete(c.id, c.name)} title="حذف"><i className="fas fa-trash"></i></button>
+                                          )}
+                                      </div>
+                                  </td>
+                              </tr>
+                          ))}
+                      </tbody>
+                  </table>
+              )}
+          </div>
+
+          <div className="cat-pagination">
+              <div className="cat-pagination-info">
+                  عرض {filteredData.length} إلى {filteredData.length} من {flatData.length} نتيجة
+              </div>
+              <div className="cat-pagination-btns">
+                  <button className="cat-page-btn" disabled>السابق</button>
+                  <button className="cat-page-btn active">1</button>
+                  <button className="cat-page-btn" disabled>التالي</button>
+              </div>
+          </div>
+      </div>
+
+      {/* 5. Modal Container */}
       {isModalOpen && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal" style={{ maxWidth: '500px' }}>
-              <div className="modal-header">
-                <h3>{editCategory ? 'تعديل فئة' : 'إضافة فئة جديدة'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+          <div className="cat-modal-overlay" onClick={(e) => { if (e.target.classList.contains('cat-modal-overlay')) closeModal(); }}>
+            <div className="cat-modal">
+              <div className="cat-modal-header">
+                <h3>{editCategory ? 'تعديل الفئة' : 'إضافة فئة جديدة'}</h3>
+                <button className="cat-modal-close" onClick={closeModal}>✕</button>
               </div>
-              <div className="modal-body">
+              <div className="cat-modal-body">
                 <form id="categoryForm" onSubmit={handleSave}>
-                  <div className="form-group">
+                  <div className="cat-form-group">
                     <label>اسم الفئة *</label>
-                    <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                    <input 
+                      className="cat-input" 
+                      name="name" 
+                      placeholder="أدخل اسم الفئة..."
+                      value={formData.name} 
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+                      required 
+                    />
                   </div>
-                  <div className="form-group">
+                  
+                  <div className="cat-form-group">
                     <label>الوصف</label>
-                    <textarea className="form-control" name="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
+                    <textarea 
+                      className="cat-textarea" 
+                      name="description" 
+                      placeholder="اكتب وصفاً مختصراً للفئة..."
+                      value={formData.description} 
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    ></textarea>
                   </div>
-                  <div className="form-group">
-                    <label>صورة الفئة (اختياري)</label>
-                    <input type="file" className="form-control" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
+
+                  <div className="cat-form-group">
+                    <label>صورة الفئة</label>
+                    <div className="cat-file-input-wrapper">
+                      <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
+                      <div className="cat-file-info">
+                        <i className="fas fa-cloud-upload-alt"></i>
+                        <span>{imageFile ? imageFile.name : 'اضغط لرفع صورة أو اسحبها هنا'}</span>
+                        <small>PNG, JPG (الحد الأقصى 2MB)</small>
+                      </div>
+                    </div>
                     {editCategory?.imageUrl && !imageFile && (
-                      <div style={{ marginTop: '10px' }}>
-                        <img src={SERVER_URL + editCategory.imageUrl} alt={editCategory.name} style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover' }} />
+                      <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img src={SERVER_URL + editCategory.imageUrl} alt={editCategory.name} style={{ width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover', border: '1px solid var(--cat-border)' }} />
+                        <span style={{ fontSize: '0.85rem', color: 'var(--cat-text-secondary)' }}>الصورة الحالية</span>
                       </div>
                     )}
                   </div>
-                  <div className="form-group">
-                    <label>الفئة الأم (اختياري)</label>
-                    <select className="form-control" name="parentId" value={formData.parentId} onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}>
-                      <option value="">بدون فئة أم</option>
+
+                  <div className="cat-form-group">
+                    <label>الفئة الأم</label>
+                    <select 
+                      className="cat-input" 
+                      name="parentId" 
+                      value={formData.parentId} 
+                      onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+                    >
+                      <option value="">-- فئة رئيسية (بدون أب) --</option>
                       {flatData.filter(c => c.id !== editCategory?.id).map(c => (
                         <option key={c.id} value={c.id}>
                           {'—'.repeat(c.level)} {c.name}
@@ -440,17 +492,19 @@ const Categories = () => {
                   </div>
                 </form>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="categoryForm" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : (editCategory ? 'حفظ التعديلات' : 'إضافة الفئة')}
+              <div className="cat-modal-footer">
+                <button type="button" className="cat-btn-ghost" onClick={closeModal}>إلغاء</button>
+                <button type="submit" form="categoryForm" className="cat-btn-primary" disabled={saving}>
+                  {saving ? (
+                    <><i className="fas fa-spinner fa-spin" style={{ marginLeft: '8px' }}></i> جاري الحفظ...</>
+                  ) : (editCategory ? 'حفظ التعديلات' : 'إضافة الفئة')}
                 </button>
               </div>
             </div>
           </div>
         </ModalContainer>
       )}
-    </>
+    </div>
   );
 };
 

@@ -87,7 +87,7 @@ const MainLayout = () => {
       }
       resetIdleTimer();
     };
-    
+
     wakeEvents.forEach(event => window.addEventListener(event, handleInteraction));
     ambientEvents.forEach(event => window.addEventListener(event, handleInteraction));
 
@@ -109,9 +109,9 @@ const MainLayout = () => {
     <div className="app-layout">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content">
-        <Topbar 
-          onMenuToggle={toggleSidebar} 
-          prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 
+        <Topbar
+          onMenuToggle={toggleSidebar}
+          prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null}
         />
         <div className="page-content">
           <Outlet />

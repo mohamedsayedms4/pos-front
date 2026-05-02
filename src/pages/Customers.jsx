@@ -1,10 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
-import StatTile from '../components/common/StatTile';
+import '../styles/pages/CustomersPremium.css';
+
+// Reusable CustomSelect Component (Matched with Categories/Suppliers)
+const CustomSelect = ({ options, value, onChange, icon, label }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const containerRef = useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value) || options[0];
+
+  return (
+    <div className="cus-custom-select-container" ref={containerRef}>
+      <div 
+        className={`cus-custom-select-header ${isOpen ? 'open' : ''}`} 
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'} arrow-icon`}></i>
+        <span className="selected-text">{selectedOption?.label}</span>
+        {icon && <span className="select-icon">{icon}</span>}
+      </div>
+      
+      {isOpen && (
+        <>
+          <div className="cus-custom-select-overlay" onClick={() => setIsOpen(false)} />
+          <div className="cus-custom-select-dropdown">
+            {options.map((opt) => (
+              <div 
+                key={opt.value} 
+                className={`cus-custom-select-option ${value === opt.value ? 'active' : ''}`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                <i className={`fas fa-check ${value === opt.value ? '' : 'invisible'}`} style={{ opacity: value === opt.value ? 1 : 0 }}></i>
+                <span>{opt.label}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -180,176 +232,211 @@ const Customers = () => {
   };
 
   return (
-    <>
-      <div className="page-section">
-        
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-          <StatTile
-            id="cust_total"
-            label="إجمالي العملاء"
-            value={totalElements}
-            icon="👥"
-            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
-          />
-          <StatTile
-            id="cust_active"
-            label="نشط بالمزامنة"
-            value={customers.length}
-            icon="✅"
-            defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
-          />
-          <StatTile
-            id="cust_recent"
-            label="انضموا مؤخراً"
-            value="0"
-            icon="🕒"
-            defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
-          />
+    <div className="customers-page-container">
+      {/* HEADER SECTION */}
+      <div className="cus-header-container">
+        <div className="cus-breadcrumbs">
+          <Link to="/">الرئيسية</Link>
+          <span>/</span>
+          <span>العملاء</span>
         </div>
-
-        <div className="card">
-          <div className="card-header">
-            <h3>👥 إدارة العملاء</h3>
-            <div className="toolbar">
-              <div className="search-input">
-                <span className="search-icon">🔍</span>
-                <input
-                  type="text"
-                  placeholder="بحث سريع..."
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setCurrentPage(0);
-                    loadCustomers(0, pageSize, e.target.value);
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {isAdmin && (
-                  <select className="form-control" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)} style={{ width: '150px' }}>
-                    <option value="">جميع الفروع</option>
-                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                )}
-                {Api.can('CUSTOMER_WRITE') !== false && (
-                  <button className="btn btn-primary" onClick={openAddModal}>
-                    <span>+</span> عميل جديد
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="card-body no-padding">
-            <div className="table-wrapper">
-              {loading ? (
-                <Loader message="جاري جلب البيانات..." />
-              ) : customers.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">👥</div>
-                  <h4>لا يوجد عملاء</h4>
-                </div>
-              ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th className="hide-mobile">#</th>
-                      <th>الاسم</th>
-                      <th>الهاتف</th>
-                      <th className="hide-tablet">البريد</th>
-                      <th className="hide-tablet">العنوان</th>
-                      <th style={{ textAlign: 'center' }}>الرصيد</th>
-                      <th style={{ textAlign: 'center' }}>الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customers.map((c, idx) => (
-                      <tr key={c.id}>
-                        <td className="hide-mobile" style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                          {(currentPage * pageSize) + idx + 1}
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{c.name}</div>
-                        </td>
-                        <td>{c.phone || '—'}</td>
-                        <td className="hide-tablet" style={{ fontSize: '0.85rem' }}>{c.email || '—'}</td>
-                        <td className="hide-tablet" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.address || '—'}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <span className={c.balance > 0 ? 'text-danger' : 'text-success'} style={{ fontWeight: 700 }}>
-                            {Number(c.balance).toFixed(2)}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <div className="table-actions" style={{ justifyContent: 'center' }}>
-                            <button className="btn btn-icon btn-ghost" onClick={() => handleViewHistory(c)} title="سجل التعاملات">👁️</button>
-                            {Number(c.balance) > 0 && (
-                              <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-green)' }} onClick={() => handleViewDebt(c.id)} title="تحصيل دفع">💰</button>
-                            )}
-                            <button className="btn btn-icon btn-ghost" onClick={() => openEditModal(c)} title="تعديل">✏️</button>
-                            <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => handleDelete(c.id)} title="حذف">🗑</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="pagination">
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={currentPage === 0}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                >السابق</button>
-                <button className="active">{currentPage + 1}</button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={currentPage >= totalPages - 1}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                >التالي</button>
-              </div>
+        <div className="cus-header-row">
+          <h1>العملاء</h1>
+          <div className="cus-header-actions">
+            {Api.can('CUSTOMER_WRITE') !== false && (
+              <button className="cus-btn-primary" onClick={openAddModal}>
+                <span>عميل جديد</span>
+                <i className="fas fa-plus"></i>
+              </button>
             )}
           </div>
         </div>
       </div>
 
+      {/* STATS GRID */}
+      <div className="cus-stats-grid">
+        <div className="cus-stat-card">
+          <div className="cus-stat-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+            <i className="fas fa-users"></i>
+          </div>
+          <div className="cus-stat-info">
+            <div className="cus-stat-label">إجمالي العملاء</div>
+            <div className="cus-stat-value">{totalElements}</div>
+          </div>
+        </div>
+
+        <div className="cus-stat-card">
+          <div className="cus-stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <div className="cus-stat-info">
+            <div className="cus-stat-label">نشط بالمزامنة</div>
+            <div className="cus-stat-value">{customers.length}</div>
+          </div>
+        </div>
+
+        <div className="cus-stat-card">
+          <div className="cus-stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+            <i className="fas fa-clock"></i>
+          </div>
+          <div className="cus-stat-info">
+            <div className="cus-stat-label">انضموا مؤخراً</div>
+            <div className="cus-stat-value">0</div>
+          </div>
+        </div>
+      </div>
+
+      {/* MAIN DATA CARD */}
+      <div className="cus-main-card">
+        <div className="cus-toolbar">
+          <div className="cus-toolbar-left">
+            {isAdmin && (
+              <CustomSelect 
+                label="كل الفروع"
+                value={selectedBranchId}
+                options={[
+                  { label: 'جميع الفروع', value: '' },
+                  ...branches.map(b => ({ label: b.name, value: b.id }))
+                ]}
+                onChange={setSelectedBranchId}
+                icon={<i className="fas fa-building"></i>}
+              />
+            )}
+          </div>
+
+          <div className="cus-toolbar-right">
+            <div className="cus-search-box">
+              <i className="fas fa-search"></i>
+              <input
+                type="text"
+                placeholder="ابحث عن عميل بالاسم أو الهاتف..."
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setCurrentPage(0);
+                  loadCustomers(0, pageSize, e.target.value);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="cus-table-wrapper">
+          {loading ? (
+            <Loader message="جاري جلب البيانات..." />
+          ) : customers.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center' }}>
+              <i className="fas fa-users" style={{ fontSize: '3rem', color: 'var(--cus-text-secondary)', marginBottom: '16px', display: 'block' }}></i>
+              <h3 style={{ color: 'var(--cus-text-primary)' }}>لا يوجد عملاء حالياً</h3>
+            </div>
+          ) : (
+            <table className="cus-table">
+              <thead>
+                <tr>
+                  <th>العميل</th>
+                  <th>الهاتف</th>
+                  <th className="hide-tablet">البريد</th>
+                  <th style={{ textAlign: 'center' }}>الرصيد</th>
+                  <th style={{ textAlign: 'center' }}>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map((c, idx) => (
+                  <tr key={c.id}>
+                    <td>
+                      <div className="cus-customer-cell">
+                        <div className="cus-avatar">{(c.name || 'C').charAt(0)}</div>
+                        <div style={{ fontWeight: 800 }}>{c.name}</div>
+                      </div>
+                    </td>
+                    <td>{c.phone || '—'}</td>
+                    <td className="hide-tablet">{c.email || '—'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className={`cus-balance ${c.balance > 0 ? 'cus-balance-negative' : 'cus-balance-positive'}`}>
+                        {Number(c.balance).toLocaleString()} ج.م
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button className="cus-action-btn" onClick={() => handleViewHistory(c)} title="سجل التعاملات">
+                          <i className="fas fa-eye"></i>
+                        </button>
+                        {Number(c.balance) > 0 && (
+                          <button className="cus-action-btn" style={{ color: '#10b981' }} onClick={() => handleViewDebt(c.id)} title="تحصيل دفع">
+                            <i className="fas fa-hand-holding-usd"></i>
+                          </button>
+                        )}
+                        <button className="cus-action-btn" onClick={() => openEditModal(c)} title="تعديل">
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button className="cus-action-btn delete" style={{ color: '#f43f5e' }} onClick={() => handleDelete(c.id)} title="حذف">
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {totalPages > 1 && (
+          <div className="cus-pagination">
+            <div style={{ color: 'var(--cus-text-secondary)', fontSize: '0.9rem' }}>
+              عرض صفحة {currentPage + 1} من {totalPages}
+            </div>
+            <div className="cus-page-buttons">
+              <button
+                className="cus-page-btn"
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              ><i className="fas fa-chevron-right"></i></button>
+              <button className="cus-page-btn active">{currentPage + 1}</button>
+              <button
+                className="cus-page-btn"
+                disabled={currentPage >= totalPages - 1}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              ><i className="fas fa-chevron-left"></i></button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* --- Modals --- */}
       {showModal && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowModal(false); }}>
-            <div className="modal" style={{ maxWidth: '600px' }}>
-              <div className="modal-header">
-                <h3>{isEditing ? 'تعديل بيانات عميل' : 'إضافة عميل جديد'}</h3>
-                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+          <div className="prd-modal-overlay active" onClick={(e) => { if (e.target.classList.contains('prd-modal-overlay')) setShowModal(false); }}>
+            <div className="prd-modal" style={{ maxWidth: '600px' }}>
+              <div className="prd-card-title-row" style={{ padding: '24px 24px 0' }}>
+                <h3 className="prd-card-title">{isEditing ? 'تعديل بيانات عميل' : 'إضافة عميل جديد'}</h3>
+                <button className="prd-modal-close" onClick={() => setShowModal(false)}>✕</button>
               </div>
               <form onSubmit={handleSave}>
-                <div className="modal-body">
-                  <div className="form-group">
-                    <label>اسم العميل *</label>
-                    <input type="text" className="form-control" required value={currentCustomer.name} onChange={e => setCurrentCustomer({ ...currentCustomer, name: e.target.value })} />
+                <div className="prd-modal-body">
+                  <div className="prd-form-group">
+                    <label className="prd-label">اسم العميل *</label>
+                    <input type="text" className="prd-input" required value={currentCustomer.name} onChange={e => setCurrentCustomer({ ...currentCustomer, name: e.target.value })} />
                   </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>رقم الهاتف</label>
-                      <input type="text" className="form-control" value={currentCustomer.phone} onChange={e => setCurrentCustomer({ ...currentCustomer, phone: e.target.value })} />
+                  <div className="prd-form-row">
+                    <div className="prd-form-group">
+                      <label className="prd-label">رقم الهاتف</label>
+                      <input type="text" className="prd-input" value={currentCustomer.phone} onChange={e => setCurrentCustomer({ ...currentCustomer, phone: e.target.value })} />
                     </div>
-                    <div className="form-group">
-                      <label>البريد الإلكتروني</label>
-                      <input type="email" className="form-control" value={currentCustomer.email} onChange={e => setCurrentCustomer({ ...currentCustomer, email: e.target.value })} />
+                    <div className="prd-form-group">
+                      <label className="prd-label">البريد الإلكتروني</label>
+                      <input type="email" className="prd-input" value={currentCustomer.email} onChange={e => setCurrentCustomer({ ...currentCustomer, email: e.target.value })} />
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label>العنوان التفصيلي</label>
-                    <textarea className="form-control" rows="2" value={currentCustomer.address} onChange={e => setCurrentCustomer({ ...currentCustomer, address: e.target.value })} />
+                  <div className="prd-form-group">
+                    <label className="prd-label">العنوان التفصيلي</label>
+                    <textarea className="prd-textarea" rows="2" value={currentCustomer.address} onChange={e => setCurrentCustomer({ ...currentCustomer, address: e.target.value })} />
                   </div>
-                  <div className="form-group">
-                    <label>الفروع المرتبطة *</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', marginTop: '5px' }}>
+                  <div className="prd-form-group">
+                    <label className="prd-label">الفروع المرتبطة *</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', background: 'var(--cus-bg-dark)', padding: '15px', borderRadius: '16px', marginTop: '5px' }}>
                       {branches.map(branch => (
-                        <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                        <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--cus-text-primary)' }}>
                           <input 
                             type="checkbox" 
                             checked={currentCustomer.branchIds?.includes(branch.id)} 
@@ -366,9 +453,12 @@ const Customers = () => {
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
-                  <button type="submit" className="btn btn-primary">{isEditing ? 'تحديث' : 'إضافة'}</button>
+                <div className="prd-modal-footer">
+                  <button type="button" className="cus-btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
+                  <button type="submit" className="cus-btn-primary">
+                    <span>{isEditing ? 'تحديث البيانات' : 'إضافة العميل'}</span>
+                    <i className="fas fa-check"></i>
+                  </button>
                 </div>
               </form>
             </div>
@@ -378,28 +468,32 @@ const Customers = () => {
 
       {showDebtModal && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowDebtModal(false); }}>
-            <div className="modal" style={{ maxWidth: '700px' }}>
-              <div className="modal-header">
-                <h3>كشف حساب: {debtSummary?.customerName}</h3>
-                <button className="modal-close" onClick={() => setShowDebtModal(false)}>✕</button>
+          <div className="prd-modal-overlay active" onClick={(e) => { if (e.target.classList.contains('prd-modal-overlay')) setShowDebtModal(false); }}>
+            <div className="prd-modal" style={{ maxWidth: '700px' }}>
+              <div className="prd-card-title-row" style={{ padding: '24px 24px 0' }}>
+                <h3 className="prd-card-title">كشف حساب: {debtSummary?.customerName}</h3>
+                <button className="prd-modal-close" onClick={() => setShowDebtModal(false)}>✕</button>
               </div>
-              <div className="modal-body">
+              <div className="prd-modal-body">
                 {debtSummary && (
                   <>
-                    <div className="stats-grid mb-3" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-                      <div className="stat-card amber" style={{ margin: 0 }}>
-                        <div className="stat-value">{Number(debtSummary.totalDebt).toFixed(2)}</div>
-                        <div className="stat-label">المديونية الحالية</div>
+                    <div className="cus-stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '24px' }}>
+                      <div className="cus-stat-card" style={{ borderLeft: '4px solid #f43f5e' }}>
+                        <div className="cus-stat-info">
+                          <div className="cus-stat-label">المديونية الحالية</div>
+                          <div className="cus-stat-value" style={{ color: '#f43f5e' }}>{Number(debtSummary.totalDebt).toLocaleString()}</div>
+                        </div>
                       </div>
-                      <div className="stat-card blue" style={{ margin: 0 }}>
-                        <div className="stat-value">{debtSummary.openInvoicesCount}</div>
-                        <div className="stat-label">فواتير مفتوحة</div>
+                      <div className="cus-stat-card" style={{ borderLeft: '4px solid #3b82f6' }}>
+                        <div className="cus-stat-info">
+                          <div className="cus-stat-label">فواتير مفتوحة</div>
+                          <div className="cus-stat-value" style={{ color: '#3b82f6' }}>{debtSummary.openInvoicesCount}</div>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="table-wrapper mb-3" style={{ maxHeight: '200px' }}>
-                      <table className="data-table">
+                    <div className="cus-table-wrapper" style={{ maxHeight: '200px', marginBottom: '24px', borderRadius: '16px', border: '1px solid var(--cus-glass-border)' }}>
+                      <table className="cus-table">
                         <thead>
                           <tr>
                             <th>رقم الفاتورة</th>
@@ -410,19 +504,22 @@ const Customers = () => {
                           {debtSummary.openInvoices.map(inv => (
                             <tr key={inv.id}>
                               <td>{inv.invoiceNumber}</td>
-                              <td style={{ color: 'var(--metro-red)', fontWeight: 700 }}>{Number(inv.remainingAmount).toFixed(2)}</td>
+                              <td style={{ color: '#f43f5e', fontWeight: 800 }}>{Number(inv.remainingAmount).toLocaleString()} ج.م</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </div> 
 
-                    <form onSubmit={handlePayment} style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '8px' }}>
-                      <div className="form-group">
-                        <label>المبلغ المحصل</label>
-                        <input type="number" step="0.01" className="form-control" required max={debtSummary.totalDebt} value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} />
+                    <form onSubmit={handlePayment} style={{ background: 'var(--cus-bg-dark)', padding: '24px', borderRadius: '20px', border: '1px solid var(--cus-glass-border)' }}>
+                      <div className="prd-form-group">
+                        <label className="prd-label">المبلغ المحصل</label>
+                        <input type="number" step="0.01" className="prd-input" required max={debtSummary.totalDebt} value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} />
                       </div>
-                      <button type="submit" className="btn btn-primary w-100" disabled={isSubmittingPayment}>{isSubmittingPayment ? 'جاري الحفظ...' : 'تأكيد التحصيل'}</button>
+                      <button type="submit" className="cus-btn-primary" style={{ width: '100%' }} disabled={isSubmittingPayment}>
+                        <span>{isSubmittingPayment ? 'جاري الحفظ...' : 'تأكيد تحصيل الدفعة'}</span>
+                        <i className="fas fa-save"></i>
+                      </button>
                     </form>
                   </>
                 )}
@@ -434,35 +531,35 @@ const Customers = () => {
 
       {showHistoryModal && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowHistoryModal(false); }}>
-            <div className="modal" style={{ maxWidth: '900px' }}>
-              <div className="modal-header">
-                <h3>السجل: {selectedHistoryCustomer?.name}</h3>
-                <div style={{ display: 'flex', gap: '5px' }}>
-                  <button className={`btn btn-sm ${historyTab === 'pos' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'pos')}>كاشير</button>
-                  <button className={`btn btn-sm ${historyTab === 'online' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'online')}>أونلاين</button>
+          <div className="prd-modal-overlay active" onClick={(e) => { if (e.target.classList.contains('prd-modal-overlay')) setShowHistoryModal(false); }}>
+            <div className="prd-modal" style={{ maxWidth: '900px' }}>
+              <div className="prd-card-title-row" style={{ padding: '24px 24px 0' }}>
+                <h3 className="prd-card-title">السجل: {selectedHistoryCustomer?.name}</h3>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button className={`cus-btn-ghost ${historyTab === 'pos' ? 'active' : ''}`} style={{ padding: '8px 16px', background: historyTab === 'pos' ? 'var(--cus-primary)' : '', color: historyTab === 'pos' ? 'white' : '' }} onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'pos')}>كاشير</button>
+                  <button className={`cus-btn-ghost ${historyTab === 'online' ? 'active' : ''}`} style={{ padding: '8px 16px', background: historyTab === 'online' ? 'var(--cus-primary)' : '', color: historyTab === 'online' ? 'white' : '' }} onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'online')}>أونلاين</button>
                 </div>
-                <button className="modal-close" onClick={() => setShowHistoryModal(false)}>✕</button>
+                <button className="prd-modal-close" onClick={() => setShowHistoryModal(false)}>✕</button>
               </div>
-              <div className="modal-body" style={{ minHeight: '300px' }}>
-                <div className="table-wrapper">
-                  <table className="data-table">
+              <div className="prd-modal-body" style={{ minHeight: '300px' }}>
+                <div className="cus-table-wrapper">
+                  <table className="cus-table">
                     <thead>
                       <tr>
                         <th>الرقم</th>
                         <th>التاريخ</th>
                         <th>الإجمالي</th>
-                        <th className="hide-mobile">الإجراء</th>
+                        <th style={{ textAlign: 'center' }}>الإجراء</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(historyTab === 'pos' ? historyData : onlineData).items.map(inv => (
                         <tr key={inv.id}>
-                          <td>{inv.invoiceNumber || inv.orderNumber}</td>
-                          <td style={{ fontSize: '0.8rem' }}>{new Date(inv.invoiceDate || inv.orderDate).toLocaleDateString('ar-EG')}</td>
-                          <td style={{ fontWeight: 700 }}>{inv.totalAmount}</td>
-                          <td className="hide-mobile">
-                             <button className="btn btn-ghost btn-sm" onClick={() => openInvoiceDetails(inv)}>تفاصيل</button>
+                          <td><code style={{ background: 'var(--cus-bg-dark)', padding: '4px 10px', borderRadius: '8px' }}>{inv.invoiceNumber || inv.orderNumber}</code></td>
+                          <td>{new Date(inv.invoiceDate || inv.orderDate).toLocaleDateString('ar-EG')}</td>
+                          <td style={{ fontWeight: 800 }}>{Number(inv.totalAmount).toLocaleString()} ج.م</td>
+                          <td style={{ textAlign: 'center' }}>
+                             <button className="cus-btn-ghost" style={{ padding: '6px 12px', fontSize: '0.8rem', margin: '0 auto' }} onClick={() => openInvoiceDetails(inv)}>التفاصيل</button>
                           </td>
                         </tr>
                       ))}
@@ -477,30 +574,31 @@ const Customers = () => {
 
       {showInvoiceDetails && (
         <ModalContainer>
-          <div className="modal-overlay active" style={{ zIndex: 1100 }} onClick={() => setShowInvoiceDetails(false)}>
-            <div className="modal" style={{ maxWidth: '500px' }}>
-              <div className="modal-header">
-                <h3>تفاصيل: {activeInvoice?.invoiceNumber}</h3>
-                <button className="modal-close" onClick={() => setShowInvoiceDetails(false)}>✕</button>
+          <div className="prd-modal-overlay active" style={{ zIndex: 1100 }} onClick={() => setShowInvoiceDetails(false)}>
+            <div className="prd-modal" style={{ maxWidth: '500px' }}>
+              <div className="prd-card-title-row" style={{ padding: '24px 24px 0' }}>
+                <h3 className="prd-card-title">تفاصيل: {activeInvoice?.invoiceNumber}</h3>
+                <button className="prd-modal-close" onClick={() => setShowInvoiceDetails(false)}>✕</button>
               </div>
-              <div className="modal-body">
-                <table className="data-table">
-                  <thead>
-                    <tr><th>الصنف</th><th>الكمية</th><th>السعر</th></tr>
-                  </thead>
-                  <tbody>
-                    {activeInvoice?.items?.map(it => (
-                      <tr key={it.id}><td>{it.productName}</td><td>{it.quantity}</td><td>{it.unitPrice}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="prd-modal-body">
+                <div className="cus-table-wrapper">
+                  <table className="cus-table">
+                    <thead>
+                      <tr><th>الصنف</th><th>الكمية</th><th>السعر</th></tr>
+                    </thead>
+                    <tbody>
+                      {activeInvoice?.items?.map(it => (
+                        <tr key={it.id}><td>{it.productName}</td><td>{it.quantity}</td><td>{Number(it.unitPrice).toLocaleString()}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </ModalContainer>
       )}
-
-    </>
+    </div>
   );
 };
 

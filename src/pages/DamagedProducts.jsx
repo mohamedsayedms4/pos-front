@@ -3,7 +3,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
-import StatTile from '../components/common/StatTile';
+import '../styles/pages/DamagedProductsPremium.css';
 
 const DamagedProducts = () => {
     const { toast } = useGlobalUI();
@@ -25,15 +25,15 @@ const DamagedProducts = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const damaged = await Api.getDamagedProducts(page, 20, search);
-            setData({
-                items: damaged.content || damaged.items || [],
-                totalPages: damaged.totalPages || 0,
-                totalElements: damaged.totalElements || 0
-            });
+            const res = await Api.getDamagedProducts(page, 20, search);
+            // Handle both Page object directly or wrapped in ApiResponse.data
+            const pageObj = res.content ? res : (res.data || res);
             
-            // Stats calculation for summary cards
-            // Note: In a real app, we might want a dedicated stats endpoint for performance
+            setData({
+                items: pageObj.content || pageObj.items || [],
+                totalPages: pageObj.totalPages || 0,
+                totalElements: pageObj.totalElements || 0
+            });
         } catch (err) {
             toast(err.message, 'error');
         } finally {
@@ -90,64 +90,65 @@ const DamagedProducts = () => {
     const totalLossValue = data.items.reduce((sum, item) => sum + (item.totalLoss || 0), 0);
 
     return (
-        <div className="page-section">
-            {/* Metro Style Stats */}
-            {/* Metro Style Stats */}
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-                <StatTile
-                    id="dmg_loss"
-                    label="إجمالي خسائر التوالف (هذه الصفحة)"
-                    value={`${Number(totalLossValue).toLocaleString()} ج.م`}
-                    icon="📉"
-                    defaults={{ color: 'crimson', size: 'tile-wd-sm', order: 1 }}
-                />
-                <StatTile
-                    id="dmg_count"
-                    label="عدد العمليات"
-                    value={data.totalElements}
-                    icon="📋"
-                    defaults={{ color: 'deep-purple', size: 'tile-sq-sm', order: 2 }}
-                />
+        <div className="damaged-page-container">
+            {/* Header & Search */}
+            <div className="dmg-header-toolbar">
+                <div className="dmg-title-area">
+                    <h1>إدارة التوالف والهوالك</h1>
+                </div>
+                <div className="dmg-search-wrapper">
+                    <i className="fas fa-search dmg-search-icon"></i>
+                    <input 
+                        type="text" 
+                        className="dmg-search-input"
+                        placeholder="بحث في التوالف..." 
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+                <button className="det-btn-action" style={{ background: '#ef4444', color: '#fff' }} onClick={openCreateModal}>
+                    <i className="fas fa-plus"></i> تسجيل هالك جديد
+                </button>
             </div>
 
-            <div className="card">
-                <div className="card-header">
-                    <h3>🗑️ إدارة التوالف والهوالك</h3>
-                    <div className="toolbar">
-                        <div className="search-input">
-                            <span className="search-icon">🔍</span>
-                            <input 
-                                type="text" 
-                                placeholder="بحث في التوالف..." 
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
-                        <button className="btn btn-primary" onClick={openCreateModal}>
-                            <span>+</span> تسجيل هالك جديد
-                        </button>
+            {/* KPI Cards */}
+            <div className="dmg-kpi-grid">
+                <div className="dmg-kpi-card">
+                    <div className="dmg-kpi-icon" style={{ color: '#ef4444' }}><i className="fas fa-chart-line"></i></div>
+                    <div className="dmg-kpi-info">
+                        <div className="label">إجمالي خسائر التوالف (الصفحة)</div>
+                        <div className="value">{Number(totalLossValue).toLocaleString()} <small>ج.م</small></div>
                     </div>
                 </div>
+                <div className="dmg-kpi-card">
+                    <div className="dmg-kpi-icon" style={{ color: '#8b5cf6' }}><i className="fas fa-list-ol"></i></div>
+                    <div className="dmg-kpi-info">
+                        <div className="label">عدد العمليات المسجلة</div>
+                        <div className="value">{data.totalElements}</div>
+                    </div>
+                </div>
+            </div>
 
-                <div className="card-body no-padding">
-                    <div className="table-wrapper">
-                        {loading ? (
-                            <Loader message="جاري التحميل..." />
-                        ) : data.items.length === 0 ? (
-                            <div className="empty-state">
-                                <div className="empty-icon">🗑️</div>
-                                <h4>لا يوجد سجل لهوالك</h4>
-                                <p>اضغط على تسجيل هالك جديد لإضافة بيانات</p>
-                            </div>
-                        ) : (
-                            <table className="data-table">
+            <div className="dmg-main-card">
+                {loading ? (
+                    <div style={{ padding: '60px 0' }}><Loader message="جاري تحميل سجل الهوالك..." /></div>
+                ) : data.items.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🗑️</div>
+                        <h3>لا يوجد سجل للهوالك</h3>
+                        <p style={{ color: 'var(--dmg-text-secondary)' }}>اضغط على تسجيل هالك جديد لإضافة بيانات</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="dmg-table-wrapper">
+                            <table className="dmg-table">
                                 <thead>
                                     <tr>
                                         <th>التاريخ</th>
                                         <th>المنتج</th>
                                         <th>الكمية</th>
-                                        <th>سعر التكلفة</th>
-                                        <th>إجمالي الخسارة</th>
+                                        <th>التكلفة</th>
+                                        <th>الخسارة</th>
                                         <th>السبب</th>
                                         <th>بواسطة</th>
                                     </tr>
@@ -155,114 +156,105 @@ const DamagedProducts = () => {
                                 <tbody>
                                     {data.items.map((item) => (
                                         <tr key={item.id}>
-                                            <td>{new Date(item.damagedDate).toLocaleString('ar-EG')}</td>
-                                            <td>
-                                                <div style={{ fontWeight: 600 }}>{item.productName}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.productCode}</div>
+                                            <td data-label="التاريخ" style={{ fontSize: '0.85rem' }}>{new Date(item.damagedDate).toLocaleString('ar-EG')}</td>
+                                            <td data-label="المنتج">
+                                                <div style={{ fontWeight: 700 }}>{item.productName}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--dmg-text-secondary)' }}>{item.productCode}</div>
                                             </td>
-                                            <td>
-                                                <span className="badge badge-danger">
+                                            <td data-label="الكمية">
+                                                <span className="det-badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none' }}>
                                                     {item.quantity} {item.unitName}
                                                 </span>
                                             </td>
-                                            <td>{Number(item.purchasePrice).toFixed(2)}</td>
-                                            <td style={{ fontWeight: 600, color: 'var(--metro-red)' }}>
-                                                {Number(item.totalLoss).toFixed(2)}
+                                            <td data-label="التكلفة">{Number(item.purchasePrice).toLocaleString()}</td>
+                                            <td data-label="الخسارة" style={{ fontWeight: 800, color: '#ef4444' }}>
+                                                {Number(item.totalLoss).toLocaleString()}
                                             </td>
-                                            <td>{item.reason || <span className="text-muted">—</span>}</td>
-                                            <td>{item.recordedBy}</td>
+                                            <td data-label="السبب">{item.reason || <span style={{ color: 'var(--dmg-text-secondary)' }}>—</span>}</td>
+                                            <td data-label="بواسطة">{item.recordedBy}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {data.totalPages > 1 && (
+                            <div className="int-pagination">
+                                <button className="int-btn-page" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                                    <i className="fas fa-chevron-right"></i>
+                                </button>
+                                <span style={{ fontWeight: 600 }}>صفحة {page + 1} من {data.totalPages}</span>
+                                <button className="int-btn-page" disabled={page >= data.totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                                    <i className="fas fa-chevron-left"></i>
+                                </button>
+                            </div>
                         )}
-                    </div>
-                </div>
-                
-                {data.totalPages > 1 && (
-                    <div className="card-footer" style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                        <button 
-                            className="btn btn-sm btn-secondary" 
-                            disabled={page === 0}
-                            onClick={() => setPage(p => p - 1)}
-                        >
-                            السابق
-                        </button>
-                        <span style={{ alignSelf: 'center' }}>صفحة {page + 1} من {data.totalPages}</span>
-                        <button 
-                            className="btn btn-sm btn-secondary" 
-                            disabled={page >= data.totalPages - 1}
-                            onClick={() => setPage(p => p + 1)}
-                        >
-                            التالي
-                        </button>
-                    </div>
+                    </>
                 )}
             </div>
 
             {/* Create Damaged Record Modal */}
             {isModalOpen && (
-                <ModalContainer>
-                    <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setIsModalOpen(false); }}>
-                        <div className="modal" style={{ maxWidth: '500px' }}>
-                            <div className="modal-header">
-                                <h3>📦 تسجيل هالك / تالف</h3>
-                                <button className="modal-close" onClick={() => setIsModalOpen(false)}>✕</button>
-                            </div>
-                            <div className="modal-body">
-                                <form id="damagedForm" onSubmit={handleSave}>
-                                    <div className="form-group">
-                                        <label>المنتج *</label>
-                                        <select 
-                                            className="form-control"
-                                            value={formData.productId}
-                                            onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">-- اختر المنتج --</option>
-                                            {products.map(p => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.name} (المخزن: {p.stock})
-                                                </option>
-                                            ))}
-                                        </select>
+                <div className="det-modal-overlay" onClick={() => setIsModalOpen(false)}>
+                    <div className="det-modal" style={{ maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
+                        <div className="det-modal-header">
+                            <h3><i className="fas fa-trash-alt" style={{ color: '#ef4444', marginLeft: '10px' }}></i> تسجيل هالك / تالف</h3>
+                            <button style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }} onClick={() => setIsModalOpen(false)}>✕</button>
+                        </div>
+                        <div className="det-modal-body">
+                            <form id="damagedForm" onSubmit={handleSave}>
+                                <div className="dmg-form-group">
+                                    <label className="dmg-label">المنتج المستهدف *</label>
+                                    <select 
+                                        className="dmg-select"
+                                        value={formData.productId} 
+                                        onChange={(e) => setFormData({ ...formData, productId: e.target.value })} 
+                                        required 
+                                    >
+                                        <option value="">-- اختر المنتج من المخزن --</option>
+                                        {products.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name} (المخزن الحالي: {p.stock})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="dmg-form-group">
+                                    <label className="dmg-label">الكمية التالفة *</label>
+                                    <input 
+                                        type="number" 
+                                        step="0.001" 
+                                        className="dmg-input"
+                                        value={formData.quantity} 
+                                        onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} 
+                                        required 
+                                    />
+                                </div>
+                                <div className="dmg-form-group">
+                                    <label className="dmg-label">سبب التلف / ملاحظات</label>
+                                    <textarea 
+                                        className="dmg-textarea" 
+                                        rows="3"
+                                        value={formData.reason} 
+                                        onChange={(e) => setFormData({ ...formData, reason: e.target.value })} 
+                                        placeholder="مثلاً: كسر أثناء النقل، انتهاء صلاحية..." 
+                                    />
+                                </div>
+                                
+                                <div className="dmg-alert-warning">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                    <div>
+                                        <strong>تنبيه هام:</strong> سيتم خصم الكمية فوراً من المخزن وتسجيل حركة "سحب" من الخزنة بقيمة التكلفة الإجمالية للهالك.
                                     </div>
-                                    <div className="form-group">
-                                        <label>الكمية التالفة *</label>
-                                        <input 
-                                            type="number" 
-                                            step="0.001"
-                                            className="form-control"
-                                            value={formData.quantity}
-                                            onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>سبب التلف / ملاحظات</label>
-                                        <textarea 
-                                            className="form-control"
-                                            rows="3"
-                                            value={formData.reason}
-                                            onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                                            placeholder="مثلاً: كسر أثناء النقل، انتهاء صلاحية..."
-                                        ></textarea>
-                                    </div>
-                                    
-                                    <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(231, 76, 60, 0.1)', borderRadius: '5px', borderRight: '3px solid var(--metro-red)', fontSize: '0.85rem' }}>
-                                        <b>⚠️ تنبيه:</b> سيتم خصم الكمية فوراً من المخزن وتسجيل حركة "سحب" من الخزنة بقيمة التكلفة.
-                                    </div>
-                                </form>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)}>إلغاء</button>
-                                <button type="submit" form="damagedForm" className="btn btn-primary" style={{ backgroundColor: 'var(--metro-red)' }} disabled={saving}>
-                                    {saving ? 'جاري التسجيل...' : 'تأكيد التسجيل'}
-                                </button>
-                            </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div className="det-modal-footer">
+                            <button type="button" className="det-btn-action" style={{ background: 'transparent', color: 'var(--dmg-text-secondary)' }} onClick={() => setIsModalOpen(false)}>إلغاء</button>
+                            <button type="submit" form="damagedForm" className="det-btn-action" style={{ background: '#ef4444', color: '#fff' }} disabled={saving}>
+                                {saving ? 'جاري التسجيل...' : 'تأكيد التسجيل'}
+                            </button>
                         </div>
                     </div>
-                </ModalContainer>
+                </div>
             )}
         </div>
     );

@@ -1,28 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useGlobalUI } from '../components/common/GlobalUI';
-import StatTile from '../components/common/StatTile';
 import { useBranch } from '../context/BranchContext';
 import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  LabelList,
-  ComposedChart,
-  Line
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart, Line,
+  LabelList
 } from 'recharts';
+import '../styles/pages/ProductAnalyticsPremium.css';
 
 const ProductAnalytics = () => {
   const navigate = useNavigate();
@@ -31,28 +18,29 @@ const ProductAnalytics = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // Design-specific data
   const [latest, setLatest] = useState([]);
   const [viewed, setViewed] = useState([]);
-  const [expensive, setExpensive] = useState([]);
+  const [mostCarted, setMostCarted] = useState([]);
+  const [mostFavorited, setMostFavorited] = useState([]);
   const [dailyStats, setDailyStats] = useState([]);
-
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [statData, latestData, viewedData, priceyData, dailyData] = await Promise.all([
+        const [statData, latestData, viewedData, cartData, favData, dailyData] = await Promise.all([
           Api.getProductStatistics(selectedBranchId),
           Api.getProductsPaged(0, 5, '', 'id,desc', selectedBranchId),
           Api.getProductsPaged(0, 5, '', 'viewCount,desc', selectedBranchId),
-          Api.getProductsPaged(0, 5, '', 'purchasePrice,desc', selectedBranchId),
+          Api.getProductsPaged(0, 5, '', 'cartCount,desc', selectedBranchId),
+          Api.getProductsPaged(0, 5, '', 'favoriteCount,desc', selectedBranchId),
           Api.getDailyProductStats(7).catch(() => [])
         ]);
         
         setStats(statData);
         setLatest(latestData?.items || []);
         setViewed(viewedData?.items || []);
-        setExpensive(priceyData?.items || []);
+        setMostCarted(cartData?.items || []);
+        setMostFavorited(favData?.items || []);
         
         const mappedDaily = Array.isArray(dailyData) ? dailyData.map(d => ({
           name: new Date(d.additionDate).toLocaleDateString('ar-EG', { weekday: 'short' }),
@@ -70,14 +58,14 @@ const ProductAnalytics = () => {
       }
     };
     fetchAllData();
-  }, []);
+  }, [selectedBranchId, toast]);
 
   if (loading) return <Loader message="جاري تحميل التحليلات..." />;
 
   const pieData = stats ? [
-    { name: 'متوفر', value: stats.totalProducts - (stats.outOfStockCount || 0) - (stats.lowStockCount || 0), color: '#00b0ff' },
-    { name: 'منخفض', value: stats.lowStockCount || 0, color: '#fbbf24' },
-    { name: 'نفد', value: stats.outOfStockCount || 0, color: '#f87171' },
+    { name: 'متوفر', value: stats.totalProducts - (stats.outOfStockCount || 0) - (stats.lowStockCount || 0), color: '#10b981' },
+    { name: 'منخفض', value: stats.lowStockCount || 0, color: '#f59e0b' },
+    { name: 'نفد', value: stats.outOfStockCount || 0, color: '#ef4444' },
   ] : [];
 
   const topSellingData = (stats?.topSellingProducts || []).map(p => ({
@@ -85,240 +73,324 @@ const ProductAnalytics = () => {
     sales: p.soldQuantity || 0
   }));
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{ 
+          background: 'rgba(15, 23, 42, 0.9)', 
+          backdropFilter: 'blur(8px)',
+          border: '1px solid var(--ana-glass-border)', 
+          padding: '12px', 
+          borderRadius: '12px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+        }}>
+          <p style={{ margin: 0, fontWeight: 700, color: '#fff', marginBottom: '4px' }}>{label}</p>
+          {payload.map((p, i) => (
+            <p key={i} style={{ margin: 0, color: p.color, fontSize: '0.9rem' }}>
+              {p.name}: {Number(p.value).toLocaleString()}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="page-section animate-fade-in">
-      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', border: 'none' }}>
-        <h2 style={{ margin: 0, fontWeight: '300', letterSpacing: '1px' }}>📊 تحليلات المنتجات</h2>
-        <button className="btn btn-secondary" onClick={() => navigate('/products')}>← عودة</button>
-      </div>
-
-      {/* KPI TILES GRID — Compact Style (Like Categories) */}
-      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '24px' }}>
-        <StatTile 
-          id="ana_total"
-          label="إجمالي المنتجات"
-          value={stats?.totalProducts || 0}
-          icon="▨"
-          defaults={{ color: 'azure', size: 'tile-sq-sm', order: 1 }}
-        />
-        <StatTile 
-          id="ana_capital"
-          label="قيمة المخزون (شراء)"
-          value={`${Number(stats?.totalInventoryCapital || 0).toLocaleString()} ج.م`}
-          icon="▧"
-          defaults={{ color: 'forest', size: 'tile-wd-sm', order: 2 }}
-        />
-        <StatTile 
-          id="ana_expected"
-          label="الأرباح المتوقعة"
-          value={`${Number(stats?.totalExpectedProfit || 0).toLocaleString()} ج.م`}
-          icon="◈"
-          defaults={{ color: 'deep-purple', size: 'tile-sq-sm', order: 3 }}
-        />
-        <StatTile 
-          id="ana_realized"
-          label="الأرباح المحققة"
-          value={`${Number(stats?.totalRealizedProfit || 0).toLocaleString()} ج.م`}
-          icon="▤"
-          defaults={{ color: 'sky', size: 'tile-wd-sm', order: 4 }}
-        />
-        <StatTile 
-          id="ana_cart"
-          label="إضافة للسلة"
-          value={stats?.totalCartCount || 0}
-          icon="🛒"
-          defaults={{ color: 'purple', size: 'tile-sq-sm', order: 5 }}
-        />
-        <StatTile 
-          id="ana_fav"
-          label="في المفضلة"
-          value={stats?.totalFavoriteCount || 0}
-          icon="❤️"
-          defaults={{ color: 'pink', size: 'tile-sq-sm', order: 6 }}
-        />
-      </div>
-
-      {/* 2x2 ANALYTICS GRID */}
-      <div className="analytics-grid">
-        
-        {/* 1. LATEST ADDED (Green) */}
-        <div className="analytics-card">
-          <div className="chart-header">
-            <span className="chart-badge badge-green">أحدث 5</span>
-            <h4 className="chart-title">الأحدث إضافة 📋</h4>
+    <div className="analytics-page-container">
+      {/* Header */}
+      <div className="ana-header-container">
+        <div className="ana-header-row">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', gap: '8px', fontSize: '0.9rem', color: 'var(--ana-text-secondary)', marginBottom: '12px' }}>
+              <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>الرئيسية</Link>
+              <span>/</span>
+              <Link to="/products" style={{ color: 'inherit', textDecoration: 'none' }}>المنتجات</Link>
+              <span>/</span>
+              <span>التحليلات</span>
+            </div>
+            <h1>تحليلات المنتجات</h1>
           </div>
-          <div style={{ height: '240px', width: '100%', minWidth: '0' }}>
+          <button className="ana-btn-back" onClick={() => navigate('/products')}>
+            <i className="fas fa-arrow-right"></i>
+            <span>العودة للمنتجات</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Stats */}
+      <div className="ana-stats-grid">
+        <div className="ana-stat-card">
+          <div className="ana-stat-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+            <i className="fas fa-box"></i>
+          </div>
+          <div className="ana-stat-info">
+            <div className="ana-stat-label">إجمالي المنتجات</div>
+            <div className="ana-stat-value">{stats?.totalProducts || 0}</div>
+          </div>
+        </div>
+        <div className="ana-stat-card">
+          <div className="ana-stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+            <i className="fas fa-money-bill-wave"></i>
+          </div>
+          <div className="ana-stat-info">
+            <div className="ana-stat-label">قيمة المخزون (شراء)</div>
+            <div className="ana-stat-value">{(stats?.totalInventoryCapital || 0).toLocaleString()} <small>ج.م</small></div>
+          </div>
+        </div>
+        <div className="ana-stat-card">
+          <div className="ana-stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+            <i className="fas fa-chart-line"></i>
+          </div>
+          <div className="ana-stat-info">
+            <div className="ana-stat-label">الأرباح المتوقعة</div>
+            <div className="ana-stat-value">{(stats?.totalExpectedProfit || 0).toLocaleString()} <small>ج.م</small></div>
+          </div>
+        </div>
+        <div className="ana-stat-card">
+          <div className="ana-stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+            <i className="fas fa-shopping-cart"></i>
+          </div>
+          <div className="ana-stat-info">
+            <div className="ana-stat-label">إضافة للسلة</div>
+            <div className="ana-stat-value">{stats?.totalCartCount || 0}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Grid */}
+      <div className="ana-grid">
+        {/* Latest Added */}
+        <div className="ana-card">
+          <div className="ana-card-title">
+            <i className="fas fa-plus-circle" style={{ color: '#10b981' }}></i>
+            الأحدث إضافة
+          </div>
+          <div style={{ height: '320px' }}>
             <ResponsiveContainer>
-              <BarChart data={latest} layout="vertical">
+              <BarChart data={latest} layout="vertical" margin={{ left: 10, right: 50, top: 20 }}>
                 <defs>
-                  <linearGradient id="gradGreen" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#064e3b" />
-                    <stop offset="100%" stopColor="#10b981" />
-                  </linearGradient>
+                   <linearGradient id="gradLatest" x1="0" y1="0" x2="1" y2="0">
+                     <stop offset="0%" stopColor="#064e3b" />
+                     <stop offset="100%" stopColor="#10b981" />
+                   </linearGradient>
                 </defs>
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" hide />
-                <Bar dataKey="id" fill="url(#gradGreen)" radius={[0, 4, 4, 0]} barSize={20}>
-                  <LabelList dataKey="name" position="top" offset={5} style={{ fill: '#888', fontSize: '11px' }} />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="id" fill="url(#gradLatest)" radius={[0, 10, 10, 0]} barSize={12}>
+                   <LabelList 
+                     dataKey="name" 
+                     position="top" 
+                     offset={10} 
+                     style={{ fill: 'var(--ana-text-primary)', fontSize: '13px', fontWeight: 700 }} 
+                   />
+                   <LabelList 
+                     dataKey="id" 
+                     position="right" 
+                     offset={10}
+                     formatter={(val) => `#${val}`}
+                     style={{ fill: 'var(--ana-text-secondary)', fontSize: '11px' }} 
+                   />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 2. MOST VIEWED (Blue) */}
-        <div className="analytics-card">
-          <div className="chart-header">
-            <span className="chart-badge badge-blue">أمر 7 أيام</span>
-            <h4 className="chart-title">الأكثر مشاهدة 👁️</h4>
+        {/* Most Viewed */}
+        <div className="ana-card">
+          <div className="ana-card-title">
+            <i className="fas fa-eye" style={{ color: '#3b82f6' }}></i>
+            الأكثر مشاهدة
           </div>
-          <div style={{ height: '240px', width: '100%', minWidth: '0' }}>
+          <div style={{ height: '320px' }}>
             <ResponsiveContainer>
-              <BarChart data={viewed} layout="vertical">
+              <BarChart data={viewed} layout="vertical" margin={{ left: 10, right: 50, top: 20 }}>
                 <defs>
-                  <linearGradient id="gradBlue" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#1e3a8a" />
-                    <stop offset="100%" stopColor="#3b82f6" />
-                  </linearGradient>
+                   <linearGradient id="gradViewed" x1="0" y1="0" x2="1" y2="0">
+                     <stop offset="0%" stopColor="#1e3a8a" />
+                     <stop offset="100%" stopColor="#3b82f6" />
+                   </linearGradient>
                 </defs>
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" hide />
-                <Bar dataKey="viewCount" fill="url(#gradBlue)" radius={[0, 4, 4, 0]} barSize={20}>
-                  <LabelList dataKey="name" position="top" offset={5} style={{ fill: '#888', fontSize: '11px' }} />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="viewCount" fill="url(#gradViewed)" radius={[0, 10, 10, 0]} barSize={12}>
+                   <LabelList 
+                     dataKey="name" 
+                     position="top" 
+                     offset={10} 
+                     style={{ fill: 'var(--ana-text-primary)', fontSize: '13px', fontWeight: 700 }} 
+                   />
+                   <LabelList 
+                     dataKey="viewCount" 
+                     position="right" 
+                     offset={10}
+                     style={{ fill: 'var(--ana-text-primary)', fontSize: '14px', fontWeight: 800 }} 
+                   />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 3. MOST SELLING (Flow Chart - Area) */}
-        <div className="analytics-card">
-          <div className="chart-header">
-            <span className="chart-badge badge-purple">الأداء (الكمية)</span>
-            <h4 className="chart-title">الأكثر مبيعاً (Flow) 🔥</h4>
+        {/* Most Added to Cart */}
+        <div className="ana-card">
+          <div className="ana-card-title">
+            <i className="fas fa-shopping-cart" style={{ color: '#f59e0b' }}></i>
+            الأكثر إضافة للسلة
           </div>
-          <div style={{ height: '240px', width: '100%', minWidth: '0' }}>
+          <div style={{ height: '320px' }}>
+            <ResponsiveContainer>
+              <BarChart data={mostCarted} layout="vertical" margin={{ left: 10, right: 50, top: 20 }}>
+                <defs>
+                   <linearGradient id="gradCart" x1="0" y1="0" x2="1" y2="0">
+                     <stop offset="0%" stopColor="#92400e" />
+                     <stop offset="100%" stopColor="#f59e0b" />
+                   </linearGradient>
+                </defs>
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" hide />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="cartCount" fill="url(#gradCart)" radius={[0, 10, 10, 0]} barSize={12}>
+                   <LabelList 
+                     dataKey="name" 
+                     position="top" 
+                     offset={10} 
+                     style={{ fill: 'var(--ana-text-primary)', fontSize: '13px', fontWeight: 700 }} 
+                   />
+                   <LabelList 
+                     dataKey="cartCount" 
+                     position="right" 
+                     offset={10}
+                     style={{ fill: 'var(--ana-text-primary)', fontSize: '14px', fontWeight: 800 }} 
+                   />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Most Added to Favorites */}
+        <div className="ana-card">
+          <div className="ana-card-title">
+            <i className="fas fa-heart" style={{ color: '#ec4899' }}></i>
+            الأكثر في المفضلة
+          </div>
+          <div style={{ height: '320px' }}>
+            <ResponsiveContainer>
+              <BarChart data={mostFavorited} layout="vertical" margin={{ left: 10, right: 50, top: 20 }}>
+                <defs>
+                   <linearGradient id="gradFav" x1="0" y1="0" x2="1" y2="0">
+                     <stop offset="0%" stopColor="#831843" />
+                     <stop offset="100%" stopColor="#ec4899" />
+                   </linearGradient>
+                </defs>
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" hide />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="favoriteCount" fill="url(#gradFav)" radius={[0, 10, 10, 0]} barSize={12}>
+                   <LabelList 
+                     dataKey="name" 
+                     position="top" 
+                     offset={10} 
+                     style={{ fill: 'var(--ana-text-primary)', fontSize: '13px', fontWeight: 700 }} 
+                   />
+                   <LabelList 
+                     dataKey="favoriteCount" 
+                     position="right" 
+                     offset={10}
+                     style={{ fill: 'var(--ana-text-primary)', fontSize: '14px', fontWeight: 800 }} 
+                   />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Most Selling Area */}
+        <div className="ana-card">
+          <div className="ana-card-title">
+            <i className="fas fa-fire" style={{ color: '#ef4444' }}></i>
+            الأكثر مبيعاً
+          </div>
+          <div style={{ height: '300px' }}>
             <ResponsiveContainer>
               <AreaChart data={topSellingData}>
                 <defs>
                   <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" hide />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#111', border: '1px solid #333', color: '#fff' }}
-                  itemStyle={{ color: '#8b5cf6' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="sales" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorSales)" 
-                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="sales" stroke="#ef4444" strokeWidth={3} fill="url(#colorSales)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 4. STOCK STATUS (Donut) */}
-        <div className="analytics-card">
-          <div className="chart-header">
-            <span className="chart-badge badge-orange">المخزون (الأقل)</span>
-            <h4 className="chart-title">حالة المخزون ⚠️</h4>
+        {/* Stock Status Donut */}
+        <div className="ana-card">
+          <div className="ana-card-title">
+            <i className="fas fa-exclamation-triangle" style={{ color: '#f59e0b' }}></i>
+            حالة المخزون
           </div>
-          <div style={{ height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 10px' }}>
-            {/* Chart on the left/center */}
-            <div style={{ flex: 1.2, height: '100%', minWidth: '180px' }}>
-              <ResponsiveContainer width="100%" height="100%">
+          <div className="ana-pie-container" style={{ height: '300px', display: 'flex', alignItems: 'center' }}>
+            <div className="ana-pie-chart-wrapper" style={{ flex: 1, height: '100%' }}>
+              <ResponsiveContainer>
                 <PieChart>
                   <Pie 
                     data={pieData} 
-                    innerRadius={60} 
-                    outerRadius={85} 
-                    paddingAngle={0} 
-                    dataKey="value"
+                    innerRadius="60%" 
+                    outerRadius="90%" 
+                    paddingAngle={5} 
+                    dataKey="value" 
                     stroke="none"
-                    startAngle={90}
-                    endAngle={450}
                   >
                     {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
                   </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#111', border: '1px solid #333', color: '#fff' }}
-                    itemStyle={{ color: '#fff' }}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-
-            {/* Legend on the right */}
-            <div style={{ flex: 1 }}>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {pieData.map((d, i) => (
-                  <li key={i} style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px', direction: 'rtl' }}>
-                    <span style={{ width: '14px', height: '14px', borderRadius: '3px', background: d.color, boxShadow: `0 0 12px ${d.color}66`, flexShrink: 0 }} />
-                    <div style={{ fontSize: '1rem', color: '#fff', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                      {d.name}: <span style={{ fontSize: '1.2rem', color: d.color }}>{d.value}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            <div className="ana-pie-legend" style={{ width: '120px' }}>
+              {pieData.map((d, i) => (
+                <div key={i} style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: d.color }} />
+                  <span style={{ fontSize: '0.85rem', color: 'var(--ana-text-secondary)' }}>{d.name}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-      </div>
-
-      {/* Daily Additions Chart (Full Width) */}
-      <div className="card" style={{ marginTop: '24px' }}>
-        <div className="card-header">
-          <h3>📦 حركة الإضافات اليومية للمنتجات (الـ 7 أيام الماضية)</h3>
-        </div>
-        <div className="card-body" style={{ height: '350px', width: '100%', padding: '20px' }}>
-          {dailyStats.length > 0 ? (
+        {/* Full Width Daily Stats */}
+        <div className="ana-card ana-full-card">
+          <div className="ana-card-title">
+            <i className="fas fa-history" style={{ color: '#8b5cf6' }}></i>
+            حركة الإضافات اليومية
+          </div>
+          <div style={{ height: '350px' }}>
             <ResponsiveContainer>
-              <ComposedChart data={dailyStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
-                
-                {/* المحور الأيسر للقيم المالية */}
-                <YAxis yAxisId="left" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val} />
-                
-                {/* المحور الأيمن لعدد المنتجات */}
-                <YAxis yAxisId="right" orientation="right" tick={{ fill: '#f59e0b', fontSize: 12 }} axisLine={false} tickLine={false} />
-
-                <Tooltip 
-                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-                  formatter={(value, name) => {
-                    let label = name;
-                    if (name === 'profit') return [`${Number(value).toLocaleString()} ج.م`, 'المكسب المتوقع'];
-                    if (name === 'purchase') return [`${Number(value).toLocaleString()} ج.م`, 'رأس المال (مشتريات)'];
-                    if (name === 'sale') return [`${Number(value).toLocaleString()} ج.م`, 'إجمالي المبيعات المحتملة'];
-                    if (name === 'count') return [value, 'عدد المنتجات المختلفة'];
-                    return [value, label];
-                  }}
-                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', color: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
-                />
-                
-                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#ccc' }} />
-
+              <ComposedChart data={dailyStats} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--ana-glass-border)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: 'var(--ana-text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} height={50} />
+                <YAxis yAxisId="left" tick={{ fill: 'var(--ana-text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fill: '#f59e0b', fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend verticalAlign="top" height={36} />
                 <Bar yAxisId="left" dataKey="purchase" name="رأس المال" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={25} />
                 <Bar yAxisId="left" dataKey="profit" name="المكسب المتوقع" fill="#10b981" radius={[4, 4, 0, 0]} barSize={25} />
-                
-                <Line yAxisId="right" type="monotone" dataKey="count" name="عدد المنتجات" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#111' }} activeDot={{ r: 6 }} />
+                <Line yAxisId="right" type="monotone" dataKey="count" name="عدد المنتجات" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} />
               </ComposedChart>
             </ResponsiveContainer>
-          ) : (
-            <div style={{ padding: '20px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '100px' }}>لا توجد إضافات في الفترة المحددة</div>
-          )}
+          </div>
         </div>
       </div>
     </div>
-
   );
 };
 

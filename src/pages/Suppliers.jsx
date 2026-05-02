@@ -4,7 +4,6 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
-import StatTile from '../components/common/StatTile';
 import {
   ComposedChart,
   Bar,
@@ -17,7 +16,44 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { useBranch } from '../context/BranchContext';
+import '../styles/pages/SuppliersPremium.css';
 
+// Reusable CustomSelect Component (Matched with Categories)
+const CustomSelect = ({ options, value, onChange, icon }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div className="sup-custom-select-container">
+      <div className={`sup-custom-select-header ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)}>
+        {icon && <i className={`fas ${icon} icon-start`}></i>}
+        <span className="selected-text">{selectedOption ? selectedOption.label : 'اختر...'}</span>
+        <i className={`fas fa-chevron-down icon-end ${isOpen ? 'rotate' : ''}`}></i>
+      </div>
+      
+      {isOpen && (
+        <>
+          <div className="sup-custom-select-overlay" onClick={() => setIsOpen(false)}></div>
+          <div className="sup-custom-select-dropdown">
+            {options.map(option => (
+              <div 
+                key={option.value} 
+                className={`sup-custom-select-item ${value === option.value ? 'active' : ''}`}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+              >
+                {option.label}
+                {value === option.value && <i className="fas fa-check"></i>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const Suppliers = () => {
   const { toast, confirm } = useGlobalUI();
@@ -113,7 +149,6 @@ const Suppliers = () => {
     }
   };
 
-
   useEffect(() => {
     const user = Api._getUser();
     const queryParams = new URLSearchParams(location.search);
@@ -135,8 +170,6 @@ const Suppliers = () => {
   useEffect(() => {
     loadData(currentPage, pageSize, debouncedSearch, sort, selectedBranchId);
   }, [currentPage, debouncedSearch, sort, selectedBranchId]);
-
-  // Server-side filtering is now handled in loadData
 
   const openForm = async (supplier = null) => {
     setActiveSupplier(supplier);
@@ -224,224 +257,214 @@ const Suppliers = () => {
     });
   };
 
-  const items = data;
+  const totalSuppliers = totalElements;
+  const totalBalance = data.reduce((sum, s) => sum + Number(s.balance || 0), 0);
+  const debtSuppliersCount = data.filter(s => Number(s.balance || 0) < 0).length;
+  const creditSuppliersCount = data.filter(s => Number(s.balance || 0) > 0).length;
 
   return (
-    <>
-      <div className="page-section">
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-          <StatTile
-            id="supp_total"
-            label="إجمالي الموردين"
-            value={totalElements}
-            icon="🏭"
-            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
-          />
-          <StatTile
-            id="supp_balance"
-            label={data.reduce((sum, s) => sum + Number(s.balance || 0), 0) >= 0 ? "إجمالي المستحقات لنا" : "إجمالي المديونيات علينا"}
-            value={Math.abs(data.reduce((sum, s) => sum + Number(s.balance || 0), 0)).toLocaleString()}
-            icon="💳"
-            defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
-          />
-          <StatTile
-            id="supp_debt"
-            label="عليهم مديونية"
-            value={data.filter(s => Number(s.balance || 0) < 0).length}
-            icon="⚠️"
-            defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
-          />
-          <StatTile
-            id="supp_credit"
-            label="لهم مستحقات"
-            value={data.filter(s => Number(s.balance || 0) > 0).length}
-            icon="🔔"
-            defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 4 }}
-          />
+    <div className="suppliers-page-container">
+      {/* Header & Main Controls */}
+      <div className="sup-header-toolbar">
+        <div className="sup-title-area">
+          <h1>إدارة الموردين</h1>
         </div>
-
-        {/* Daily Supplier Stats Chart */}
-        <div className="card" style={{ marginBottom: '24px' }}>
-          <div className="card-header">
-            <h3>📊 حركة الموردين اليومية (أخر 7 أيام)</h3>
-          </div>
-          <div className="card-body" style={{ minHeight: '350px', height: 'auto', width: '100%', padding: '20px' }}>
-            {dailyStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300} minWidth={0}>
-                <ComposedChart data={dailyStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
-                  
-                  {/* المحور الأيسر للقيم المالية */}
-                  <YAxis yAxisId="left" tick={{ fill: '#888', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val} />
-                  
-                  {/* المحور الأيمن لعدد الفواتير */}
-                  <YAxis yAxisId="right" orientation="right" tick={{ fill: '#f59e0b', fontSize: 12 }} axisLine={false} tickLine={false} />
-
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-                    formatter={(value, name) => {
-                      let label = name;
-                      if (name === 'invoicesCount') return [value, 'عدد فواتير المشتريات'];
-                      if (name === 'purchases') return [`${Number(value).toLocaleString()} ج.م`, 'إجمالي الفواتير (علينا)'];
-                      if (name === 'payments') return [`${Number(value).toLocaleString()} ج.م`, 'إجمالي الدفعات (دفعنا)'];
-                      return [value, label];
-                    }}
-                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', color: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
-                  />
-                  
-                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#ccc' }} />
-
-                  <Bar yAxisId="left" dataKey="purchases" name="إجمالي الفواتير" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={25} />
-                  <Bar yAxisId="left" dataKey="payments" name="الدفعات المسددة" fill="#10b981" radius={[4, 4, 0, 0]} barSize={25} />
-                  
-                  <Line yAxisId="right" type="monotone" dataKey="invoicesCount" name="عدد الفواتير" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#111' }} activeDot={{ r: 6 }} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ padding: '20px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '100px' }}>لا توجد تعاملات في الفترة المحددة</div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {Api.can('SUPPLIER_WRITE') && (
+                <button className="sup-btn-premium sup-btn-blue" onClick={() => openForm(null)}>
+                    إضافة مورد <i className="fas fa-plus"></i>
+                </button>
             )}
+            <button className="sup-btn-premium sup-btn-outline" onClick={handleExportPdf} disabled={exportingPdf || data.length === 0}>
+                PDF <i className="fas fa-file-pdf"></i>
+            </button>
+            <button className="sup-btn-premium sup-btn-outline" onClick={handleExportExcel} disabled={exportingExcel || data.length === 0}>
+                إكسيل <i className="fas fa-file-excel"></i> 
+            </button>
+        </div>
+      </div>
+
+      {/* KPI Grid */}
+      <div className="sup-kpi-grid">
+        <div className="sup-kpi-card">
+          <div className="sup-kpi-icon" style={{ color: '#3b82f6' }}><i className="fas fa-industry"></i></div>
+          <div className="sup-kpi-info">
+            <div className="label">إجمالي الموردين</div>
+            <div className="value">{totalSuppliers}</div>
           </div>
         </div>
+        <div className="sup-kpi-card">
+          <div className="sup-kpi-icon" style={{ color: totalBalance >= 0 ? '#10b981' : '#f43f5e' }}>
+            <i className={totalBalance >= 0 ? "fas fa-wallet" : "fas fa-exclamation-circle"}></i>
+          </div>
+          <div className="sup-kpi-info">
+            <div className="label">{totalBalance >= 0 ? "إجمالي المستحقات لنا" : "إجمالي المديونيات علينا"}</div>
+            <div className="value">{Math.abs(totalBalance).toLocaleString()} <small>ج.م</small></div>
+          </div>
+        </div>
+        <div className="sup-kpi-card">
+          <div className="sup-kpi-icon" style={{ color: '#f59e0b' }}><i className="fas fa-user-clock"></i></div>
+          <div className="sup-kpi-info">
+            <div className="label">موردين مدينين</div>
+            <div className="value">{debtSuppliersCount}</div>
+          </div>
+        </div>
+        <div className="sup-kpi-card">
+          <div className="sup-kpi-icon" style={{ color: '#8b5cf6' }}><i className="fas fa-bell"></i></div>
+          <div className="sup-kpi-info">
+            <div className="label">موردين دائنين</div>
+            <div className="value">{creditSuppliersCount}</div>
+          </div>
+        </div>
+      </div>
 
-        <div className="card">
-          <div className="card-header">
-            <h3>🏭 إدارة الموردين</h3>
-            <div className="toolbar">
-              <select 
-                className="form-control" 
-                value={selectedBranchId} 
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                style={{ width: '180px', height: '40px', padding: '0 10px' }}
-                disabled={!Api.can('ROLE_ADMIN')}
-              >
-                <option value="">كل الفروع</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+      {/* Chart Card */}
+      <div className="sup-chart-card">
+        <div className="sup-chart-header">
+            <h3>📊 حركة الموردين اليومية (أخر 7 أيام)</h3>
+        </div>
+        <div style={{ height: '320px', minHeight: '320px', width: '100%' }}>
+            {dailyStats.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={dailyStats} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fill: 'var(--sup-text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
+                        <YAxis yAxisId="left" tick={{ fill: 'var(--sup-text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fill: '#f59e0b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                        <Tooltip 
+                            cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid var(--sup-glass-border)', borderRadius: '12px', backdropFilter: 'blur(10px)' }}
+                        />
+                        <Legend verticalAlign="top" height={36} iconType="circle" />
+                        <Bar yAxisId="left" dataKey="purchases" name="إجمالي الفواتير" fill="#f43f5e" radius={[6, 6, 0, 0]} barSize={20} />
+                        <Bar yAxisId="left" dataKey="payments" name="الدفعات المسددة" fill="#10b981" radius={[6, 6, 0, 0]} barSize={20} />
+                        <Line yAxisId="right" type="monotone" dataKey="invoicesCount" name="عدد الفواتير" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--sup-text-secondary)' }}>لا توجد تعاملات في الفترة المحددة</div>
+            )}
+        </div>
+      </div>
 
-              <div className="search-input">
-                <span className="search-icon">🔍</span>
-                <input 
-                  type="text" 
-                  placeholder="بحث عن مورد..." 
-                  value={searchTerm} 
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(0);
-                  }} 
-                />
-              </div>
-              
-              <select 
-                className="form-control" 
-                value={sort} 
-                onChange={(e) => {
-                  setSort(e.target.value);
-                  setCurrentPage(0);
-                }}
-                style={{ width: '230px', height: '40px', padding: '0 10px' }}
-              >
-                <option value="name,asc">الاسم (أ-ي)</option>
-                <option value="name,desc">الاسم (ي-أ)</option>
-                <option value="balance,asc">لموردين لهم مستحقات (الرصيد السالب)</option>
-                <option value="balance,desc">موردين عليهم مديونيات (الرصيد الموجب)</option>
-                <option value="createdAt,desc">الأحدث تسجيلًا 🆕</option>
-                <option value="createdAt,asc">الأقدم تسجيلًا</option>
-                <option value="purchasesCount,desc">الأكثر توريداً (عدد فواتير) 📈</option>
-                <option value="purchasesCount,asc">الأقل توريداً (عدد فواتير) 📉</option>
-                <option value="purchasesTotalValue,desc">الأكثر توريداً (قيمة مالية) 💰</option>
-                <option value="purchasesTotalValue,asc">الأقل توريداً (قيمة مالية) 💵</option>
-              </select>
+      {/* Main Table Card */}
+      <div className="sup-main-card">
+        <div className="sup-controls-wrapper">
+            <div className="sup-toolbar-left">
+              <CustomSelect 
+                icon="fa-sort-amount-down"
+                value={sort}
+                onChange={(val) => { setSort(val); setCurrentPage(0); }}
+                options={[
+                  { value: 'name,asc', label: 'ترتيب: الاسم (أ-ي)' },
+                  { value: 'name,desc', label: 'ترتيب: الاسم (ي-أ)' },
+                  { value: 'balance,asc', label: 'ترتيب: الأرصدة السالبة أولاً' },
+                  { value: 'balance,desc', label: 'ترتيب: الأرصدة الموجبة أولاً' },
+                  { value: 'createdAt,desc', label: 'ترتيب: الأحدث تسجيلًا' },
+                  { value: 'purchasesCount,desc', label: 'ترتيب: الأكثر توريداً' }
+                ]}
+              />
+              <CustomSelect 
+                icon="fa-building"
+                value={selectedBranchId}
+                onChange={setSelectedBranchId}
+                options={[
+                  { value: '', label: 'كل الفروع' },
+                  ...branches.map(b => ({ value: String(b.id), label: b.name }))
+                ]}
+              />
+            </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleExportExcel}
-                  disabled={exportingExcel || items.length === 0}
-                >
-                  {exportingExcel ? '⏳' : '📊'} إكسيل
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleExportPdf}
-                  disabled={exportingPdf || items.length === 0}
-                >
-                  {exportingPdf ? '⏳' : '📄'} PDF
-                </button>
-
-                {Api.can('SUPPLIER_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => openForm(null)}>
-                    <span>+</span> إضافة مورد
-                  </button>
-                )}
+            <div className="sup-toolbar-right">
+              <div className="sup-search-box">
+                  <input 
+                      type="text"
+                      className="sup-search-input" 
+                      placeholder="ابحث عن مورد..." 
+                      value={searchTerm} 
+                      onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }} 
+                  />
+                  <i className="fas fa-search sup-search-icon"></i>
               </div>
             </div>
-          </div>
-          <div className="card-body no-padding">
-            <div className="table-wrapper">
-              {loading ? (
-                <Loader message="جاري تحميل الموردين..." />
-              ) : items.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">🏭</div>
-                  <h4>لا يوجد موردين</h4>
-                  <p>قم بإضافة موردين جدد</p>
-                </div>
-              ) : (
-                <table className="data-table">
+        </div>
+
+        <div className="sup-table-wrapper">
+          {loading ? (
+            <div style={{ padding: '60px 0' }}><Loader message="جاري تحميل الموردين..." /></div>
+          ) : data.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🏭</div>
+                <h3>لا يوجد موردين</h3>
+                <p style={{ color: 'var(--sup-text-secondary)' }}>قم بإضافة موردين جدد للبدء</p>
+            </div>
+          ) : (
+            <>
+                <table className="sup-table">
                   <thead>
                     <tr>
-                      <th>#</th>
+                      <th style={{ width: '60px' }}>#</th>
                       <th>المورد</th>
                       <th>الهاتف</th>
-                      <th>البريد</th>
+                      <th>الفرع</th>
                       <th>الرقم الضريبي</th>
-                      <th>الرصيد</th>
+                      <th>الرصيد الحالي</th>
                       <th>الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((s, i) => {
+                    {data.map((s, i) => {
                       const balance = Number(s.balance || 0);
-                      const balanceClass = balance > 0 ? 'balance-negative' : balance < 0 ? 'balance-positive' : '';
+                      const balanceColor = balance > 0 ? '#ef4444' : balance < 0 ? '#10b981' : 'inherit';
                       return (
                         <tr key={s.id}>
-                          <td style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                            {(currentPage * pageSize) + i + 1}
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-full)', background: 'var(--gradient-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-                                {(s.name || 'M').charAt(0)}
-                              </div>
-                              <div>
-                                <Link to={`/suppliers/${s.id}`} style={{ fontWeight: 600, color: 'var(--metro-blue)', textDecoration: 'none' }}>{s.name}</Link>
-                                {s.address && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.address}</div>}
+                          <td data-label="#" style={{ color: 'var(--sup-text-secondary)', fontSize: '0.85rem' }}>{(currentPage * pageSize) + i + 1}</td>
+                          <td data-label="المورد">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div className="sup-avatar">{(s.name || 'S').charAt(0)}</div>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <Link to={`/suppliers/${s.id}`} style={{ fontWeight: 700, color: 'var(--sup-text-primary)', textDecoration: 'none' }}>{s.name}</Link>
+                                {s.address && <small style={{ color: 'var(--sup-text-secondary)', fontSize: '0.75rem' }}>{s.address}</small>}
                               </div>
                             </div>
                           </td>
-                          <td>{s.phone || '—'}</td>
-                          <td>
+                          <td data-label="الهاتف">{s.phone || '—'}</td>
+                          <td data-label="الفرع">
                             {s.branch ? (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '20px', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', fontSize: '0.8rem', fontWeight: 600 }}>
-                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-emerald)', display: 'inline-block' }}></span>
+                              <span style={{ background: 'var(--sup-glass)', padding: '4px 10px', borderRadius: '20px', border: '1px solid var(--sup-glass-border)', fontSize: '0.8rem' }}>
                                 {s.branch.name}
                               </span>
-                            ) : <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>—</span>}
+                            ) : '—'}
                           </td>
-                          <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{s.taxNumber || '—'}</code></td>
-                          <td className={balanceClass} style={{ fontWeight: 700 }}>{balance.toFixed(2)}</td>
-                          <td>
-                            <div className="table-actions">
-                              <button className="btn btn-icon btn-ghost" title="ملف المورد والإحصائيات" onClick={() => navigate(`/suppliers/${s.id}`)}>📊</button>
-                              <button className="btn btn-icon btn-ghost" title="عرض الفواتير" onClick={() => navigate(`/purchases/${encodeURIComponent(s.name)}`)}>🛒</button>
+                          <td data-label="الرقم الضريبي">
+                            <code style={{ background: 'var(--sup-glass)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--sup-glass-border)', fontSize: '0.75rem' }}>
+                                {s.taxNumber || '—'}
+                            </code>
+                          </td>
+                          <td data-label="الرصيد" style={{ fontWeight: 800, color: balanceColor }}>{balance.toLocaleString()}</td>
+                          <td data-label="الإجراءات">
+                            <div className="sup-action-group">
+                              <button className="sup-action-btn-premium sup-btn-stats" title="ملف المورد" onClick={() => navigate(`/suppliers/${s.id}`)}>
+                                <i className="fas fa-chart-bar"></i>
+                              </button>
+                              <button className="sup-action-btn-premium sup-btn-cart" title="الفواتير" onClick={() => navigate(`/purchases/${encodeURIComponent(s.name)}`)}>
+                                <i className="fas fa-shopping-cart"></i>
+                              </button>
                               {Api.can('SUPPLIER_WRITE') && (
                                 <>
-                                  <button className="btn btn-icon btn-ghost" title="دفع" onClick={() => openPayment(s)}>💰</button>
-                                  <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(s)}>✏️</button>
+                                  <button className="sup-action-btn-premium sup-btn-wallet" title="دفع" onClick={() => openPayment(s)}>
+                                    <i className="fas fa-wallet"></i>
+                                  </button>
+                                  <button className="sup-action-btn-premium sup-btn-edit" title="تعديل" onClick={() => openForm(s)}>
+                                    <i className="fas fa-edit"></i>
+                                  </button>
                                 </>
                               )}
-                              {Api.can('SUPPLIER_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(s.id, s.name)}>🗑️</button>}
+                              {Api.can('SUPPLIER_DELETE') && (
+                                <button className="sup-action-btn-premium sup-btn-delete" title="حذف" onClick={() => handleDelete(s.id, s.name)}>
+                                  <i className="fas fa-trash-alt"></i>
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -449,130 +472,117 @@ const Suppliers = () => {
                     })}
                   </tbody>
                 </table>
-              )}
-            </div>
 
-            {totalPages > 1 && (
-              <div className="pagination" style={{ borderTop: '1px solid var(--border-main)' }}>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  style={{ width: 'auto', padding: '0 15px' }}
-                  disabled={currentPage === 0}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                >
-                  السابق
-                </button>
-                <button className="active">{currentPage + 1}</button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  style={{ width: 'auto', padding: '0 15px' }}
-                  disabled={currentPage >= totalPages - 1}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                >
-                  التالي
-                </button>
-              </div>
-            )}
-          </div>
+                {totalPages > 1 && (
+                  <div className="int-pagination" style={{ marginTop: '24px' }}>
+                    <button className="int-btn-page" disabled={currentPage === 0} onClick={() => setCurrentPage(prev => prev - 1)}>
+                        <i className="fas fa-chevron-right"></i>
+                    </button>
+                    <span style={{ fontWeight: 600 }}>صفحة {currentPage + 1} من {totalPages}</span>
+                    <button className="int-btn-page" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(prev => prev + 1)}>
+                        <i className="fas fa-chevron-left"></i>
+                    </button>
+                  </div>
+                )}
+            </>
+          )}
         </div>
       </div>
 
+      {/* Supplier Form Modal */}
       {modalType === 'form' && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal">
-              <div className="modal-header">
-                <h3>{activeSupplier ? 'تعديل مورد' : 'إضافة مورد جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="supplierForm" onSubmit={handleSaveForm}>
-                  <div className="form-group">
-                    <label>اسم المورد *</label>
-                    <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>الهاتف</label>
-                      <input className="form-control" name="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-                    </div>
-                    <div className="form-group">
-                      <label>البريد الإلكتروني</label>
-                      <input className="form-control" name="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>العنوان</label>
-                    <input className="form-control" name="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-                  </div>
-                  <div className="form-group">
-                    <label>الرقم الضريبي</label>
-                    <input className="form-control" name="taxNumber" value={formData.taxNumber} onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })} />
-                  </div>
-                  <div className="form-group">
-                    <label>الفروع المرتبطة *</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', marginTop: '5px' }}>
-                      {branches.map(branch => (
-                        <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={formData.branchIds.includes(branch.id)} 
-                            onChange={(e) => {
-                              const newIds = e.target.checked 
-                                ? [...formData.branchIds, branch.id]
-                                : formData.branchIds.filter(id => id !== branch.id);
-                              setFormData({ ...formData, branchIds: newIds });
-                            }} 
-                          />
-                          {branch.name}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="supplierForm" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : (activeSupplier ? 'حفظ التعديلات' : 'إضافة المورد')}
-                </button>
-              </div>
+        <div className="det-modal-overlay" onClick={() => closeModal()}>
+            <div className="det-modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+                <div className="det-modal-header">
+                    <h3>{activeSupplier ? <><i className="fas fa-edit"></i> تعديل مورد</> : <><i className="fas fa-plus"></i> إضافة مورد جديد</>}</h3>
+                    <button style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }} onClick={closeModal}>✕</button>
+                </div>
+                <div className="det-modal-body">
+                    <form id="supplierForm" onSubmit={handleSaveForm}>
+                        <div className="dmg-form-group">
+                            <label className="dmg-label">اسم المورد *</label>
+                            <input className="dmg-input" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div className="dmg-form-group">
+                                <label className="dmg-label">الهاتف</label>
+                                <input className="dmg-input" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                            </div>
+                            <div className="dmg-form-group">
+                                <label className="dmg-label">البريد الإلكتروني</label>
+                                <input className="dmg-input" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                            </div>
+                        </div>
+                        <div className="dmg-form-group">
+                            <label className="dmg-label">العنوان</label>
+                            <input className="dmg-input" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+                        </div>
+                        <div className="dmg-form-group">
+                            <label className="dmg-label">الرقم الضريبي</label>
+                            <input className="dmg-input" value={formData.taxNumber} onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })} />
+                        </div>
+                        <div className="dmg-form-group">
+                            <label className="dmg-label">الفروع المرتبطة *</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', background: 'var(--sup-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--sup-border)' }}>
+                                {branches.map(branch => (
+                                    <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.branchIds.includes(branch.id)} 
+                                            onChange={(e) => {
+                                                const newIds = e.target.checked 
+                                                    ? [...formData.branchIds, branch.id]
+                                                    : formData.branchIds.filter(id => id !== branch.id);
+                                                setFormData({ ...formData, branchIds: newIds });
+                                            }} 
+                                        />
+                                        {branch.name}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div className="det-modal-footer">
+                    <button type="button" className="sup-btn-premium sup-btn-outline" onClick={closeModal}>إلغاء</button>
+                    <button type="submit" form="supplierForm" className="sup-btn-premium sup-btn-blue" disabled={saving}>
+                        {saving ? 'جاري الحفظ...' : (activeSupplier ? 'حفظ التعديلات' : 'إضافة المورد')}
+                    </button>
+                </div>
             </div>
-          </div>
-        </ModalContainer>
+        </div>
       )}
 
+      {/* Payment Modal */}
       {modalType === 'payment' && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal" style={{ maxWidth: '450px' }}>
-              <div className="modal-header">
-                <h3>دفع للمورد — {activeSupplier.name}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="paymentForm" onSubmit={handleSavePayment}>
-                  <div className="form-group">
-                    <label>المبلغ *</label>
-                    <input className="form-control" name="amount" type="number" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label>الوصف</label>
-                    <input className="form-control" name="description" value={paymentDesc} onChange={(e) => setPaymentDesc(e.target.value)} />
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="paymentForm" className="btn btn-success" disabled={saving}>
-                  {saving ? 'جاري التسجيل...' : 'تسجيل الدفعة'}
-                </button>
-              </div>
+        <div className="det-modal-overlay" onClick={() => closeModal()}>
+            <div className="det-modal" style={{ maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+                <div className="det-modal-header">
+                    <h3><i className="fas fa-money-bill-wave"></i> دفع للمورد — {activeSupplier.name}</h3>
+                    <button style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }} onClick={closeModal}>✕</button>
+                </div>
+                <div className="det-modal-body">
+                    <form id="paymentForm" onSubmit={handleSavePayment}>
+                        <div className="dmg-form-group">
+                            <label className="dmg-label">المبلغ *</label>
+                            <input className="dmg-input" type="number" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} required />
+                        </div>
+                        <div className="dmg-form-group">
+                            <label className="dmg-label">الوصف</label>
+                            <input className="dmg-input" value={paymentDesc} onChange={(e) => setPaymentDesc(e.target.value)} />
+                        </div>
+                    </form>
+                </div>
+                <div className="det-modal-footer">
+                    <button type="button" className="sup-btn-premium sup-btn-outline" onClick={closeModal}>إلغاء</button>
+                    <button type="submit" form="paymentForm" className="sup-btn-premium sup-btn-blue" disabled={saving}>
+                        {saving ? 'جاري التسجيل...' : 'تسجيل الدفعة'}
+                    </button>
+                </div>
             </div>
-          </div>
-        </ModalContainer>
+        </div>
       )}
-    </>
+    </div>
   );
 };
 

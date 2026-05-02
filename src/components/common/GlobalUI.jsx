@@ -65,22 +65,34 @@ export const GlobalUIProvider = ({ children }) => {
 
             {/* Global Confirm Modal */}
             {confirm && ReactDOM.createPortal(
-                <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeConfirm(); }}>
-                    <div className="modal confirm-dialog" style={{ maxWidth: '400px' }}>
-                        <div className="modal-header">
-                            <h3>تأكيد</h3>
-                            <button className="modal-close" onClick={closeConfirm}>✕</button>
-                        </div>
-                        <div className="modal-body" style={{ padding: '30px 24px' }}>
-                            <div className="confirm-icon" style={{ borderRadius: '0', clipPath: 'none' }}>
-                                <span style={{ color: '#ffeb3b', fontSize: '1.5rem' }}>⚠</span>
+                <div className="cat-modal-overlay" style={{ zIndex: 999999 }} onClick={(e) => { if (e.target.classList.contains('cat-modal-overlay')) closeConfirm(); }}>
+                    <div className="cat-modal" style={{ maxWidth: '400px', textAlign: 'center' }}>
+                        <div className="cat-modal-body" style={{ padding: '40px 32px' }}>
+                            <div style={{ 
+                                width: '80px', 
+                                height: '80px', 
+                                background: 'rgba(239, 68, 68, 0.1)', 
+                                borderRadius: '50%', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                margin: '0 auto 24px',
+                                border: '1px solid rgba(239, 68, 68, 0.2)'
+                            }}>
+                                <i className="fas fa-exclamation-triangle" style={{ fontSize: '2rem', color: '#ef4444' }}></i>
                             </div>
-                            <h2 style={{ textAlign: 'center', marginBottom: '12px', fontSize: '1.75rem', fontWeight: '300' }}>هل أنت متأكد؟</h2>
-                            <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.95rem' }}>{confirm.message}</p>
-                        </div>
-                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '15px', borderTop: 'none', paddingBottom: '30px' }}>
-                            <button className="btn btn-danger" style={{ minWidth: '140px', padding: '12px' }} onClick={() => { confirm.onConfirm(); closeConfirm(); }}>تأكيد الحذف</button>
-                            <button className="btn btn-ghost" style={{ minWidth: '80px', padding: '12px' }} onClick={() => { if (confirm.onCancel) confirm.onCancel(); closeConfirm(); }}>إلغاء</button>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '12px', color: 'var(--cat-text-primary)' }}>هل أنت متأكد؟</h2>
+                            <p style={{ color: 'var(--cat-text-secondary)', fontSize: '1rem', lineHeight: '1.6', marginBottom: '32px' }}>
+                                {confirm.message}
+                            </p>
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                                <button className="cat-btn-primary" style={{ background: '#ef4444', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)', padding: '12px 24px' }} onClick={() => { confirm.onConfirm(); closeConfirm(); }}>
+                                    تأكيد الحذف
+                                </button>
+                                <button className="cat-btn-ghost" style={{ padding: '12px 24px' }} onClick={() => { if (confirm.onCancel) confirm.onCancel(); closeConfirm(); }}>
+                                    إلغاء
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>,

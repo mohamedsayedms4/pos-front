@@ -1,0 +1,179 @@
+/* 
+  Product Interactions — Premium Glassmorphism UI
+  Prefix: int-
+*/
+
+:root {
+    --int-primary: #8b5cf6;
+    --int-primary-light: #a78bfa;
+    --int-glass: rgba(255, 255, 255, 0.03);
+    --int-glass-border: rgba(255, 255, 255, 0.08);
+    --int-text-primary: #ffffff;
+    --int-text-secondary: #cbd5e1;
+    --int-bg-dark: #0f172a;
+    --int-card-bg: rgba(30, 41, 59, 0.7);
+    --int-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+[data-theme='light'] {
+    --int-glass: rgba(255, 255, 255, 0.8);
+    --int-glass-border: #e2e8f0;
+    --int-text-primary: #0f172a;
+    --int-text-secondary: #475569;
+    --int-bg-dark: #f8fafc;
+    --int-card-bg: #ffffff;
+    --int-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.interactions-page-container {
+    padding: 24px;
+    background: var(--int-bg-dark);
+    min-height: 100vh;
+    font-family: 'Inter', 'Outfit', sans-serif;
+    color: var(--int-text-primary);
+    transition: all 0.3s ease;
+}
+
+/* Header */
+.int-header-container {
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.int-header-info h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(to right, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme='light'] .int-header-info h1 {
+    background: linear-gradient(to right, #0f172a, #475569);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.int-header-info p {
+    color: var(--int-text-secondary);
+    margin-top: 8px;
+    font-size: 0.95rem;
+}
+
+/* Main Card */
+.int-main-card {
+    background: var(--int-card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--int-glass-border);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: var(--int-shadow);
+}
+
+/* Table Style */
+.int-table-wrapper {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--int-glass-border);
+}
+
+.int-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+}
+
+.int-table th {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--int-text-secondary);
+    border-bottom: 1px solid var(--int-glass-border);
+}
+
+.int-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--int-glass-border);
+}
+
+.int-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Badges */
+.int-badge {
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.int-badge-purple { background: rgba(139, 92, 246, 0.1); color: #a78bfa; }
+.int-badge-pink { background: rgba(236, 72, 153, 0.1); color: #f472b6; }
+
+/* Pagination */
+.int-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+}
+
+.int-btn-page {
+    background: var(--int-glass);
+    border: 1px solid var(--int-glass-border);
+    color: var(--int-text-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.int-btn-page:hover:not(:disabled) {
+    background: var(--int-primary);
+    border-color: var(--int-primary);
+    transform: scale(1.1);
+}
+
+.int-btn-page:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Responsive Table (Cards on Mobile) */
+@media (max-width: 768px) {
+    .int-header-container { flex-direction: column; align-items: stretch; text-align: center; }
+    .int-main-card { padding: 16px; }
+    
+    .int-table thead { display: none; }
+    .int-table, .int-table tbody, .int-table tr, .int-table td { display: block; width: 100%; }
+    .int-table tr { margin-bottom: 16px; border: 1px solid var(--int-glass-border); border-radius: 16px; background: rgba(255,255,255,0.01); }
+    .int-table td { 
+        padding: 12px 16px; 
+        border-bottom: 1px solid var(--int-glass-border); 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+        text-align: left;
+    }
+    .int-table td:last-child { border-bottom: none; }
+    .int-table td::before { 
+        content: attr(data-label); 
+        font-weight: 600; 
+        color: var(--int-text-secondary); 
+        margin-right: 12px;
+    }
+}
