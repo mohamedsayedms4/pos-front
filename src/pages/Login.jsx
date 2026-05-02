@@ -42,7 +42,7 @@ const Login = () => {
   const findTenantByEmail = async (emailAddr) => {
     setIsResolving(true);
     try {
-      const res = await fetch(`${SERVER_URL}/api/public/tenants/find-by-email/${emailAddr}`);
+      const res = await fetch(`${SERVER_URL}/api/public/tenants/find-by-email/${encodeURIComponent(emailAddr)}`);
       if (res.ok) {
         const tenants = await res.json();
         if (tenants.length === 1) {
@@ -66,7 +66,7 @@ const Login = () => {
   const resolveAndSetTenant = async (slug) => {
     setIsResolving(true);
     try {
-      const resolveRes = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${slug}`);
+      const resolveRes = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${encodeURIComponent(slug)}`);
       if (resolveRes.ok) {
         const data = await resolveRes.json();
         setBusinessName(data.name);
