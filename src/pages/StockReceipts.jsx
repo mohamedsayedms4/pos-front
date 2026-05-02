@@ -1,25 +1,51 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
-import StatTile from '../components/common/StatTile';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import '../styles/pages/StockReceiptsPremium.css';
+
+const CustomSelect = ({ options, value, onChange, icon }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(o => o.value === value) || options[0];
+  return (
+    <div className="stk-custom-select-container">
+      <div className={`stk-custom-select-header ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)}>
+        <i className={`fas ${icon} icon-start`}></i>
+        <span className="selected-text">{selectedOption.label}</span>
+        <i className="fas fa-chevron-down icon-end"></i>
+      </div>
+      {isOpen && (
+        <>
+          <div className="stk-custom-select-overlay" onClick={() => setIsOpen(false)}></div>
+          <div className="stk-custom-select-dropdown">
+            {options.map(opt => (
+              <div key={opt.value} className={`stk-custom-select-item ${opt.value === value ? 'active' : ''}`} onClick={() => { onChange(opt.value); setIsOpen(false); }}>
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const StockReceipts = () => {
   const { toast, confirm } = useGlobalUI();
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
-  const [receivedQuantities, setReceivedQuantities] = useState({}); // itemId -> qty
+  const [receivedQuantities, setReceivedQuantities] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [analytics, setAnalytics] = useState({ pending: 0, received: 0, completed: 0, trend: [] });
+  const [analytics, setAnalytics] = useState({ pending: 0, received: 0, completed: 0, total: 0, trend: [] });
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const isAdmin = Api.isAdminOrBranchManager();
   
-  // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
@@ -27,17 +53,10 @@ const StockReceipts = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const pageSize = 10;
 
-  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
-  useEffect(() => {
-    loadReceipts(currentPage, pageSize, debouncedSearch, selectedBranchId);
-  }, [currentPage, debouncedSearch, selectedBranchId]);
 
   const loadReceipts = async (pageIndex = currentPage, size = pageSize, query = debouncedSearch, branchId = selectedBranchId) => {
     setLoading(true);
@@ -58,39 +77,35 @@ const StockReceipts = () => {
     setAnalyticsLoading(true);
     try {
       const stats = await Api.getStockReceiptAnalytics();
-      
-      // Calculate current totals from stats
-      const today = new Date().toISOString().split('T')[0];
-      const summary = { pending: 0, received: 0, completed: 0, trend: [] };
-      
-      // Group trend by date
+      const summary = { pending: 0, received: 0, completed: 0, total: 0, trend: [] };
       const trendMap = {};
-      
+
       stats.forEach(s => {
         if (!trendMap[s.receiptDate]) trendMap[s.receiptDate] = { date: s.receiptDate, PENDING: 0, RECEIVED: 0, COMPLETED: 0 };
         trendMap[s.receiptDate][s.receiptStatus] = s.receiptCount;
         
-        // Sum totals for all-time categories
         if (s.receiptStatus === 'PENDING') summary.pending += s.receiptCount;
         if (s.receiptStatus === 'RECEIVED') summary.received += s.receiptCount;
         if (s.receiptStatus === 'COMPLETED') summary.completed += s.receiptCount;
+        summary.total += s.receiptCount;
       });
       
       summary.trend = Object.values(trendMap).sort((a,b) => a.date.localeCompare(b.date)).slice(-15);
       setAnalytics(summary);
-    } catch (err) {
-      console.error('Analytics error:', err);
-    } finally {
-      setAnalyticsLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setAnalyticsLoading(false); }
   };
+
+  useEffect(() => {
+    loadReceipts(currentPage, pageSize, debouncedSearch, selectedBranchId);
+  }, [currentPage, debouncedSearch, selectedBranchId]);
 
   useEffect(() => {
     loadAnalytics();
     if (isAdmin && branches.length === 0) {
       Api.getBranches().then(setBranches).catch(() => {});
     }
-  }, []);
+  }, [isAdmin, branches.length]);
 
   const handleSaveQuantities = async (receiptId, qtys = null) => {
     confirm('هل أنت متأكد من تسجيل هذه الكميات؟ سيتم حفظها دون تحديث المخزون الفعلي.', async () => {
@@ -99,9 +114,7 @@ const StockReceipts = () => {
         toast('تم تسجيل الاستلام بنجاح. يمكنك الآن الإضافة للمخزن.', 'success');
         loadReceipts();
         closeModal();
-      } catch (err) {
-        toast(err.message, 'error');
-      }
+      } catch (err) { toast(err.message, 'error'); }
     });
   };
 
@@ -112,19 +125,14 @@ const StockReceipts = () => {
         toast('تمت إضافة الكميات للمخزن بنجاح', 'success');
         loadReceipts();
         closeModal();
-      } catch (err) {
-        toast(err.message, 'error');
-      }
+      } catch (err) { toast(err.message, 'error'); }
     });
   };
 
   const openDetails = (receipt) => {
     setSelectedReceipt(receipt);
-    // Initialize quantities with full original quantities
     const initialQtys = {};
-    receipt.items.forEach(item => {
-      initialQtys[item.id] = item.quantity;
-    });
+    receipt.items.forEach(item => { initialQtys[item.id] = item.quantity; });
     setReceivedQuantities(initialQtys);
     setIsModalOpen(true);
   };
@@ -134,253 +142,246 @@ const StockReceipts = () => {
     setSelectedReceipt(null);
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'PENDING': return <span className="badge badge-warning">بانتظار الاستلام</span>;
-      case 'RECEIVED': return <span className="badge badge-info">تم الاستلام</span>;
-      case 'COMPLETED': return <span className="badge badge-success">تمت الإضافة للمخزن</span>;
-      case 'CANCELLED': return <span className="badge badge-danger">ملغي</span>;
-      default: return <span className="badge">{status}</span>;
-    }
+  const statusConfig = {
+    PENDING: { label: 'بانتظار الاستلام', badgeClass: 'badge-amber', icon: 'fa-hourglass-start' },
+    RECEIVED: { label: 'تم الاستلام', badgeClass: 'badge-blue', icon: 'fa-box-open' },
+    COMPLETED: { label: 'تم التخزين', badgeClass: 'badge-green', icon: 'fa-warehouse' },
+    CANCELLED: { label: 'ملغي', badgeClass: 'badge-danger', icon: 'fa-ban' },
   };
 
   return (
-    <div className="page-section">
-      {/* Stock Receipts Analytics Dashboard */}
-      {/* Analytics Dashboard */}
-      <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
-        <StatTile 
-          id="stk_pending"
-          label="بانتظار المورد"
-          value={`${analytics.pending} أمر`}
-          icon="🕒"
-          defaults={{ color: 'amber', size: 'tile-wd-sm', order: 1 }}
-        />
-        <StatTile 
-          id="stk_received"
-          label="استلام مؤقت (لم يرحل)"
-          value={analytics.received}
-          icon="📦"
-          defaults={{ color: 'blue', size: 'tile-wd-sm', order: 2 }}
-        />
-        <StatTile 
-          id="stk_completed"
-          label="تم التخزين"
-          value={analytics.completed}
-          icon="✅"
-          defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 3 }}
-        />
+    <div className="stock-receipts-container">
+      {/* 1. Header */}
+      <div className="stk-header-row">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="stk-breadcrumbs">
+            <Link to="/dashboard">الرئيسية</Link> / <span>المخزن</span>
+          </div>
+          <h1>أذونات الاستلام</h1>
+        </div>
+        <div className="stk-header-actions">
+          <button className="stk-btn-premium stk-btn-blue" onClick={() => loadReceipts()}>
+            <i className="fas fa-sync-alt"></i> تحديث البيانات
+          </button>
+        </div>
       </div>
 
-      <div className="card mb-4">
-        <div className="card-header no-border">
-          <h3>📊 اتجاه التوريد (آخر 15 يوم توريد)</h3>
-          {analyticsLoading && <small style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>جاري التحديث...</small>}
+      {/* 2. Stats Grid */}
+      <div className="stk-stats-grid">
+        <div className="stk-stat-card">
+          <div className="stk-stat-info">
+            <h4>إجمالي الأذونات</h4>
+            <div className="stk-stat-value">{analytics.total} <span style={{fontSize: '0.8rem'}}>إذن</span></div>
+          </div>
+          <div className="stk-stat-visual">
+            <div className="stk-stat-icon icon-purple">
+              <i className="fas fa-file-invoice"></i>
+            </div>
+          </div>
         </div>
-        <div className="card-body" style={{ minHeight: '300px', height: '300px', padding: '15px', position: 'relative' }}>
+        <div className="stk-stat-card">
+          <div className="stk-stat-info">
+            <h4>بانتظار المورد</h4>
+            <div className="stk-stat-value">{analytics.pending} <span style={{fontSize: '0.8rem'}}>أمر</span></div>
+          </div>
+          <div className="stk-stat-visual">
+            <div className="stk-stat-icon icon-amber">
+              <i className="fas fa-hourglass-start"></i>
+            </div>
+          </div>
+        </div>
+        <div className="stk-stat-card">
+          <div className="stk-stat-info">
+            <h4>استلام مؤقت</h4>
+            <div className="stk-stat-value">{analytics.received} <span style={{fontSize: '0.8rem'}}>إذن</span></div>
+          </div>
+          <div className="stk-stat-visual">
+            <div className="stk-stat-icon icon-blue">
+              <i className="fas fa-box-open"></i>
+            </div>
+          </div>
+        </div>
+        <div className="stk-stat-card">
+          <div className="stk-stat-info">
+            <h4>تم التخزين</h4>
+            <div className="stk-stat-value">{analytics.completed} <span style={{fontSize: '0.8rem'}}>إذن</span></div>
+          </div>
+          <div className="stk-stat-visual">
+            <div className="stk-stat-icon icon-green">
+              <i className="fas fa-warehouse"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2.1 Analytics Diagram Section */}
+      <div className="stk-table-card" style={{ marginBottom: '30px', borderRadius: '16px', padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>📊 اتجاه التوريد (آخر 15 يوم)</h3>
+          {analyticsLoading && <small style={{ color: 'var(--stk-text-secondary)' }}>جاري التحديث...</small>}
+        </div>
+        <div style={{ height: '300px', width: '100%' }}>
           {analytics.trend.length > 0 ? (
-            <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0}>
-              <BarChart data={analytics.trend} stackOffset="sign">
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="date" tick={{fontSize: 10, fill: 'var(--text-dim)'}} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
-                <YAxis tick={{fontSize: 10, fill: 'var(--text-dim)'}} />
-                <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333', borderRadius: '4px'}} />
-                <Legend iconType="circle" wrapperStyle={{fontSize: '11px', paddingTop: '10px'}} />
-                <Bar dataKey="PENDING" name="بانتظار المورد" fill="var(--metro-orange)" stackId="a" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="RECEIVED" name="استلام جزئي" fill="var(--metro-blue)" stackId="a" />
-                <Bar dataKey="COMPLETED" name="مرحل للمخزن" fill="var(--metro-green)" stackId="a" />
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics.trend}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--stk-border)" />
+                <XAxis dataKey="date" tick={{fontSize: 10, fill: 'var(--stk-text-secondary)'}} tickFormatter={(v) => v.split('-').slice(1).join('/')} />
+                <YAxis tick={{fontSize: 10, fill: 'var(--stk-text-secondary)'}} />
+                <Tooltip 
+                  contentStyle={{backgroundColor: 'var(--stk-card-bg)', border: '1px solid var(--stk-border)', borderRadius: '12px', boxShadow: 'var(--stk-shadow)'}}
+                  itemStyle={{fontSize: '0.8rem', fontWeight: 600}}
+                />
+                <Legend iconType="circle" wrapperStyle={{fontSize: '0.8rem', paddingTop: '10px'}} />
+                <Bar dataKey="PENDING" name="بانتظار المورد" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="RECEIVED" name="استلام جزئي" fill="#6366f1" />
+                <Bar dataKey="COMPLETED" name="مرحل للمخزن" fill="#10b981" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-dim)' }}>لا توجد بيانات كافية للرسم البياني</div>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--stk-text-secondary)' }}>لا توجد بيانات كافية للرسم البياني</div>
           )}
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-header">
-          <h3>📦 أذونات استلام المخزون</h3>
-          <div className="toolbar">
-            {isAdmin && (
-              <select className="form-control" value={selectedBranchId} onChange={e => { setSelectedBranchId(e.target.value); setCurrentPage(0); }} style={{ width: '150px', height: '40px' }}>
-                <option value="">جميع الفروع</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            )}
-            <div className="search-input">
-              <span className="search-icon">🔍</span>
-              <input
-                type="text"
-                placeholder="بحث سريع..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(0);
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn btn-secondary" onClick={() => loadReceipts()}>تحديث</button>
-            </div>
-          </div>
+      {/* 3. Toolbar */}
+      <div className="stk-toolbar-card">
+        <div className="stk-toolbar-left">
+          {isAdmin && (
+            <CustomSelect 
+              icon="fa-store"
+              value={selectedBranchId}
+              onChange={val => { setSelectedBranchId(val); setCurrentPage(0); }}
+              options={[{ value: '', label: 'جميع الفروع' }, ...branches.map(b => ({ value: b.id.toString(), label: b.name }))]}
+            />
+          )}
         </div>
-        <div className="card-body no-padding">
-          <div className="table-wrapper">
-            {loading ? (
-              <Loader message="جاري تحميل أذونات الاستلام..." />
-            ) : receipts.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📦</div>
-                <h4>لا توجد أذونات استلام</h4>
-                <p>تنشأ الأذونات تلقائياً عند تسجيل فواتير شراء جديدة</p>
-              </div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>رقم الإذن</th>
-                    <th>رقم الفاتورة</th>
-                    <th>المورد</th>
-                    <th>التاريخ</th>
-                    <th>الحالة</th>
-                    <th>المستلم</th>
-                    <th>الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receipts.map((r, i) => (
-                    <tr key={r.id}>
-                      <td style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{(currentPage * pageSize) + i + 1}</td>
-                      <td style={{ fontWeight: 600 }}>{r.receiptNumber}</td>
-                      <td>{r.invoiceNumber}</td>
-                      <td>{r.supplierName}</td>
-                      <td>{new Date(r.receiptDate).toLocaleString('ar-EG')}</td>
-                      <td>{getStatusBadge(r.status)}</td>
-                      <td>{r.receivedBy || '—'}</td>
-                      <td>
-                        <div className="table-actions" style={{ display: 'flex', gap: '5px' }}>
-                          <button className="btn btn-icon btn-ghost" title="التفاصيل" onClick={() => openDetails(r)}>👁️</button>
-                          
-                          {Api.can('STOCK_WRITE') && (
-                            <>
-                              <button 
-                                className="btn btn-sm btn-primary" 
-                                disabled={r.status !== 'PENDING'}
-                                onClick={() => openDetails(r)}
-                                title={r.status === 'PENDING' ? "تسجيل الكميات المستلمة" : "تم تسجيل الاستلام"}
-                              >
-                                📦 استلام
-                              </button>
-
-                              <button 
-                                className="btn btn-sm btn-success" 
-                                disabled={r.status !== 'RECEIVED'}
-                                onClick={() => handleCommitToInventory(r.id)}
-                                title={r.status === 'RECEIVED' ? "ترحيل الكميات للمخزن" : (r.status === 'COMPLETED' ? "تمت الإضافة للمخزن" : "انتظر الاستلام أولاً")}
-                              >
-                                ➕ للمخزن
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+        <div className="stk-toolbar-right">
+          <div className="stk-search-box">
+            <i className="fas fa-search"></i>
+            <input type="text" placeholder="بحث برقم الإذن أو المورد..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
         </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="pagination" style={{ marginTop: '10px' }}>
-          <button
-            className="btn btn-ghost btn-sm"
-            style={{ width: 'auto', padding: '0 15px' }}
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage(prev => prev - 1)}
-          >
-            السابق
-          </button>
-          <button className="active">{currentPage + 1}</button>
-          <button
-            className="btn btn-ghost btn-sm"
-            style={{ width: 'auto', padding: '0 15px' }}
-            disabled={currentPage >= totalPages - 1}
-            onClick={() => setCurrentPage(prev => prev + 1)}
-          >
-            التالي
-          </button>
+      {/* 4. Table Card */}
+      <div className="stk-table-card">
+        <div className="stk-table-container">
+          {loading ? (
+            <div style={{ padding: '40px' }}><Loader message="جاري التحميل..." /></div>
+          ) : receipts.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--stk-text-secondary)' }}>
+              <i className="fas fa-box" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
+              <h3>لا توجد أذونات استلام</h3>
+            </div>
+          ) : (
+            <table className="stk-table">
+              <thead>
+                <tr>
+                  <th>رقم الإذن</th>
+                  <th>المورد</th>
+                  <th>رقم الفاتورة</th>
+                  <th>التاريخ</th>
+                  <th>الحالة</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipts.map(r => (
+                  <tr key={r.id}>
+                    <td>
+                      <div style={{ fontWeight: 800, color: 'var(--stk-accent-blue)' }}>{r.receiptNumber}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--stk-text-secondary)' }}>بواسطة: {r.receivedBy || '—'}</div>
+                    </td>
+                    <td style={{ fontWeight: 700 }}>{r.supplierName}</td>
+                    <td>{r.invoiceNumber}</td>
+                    <td>{new Date(r.receiptDate).toLocaleString('ar-EG')}</td>
+                    <td>
+                      <span className={`stk-type-badge ${statusConfig[r.status]?.badgeClass}`}>
+                        <i className={`fas ${statusConfig[r.status]?.icon}`}></i> {statusConfig[r.status]?.label}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="stk-actions">
+                        <button className="stk-action-btn" onClick={() => openDetails(r)} title="التفاصيل"><i className="fas fa-eye"></i></button>
+                        {r.status === 'PENDING' && (
+                          <button className="stk-action-btn" style={{color: '#f59e0b'}} onClick={() => openDetails(r)} title="استلام"><i className="fas fa-box"></i></button>
+                        )}
+                        {r.status === 'RECEIVED' && (
+                          <button className="stk-action-btn" style={{color: '#10b981'}} onClick={() => handleCommitToInventory(r.id)} title="للمخزن"><i className="fas fa-plus-circle"></i></button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      )}
+        <div className="stk-pagination">
+          <div className="stk-pagination-info">عرض {receipts.length} من {totalElements} نتيجة</div>
+          <div className="stk-pagination-btns">
+            <button className="stk-page-btn" disabled={currentPage === 0} onClick={() => setCurrentPage(prev => prev - 1)}>السابق</button>
+            <button className="stk-page-btn active">{currentPage + 1}</button>
+            <button className="stk-page-btn" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(prev => prev + 1)}>التالي</button>
+          </div>
+        </div>
+      </div>
 
+      {/* 5. Modal */}
       {isModalOpen && selectedReceipt && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal" style={{ maxWidth: '800px' }}>
-              <div className="modal-header">
-                <h3>تفاصيل إذن الاستلام: {selectedReceipt.receiptNumber}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+          <div className="stk-modal-overlay" onClick={(e) => { if (e.target.classList.contains('stk-modal-overlay')) closeModal(); }}>
+            <div className="stk-modal" style={{ maxWidth: '850px' }}>
+              <div className="stk-modal-header">
+                <h3>إذن استلام: {selectedReceipt.receiptNumber}</h3>
+                <button className="stk-modal-close" onClick={closeModal}>✕</button>
               </div>
-              <div className="modal-body">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', padding: '10px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
-                  <div><strong>المورد:</strong> {selectedReceipt.supplierName}</div>
-                  <div><strong>رقم الفاتورة:</strong> {selectedReceipt.invoiceNumber}</div>
-                  <div><strong>الحالة:</strong> {getStatusBadge(selectedReceipt.status)}</div>
-                  <div><strong>التاريخ:</strong> {new Date(selectedReceipt.receiptDate).toLocaleString('ar-EG')}</div>
+              <div className="stk-modal-body">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '24px', padding: '20px', background: 'var(--stk-bg)', borderRadius: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--stk-text-secondary)' }}>المورد</div>
+                    <div style={{ fontWeight: 700 }}>{selectedReceipt.supplierName}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--stk-text-secondary)' }}>الفاتورة</div>
+                    <div style={{ fontWeight: 700 }}>{selectedReceipt.invoiceNumber}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--stk-text-secondary)' }}>الحالة</div>
+                    <span className={`stk-type-badge ${statusConfig[selectedReceipt.status]?.badgeClass}`}>{statusConfig[selectedReceipt.status]?.label}</span>
+                  </div>
                 </div>
 
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>المنتج</th>
-                      <th>الوحدة</th>
-                      <th>الكمية المطلوبة</th>
-                      <th style={{ width: '150px' }}>الكمية المستلمة</th>
-                      <th>إجمالي القطع</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedReceipt.items.map(item => (
-                      <tr key={item.id}>
-                        <td style={{ fontWeight: 600 }}>{item.productName}</td>
-                        <td>{item.unitName}</td>
-                        <td style={{ textAlign: 'center' }}>{item.quantity}</td>
-                        <td style={{ textAlign: 'center', color: (item.receivedQuantity && item.receivedQuantity < item.quantity) ? 'var(--accent-red)' : 'inherit' }}>
-                          {selectedReceipt.status === 'PENDING' ? (
-                            <input
-                              type="number"
-                              className="form-control form-control-sm"
-                              value={receivedQuantities[item.id] || ''}
-                              onChange={(e) => setReceivedQuantities(prev => ({
-                                ...prev,
-                                [item.id]: e.target.value
-                              }))}
-                              step="0.001"
-                              min="0"
-                              max={item.quantity}
-                            />
-                          ) : (
-                            <span style={{ fontWeight: 600 }}>{item.receivedQuantity ?? item.quantity}</span>
-                          )}
-                        </td>
-                        <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
-                          {(((selectedReceipt.status === 'PENDING' ? receivedQuantities[item.id] : item.receivedQuantity) || item.quantity) * item.conversionFactor).toFixed(2)} قطعة
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="stk-table-container" style={{ border: '1px solid var(--stk-border)', borderRadius: '12px', overflow: 'hidden' }}>
+                  <table className="stk-table">
+                    <thead>
+                      <tr><th>المنتج</th><th>الوحدة</th><th>المطلوب</th><th>المستلم</th><th>القطع</th></tr>
+                    </thead>
+                    <tbody>
+                      {selectedReceipt.items.map(item => (
+                        <tr key={item.id}>
+                          <td style={{ fontWeight: 700 }}>{item.productName}</td>
+                          <td>{item.unitName}</td>
+                          <td>{item.quantity}</td>
+                          <td>
+                            {selectedReceipt.status === 'PENDING' ? (
+                              <input type="number" className="stk-input" style={{padding: '4px 8px', width: '80px'}} value={receivedQuantities[item.id] || ''} onChange={e => setReceivedQuantities(prev => ({ ...prev, [item.id]: e.target.value }))} />
+                            ) : (item.receivedQuantity ?? item.quantity)}
+                          </td>
+                          <td style={{ fontWeight: 800, color: 'var(--stk-accent-green)' }}>{(((selectedReceipt.status === 'PENDING' ? receivedQuantities[item.id] : item.receivedQuantity) || item.quantity) * item.conversionFactor).toFixed(0)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div className="modal-footer">
-                <button className="btn btn-ghost" onClick={closeModal}>إغلاق</button>
+              <div className="stk-modal-footer">
+                <button className="stk-btn-ghost" onClick={closeModal}>إغلاق</button>
                 {selectedReceipt.status === 'PENDING' && Api.can('STOCK_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => handleSaveQuantities(selectedReceipt.id, receivedQuantities)}>📦 تسجيل وحفظ الكميات</button>
+                  <button className="stk-btn-primary" onClick={() => handleSaveQuantities(selectedReceipt.id, receivedQuantities)}>📦 حفظ الكميات</button>
                 )}
                 {selectedReceipt.status === 'RECEIVED' && Api.can('STOCK_WRITE') && (
-                  <button className="btn btn-success" onClick={() => handleCommitToInventory(selectedReceipt.id)}>➕ إضافة للمخزن الآن</button>
+                  <button className="stk-btn-primary" style={{background: 'var(--stk-accent-green)'}} onClick={() => handleCommitToInventory(selectedReceipt.id)}>➕ ترحيل للمخزن</button>
                 )}
               </div>
             </div>

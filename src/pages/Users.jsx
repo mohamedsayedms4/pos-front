@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
-import StatTile from '../components/common/StatTile';
+import '../styles/pages/UsersPremium.css';
 
 const Users = () => {
   const { toast, confirm } = useGlobalUI();
@@ -15,7 +16,6 @@ const Users = () => {
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const isAdmin = Api.isAdminOrBranchManager();
 
-  // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -23,27 +23,18 @@ const Users = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const pageSize = 10;
 
-  // Modal State
-  const [modalType, setModalType] = useState(null); // 'form', 'access', null
+  const [modalType, setModalType] = useState(null);
   const [activeUser, setActiveUser] = useState(null);
-
-  // Add/Edit User Form
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '', roles: [], enabled: true, profilePicture: '', branchId: '' });
-
-  // Access Form
   const [accessForm, setAccessForm] = useState({ roles: [], permissions: [] });
-
   const [saving, setSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const API_BASE_URL = 'http://localhost:8080/api/v1'; // Standard base for image serving 
+  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1';
 
-  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -60,40 +51,24 @@ const Users = () => {
         permissions.length === 0 ? Api.getPermissions().catch(() => []) : Promise.resolve(permissions),
         branches.length === 0 ? Api.getBranches().catch(() => []) : Promise.resolve(branches)
       ]);
-
       setData(usersRes.items || usersRes.content || []);
       setTotalPages(usersRes.totalPages || 0);
       setTotalElements(usersRes.totalItems || usersRes.totalElements || 0);
-      setCurrentPage(usersRes.currentPage ?? usersRes.number ?? 0);
-
       if (roles.length === 0) setRoles(rolesData);
       if (permissions.length === 0) setPermissions(permsData);
       if (branches.length === 0) setBranches(branchesData);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setLoading(false); }
   };
 
   const openForm = () => {
     setUserForm({ name: '', email: '', password: '', roles: [], enabled: true, profilePicture: '', branchId: '' });
-    setActiveUser(null);
-    setModalType('form');
+    setActiveUser(null); setModalType('form');
   };
 
   const openEditForm = (user) => {
-    setUserForm({
-      name: user.name,
-      email: user.email,
-      password: '', // Keep empty for security, only change if provided
-      roles: user.roles || [],
-      enabled: user.enabled,
-      profilePicture: user.profilePicture || '',
-      branchId: user.branchId || ''
-    });
-    setActiveUser(user);
-    setModalType('form');
+    setUserForm({ name: user.name, email: user.email, password: '', roles: user.roles || [], enabled: user.enabled, profilePicture: user.profilePicture || '', branchId: user.branchId || '' });
+    setActiveUser(user); setModalType('form');
   };
 
   const openAccessForm = async (user) => {
@@ -101,62 +76,38 @@ const Users = () => {
     try {
       const fullUser = await Api.getUser(user.id);
       setActiveUser(fullUser);
-      setAccessForm({
-        roles: fullUser.roles || [],
-        permissions: fullUser.permissions || []
-      });
+      setAccessForm({ roles: fullUser.roles || [], permissions: fullUser.permissions || [] });
       setModalType('access');
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setSaving(false); }
   };
 
   const closeModal = () => {
-    setModalType(null);
-    setActiveUser(null);
-    setSelectedFile(null);
+    setModalType(null); setActiveUser(null); setSelectedFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
+    if (file) { setSelectedFile(file); setPreviewUrl(URL.createObjectURL(file)); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!userForm.name || !userForm.email || (!activeUser && !userForm.password)) {
-      toast('يرجى ملء جميع الحقول المطلوبة', 'warning');
-      return;
-    }
-
     setSaving(true);
     try {
       if (activeUser) {
-        // Update
-        const updateData = { ...userForm };
-        if (!updateData.password) delete updateData.password; // Don't send empty password
+        const updateData = { ...userForm }; if (!updateData.password) delete updateData.password;
         await Api.updateUser(activeUser.id, updateData, selectedFile);
-        toast('تم تحديث بيانات المستخدم بنجاح', 'success');
+        toast('تم التحديث بنجاح', 'success');
       } else {
-        // Create
         await Api.createUser(userForm, selectedFile);
-        toast('تم إضافة المستخدم بنجاح', 'success');
+        toast('تم الإضافة بنجاح', 'success');
       }
-      closeModal();
-      loadData();
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
+      closeModal(); loadData();
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setSaving(false); }
   };
 
   const handleUpdateAccess = async (e) => {
@@ -164,323 +115,243 @@ const Users = () => {
     setSaving(true);
     try {
       await Api.updateUserAccess(activeUser.id, accessForm);
-      toast('تم تحديث الصلاحيات بنجاح', 'success');
-      closeModal();
-      loadData();
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleEnabled = async (id, enabled) => {
-    try {
-      await Api.setUserEnabled(id, enabled);
-      loadData();
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  };
-
-  const handleDelete = (id, name) => {
-    confirm(`سيتم حذف المستخدم "${name}" نهائياً`, async () => {
-      try {
-        await Api.deleteUser(id);
-        toast('تم حذف المستخدم بنجاح', 'success');
-        loadData();
-      } catch (err) {
-        toast(err.message, 'error');
-      }
-    });
+      toast('تم تحديث الصلاحيات', 'success'); closeModal(); loadData();
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setSaving(false); }
   };
 
   return (
-    <>
-      <div className="page-section">
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-          <StatTile
-            id="usr_count"
-            label="المستخدمين"
-            value={totalElements}
-            icon="👥"
-            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
-          />
-          <StatTile
-            id="usr_admins"
-            label="مسؤول / مدير فرع"
-            value={data.filter(u => u.roles && u.roles.some(r => r.includes('ADMIN') || r.includes('BRANCH_MANAGER'))).length}
-            icon="🛡️"
-            defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 2 }}
-          />
-          <StatTile
-            id="usr_active"
-            label="نشط"
-            value={data.filter(u => u.enabled).length}
-            icon="✅"
-            defaults={{ color: 'teal', size: 'tile-sq-sm', order: 3 }}
-          />
+    <div className="users-container">
+      {/* 1. Header */}
+      <div className="usr-header-row">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="usr-breadcrumbs">
+            <Link to="/dashboard">الرئيسية</Link> / <span>الأمان</span>
+          </div>
+          <h1>إدارة المستخدمين</h1>
         </div>
-
-        <div className="card">
-          <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0 }}>👥 إدارة المستخدمين</h3>
-            <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', flex: '1 1 100%', justifyContent: 'flex-end', alignItems: 'center' }}>
-              {isAdmin && (
-                <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
-                  <option value="">جميع الفروع</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              )}
-              <div className="search-input" style={{ flex: '1 1 200px', minWidth: '200px', maxWidth: '350px' }}>
-                <span className="search-icon">🔍</span>
-                <input
-                  type="text"
-                  placeholder="بحث بالاسم أو البريد..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(0);
-                  }}
-                />
-              </div>
-              {Api.can('USER_WRITE') && (
-                <button className="btn btn-primary" onClick={openForm}>
-                  <span>+</span> إضافة مستخدم
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="card-body no-padding">
-            <div className="table-wrapper">
-              {loading ? (
-                <Loader message="جاري تحميل قائمة المستخدمين..." />
-              ) : data.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">👥</div>
-                  <h4>لا يوجد مستخدمين</h4>
-                </div>
-              ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>المستخدم</th>
-                      <th>البريد</th>
-                      <th>الأدوار</th>
-                      <th>الحالة</th>
-                      <th>الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.map((u, i) => (
-                      <tr key={u.id}>
-                        <td style={{ color: 'var(--text-muted)' }}>{(currentPage * pageSize) + i + 1}</td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div className="user-avatar-wrapper">
-                              {u.profilePicture ? (
-                                <img src={`${API_BASE_URL}/products/images/${u.profilePicture}`} alt={u.name} className="user-avatar-img" />
-                              ) : (
-                                <div className="user-avatar-placeholder" style={{ background: (u.roles || []).some(r => r.includes('ADMIN')) ? 'var(--gradient-primary)' : (u.roles || []).some(r => r.includes('BRANCH_MANAGER')) ? 'linear-gradient(135deg,#d97706,#f59e0b)' : 'var(--gradient-emerald)' }}>
-                                  {(u.name || 'U').charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              {(u.roles || []).some(r => r.includes('ADMIN')) && <span className="admin-badge-dot" title="مسؤول النظام">⭐</span>}
-                              {!(u.roles || []).some(r => r.includes('ADMIN')) && (u.roles || []).some(r => r.includes('BRANCH_MANAGER')) && <span className="admin-badge-dot" title="مدير فرع" style={{ background: '#d97706' }}>🏢</span>}
-                            </div>
-                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</span>
-                          </div>
-                        </td>
-                        <td>{u.email}</td>
-                        <td>
-                          {(u.roles || []).map(r => (
-                            <span key={r} className="badge badge-info" style={{ margin: '1px' }}>{r.replace('ROLE_', '')}</span>
-                          ))}
-                        </td>
-                        <td>
-                          <span className={`badge ${u.enabled ? 'badge-success' : 'badge-danger'}`}>
-                            {u.enabled ? 'نشط' : 'معطل'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            {Api.can('USER_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openEditForm(u)}>✏️</button>}
-                            {Api.can('USER_WRITE') && (
-                              <button className="btn btn-icon btn-ghost" title={u.enabled ? 'تعطيل' : 'تفعيل'} onClick={() => toggleEnabled(u.id, !u.enabled)}>
-                                {u.enabled ? '🔒' : '🔓'}
-                              </button>
-                            )}
-                            {Api.can('ROLE_WRITE') && <button className="btn btn-icon btn-ghost" title="الأدوار والصلاحيات" onClick={() => openAccessForm(u)}>🔑</button>}
-                            {Api.can('USER_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}>🗑️</button>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
+        <div className="usr-header-actions">
+          {Api.can('USER_WRITE') && (
+            <button className="usr-btn-premium usr-btn-blue" onClick={openForm}>
+              <i className="fas fa-user-plus"></i> إضافة مستخدم
+            </button>
+          )}
         </div>
+      </div>
 
-        {totalPages > 1 && (
-          <div className="pagination" style={{ marginTop: '10px' }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              style={{ width: 'auto', padding: '0 15px' }}
-              disabled={currentPage === 0}
-              onClick={() => setCurrentPage(prev => prev - 1)}
-            >
-              السابق
-            </button>
-            <button className="active">{currentPage + 1}</button>
-            <button
-              className="btn btn-ghost btn-sm"
-              style={{ width: 'auto', padding: '0 15px' }}
-              disabled={currentPage >= totalPages - 1}
-              onClick={() => setCurrentPage(prev => prev + 1)}
-            >
-              التالي
-            </button>
+      {/* 2. Stats Grid */}
+      <div className="usr-stats-grid">
+        <div className="usr-stat-card">
+          <div className="usr-stat-info">
+            <h4>إجمالي المستخدمين</h4>
+            <div className="usr-stat-value">{totalElements}</div>
           </div>
+          <div className="usr-stat-visual"><div className="usr-stat-icon icon-blue"><i className="fas fa-users"></i></div></div>
+        </div>
+        <div className="usr-stat-card">
+          <div className="usr-stat-info">
+            <h4>المسؤولين</h4>
+            <div className="usr-stat-value" style={{ color: 'var(--usr-accent-purple)' }}>{data.filter(u => u.roles?.some(r => r.includes('ADMIN'))).length}</div>
+          </div>
+          <div className="usr-stat-visual"><div className="usr-stat-icon icon-purple"><i className="fas fa-shield-alt"></i></div></div>
+        </div>
+        <div className="usr-stat-card">
+          <div className="usr-stat-info">
+            <h4>المستخدمين النشطين</h4>
+            <div className="usr-stat-value" style={{ color: 'var(--usr-accent-green)' }}>{data.filter(u => u.enabled).length}</div>
+          </div>
+          <div className="usr-stat-visual"><div className="usr-stat-icon icon-green"><i className="fas fa-user-check"></i></div></div>
+        </div>
+        <div className="usr-stat-card">
+          <div className="usr-stat-info">
+            <h4>فروع نشطة</h4>
+            <div className="usr-stat-value">{branches.length}</div>
+          </div>
+          <div className="usr-stat-visual"><div className="usr-stat-icon icon-amber"><i className="fas fa-building"></i></div></div>
+        </div>
+      </div>
+
+      {/* 3. Toolbar */}
+      <div className="usr-toolbar-card">
+        <div className="usr-search-box" style={{ flex: 1, maxWidth: '400px' }}>
+          <i className="fas fa-search"></i>
+          <input type="text" className="usr-input" placeholder="بحث باسم المستخدم أو البريد الإلكتروني..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setCurrentPage(0); }} />
+        </div>
+        {isAdmin && (
+          <select className="usr-input" style={{ width: '200px' }} value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)}>
+            <option value="">جميع الفروع</option>
+            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
         )}
+      </div>
+
+      {/* 4. Table Card */}
+      <div className="usr-table-card">
+        <div className="usr-table-container">
+          {loading ? (
+            <div style={{ padding: '60px' }}><Loader message="جاري جلب المستخدمين..." /></div>
+          ) : data.length === 0 ? (
+            <div style={{ padding: '80px', textAlign: 'center', color: 'var(--usr-text-secondary)' }}>
+              <i className="fas fa-user-slash" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
+              <h3>لا يوجد مستخدمين مسجلين حالياً</h3>
+            </div>
+          ) : (
+            <>
+              <table className="usr-table">
+                <thead>
+                  <tr>
+                    <th>المستخدم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>الأدوار</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map(u => (
+                    <tr key={u.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div className="usr-avatar-wrapper">
+                            {u.profilePicture ? (
+                              <img src={`${API_BASE_URL}/products/images/${u.profilePicture}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--usr-accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>{(u.name || 'U').charAt(0).toUpperCase()}</div>
+                            )}
+                          </div>
+                          <div><div style={{ fontWeight: 800 }}>{u.name}</div><div style={{ fontSize: '0.7rem', color: 'var(--usr-text-secondary)' }}># {u.id}</div></div>
+                        </div>
+                      </td>
+                      <td>{u.email}</td>
+                      <td>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {(u.roles || []).map(r => (
+                            <span key={r} className="usr-type-badge badge-blue" style={{ fontSize: '0.65rem' }}>{r.replace('ROLE_', '')}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`usr-type-badge ${u.enabled ? 'badge-green' : 'badge-red'}`}>
+                          {u.enabled ? 'نشط ✓' : 'معطل ✗'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="usr-actions">
+                          {Api.can('USER_WRITE') && <button className="usr-action-btn" title="تعديل" onClick={() => openEditForm(u)}><i className="fas fa-edit"></i></button>}
+                          {Api.can('ROLE_WRITE') && <button className="usr-action-btn" title="الصلاحيات" onClick={() => openAccessForm(u)}><i className="fas fa-key"></i></button>}
+                          {Api.can('USER_DELETE') && <button className="usr-action-btn delete" title="حذف" onClick={() => confirm(`حذف ${u.name}؟`, () => Api.deleteUser(u.id).then(loadData))}><i className="fas fa-trash"></i></button>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="usr-pagination">
+                <div className="usr-pagination-info">الصفحة {currentPage + 1} من {totalPages}</div>
+                <div className="usr-pagination-btns">
+                  <button className="usr-page-btn" disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)}><i className="fas fa-chevron-right"></i></button>
+                  <button className="usr-page-btn active">{currentPage + 1}</button>
+                  <button className="usr-page-btn" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(p => p + 1)}><i className="fas fa-chevron-left"></i></button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {modalType === 'form' && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal">
-              <div className="modal-header">
+          <div className="usr-modal-overlay" onClick={closeModal}>
+            <div className="usr-modal" onClick={e => e.stopPropagation()}>
+              <div className="usr-modal-header">
                 <h3>{activeUser ? 'تعديل بيانات المستخدم' : 'إضافة مستخدم جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="usr-modal-close" onClick={closeModal}>✕</button>
               </div>
-              <div className="modal-body">
+              <div className="usr-modal-body">
                 <form id="userForm" onSubmit={handleSubmit}>
-                  <div className="form-group">
-                    <label>الاسم *</label>
-                    <input className="form-control" name="name" value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} required />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div className="usr-form-group">
+                      <label>الاسم بالكامل *</label>
+                      <input className="usr-input" required value={userForm.name} onChange={e => setUserForm({ ...userForm, name: e.target.value })} />
+                    </div>
+                    <div className="usr-form-group">
+                      <label>البريد الإلكتروني *</label>
+                      <input className="usr-input" type="email" required value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} />
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>البريد الإلكتروني *</label>
-                    <input className="form-control" name="email" type="email" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} required />
-                  </div>
-                  <div className="form-group">
+                  <div className="usr-form-group" style={{ marginTop: '20px' }}>
                     <label>صورة الملف الشخصي</label>
-                    <div className="avatar-upload-container">
-                      <div className="avatar-preview-box">
-                        {previewUrl ? (
-                          <img src={previewUrl} alt="Preview" />
-                        ) : userForm.profilePicture ? (
-                          <img src={`${API_BASE_URL}/products/images/${userForm.profilePicture}`} alt="Current" />
-                        ) : (
-                          <div className="avatar-preview-placeholder">📷</div>
-                        )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(99,102,241,0.05)', padding: '15px', borderRadius: '16px' }}>
+                      <div style={{ width: '80px', height: '80px', borderRadius: '20px', border: '2px dashed var(--usr-border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {previewUrl ? <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className="fas fa-camera" style={{ fontSize: '1.5rem', opacity: 0.3 }}></i>}
                       </div>
-                      <div className="upload-btn-wrapper">
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => document.getElementById('avatarInput').click()}>
-                          {previewUrl || userForm.profilePicture ? 'تغيير الصورة' : 'اختيار صورة'}
-                        </button>
-                        <input id="avatarInput" type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-                      </div>
+                      <button type="button" className="usr-btn-premium usr-btn-outline" onClick={() => document.getElementById('avatarIn').click()}>اختيار صورة</button>
+                      <input id="avatarIn" type="file" hidden onChange={handleFileChange} />
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label>الفرع (مكان العمل)</label>
-                    <select className="form-control" name="branchId" value={userForm.branchId} onChange={(e) => setUserForm({ ...userForm, branchId: e.target.value })}>
-                      <option value="">-- اختر الفرع --</option>
-                      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>كلمة المرور {activeUser ? '(اتركه فارغاً للإبقاء على الحالية)' : '*'}</label>
-                    <input className="form-control" name="password" type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required={!activeUser} />
-                  </div>
-                  <div className="form-group">
-                    <label>الأدوار</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
-                      {roles.map(r => (
-                        <label key={r} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                          <input type="checkbox" name="roles" value={r} checked={userForm.roles.includes(r)} onChange={(e) => {
-                            const newRoles = e.target.checked ? [...userForm.roles, r] : userForm.roles.filter(role => role !== r);
-                            setUserForm({ ...userForm, roles: newRoles });
-                          }} style={{ accentColor: 'var(--accent-primary)' }} />
-                          {r.replace('ROLE_', '')}
-                        </label>
-                      ))}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+                    <div className="usr-form-group">
+                      <label>كلمة المرور {activeUser && '(اختياري)'}</label>
+                      <input className="usr-input" type="password" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} placeholder={activeUser ? 'اتركه فارغاً للحفاظ على الحالية' : ''} />
                     </div>
-                  </div>
-                  <div className="form-group">
-                    <label>نشط</label>
-                    <label className="toggle-switch">
-                      <input type="checkbox" name="enabled" checked={userForm.enabled} onChange={(e) => setUserForm({ ...userForm, enabled: e.target.checked })} />
-                      <span className="toggle-slider"></span>
-                    </label>
+                    <div className="usr-form-group">
+                      <label>الفرع</label>
+                      <select className="usr-input" value={userForm.branchId} onChange={e => setUserForm({ ...userForm, branchId: e.target.value })}>
+                        <option value="">-- اختر فرع العمل --</option>
+                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </form>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="userForm" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : (activeUser ? 'تحديث البيانات' : 'إنشاء المستخدم')}
-                </button>
+              <div className="usr-modal-footer">
+                <button type="button" className="usr-btn-ghost" onClick={closeModal}>إلغاء</button>
+                <button type="submit" form="userForm" className="usr-btn-primary" disabled={saving}>{saving ? 'جاري الحفظ...' : 'حفظ البيانات'}</button>
               </div>
             </div>
           </div>
         </ModalContainer>
       )}
 
-      {modalType === 'access' && activeUser && (
+      {modalType === 'access' && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal">
-              <div className="modal-header">
-                <h3>صلاحيات — {activeUser.name}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+          <div className="usr-modal-overlay" onClick={closeModal}>
+            <div className="usr-modal" onClick={e => e.stopPropagation()}>
+              <div className="usr-modal-header">
+                <h3>🔑 إدارة صلاحيات {activeUser?.name}</h3>
+                <button className="usr-modal-close" onClick={closeModal}>✕</button>
               </div>
-              <div className="modal-body">
+              <div className="usr-modal-body">
                 <form id="accessForm" onSubmit={handleUpdateAccess}>
-                  <div className="form-group">
-                    <label>الأدوار</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
-                      {roles.map(r => (
-                        <label key={r} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                          <input type="checkbox" name="roles" value={r} checked={accessForm.roles.includes(r)} onChange={(e) => {
-                            const newRoles = e.target.checked ? [...accessForm.roles, r] : accessForm.roles.filter(role => role !== r);
-                            setAccessForm({ ...accessForm, roles: newRoles });
-                          }} style={{ accentColor: 'var(--accent-primary)' }} />
-                          {r.replace('ROLE_', '')}
-                        </label>
-                      ))}
-                    </div>
+                  <label style={{ fontWeight: 800, marginBottom: '12px', display: 'block' }}>الأدوار الوظيفية</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
+                    {roles.map(r => (
+                      <label key={r} style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--usr-border)', background: accessForm.roles.includes(r) ? 'rgba(99, 102, 241, 0.1)' : 'transparent', color: accessForm.roles.includes(r) ? 'var(--usr-accent-blue)' : 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="checkbox" checked={accessForm.roles.includes(r)} onChange={e => setAccessForm({ ...accessForm, roles: e.target.checked ? [...accessForm.roles, r] : accessForm.roles.filter(x => x !== r) })} hidden />
+                        {r.replace('ROLE_', '')}
+                      </label>
+                    ))}
                   </div>
-                  <div className="form-group">
-                    <label>الصلاحيات الإضافية</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px', maxHeight: '200px', overflowY: 'auto' }}>
-                      {permissions.map(p => (
-                        <label key={p} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', minWidth: '140px' }}>
-                          <input type="checkbox" name="permissions" value={p} checked={accessForm.permissions.includes(p)} onChange={(e) => {
-                            const newPerms = e.target.checked ? [...accessForm.permissions, p] : accessForm.permissions.filter(perm => perm !== p);
-                            setAccessForm({ ...accessForm, permissions: newPerms });
-                          }} style={{ accentColor: 'var(--accent-emerald)' }} />
-                          {p}
-                        </label>
-                      ))}
-                    </div>
+                  <label style={{ fontWeight: 800, marginBottom: '12px', display: 'block' }}>الصلاحيات الدقيقة</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px', maxHeight: '250px', overflowY: 'auto', padding: '4px' }}>
+                    {permissions.map(p => (
+                      <label key={p} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={accessForm.permissions.includes(p)} onChange={e => setAccessForm({ ...accessForm, permissions: e.target.checked ? [...accessForm.permissions, p] : accessForm.permissions.filter(x => x !== p) })} />
+                        {p}
+                      </label>
+                    ))}
                   </div>
                 </form>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="accessForm" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : 'حفظ الصلاحيات'}
-                </button>
+              <div className="usr-modal-footer">
+                <button type="button" className="usr-btn-ghost" onClick={closeModal}>إلغاء</button>
+                <button type="submit" form="accessForm" className="usr-btn-primary" disabled={saving}>تحديث الصلاحيات</button>
               </div>
             </div>
           </div>
         </ModalContainer>
       )}
-    </>
+    </div>
   );
 };
 

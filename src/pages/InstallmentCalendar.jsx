@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
-import StatTile from '../components/common/StatTile';
+import '../styles/pages/CalendarPremium.css';
 
 const InstallmentCalendar = () => {
   const { toast } = useGlobalUI();
@@ -10,7 +11,7 @@ const InstallmentCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [installments, setInstallments] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
-  const [filter, setFilter] = useState('ALL'); // ALL, RECEIVABLE, PAYABLE
+  const [filter, setFilter] = useState('ALL');
 
   const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -19,94 +20,31 @@ const InstallmentCalendar = () => {
     setLoading(true);
     try {
       const year = currentDate.getFullYear();
-      const monthNum = currentDate.getMonth() + 1;
-      const monthStr = String(monthNum).padStart(2, '0');
+      const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
       const start = `${year}-${monthStr}-01`;
-      const lastDay = daysInMonth(year, currentDate.getMonth());
-      const end = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
-      
+      const end = `${year}-${monthStr}-${String(daysInMonth(year, currentDate.getMonth())).padStart(2, '0')}`;
       const data = await Api.getCalendarInstallments(start, end);
-      setInstallments(data);
-    } catch (err) {
-      toast(err.message || 'خطأ في تحميل البيانات', 'error');
-    } finally {
-      setLoading(false);
-    }
+      setInstallments(data || []);
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [currentDate]);
+  useEffect(() => { fetchData(); }, [currentDate]);
 
-  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-
-  const filteredInstallments = installments.filter(inst => {
-    if (filter === 'ALL') return true;
-    return inst.debt?.type === filter;
-  });
+  const filteredInstallments = installments.filter(inst => filter === 'ALL' || inst.debt?.type === filter);
 
   const getDayInstallments = (day) => {
     return filteredInstallments.filter(inst => {
-      if (!inst.dueDate) return false;
-      const parts = inst.dueDate.split('-');
-      if (parts.length !== 3) return false;
-      
-      const y = parseInt(parts[0], 10);
-      const m = parseInt(parts[1], 10) - 1; // 0-based month
-      const d = parseInt(parts[2], 10);
-      
-      return d === day && 
-             m === currentDate.getMonth() && 
-             y === currentDate.getFullYear();
+      const d = new Date(inst.dueDate);
+      return d.getDate() === day && d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
     });
   };
 
-  const renderHeader = () => {
-    const monthNames = [
-      "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-      "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-    ];
-    return (
-      <div className="calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button className="btn-secondary" onClick={prevMonth}>◄</button>
-          <h2 style={{ margin: 0, minWidth: '150px', textAlign: 'center' }}>
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h2>
-          <button className="btn-secondary" onClick={nextMonth}>►</button>
-        </div>
-        <div className="filter-tabs" style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '5px', borderRadius: '10px' }}>
-          <button 
-            className={`tab-btn ${filter === 'ALL' ? 'active' : ''}`} 
-            onClick={() => setFilter('ALL')}
-            style={filter === 'ALL' ? activeTabStyle : tabStyle}
-          >الكل</button>
-          <button 
-            className={`tab-btn ${filter === 'RECEIVABLE' ? 'active' : ''}`} 
-            onClick={() => setFilter('RECEIVABLE')}
-            style={filter === 'RECEIVABLE' ? { ...activeTabStyle, color: '#10b981' } : tabStyle}
-          >لنا (+)</button>
-          <button 
-            className={`tab-btn ${filter === 'PAYABLE' ? 'active' : ''}`} 
-            onClick={() => setFilter('PAYABLE')}
-            style={filter === 'PAYABLE' ? { ...activeTabStyle, color: '#ef4444' } : tabStyle}
-          >علينا (-)</button>
-        </div>
-      </div>
-    );
-  };
+  const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  const weekDays = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
-  const renderDays = () => {
-    const days = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-    return (
-      <div className="calendar-grid-header" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', marginBottom: '10px' }}>
-        {days.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-muted)', fontSize: '14px' }}>{d}</div>
-        ))}
-      </div>
-    );
-  };
+  const totalRec = filteredInstallments.filter(i => i.debt?.type === 'RECEIVABLE').reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+  const totalPay = filteredInstallments.filter(i => i.debt?.type === 'PAYABLE').reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
 
   const renderCells = () => {
     const year = currentDate.getFullYear();
@@ -114,208 +52,150 @@ const InstallmentCalendar = () => {
     const totalDays = daysInMonth(year, month);
     const startDay = firstDayOfMonth(year, month);
     const cells = [];
-
-    // Empty cells for alignment
-    for (let i = 0; i < startDay; i++) {
-      cells.push(<div key={`empty-${i}`} className="calendar-cell empty"></div>);
-    }
-
-    // Actual days
+    for (let i = 0; i < startDay; i++) cells.push(<div key={`empty-${i}`} className="cal-cell empty"></div>);
     for (let d = 1; d <= totalDays; d++) {
       const dayInsts = getDayInstallments(d);
       const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
-      
       cells.push(
-        <div 
-          key={d} 
-          className={`calendar-cell ${isToday ? 'today' : ''} ${selectedDay === d ? 'selected' : ''}`}
-          style={{
-            background: 'var(--bg-secondary)',
-            borderRadius: '12px',
-            padding: '10px',
-            minHeight: '100px',
-            position: 'relative',
-            cursor: 'pointer',
-            border: isToday ? '2px solid var(--accent-primary)' : '2px solid transparent',
-            boxShadow: 'var(--shadow-sm)',
-            transition: 'all 0.2s ease',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-          onClick={() => setSelectedDay(d)}
-        >
-          <span style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '5px' }}>{d}</span>
-          
-          {/* List view (Desktop) */}
-          <div className="inst-banner-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {dayInsts.slice(0, 3).map((inst, idx) => (
-              <div 
-                key={inst.id} 
-                className="inst-banner"
-                style={{
-                  fontSize: '11px',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  background: inst.debt?.type === 'RECEIVABLE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  color: inst.debt?.type === 'RECEIVABLE' ? '#10b981' : '#ef4444',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  borderRight: `3px solid ${inst.debt?.type === 'RECEIVABLE' ? '#10b981' : '#ef4444'}`
-                }}
-              >
-                {inst.amount} - {inst.debt?.entityName || 'جهر مجهولة'}
+        <div key={d} className={`cal-cell ${isToday ? 'today' : ''} ${selectedDay === d ? 'selected' : ''}`} onClick={() => setSelectedDay(d)}>
+          <span className="cal-day-num">{d}</span>
+          <div className="cal-inst-list">
+            {dayInsts.slice(0, 2).map(inst => (
+              <div key={inst.id} className={`cal-inst-item ${inst.debt?.type === 'RECEIVABLE' ? 'rec' : 'pay'}`}>
+                {inst.amount.toLocaleString('ar-EG')}
               </div>
             ))}
-            {dayInsts.length > 3 && (
-              <div className="inst-banner" style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center' }}>
-                +{dayInsts.length - 3} المزيد
-              </div>
-            )}
+            {dayInsts.length > 2 && <div className="cal-more">+{dayInsts.length - 2}</div>}
           </div>
-
-          {/* Dot view (Mobile - Hidden on Desktop via CSS) */}
-          <div className="inst-dot-container" style={{ display: 'none' }}>
-            {dayInsts.map(inst => (
-              <div 
-                key={inst.id} 
-                className="inst-dot" 
-                style={{ background: inst.debt?.type === 'RECEIVABLE' ? '#10b981' : '#ef4444' }}
-              />
-            ))}
+          <div className="cal-dots">
+            {dayInsts.map(inst => <div key={inst.id} className={`cal-dot ${inst.debt?.type === 'RECEIVABLE' ? 'rec' : 'pay'}`}></div>)}
           </div>
         </div>
       );
     }
-
     return cells;
   };
 
-  const renderDetails = () => {
-    if (!selectedDay) return null;
-    const dayInsts = getDayInstallments(selectedDay);
-    
-    return (
-      <div className="day-details" style={{ marginTop: '30px', padding: '20px', background: 'var(--bg-secondary)', borderRadius: '15px', boxShadow: 'var(--shadow-lg)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <h3 style={{ margin: 0 }}>تفاصيل يوم {selectedDay}</h3>
-          <button className="btn-close" onClick={() => setSelectedDay(null)}>✕</button>
-        </div>
-        {dayInsts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>لا توجد أقساط مستحقة في هذا اليوم</div>
-        ) : (
-          <div className="details-list" style={{ display: 'grid', gap: '10px' }}>
-            {dayInsts.map(inst => (
-              <div key={inst.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-app)', borderRadius: '10px', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>{inst.debt?.entityName || 'جهة مجهولة'}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{inst.debt?.reason || 'لا توجد ملاحظات'}</div>
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 'bold', color: inst.debt?.type === 'RECEIVABLE' ? '#10b981' : '#ef4444' }}>
-                    {inst.debt?.type === 'RECEIVABLE' ? '+' : '-'}{inst.amount} ج.م
-                  </div>
-                  <div style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: inst.status === 'OVERDUE' ? '#fee2e2' : '#fef3c7', color: inst.status === 'OVERDUE' ? '#ef4444' : '#d97706', display: 'inline-block' }}>
-                    {inst.status === 'OVERDUE' ? 'متأخر' : 'منتظر'}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderStats = () => {
-    const totalRec = filteredInstallments.filter(i => i.debt?.type === 'RECEIVABLE').reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-    const totalPay = filteredInstallments.filter(i => i.debt?.type === 'PAYABLE').reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-
-    return (
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', display: 'grid', gap: '15px', marginBottom: '24px' }}>
-        <StatTile 
-          id="cal_rec"
-          label="إجمالي المستحقات (لنا) هذا الشهر"
-          value={totalRec.toLocaleString() + ' ج.م'}
-          icon="💰"
-          defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 1 }}
-        />
-        <StatTile 
-          id="cal_pay"
-          label="إجمالي الالتزامات (علينا) هذا الشهر"
-          value={totalPay.toLocaleString() + ' ج.م'}
-          icon="💸"
-          defaults={{ color: 'magenta', size: 'tile-wd-sm', order: 2 }}
-        />
-      </div>
-    );
-  };
-
   return (
-    <div className="page-container installment-calendar-page" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <style>{`
-        @media (max-width: 768px) {
-          .installment-calendar-page { padding: 10px !important; }
-          .calendar-header { flex-direction: column; gap: 15px; align-items: stretch !important; }
-          .calendar-header div { justify-content: center; }
-          .calendar-stats { grid-template-columns: 1fr !important; gap: 10px !important; }
-          .stat-card { padding: 15px !important; }
-          .stat-card div:last-child { font-size: 20px !important; }
-          .calendar-grid-header { font-size: 12px !important; gap: 5px !important; }
-          .calendar-grid { gap: 5px !important; }
-          .calendar-cell { min-height: 60px !important; padding: 5px !important; border-radius: 8px !important; }
-          .calendar-cell span { font-size: 14px !important; }
-          .inst-banner { display: none !important; }
-          .inst-dot-container { display: flex !important; flex-wrap: wrap; gap: 2px; margin-top: auto; justify-content: center; }
-          .inst-dot { width: 6px; height: 6px; border-radius: 50%; }
-          .page-header h1 { font-size: 22px !important; }
-          .day-details h3 { font-size: 18px !important; }
-          .details-list > div { flex-direction: column; align-items: flex-start !important; gap: 10px; }
-          .details-list > div > div:last-child { text-align: right !important; width: 100%; border-top: 1px solid var(--border-subtle); pt: 10px; }
-        }
-      `}</style>
-      
-      <div className="page-header" style={{ marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>📅 تقويم الأقساط</h1>
-        <p style={{ color: 'var(--text-muted)' }}>متابعة المواعيد القادمة والمتأخرة للأقساط غير المسددة</p>
-      </div>
-
-      {renderStats()}
-      
-      <div className="calendar-main-container" style={{ background: 'var(--bg-app)', padding: '20px', borderRadius: '20px', boxShadow: 'var(--shadow-md)', position: 'relative' }}>
-        {loading && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.05)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-            <Loader message="جاري التحميل..." />
+    <div className="calendar-container">
+      {/* 1. Header */}
+      <div className="cal-header-row">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="cal-breadcrumbs">
+            <Link to="/dashboard">الرئيسية</Link> / <span>المالية</span>
           </div>
-        )}
-        {renderHeader()}
-        {renderDays()}
-        <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px' }}>
-          {renderCells()}
+          <h1>تقويم الأقساط</h1>
+        </div>
+        <div className="cal-header-actions">
+          <div className="cal-month-nav">
+            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}><i className="fas fa-chevron-right"></i></button>
+            <span style={{ minWidth: '140px', textAlign: 'center', fontWeight: 800, fontSize: '1.2rem' }}>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}><i className="fas fa-chevron-left"></i></button>
+          </div>
         </div>
       </div>
 
-      {renderDetails()}
+      {/* 2. Stats Grid */}
+      <div className="cal-stats-grid">
+        <div className="cal-stat-card">
+          <div className="cal-stat-info">
+            <h4>إجمالي المستحقات (لنا)</h4>
+            <div className="cal-stat-value" style={{ color: 'var(--cal-accent-green)' }}>{totalRec.toLocaleString('ar-EG')} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
+          </div>
+          <div className="cal-stat-visual"><div className="cal-stat-icon icon-green"><i className="fas fa-hand-holding-usd"></i></div></div>
+        </div>
+        <div className="cal-stat-card">
+          <div className="cal-stat-info">
+            <h4>إجمالي الالتزامات (علينا)</h4>
+            <div className="cal-stat-value" style={{ color: '#f43f5e' }}>{totalPay.toLocaleString('ar-EG')} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
+          </div>
+          <div className="cal-stat-visual"><div className="cal-stat-icon icon-amber"><i className="fas fa-file-invoice-dollar"></i></div></div>
+        </div>
+      </div>
+
+      {/* 3. Toolbar (Tabs) */}
+      <div className="cal-toolbar-card">
+        <div style={{ display: 'flex', gap: '8px', background: 'rgba(99, 102, 241, 0.05)', padding: '4px', borderRadius: '12px' }}>
+          <button className={`cal-btn-premium ${filter === 'ALL' ? 'cal-btn-blue' : 'cal-btn-ghost'}`} onClick={() => setFilter('ALL')}>الكل</button>
+          <button className={`cal-btn-premium ${filter === 'RECEIVABLE' ? 'cal-btn-blue' : 'cal-btn-ghost'}`} onClick={() => setFilter('RECEIVABLE')}>لنا (+)</button>
+          <button className={`cal-btn-premium ${filter === 'PAYABLE' ? 'cal-btn-amber' : 'cal-btn-ghost'}`} onClick={() => setFilter('PAYABLE')}>علينا (-)</button>
+        </div>
+      </div>
+
+      {/* 4. Calendar Card */}
+      <div className="cal-main-card">
+        <div className="cal-grid-weekdays">
+          {weekDays.map(d => <div key={d}>{d}</div>)}
+        </div>
+        <div className="cal-grid-cells">
+          {loading ? <div className="cal-loader-overlay"><Loader message="جاري التحميل..." /></div> : renderCells()}
+        </div>
+      </div>
+
+      {/* 5. Day Details Modal/Sidebar (Optional integration or use current style) */}
+      {selectedDay && (
+        <div className="cal-details-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontWeight: 800 }}>تفاصيل يوم {selectedDay} {monthNames[currentDate.getMonth()]}</h3>
+            <button className="cal-action-btn" onClick={() => setSelectedDay(null)}><i className="fas fa-times"></i></button>
+          </div>
+          <div className="cal-details-list">
+            {getDayInstallments(selectedDay).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--cal-text-secondary)' }}>لا توجد أقساط في هذا اليوم</div>
+            ) : (
+              getDayInstallments(selectedDay).map(inst => (
+                <div key={inst.id} className="cal-detail-item">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800 }}>{inst.debt?.entityName || 'جهة مجهولة'}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--cal-text-secondary)' }}>{inst.debt?.reason || 'لا توجد ملاحظات'}</div>
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 900, fontSize: '1.1rem', color: inst.debt?.type === 'RECEIVABLE' ? 'var(--cal-accent-green)' : '#f43f5e' }}>
+                      {inst.debt?.type === 'RECEIVABLE' ? '+' : '-'}{inst.amount.toLocaleString('ar-EG')}
+                    </div>
+                    <span className={`cal-type-badge ${inst.status === 'OVERDUE' ? 'badge-red' : 'badge-amber'}`} style={{fontSize: '0.6rem'}}>
+                      {inst.status === 'OVERDUE' ? 'متأخر' : 'منتظر'}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .cal-main-card { background: var(--cal-card-bg); border: 1px solid var(--cal-border); border-radius: 20px; overflow: hidden; box-shadow: var(--cal-shadow); }
+        .cal-grid-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--cal-bg); padding: 12px 0; border-bottom: 1px solid var(--cal-border); text-align: center; font-weight: 800; font-size: 0.8rem; color: var(--cal-text-secondary); }
+        .cal-grid-cells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--cal-border); position: relative; }
+        .cal-cell { background: var(--cal-card-bg); min-height: 120px; padding: 12px; cursor: pointer; transition: all 0.2s; position: relative; display: flex; flexDirection: column; }
+        .cal-cell:hover:not(.empty) { background: var(--cal-row-hover); z-index: 5; }
+        .cal-cell.today { background: rgba(99, 102, 241, 0.05); }
+        .cal-cell.today .cal-day-num { background: var(--cal-accent-blue); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .cal-cell.selected { border: 2px solid var(--cal-accent-blue); }
+        .cal-day-num { font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
+        .cal-inst-list { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .cal-inst-item { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; border-right: 3px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cal-inst-item.rec { background: rgba(16, 185, 129, 0.1); color: var(--cal-accent-green); border-right-color: var(--cal-accent-green); }
+        .cal-inst-item.pay { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border-right-color: #f43f5e; }
+        .cal-dots { display: none; gap: 2px; margin-top: auto; justify-content: center; }
+        .cal-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .cal-dot.rec { background: var(--cal-accent-green); }
+        .cal-dot.pay { background: #f43f5e; }
+        .cal-loader-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.2); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .cal-details-card { margin-top: 24px; background: var(--cal-card-bg); border: 1px solid var(--cal-border); border-radius: 20px; padding: 24px; box-shadow: var(--cal-shadow); }
+        .cal-detail-item { display: flex; justify-content: space-between; padding: 16px; background: var(--cal-bg); border-radius: 12px; margin-bottom: 12px; align-items: center; border: 1px solid var(--cal-border); }
+        
+        @media (max-width: 768px) {
+          .cal-cell { min-height: 80px; padding: 6px; }
+          .cal-inst-list { display: none; }
+          .cal-dots { display: flex; }
+          .cal-grid-weekdays { font-size: 0.6rem; }
+          .cal-day-num { font-size: 0.8rem; }
+        }
+      `}} />
     </div>
   );
-};
-
-const tabStyle = {
-  padding: '8px 20px',
-  border: 'none',
-  background: 'transparent',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontWeight: 'bold',
-  color: 'var(--text-muted)',
-  transition: 'all 0.2s'
-};
-
-const activeTabStyle = {
-  ...tabStyle,
-  background: 'var(--bg-app)',
-  color: 'var(--accent-primary)',
-  boxShadow: 'var(--shadow-sm)'
 };
 
 export default InstallmentCalendar;

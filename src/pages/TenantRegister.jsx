@@ -43,7 +43,7 @@ const TenantRegister = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:8080/api/public/tenants/register', formData);
+      await axios.post('https://posapi.digitalrace.net/api/public/tenants/register', formData);
       setSuccess(true);
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {

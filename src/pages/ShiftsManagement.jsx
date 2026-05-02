@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import ModalContainer from '../components/common/ModalContainer';
+import '../styles/pages/ShiftsPremium.css';
 
 const ShiftsManagement = () => {
     const { toast, confirm } = useGlobalUI();
@@ -11,31 +14,19 @@ const ShiftsManagement = () => {
     const [editingShift, setEditingShift] = useState(null);
     const [formData, setFormData] = useState({ name: '', startTime: '', endTime: '', gracePeriodMinutes: 0 });
 
-    useEffect(() => {
-        loadShifts();
-    }, []);
+    useEffect(() => { loadShifts(); }, []);
 
     const loadShifts = async () => {
         setLoading(true);
-        try {
-            const data = await Api.getShifts();
-            setShifts(data);
-        } catch (err) {
-            toast('فشل في تحميل الورديات: ' + err.message, 'error');
-        } finally {
-            setLoading(false);
-        }
+        try { const data = await Api.getShifts(); setShifts(data); }
+        catch (err) { toast(err.message, 'error'); }
+        finally { setLoading(false); }
     };
 
     const handleOpenModal = (shift = null) => {
         if (shift) {
             setEditingShift(shift);
-            setFormData({
-                name: shift.name,
-                startTime: shift.startTime,
-                endTime: shift.endTime,
-                gracePeriodMinutes: shift.gracePeriodMinutes
-            });
+            setFormData({ name: shift.name, startTime: shift.startTime, endTime: shift.endTime, gracePeriodMinutes: shift.gracePeriodMinutes });
         } else {
             setEditingShift(null);
             setFormData({ name: '', startTime: '', endTime: '', gracePeriodMinutes: 0 });
@@ -46,145 +37,148 @@ const ShiftsManagement = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            if (editingShift) {
-                await Api.updateShift(editingShift.id, formData);
-                toast('تم تحديث الوردية بنجاح', 'success');
-            } else {
-                await Api.createShift(formData);
-                toast('تم إضافة الوردية بنجاح', 'success');
-            }
-            setShowModal(false);
-            loadShifts();
-        } catch (err) {
-            toast(err.message, 'error');
-        }
+            if (editingShift) { await Api.updateShift(editingShift.id, formData); toast('تم التحديث', 'success'); }
+            else { await Api.createShift(formData); toast('تم الإضافة', 'success'); }
+            setShowModal(false); loadShifts();
+        } catch (err) { toast(err.message, 'error'); }
     };
 
     const handleDelete = (id) => {
-        confirm('هل أنت متأكد من حذف هذه الوردية؟', async () => {
-            try {
-                await Api.deleteShift(id);
-                toast('تم حذف الوردية', 'success');
-                loadShifts();
-            } catch (err) {
-                toast(err.message, 'error');
-            }
+        confirm('حذف هذه الوردية؟', async () => {
+            try { await Api.deleteShift(id); toast('تم الحذف', 'success'); loadShifts(); }
+            catch (err) { toast(err.message, 'error'); }
         });
     };
 
-    const getShiftIcon = (name, startTime) => {
+    const getShiftVisual = (name, startTime) => {
         const n = (name || '').toLowerCase();
-        if (n.includes('صباح') || n.includes('day') || n.includes('morning')) return '☀️';
-        if (n.includes('مساء') || n.includes('ليل') || n.includes('night') || n.includes('evening')) return '🌙';
-        
-        // fallback to hour check
-        if (startTime) {
-            const hour = parseInt(startTime.split(':')[0]);
-            if (hour >= 6 && hour < 17) return '☀️';
-            return '🌙';
-        }
-        return '🕒';
+        if (n.includes('صباح') || n.includes('morning')) return { icon: 'fa-sun', color: 'var(--shf-accent-amber)' };
+        if (n.includes('مساء') || n.includes('night')) return { icon: 'fa-moon', color: 'var(--shf-accent-purple)' };
+        const hour = parseInt(startTime?.split(':')[0] || '0');
+        return (hour >= 6 && hour < 17) ? { icon: 'fa-sun', color: 'var(--shf-accent-amber)' } : { icon: 'fa-moon', color: 'var(--shf-accent-purple)' };
     };
-
-    const getShiftColor = (index) => {
-        const colors = ['var(--metro-blue)', 'var(--metro-green)', 'var(--metro-purple)', 'var(--metro-orange)', 'var(--metro-teal)'];
-        return colors[index % colors.length];
-    };
-
-    if (loading) return <Loader message="جاري تحميل الورديات..." />;
 
     return (
-        <div className="page-section anim-fade-in">
-            <div className="section-header" style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                   <h1 className="page-title" style={{ marginBottom: '5px' }}>🕒 إدارة الورديات</h1>
-                   <p className="text-dim">تحديد ساعات العمل وفترات السماح لكل وردية</p>
+        <div className="shifts-container">
+            {/* 1. Header */}
+            <div className="shf-header-row">
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="shf-breadcrumbs">
+                        <Link to="/dashboard">الرئيسية</Link> / <span>HR</span>
+                    </div>
+                    <h1>إدارة ورديات العمل</h1>
                 </div>
-                <button className="btn btn-primary" onClick={() => handleOpenModal()} style={{ height: '48px', padding: '0 30px' }}>
-                    + إضافة وردية جديدة
-                </button>
+                <div className="shf-header-actions">
+                    <button className="shf-btn-premium shf-btn-blue" onClick={() => handleOpenModal()}>
+                        <i className="fas fa-plus-circle"></i> إضافة وردية جديدة
+                    </button>
+                </div>
             </div>
 
-            <div className="grid-tiles" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-                {shifts.length === 0 ? (
-                    <div className="card empty-state" style={{ gridColumn: '1 / -1', padding: '100px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>⏰</div>
-                        <h3>لا توجد ورديات مسجلة حالياً</h3>
-                        <p className="text-dim">ابدأ بإضافة أول وردية لتنظيم عمل الموظفين</p>
+            {/* 2. Stats Grid */}
+            <div className="shf-stats-grid">
+                <div className="shf-stat-card">
+                    <div className="shf-stat-info">
+                        <h4>إجمالي الورديات</h4>
+                        <div className="shf-stat-value">{shifts.length}</div>
                     </div>
-                ) : shifts.map((shift, idx) => (
-                    <div key={shift.id} className="card shift-card anim-slide-in" style={{ 
-                        borderLeft: `5px solid ${getShiftColor(idx)}`,
-                        position: 'relative',
-                        transition: 'transform 0.2s'
-                    }}>
-                        <div className="card-header" style={{ borderBottom: '1px solid var(--border-subtle)', padding: '20px 25px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ margin: 0, color: '#fff', fontWeight: '700' }}>{shift.name}</h3>
-                                <span style={{ fontSize: '1.5rem' }}>{getShiftIcon(shift.name, shift.startTime)}</span>
-                            </div>
-                        </div>
-                        <div className="card-body" style={{ padding: '25px' }}>
-                            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>البداية</label>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: '200', fontFamily: 'monospace', color: 'var(--text-white)' }}>{shift.startTime?.slice(0, 5)}</div>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>النهاية</label>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: '200', fontFamily: 'monospace', color: 'var(--text-white)' }}>{shift.endTime?.slice(0, 5)}</div>
-                                </div>
-                            </div>
-                            <div style={{ borderTop: '1px dashed var(--border-main)', paddingTop: '15px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>فترة السماح (نأخير):</span>
-                                    <span className="badge badge-info">{shift.gracePeriodMinutes || 0} دقيقة</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="card-footer" style={{ background: 'rgba(255,255,255,0.02)', padding: '15px 25px', display: 'flex', gap: '10px' }}>
-                            <button className="btn btn-sm btn-ghost" onClick={() => handleOpenModal(shift)} style={{ flex: 1 }}>تعديل</button>
-                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(shift.id)}>حذف</button>
-                        </div>
+                    <div className="shf-stat-visual"><div className="shf-stat-icon icon-blue"><i className="fas fa-clock"></i></div></div>
+                </div>
+                <div className="shf-stat-card">
+                    <div className="shf-stat-info">
+                        <h4>ورديات صباحية</h4>
+                        <div className="shf-stat-value" style={{ color: 'var(--shf-accent-amber)' }}>{shifts.filter(s => getShiftVisual(s.name, s.startTime).icon === 'fa-sun').length}</div>
                     </div>
-                ))}
+                    <div className="shf-stat-visual"><div className="shf-stat-icon icon-amber"><i className="fas fa-sun"></i></div></div>
+                </div>
+                <div className="shf-stat-card">
+                    <div className="shf-stat-info">
+                        <h4>ورديات مسائية</h4>
+                        <div className="shf-stat-value" style={{ color: 'var(--shf-accent-purple)' }}>{shifts.filter(s => getShiftVisual(s.name, s.startTime).icon === 'fa-moon').length}</div>
+                    </div>
+                    <div className="shf-stat-visual"><div className="shf-stat-icon icon-purple"><i className="fas fa-moon"></i></div></div>
+                </div>
+                <div className="shf-stat-card">
+                    <div className="shf-stat-info">
+                        <h4>متوسط فترات السماح</h4>
+                        <div className="shf-stat-value" style={{ color: 'var(--shf-accent-green)' }}>{shifts.length > 0 ? Math.round(shifts.reduce((a,b)=>a+b.gracePeriodMinutes, 0)/shifts.length) : 0} د</div>
+                    </div>
+                    <div className="shf-stat-visual"><div className="shf-stat-icon icon-green"><i className="fas fa-hourglass-half"></i></div></div>
+                </div>
+            </div>
+
+            {/* 3. Grid Display */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                {loading ? (
+                    <div style={{ gridColumn: '1/-1', padding: '100px' }}><Loader message="جاري التحميل..." /></div>
+                ) : shifts.length === 0 ? (
+                    <div style={{ gridColumn: '1/-1', padding: '100px', textAlign: 'center', color: 'var(--shf-text-secondary)' }}>
+                        <i className="fas fa-calendar-times" style={{ fontSize: '4rem', opacity: 0.1, marginBottom: '24px' }}></i>
+                        <h3>لا توجد ورديات معرفة حالياً</h3>
+                    </div>
+                ) : shifts.map(s => {
+                    const visual = getShiftVisual(s.name, s.startTime);
+                    return (
+                        <div key={s.id} className="shf-stat-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '0', overflow: 'hidden' }}>
+                            <div style={{ padding: '24px', borderBottom: '1px solid var(--shf-border)', background: 'rgba(99,102,241,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div><div style={{ fontWeight: 800, fontSize: '1.2rem' }}>{s.name}</div><div style={{ fontSize: '0.7rem', color: 'var(--shf-text-secondary)' }}>ID: {s.id}</div></div>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--shf-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: visual.color, fontSize: '1.4rem' }}><i className={`fas ${visual.icon}`}></i></div>
+                            </div>
+                            <div style={{ padding: '24px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                    <div><label style={{ fontSize: '0.7rem', color: 'var(--shf-text-secondary)', display: 'block', marginBottom: '4px' }}>وقت الحضور</label><div style={{ fontSize: '1.5rem', fontWeight: 200 }}>{s.startTime?.slice(0,5)}</div></div>
+                                    <div style={{ textAlign: 'left' }}><label style={{ fontSize: '0.7rem', color: 'var(--shf-text-secondary)', display: 'block', marginBottom: '4px' }}>وقت الانصراف</label><div style={{ fontSize: '1.5rem', fontWeight: 200 }}>{s.endTime?.slice(0,5)}</div></div>
+                                </div>
+                                <div className="shf-type-badge badge-blue" style={{ width: '100%', justifyContent: 'center', padding: '8px' }}>
+                                    <i className="fas fa-stopwatch"></i> فترة سماح: {s.gracePeriodMinutes} دقيقة
+                                </div>
+                            </div>
+                            <div style={{ padding: '16px 24px', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid var(--shf-border)', display: 'flex', gap: '12px' }}>
+                                <button className="shf-btn-premium shf-btn-outline" style={{ flex: 1, padding: '8px' }} onClick={() => handleOpenModal(s)}><i className="fas fa-edit"></i> تعديل</button>
+                                <button className="shf-btn-premium" style={{ flex: 1, padding: '8px', background: 'rgba(244,63,94,0.1)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.2)' }} onClick={() => handleDelete(s.id)}><i className="fas fa-trash-alt"></i> حذف</button>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {showModal && (
-                <div className="modal-overlay active">
-                    <div className="modal anim-scale-in" style={{ maxWidth: '450px' }}>
-                        <div className="modal-header" style={{ borderBottom: '1px solid var(--border-main)' }}>
-                            <h3 style={{ margin: 0 }}>{editingShift ? 'تعديل وردية' : 'إضافة وردية جديدة'}</h3>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+                <ModalContainer>
+                    <div className="shf-modal-overlay" onClick={() => setShowModal(false)}>
+                        <div className="shf-modal" style={{ maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+                            <div className="shf-modal-header">
+                                <h3>{editingShift ? 'تعديل الوردية' : 'إضافة وردية جديدة'}</h3>
+                                <button className="shf-modal-close" onClick={() => setShowModal(false)}>✕</button>
+                            </div>
+                            <div className="shf-modal-body">
+                                <form id="shfForm" onSubmit={handleSubmit}>
+                                    <div className="shf-form-group">
+                                        <label>اسم الوردية *</label>
+                                        <input className="shf-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="مثال: وردية الصباح" />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+                                        <div className="shf-form-group">
+                                            <label>من (وقت الحضور) *</label>
+                                            <input className="shf-input" type="time" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
+                                        </div>
+                                        <div className="shf-form-group">
+                                            <label>إلى (وقت الانصراف) *</label>
+                                            <input className="shf-input" type="time" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="shf-form-group" style={{ marginTop: '20px' }}>
+                                        <label>فترة السماح (بالدقائق) *</label>
+                                        <input className="shf-input" type="number" required value={formData.gracePeriodMinutes} onChange={e => setFormData({...formData, gracePeriodMinutes: parseInt(e.target.value)})} />
+                                    </div>
+                                </form>
+                            </div>
+                            <div className="shf-modal-footer">
+                                <button type="button" className="shf-btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
+                                <button type="submit" form="shfForm" className="shf-btn-primary">حفظ الوردية</button>
+                            </div>
                         </div>
-                        <form onSubmit={handleSubmit}>
-                            <div className="modal-body" style={{ padding: '25px' }}>
-                                <div className="form-group">
-                                    <label>اسم الوردية (مثل: وردية الصباح):</label>
-                                    <input type="text" className="form-control" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required autoFocus />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                                    <div className="form-group" style={{ marginBottom: 0 }}>
-                                        <label>وقت الحضور:</label>
-                                        <input type="time" className="form-control" value={formData.startTime} onChange={e => setFormData({ ...formData, startTime: e.target.value })} required />
-                                    </div>
-                                    <div className="form-group" style={{ marginBottom: 0 }}>
-                                        <label>وقت الانصراف:</label>
-                                        <input type="time" className="form-control" value={formData.endTime} onChange={e => setFormData({ ...formData, endTime: e.target.value })} required />
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label>فترة السماح قبل احتساب التأخير (دقائق):</label>
-                                    <input type="number" className="form-control" value={formData.gracePeriodMinutes} onChange={e => setFormData({ ...formData, gracePeriodMinutes: e.target.value })} required />
-                                </div>
-                            </div>
-                            <div className="modal-footer" style={{ padding: '20px 25px', background: 'var(--bg-elevated)', borderTop: '1px solid var(--border-main)' }}>
-                                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)} style={{ marginRight: '10px' }}>إلغاء</button>
-                                <button type="submit" className="btn btn-primary" style={{ padding: '0 30px' }}>حفظ الوردية</button>
-                            </div>
-                        </form>
                     </div>
-                </div>
+                </ModalContainer>
             )}
         </div>
     );

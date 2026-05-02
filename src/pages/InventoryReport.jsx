@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import { useBranch } from '../context/BranchContext';
 import Loader from '../components/common/Loader';
+import '../styles/pages/InventoryPremium.css';
 
 const InventoryReport = () => {
     const { toast } = useGlobalUI();
@@ -23,211 +25,143 @@ const InventoryReport = () => {
         setLoading(true);
         try {
             const res = await Api.getInventoryReport(debouncedSearch, selectedBranchId, p, 20);
-            setData(res.items || []);
-            setTotalPages(res.totalPages || 1);
-        } catch (err) {
-            toast(err.message, 'error');
-        } finally {
-            setLoading(false);
-        }
+            setData(res.items || []); setTotalPages(res.totalPages || 1);
+        } catch (err) { toast(err.message, 'error'); }
+        finally { setLoading(false); }
     };
 
-    const handleExport = async (type) => {
-        toast(`جاري تحضير ملف ${type}...`, 'info');
-        // Implementation for export could be added here similar to Products.jsx
-    };
+    useEffect(() => { loadData(0); setPage(0); }, [debouncedSearch, selectedBranchId]);
+    useEffect(() => { loadData(page); }, [page]);
 
-    useEffect(() => {
-        loadData(0);
-        setPage(0);
-    }, [debouncedSearch, selectedBranchId]);
-
-    useEffect(() => {
-        loadData(page);
-    }, [page]);
+    const handleExport = (type) => toast(`جاري تحضير ملف ${type}...`, 'info');
 
     return (
-        <div className="page-section">
-            <div className="card">
-                <div className="card-header">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', width: '100%' }}>
-                        <div>
-                            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span style={{ fontSize: '1.5rem' }}>📋</span> تقرير جرد المخزون العام
-                            </h3>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '5px' }}>
-                                عرض تفصيلي لجميع المنتجات وتوزيعها عبر المخازن والفروع
-                            </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <div className="search-wrap-new" style={{ width: '300px', borderRadius: '8px', overflow: 'hidden', display: 'flex', border: '1px solid var(--border-color)', background: 'var(--bg-input)' }}>
-                                <span style={{ padding: '0 10px', display: 'flex', alignItems: 'center' }}>🔍</span>
-                                <input 
-                                    type="text" 
-                                    className="form-control" 
-                                    placeholder="بحث باسم المنتج أو الكود..." 
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    style={{ border: 'none', background: 'transparent' }}
-                                />
-                            </div>
-                            <button className="btn btn-secondary" onClick={() => loadData()}>🔄 تحديث</button>
-                            <div style={{ display: 'flex', gap: '5px' }}>
-                                <button className="btn btn-ghost" onClick={() => handleExport('Excel')} title="تصدير Excel">📊</button>
-                                <button className="btn btn-ghost" onClick={() => handleExport('PDF')} title="تصدير PDF">📄</button>
-                            </div>
-                        </div>
+        <div className="inventory-container">
+            {/* 1. Header */}
+            <div className="inv-header-row">
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="inv-breadcrumbs">
+                        <Link to="/dashboard">الرئيسية</Link> / <span>المخازن</span>
                     </div>
+                    <h1>تقرير جرد المخزون العام</h1>
                 </div>
-                <div className="card-body no-padding">
+                <div className="inv-header-actions">
+                    <button className="inv-btn-premium inv-btn-outline" onClick={() => handleExport('Excel')}>
+                        <i className="fas fa-file-excel"></i> تصدير Excel
+                    </button>
+                    <button className="inv-btn-premium inv-btn-blue" onClick={() => loadData()}>
+                        <i className="fas fa-sync-alt"></i> تحديث التقرير
+                    </button>
+                </div>
+            </div>
+
+            {/* 2. Stats Grid */}
+            <div className="inv-stats-grid">
+                <div className="inv-stat-card">
+                    <div className="inv-stat-info">
+                        <h4>إجمالي المنتجات</h4>
+                        <div className="inv-stat-value">{data.length > 0 ? (page * 20 + data.length) : 0}</div>
+                    </div>
+                    <div className="inv-stat-visual"><div className="inv-stat-icon icon-blue"><i className="fas fa-box-open"></i></div></div>
+                </div>
+                <div className="inv-stat-card">
+                    <div className="inv-stat-info">
+                        <h4>منتجات متوفرة</h4>
+                        <div className="inv-stat-value" style={{ color: 'var(--inv-accent-green)' }}>{data.filter(d => Number(d.totalQuantity) > 0).length}</div>
+                    </div>
+                    <div className="inv-stat-visual"><div className="inv-stat-icon icon-green"><i className="fas fa-check-circle"></i></div></div>
+                </div>
+                <div className="inv-stat-card">
+                    <div className="inv-stat-info">
+                        <h4>منخفضة المخزون</h4>
+                        <div className="inv-stat-value" style={{ color: 'var(--inv-accent-amber)' }}>{data.filter(d => Number(d.totalQuantity) > 0 && Number(d.totalQuantity) < 10).length}</div>
+                    </div>
+                    <div className="inv-stat-visual"><div className="inv-stat-icon icon-amber"><i className="fas fa-exclamation-triangle"></i></div></div>
+                </div>
+                <div className="inv-stat-card">
+                    <div className="inv-stat-info">
+                        <h4>غير متوفرة</h4>
+                        <div className="inv-stat-value" style={{ color: '#f43f5e' }}>{data.filter(d => Number(d.totalQuantity) <= 0).length}</div>
+                    </div>
+                    <div className="inv-stat-visual"><div className="inv-stat-icon icon-purple"><i className="fas fa-times-circle"></i></div></div>
+                </div>
+            </div>
+
+            {/* 3. Toolbar */}
+            <div className="inv-toolbar-card">
+                <div className="inv-search-box" style={{ flex: 1, maxWidth: '500px' }}>
+                    <i className="fas fa-search"></i>
+                    <input className="inv-input" placeholder="بحث باسم المنتج أو الكود..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                </div>
+            </div>
+
+            {/* 4. Table Card */}
+            <div className="inv-table-card">
+                <div className="inv-table-container">
                     {loading ? (
-                        <Loader message="جاري جلب بيانات المخزون..." />
+                        <div style={{ padding: '60px' }}><Loader message="جاري إعداد تقرير الجرد..." /></div>
                     ) : data.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-icon">📦</div>
-                            <h4>لا توجد بيانات مخزون</h4>
-                            <p>لم يتم العثور على منتجات تطابق البحث في المخازن</p>
+                        <div style={{ padding: '80px', textAlign: 'center', color: 'var(--inv-text-secondary)' }}>
+                            <i className="fas fa-clipboard-list" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
+                            <h3>لا توجد بيانات جرد مطابقة للبحث</h3>
                         </div>
                     ) : (
-                        <div className="table-wrapper">
-                            <table className="data-table">
+                        <>
+                            <table className="inv-table">
                                 <thead>
                                     <tr>
-                                        <th style={{ width: '30%' }}>المنتج</th>
-                                        <th style={{ width: '15%' }}>الفئة</th>
-                                        <th style={{ width: '15%' }}>الإجمالي العام</th>
-                                        <th style={{ width: '40%' }}>توزيع المخازن (كمية بكل مخزن)</th>
+                                        <th>المنتج</th>
+                                        <th>الفئة</th>
+                                        <th>الإجمالي العام</th>
+                                        <th>توزيع المخازن والفروع</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.map((product) => (
-                                        <tr key={product.productId}>
+                                    {data.map(p => (
+                                        <tr key={p.productId}>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                                                        📦
-                                                    </div>
-                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <a href={`/products/${product.productId}`} style={{ fontWeight: 700, color: 'var(--color-primary)', textDecoration: 'none' }}>
-                                                            {product.productName}
-                                                        </a>
-                                                        <code style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px' }}>{product.productCode || '—'}</code>
+                                                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(99,102,241,0.1)', color: 'var(--inv-accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}><i className="fas fa-box"></i></div>
+                                                    <div>
+                                                        <Link to={`/products/${p.productId}`} style={{ fontWeight: 800, color: 'inherit', textDecoration: 'none' }}>{p.productName}</Link>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--inv-text-secondary)' }}>كود: {p.productCode || '—'}</div>
                                                     </div>
                                                 </div>
                                             </td>
+                                            <td><span className="inv-type-badge badge-ghost">{p.categoryName}</span></td>
                                             <td>
-                                                <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
-                                                    {product.categoryName}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: Number(product.totalQuantity) > 0 ? 'var(--accent-emerald)' : 'var(--metro-red)' }}>
-                                                        {Number(product.totalQuantity).toLocaleString()}
-                                                    </span>
-                                                    <small style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>إجمالي القطع</small>
+                                                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: Number(p.totalQuantity) > 0 ? 'var(--inv-accent-green)' : '#f43f5e' }}>
+                                                    {Number(p.totalQuantity).toLocaleString()}
                                                 </div>
+                                                <div style={{ fontSize: '0.65rem', color: 'var(--inv-text-secondary)' }}>وحدة قياس</div>
                                             </td>
-                                            <td style={{ padding: '12px' }}>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                                    {product.warehouseStocks && product.warehouseStocks.length > 0 ? product.warehouseStocks.map(ws => (
-                                                        <div key={ws.warehouseId} className="modern-stock-tag" title={`فرع: ${ws.branchName}`}>
-                                                            <div className="tag-header">
-                                                                <span className="branch-dot"></span>
-                                                                {ws.warehouseName}
-                                                            </div>
-                                                            <div className="tag-body">
-                                                                {Number(ws.quantity).toLocaleString()}
-                                                            </div>
+                                            <td>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                    {p.warehouseStocks?.map(ws => (
+                                                        <div key={ws.warehouseId} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--inv-border)', borderRadius: '10px', padding: '6px 12px', minWidth: '80px' }}>
+                                                            <div style={{ fontSize: '0.65rem', opacity: 0.6, marginBottom: '2px' }}>{ws.warehouseName}</div>
+                                                            <div style={{ fontWeight: 800, color: 'var(--inv-accent-blue)' }}>{Number(ws.quantity).toLocaleString()}</div>
                                                         </div>
-                                                    )) : (
-                                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', padding: '5px' }}>
-                                                            غير متوفر في أي مخزن حالياً
-                                                        </div>
-                                                    )}
+                                                    ))}
+                                                    {(!p.warehouseStocks || p.warehouseStocks.length === 0) && <span style={{ opacity: 0.4, fontSize: '0.8rem' }}>غير متوفر</span>}
                                                 </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
+                            <div className="inv-pagination">
+                                <div className="inv-pagination-info">الصفحة {page + 1} من {totalPages}</div>
+                                <div className="inv-pagination-btns">
+                                    <button className="inv-page-btn" disabled={page === 0} onClick={() => setPage(page - 1)}><i className="fas fa-chevron-right"></i></button>
+                                    <button className="inv-page-btn active">{page + 1}</button>
+                                    <button className="inv-page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}><i className="fas fa-chevron-left"></i></button>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
-                <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        عرض {data.length} منتج في هذه الصفحة
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button className="btn btn-sm btn-ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>السابق</button>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            {[...Array(totalPages)].map((_, i) => (
-                                <button 
-                                    key={i} 
-                                    className={`btn btn-sm ${page === i ? 'btn-primary' : 'btn-ghost'}`}
-                                    onClick={() => setPage(i)}
-                                    style={{ minWidth: '32px' }}
-                                >
-                                    {i + 1}
-                                </button>
-                            )).slice(Math.max(0, page - 2), Math.min(totalPages, page + 3))}
-                        </div>
-                        <button className="btn btn-sm btn-ghost" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>التالي</button>
-                    </div>
-                </div>
             </div>
-
-            <style dangerouslySetInnerHTML={{ __html: `
-                .modern-stock-tag {
-                    display: flex;
-                    flex-direction: column;
-                    min-width: 100px;
-                    border: 1px solid var(--border-color);
-                    border-radius: 10px;
-                    overflow: hidden;
-                    transition: all 0.2s ease;
-                    background: var(--bg-card);
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                }
-                .modern-stock-tag:hover {
-                    transform: translateY(-2px);
-                    border-color: var(--color-primary);
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                }
-                .tag-header {
-                    padding: 4px 10px;
-                    background: var(--bg-hover);
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    color: var(--text-muted);
-                    border-bottom: 1px solid var(--border-color);
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-                .branch-dot {
-                    width: 6px;
-                    height: 6px;
-                    border-radius: 50%;
-                    background: var(--accent-emerald);
-                }
-                .tag-body {
-                    padding: 6px 10px;
-                    font-size: 1rem;
-                    font-weight: 800;
-                    color: var(--color-primary);
-                    text-align: center;
-                }
-                .table-wrapper {
-                    overflow-x: auto;
-                }
-                .data-table th {
-                    background: var(--bg-hover);
-                    text-transform: uppercase;
-                    font-size: 0.75rem;
-                    letter-spacing: 0.5px;
-                }
-            `}} />
         </div>
     );
 };

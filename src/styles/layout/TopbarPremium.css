@@ -9,29 +9,53 @@
     border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: space-between; /* Search one side, Group other side */
     padding: 0 32px;
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 999;
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
+    direction: rtl; /* Ensure RTL container */
 }
 
-/* User Section (Left in RTL) */
+.tp-right-group {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    flex-shrink: 0;
+}
+
+/* ─── Hamburger Menu Button ─── */
+.tp-menu-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-white);
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.tp-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* User Section */
 .tp-user-section {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-left: 20px;
-    border-left: 1px solid var(--border-subtle);
     cursor: pointer;
     transition: opacity 0.2s;
 }
 
-.tp-user-section:hover {
-    opacity: 0.8;
-}
+.tp-user-section:hover { opacity: 0.8; }
 
 .tp-avatar-wrapper {
     position: relative;
@@ -58,20 +82,14 @@
     border: 2px solid var(--bg-topbar);
 }
 
-.tp-user-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
 .tp-user-name {
     font-weight: 600;
     font-size: 0.95rem;
     color: var(--text-white);
 }
 
-.tp-chevron {
-    font-size: 0.7rem;
+.tp-user-role {
+    font-size: 0.75rem;
     color: var(--text-muted);
 }
 
@@ -79,15 +97,14 @@
 .tp-actions-section {
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding-right: 20px;
+    gap: 18px;
 }
 
 .tp-action-btn {
     background: transparent;
     border: none;
     color: var(--text-muted);
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     cursor: pointer;
     position: relative;
     transition: all 0.2s ease;
@@ -106,11 +123,11 @@
 
 .tp-badge {
     position: absolute;
-    top: -5px;
-    right: -5px;
+    top: -4px;
+    right: -4px;
     background: #ef4444;
     color: white;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 800;
     min-width: 18px;
     height: 18px;
@@ -125,8 +142,8 @@
 .tp-search-container {
     flex: 1;
     display: flex;
-    justify-content: flex-end;
-    padding: 0 40px;
+    justify-content: flex-start; /* Push search to the right side in RTL */
+    padding: 0;
 }
 
 .tp-search-wrapper {
@@ -162,28 +179,125 @@
     font-size: 1rem;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-    .tp-search-container {
-        display: none;
-    }
-
-    .topbar-premium {
-        padding: 0 16px;
-    }
-}
-
-@media (max-width: 768px) {
-    .tp-user-name {
-        display: none;
+/* ─── Desktop ─── */
+@media (min-width: 1025px) {
+    .tp-menu-btn {
+        display: none !important;
     }
 
     .tp-user-section {
-        padding-left: 0;
-        border-left: none;
+        padding-right: 20px;
+        border-right: 1px solid var(--border-subtle);
+        display: flex !important;
+    }
+
+    .tp-store-name-mobile {
+        display: none !important;
+    }
+
+    .tp-mobile-only {
+        display: none !important;
+    }
+    
+    .tp-right-group {
+        justify-content: flex-end; /* Align user/actions to the left in RTL */
+    }
+}
+
+/* ─── Tablet / Mobile ─── */
+@media (max-width: 1024px) {
+    .topbar-premium {
+        padding: 0 16px;
+        height: 64px;
+    }
+
+    .tp-menu-btn {
+        display: flex;
+    }
+
+    .tp-search-container {
+        display: none !important;
+    }
+
+    .tp-desktop-only {
+        display: none !important;
+    }
+
+    .tp-mobile-only {
+        display: flex !important;
+    }
+
+    .tp-user-section {
+        display: none !important;
+    }
+
+    .tp-right-group {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0;
     }
 
     .tp-actions-section {
-        gap: 10px;
+        gap: 12px;
     }
+
+    .tp-store-name-mobile {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-white);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tp-user-text-wrapper {
+        display: none;
+    }
+
+    .tp-actions-section {
+        gap: 8px;
+    }
+
+    .tp-action-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+
+    .tp-store-name-mobile {
+        max-width: 120px;
+        font-size: 1rem;
+    }
+}
+
+/* ─── Light Theme ─── */
+[data-theme='light'] .topbar-premium {
+    background: #ffffff;
+    border-bottom-color: #e5e7eb;
+}
+
+[data-theme='light'] .tp-action-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .tp-menu-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .tp-search-input {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #111827;
+}
+
+[data-theme='light'] .tp-search-input:focus {
+    background: #ffffff;
+}
+
+[data-theme='light'] .tp-badge {
+    border-color: #ffffff;
 }

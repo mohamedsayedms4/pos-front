@@ -1,204 +1,168 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import '../styles/pages/FinancialAnalyticsPremium.css';
 
 const FinancialAnalytics = () => {
-    const { toast } = useGlobalUI();
-    const [loading, setLoading] = useState(true);
-    const [accounts, setAccounts] = useState([]);
-    const [transactions, setTransactions] = useState([]);
-    const [dateRange, setDateRange] = useState({
-        from: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-        to: new Date().toISOString().split('T')[0]
+  const { toast } = useGlobalUI();
+  const [loading, setLoading] = useState(true);
+  const [accounts, setAccounts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [dateRange, setDateRange] = useState({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+    to: new Date().toISOString().split('T')[0]
+  });
+
+  useEffect(() => { loadData(); }, [dateRange]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [accRes, transRes] = await Promise.all([ Api.getTreasuryOverview(), Api.getTreasuryTransactions(0, 1000, '') ]);
+      setAccounts(accRes || []);
+      const filtered = (transRes.content || []).filter(t => {
+        const date = t.transactionDate.split('T')[0];
+        return date >= dateRange.from && date <= dateRange.to;
+      });
+      setTransactions(filtered);
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setLoading(false); }
+  };
+
+  const analyticalData = useMemo(() => {
+    const groups = {};
+    transactions.forEach(t => {
+      const date = t.transactionDate.split('T')[0];
+      if (!groups[date]) groups[date] = {};
+      const accId = t.treasury.id;
+      if (!groups[date][accId]) groups[date][accId] = 0;
+      if (t.type === 'IN') groups[date][accId] += t.amount;
+      else groups[date][accId] -= t.amount;
     });
+    return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(date => ({ date, values: groups[date] }));
+  }, [transactions]);
 
-    useEffect(() => {
-        loadData();
-    }, [dateRange]);
+  const calculateTotal = (accId) => {
+    return transactions.filter(t => t.treasury.id === accId).reduce((sum, t) => t.type === 'IN' ? sum + t.amount : sum - t.amount, 0);
+  };
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const [accRes, transRes] = await Promise.all([
-                Api.getTreasuryOverview(),
-                Api.getTreasuryTransactions(0, 1000, '') // We'll fetch a large batch and filter in memory for now
-            ]);
-            
-            setAccounts(accRes || []);
-            // Filter transactions by date range
-            const filtered = (transRes.content || []).filter(t => {
-                const date = t.transactionDate.split('T')[0];
-                return date >= dateRange.from && date <= dateRange.to;
-            });
-            setTransactions(filtered);
-        } catch (err) {
-            toast(err.message, 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Group transactions by date and account
-    const analyticalData = useMemo(() => {
-        const groups = {};
-        transactions.forEach(t => {
-            const date = t.transactionDate.split('T')[0];
-            if (!groups[date]) groups[date] = {};
-            
-            const accId = t.treasury.id;
-            if (!groups[date][accId]) groups[date][accId] = 0;
-            
-            if (t.type === 'IN') groups[date][accId] += t.amount;
-            else groups[date][accId] -= t.amount;
-        });
-
-        // Convert to sorted array of rows
-        return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(date => ({
-            date,
-            values: groups[date]
-        }));
-    }, [transactions]);
-
-    const calculateTotal = (accId) => {
-        return transactions
-            .filter(t => t.treasury.id === accId)
-            .reduce((sum, t) => t.type === 'IN' ? sum + t.amount : sum - t.amount, 0);
-    };
-
-    if (loading && accounts.length === 0) return <Loader />;
-
-    return (
-        <div className="page-section">
-            <div className="analytics-header card" style={{ marginBottom: '20px' }}>
-                <div className="card-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                    <div>
-                        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>📊 التحليل المالي الموحد</h2>
-                        <p style={{ margin: '5px 0 0 0', color: 'var(--text-dim)', fontSize: '0.9rem' }}>تحليل حركة التدفقات النقدية والبنكية بشكل تفصيلي</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <input 
-                            type="date" 
-                            className="form-control" 
-                            value={dateRange.from} 
-                            onChange={e => setDateRange({...dateRange, from: e.target.value})}
-                        />
-                        <span>إلى</span>
-                        <input 
-                            type="date" 
-                            className="form-control" 
-                            value={dateRange.to} 
-                            onChange={e => setDateRange({...dateRange, to: e.target.value})}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-                {accounts.map(acc => (
-                    <div key={acc.id} className="card stats-card" style={{ borderLeft: `4px solid ${acc.accountType === 'BANK' ? '#2196f3' : '#4caf50'}` }}>
-                        <div className="card-body">
-                            <small style={{ color: 'var(--text-dim)' }}>{acc.name}</small>
-                            <h3 style={{ margin: '5px 0', fontSize: '1.25rem' }}>{acc.balance.toLocaleString()} <small>ج.م</small></h3>
-                            <div style={{ fontSize: '0.75rem', color: calculateTotal(acc.id) >= 0 ? 'var(--accent-emerald)' : 'var(--accent-danger)' }}>
-                                {calculateTotal(acc.id) >= 0 ? '▲' : '▼'} صافي الحركة: {Math.abs(calculateTotal(acc.id)).toLocaleString()}
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="card">
-                <div className="card-header">
-                    <h3>📑 جدول التحليل التحليلي (Columnar Analysis)</h3>
-                </div>
-                <div className="card-body no-padding">
-                    <div className="table-wrapper scroll-horizontal">
-                        <table className="data-table analytics-table">
-                            <thead>
-                                <tr>
-                                    <th style={{ position: 'sticky', right: 0, background: 'var(--bg-card)', zIndex: 10 }}>التاريخ</th>
-                                    {accounts.map(acc => (
-                                        <th key={acc.id} style={{ textAlign: 'center' }}>
-                                            {acc.name}
-                                            <div style={{ fontSize: '0.7rem', fontWeight: 'normal', color: 'var(--text-dim)' }}>
-                                                {acc.accountType === 'BANK' ? '🏦 بنكي' : '💵 نقدي'}
-                                            </div>
-                                        </th>
-                                    ))}
-                                    <th style={{ textAlign: 'center', background: 'rgba(var(--accent-primary-rgb), 0.05)' }}>الإجمالي اليومي</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {analyticalData.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={accounts.length + 2} style={{ textAlign: 'center', padding: '40px' }}>لا توجد حركات مالية في هذه الفترة</td>
-                                    </tr>
-                                ) : analyticalData.map(row => {
-                                    let dailyTotal = 0;
-                                    return (
-                                        <tr key={row.date}>
-                                            <td style={{ position: 'sticky', right: 0, background: 'var(--bg-card)', zIndex: 5, fontWeight: 'bold' }}>{row.date}</td>
-                                            {accounts.map(acc => {
-                                                const val = row.values[acc.id] || 0;
-                                                dailyTotal += val;
-                                                return (
-                                                    <td key={acc.id} style={{ textAlign: 'center', color: val > 0 ? 'var(--accent-emerald)' : val < 0 ? 'var(--accent-danger)' : 'var(--text-dim)' }}>
-                                                        {val !== 0 ? val.toLocaleString() : '-'}
-                                                    </td>
-                                                );
-                                            })}
-                                            <td style={{ textAlign: 'center', fontWeight: 'bold', background: 'rgba(var(--accent-primary-rgb), 0.02)' }}>
-                                                <span style={{ color: dailyTotal > 0 ? 'var(--accent-emerald)' : dailyTotal < 0 ? 'var(--accent-danger)' : 'inherit' }}>
-                                                    {dailyTotal.toLocaleString()}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                            <tfoot>
-                                <tr style={{ background: 'var(--bg-app)', fontWeight: 'bold' }}>
-                                    <td style={{ position: 'sticky', right: 0, background: 'var(--bg-app)', zIndex: 10 }}>إجمالي الحركة للفترة</td>
-                                    {accounts.map(acc => {
-                                        const total = calculateTotal(acc.id);
-                                        return (
-                                            <td key={acc.id} style={{ textAlign: 'center', color: total > 0 ? 'var(--accent-emerald)' : total < 0 ? 'var(--accent-danger)' : 'inherit' }}>
-                                                {total.toLocaleString()}
-                                            </td>
-                                        );
-                                    })}
-                                    <td style={{ textAlign: 'center' }}>
-                                        {accounts.reduce((sum, acc) => sum + calculateTotal(acc.id), 0).toLocaleString()}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <style dangerouslySetInnerHTML={{ __html: `
-                .analytics-table th, .analytics-table td {
-                    min-width: 120px;
-                    border-left: 1px solid var(--border-color) !important;
-                }
-                .analytics-table th:last-child, .analytics-table td:last-child {
-                    border-left: none !important;
-                }
-                .scroll-horizontal {
-                    overflow-x: auto;
-                }
-                .stats-card {
-                    transition: transform 0.2s;
-                    cursor: default;
-                }
-                .stats-card:hover {
-                    transform: translateY(-5px);
-                }
-            `}} />
+  return (
+    <div className="financial-analytics-container">
+      {/* 1. Header */}
+      <div className="fya-header-row">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="fya-breadcrumbs">
+            <Link to="/dashboard">الرئيسية</Link> / <span>التحليلات</span>
+          </div>
+          <h1>التحليل المالي الموحد</h1>
         </div>
-    );
+        <div className="fya-header-actions">
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input type="date" className="fya-input" style={{ width: '150px' }} value={dateRange.from} onChange={e => setDateRange({...dateRange, from: e.target.value})} />
+            <span style={{color: 'var(--fya-text-secondary)'}}>إلى</span>
+            <input type="date" className="fya-input" style={{ width: '150px' }} value={dateRange.to} onChange={e => setDateRange({...dateRange, to: e.target.value})} />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Dynamic Account Cards */}
+      <div className="fya-stats-grid">
+        {accounts.map(acc => {
+          const netMovement = calculateTotal(acc.id);
+          return (
+            <div key={acc.id} className="fya-stat-card">
+              <div className="fya-stat-info">
+                <h4>{acc.name}</h4>
+                <div className="fya-stat-value">{acc.balance.toLocaleString('ar-EG')} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: netMovement >= 0 ? 'var(--fya-accent-green)' : '#f43f5e', marginTop: '4px' }}>
+                  <i className={`fas ${netMovement >= 0 ? 'fa-caret-up' : 'fa-caret-down'}`}></i> صافي الحركة: {Math.abs(netMovement).toLocaleString('ar-EG')}
+                </div>
+              </div>
+              <div className="fya-stat-visual">
+                <div className={`fya-stat-icon ${acc.accountType === 'BANK' ? 'icon-blue' : 'icon-green'}`}>
+                  <i className={`fas ${acc.accountType === 'BANK' ? 'fa-university' : 'fa-money-bill-wave'}`}></i>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 3. Analytical Table Card */}
+      <div className="fya-table-card">
+        <div style={{ padding: '24px', borderBottom: '1px solid var(--fya-border)' }}>
+          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>📑 جدول التحليل العمودي (Columnar Analysis)</h3>
+        </div>
+        <div className="fya-table-container">
+          {loading ? (
+            <div style={{ padding: '40px' }}><Loader message="جاري تحليل التدفقات..." /></div>
+          ) : analyticalData.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--fya-text-secondary)' }}>
+              <i className="fas fa-chart-bar" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
+              <h3>لا توجد حركات مالية في هذه الفترة</h3>
+            </div>
+          ) : (
+            <table className="fya-table" style={{ textAlign: 'center' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'right', position: 'sticky', right: 0, background: 'var(--fya-card-bg)', zIndex: 10 }}>التاريخ</th>
+                  {accounts.map(acc => (
+                    <th key={acc.id}>
+                      {acc.name}
+                      <div style={{ fontSize: '0.6rem', fontWeight: 400, opacity: 0.6 }}>{acc.accountType === 'BANK' ? '🏦 بنكي' : '💵 نقدي'}</div>
+                    </th>
+                  ))}
+                  <th style={{ background: 'rgba(99, 102, 241, 0.05)' }}>الإجمالي اليومي</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analyticalData.map(row => {
+                  let dailyTotal = 0;
+                  return (
+                    <tr key={row.date}>
+                      <td style={{ textAlign: 'right', position: 'sticky', right: 0, background: 'var(--fya-card-bg)', zIndex: 5, fontWeight: 800 }}>{row.date}</td>
+                      {accounts.map(acc => {
+                        const val = row.values[acc.id] || 0;
+                        dailyTotal += val;
+                        return (
+                          <td key={acc.id} style={{ color: val > 0 ? 'var(--fya-accent-green)' : val < 0 ? '#f43f5e' : 'var(--fya-text-secondary)', fontWeight: val !== 0 ? 700 : 400 }}>
+                            {val !== 0 ? val.toLocaleString('ar-EG') : '-'}
+                          </td>
+                        );
+                      })}
+                      <td style={{ fontWeight: 900, background: 'rgba(99, 102, 241, 0.02)' }}>
+                        <span style={{ color: dailyTotal > 0 ? 'var(--fya-accent-green)' : dailyTotal < 0 ? '#f43f5e' : 'inherit' }}>
+                          {dailyTotal.toLocaleString('ar-EG')}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr style={{ background: 'rgba(99, 102, 241, 0.05)', fontWeight: 800 }}>
+                  <td style={{ textAlign: 'right', position: 'sticky', right: 0, background: 'var(--fya-card-bg)', zIndex: 10 }}>إجمالي الحركة للفترة</td>
+                  {accounts.map(acc => {
+                    const total = calculateTotal(acc.id);
+                    return (
+                      <td key={acc.id} style={{ color: total > 0 ? 'var(--fya-accent-green)' : total < 0 ? '#f43f5e' : 'inherit' }}>
+                        {total.toLocaleString('ar-EG')}
+                      </td>
+                    );
+                  })}
+                  <td style={{ fontSize: '1.2rem', color: 'var(--fya-accent-blue)' }}>
+                    {accounts.reduce((sum, acc) => sum + calculateTotal(acc.id), 0).toLocaleString('ar-EG')}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default FinancialAnalytics;

@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
-import StatTile from '../components/common/StatTile';
+import '../styles/pages/TreasuryManagementPremium.css';
 
 const TreasuryManagement = () => {
-  const { toast, confirm } = useGlobalUI();
+  const { toast } = useGlobalUI();
   const [treasuries, setTreasuries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
-  const [transferData, setTransferData] = useState({
-    fromBranchId: '',
-    amount: '',
-    notes: ''
-  });
+  const [transferData, setTransferData] = useState({ fromBranchId: '', amount: '', notes: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadData = async () => {
@@ -22,16 +19,11 @@ const TreasuryManagement = () => {
     try {
       const data = await Api.getTreasuryOverview();
       setTreasuries(data || []);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const handleTransfer = async (e) => {
     e.preventDefault();
@@ -47,56 +39,91 @@ const TreasuryManagement = () => {
       setShowTransferModal(false);
       setTransferData({ fromBranchId: '', amount: '', notes: '' });
       loadData();
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setIsSubmitting(false); }
   };
-
-  if (loading) return <Loader message="جاري تحميل بيانات الخزائن..." />;
 
   const centralTreasury = treasuries.find(t => t.isCentral);
   const branchTreasuries = treasuries.filter(t => !t.isCentral);
   const totalBalance = treasuries.reduce((sum, t) => sum + (t.balance || 0), 0);
 
   return (
-    <div className="page-section" style={{ direction: 'rtl' }}>
-      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-        <StatTile
-          id="total_liquidity"
-          label="إجمالي السيولة النقدية"
-          value={totalBalance.toLocaleString()}
-          icon="💰"
-          subtitle="في جميع الفروع والمركزية"
-          defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 1 }}
-        />
-        <StatTile
-          id="central_bal"
-          label="رصيد الخزينة المركزية"
-          value={centralTreasury?.balance?.toLocaleString() || '0'}
-          icon="🏛️"
-          defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
-        />
-        <StatTile
-          id="branches_bal"
-          label="رصيد خزائن الفروع"
-          value={branchTreasuries.reduce((sum, t) => sum + (t.balance || 0), 0).toLocaleString()}
-          icon="🏦"
-          defaults={{ color: 'magenta', size: 'tile-wd-sm', order: 3 }}
-        />
-      </div>
-
-      <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>🏛️ إدارة الخزينة المركزية والفروع</h3>
-          <button className="btn btn-primary" onClick={() => setShowTransferModal(true)}>
-            🔄 تحويل مبالغ للمركزية
+    <div className="treasury-management-container">
+      {/* 1. Header */}
+      <div className="tm-header-row">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="tm-breadcrumbs">
+            <Link to="/dashboard">الرئيسية</Link> / <span>المالية</span>
+          </div>
+          <h1>إدارة الخزائن</h1>
+        </div>
+        <div className="tm-header-actions">
+          <button className="tm-btn-premium tm-btn-blue" onClick={() => setShowTransferModal(true)}>
+            <i className="fas fa-exchange-alt"></i> تحويل مبالغ للمركزية
           </button>
         </div>
-        <div className="card-body no-padding">
-          <div className="table-wrapper">
-            <table className="data-table">
+      </div>
+
+      {/* 2. Stats Grid */}
+      <div className="tm-stats-grid">
+        <div className="tm-stat-card">
+          <div className="tm-stat-info">
+            <h4>إجمالي السيولة</h4>
+            <div className="tm-stat-value">{totalBalance.toLocaleString('ar-EG')} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
+          </div>
+          <div className="tm-stat-visual">
+            <div className="tm-stat-icon icon-purple">
+              <i className="fas fa-coins"></i>
+            </div>
+          </div>
+        </div>
+        <div className="tm-stat-card">
+          <div className="tm-stat-info">
+            <h4>الخزينة المركزية</h4>
+            <div className="tm-stat-value">{centralTreasury?.balance?.toLocaleString('ar-EG') || '0'} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
+          </div>
+          <div className="tm-stat-visual">
+            <div className="tm-stat-icon icon-green">
+              <i className="fas fa-landmark"></i>
+            </div>
+          </div>
+        </div>
+        <div className="tm-stat-card">
+          <div className="tm-stat-info">
+            <h4>خزائن الفروع</h4>
+            <div className="tm-stat-value">{branchTreasuries.reduce((sum, t) => sum + (t.balance || 0), 0).toLocaleString('ar-EG')} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
+          </div>
+          <div className="tm-stat-visual">
+            <div className="tm-stat-icon icon-blue">
+              <i className="fas fa-store"></i>
+            </div>
+          </div>
+        </div>
+        <div className="tm-stat-card">
+          <div className="tm-stat-info">
+            <h4>عدد الخزائن</h4>
+            <div className="tm-stat-value">{treasuries.length} <span style={{fontSize: '0.8rem'}}>خزينة</span></div>
+          </div>
+          <div className="tm-stat-visual">
+            <div className="tm-stat-icon icon-amber">
+              <i className="fas fa-vault"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Table Card */}
+      <div className="tm-table-card">
+        <div className="tm-table-container">
+          {loading ? (
+            <div style={{ padding: '40px' }}><Loader message="جاري التحميل..." /></div>
+          ) : treasuries.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--tm-text-secondary)' }}>
+              <i className="fas fa-vault" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
+              <h3>لا توجد بيانات خزائن</h3>
+            </div>
+          ) : (
+            <table className="tm-table">
               <thead>
                 <tr>
                   <th>اسم الخزينة</th>
@@ -107,56 +134,56 @@ const TreasuryManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {/* Central Safe First */}
                 {centralTreasury && (
-                  <tr style={{ background: 'rgba(16, 185, 129, 0.05)' }}>
-                    <td style={{ fontWeight: 700, color: 'var(--accent-emerald)' }}>⭐ {centralTreasury.name}</td>
+                  <tr style={{ background: 'rgba(16, 185, 129, 0.03)' }}>
+                    <td>
+                      <div style={{ fontWeight: 800, color: 'var(--tm-accent-green)' }}>🏛️ {centralTreasury.name}</div>
+                    </td>
                     <td>— (مركزية)</td>
                     <td>—</td>
-                    <td style={{ fontWeight: 800 }}>{Number(centralTreasury.balance).toFixed(2)} ج.م</td>
-                    <td><span className="badge badge-success">أساسية</span></td>
+                    <td style={{ fontWeight: 800 }}>{Number(centralTreasury.balance).toLocaleString('ar-EG')} ج.م</td>
+                    <td><span className="tm-type-badge badge-green">أساسية</span></td>
                   </tr>
                 )}
-                {/* Branch Safes */}
                 {branchTreasuries.map(t => (
                   <tr key={t.id}>
-                    <td style={{ fontWeight: 600 }}>{t.name}</td>
+                    <td>
+                      <div style={{ fontWeight: 700 }}>{t.name}</div>
+                    </td>
                     <td>{t.branch?.name || '—'}</td>
                     <td>
-                      <span className={`badge ${t.branch?.treasuryLinkType === 'AUTOMATIC' ? 'badge-info' : 'badge-warning'}`}>
-                        {t.branch?.treasuryLinkType === 'AUTOMATIC' ? 'تلقائي (Mirror)' : 'يدوي (Manual)'}
+                      <span className={`tm-type-badge ${t.branch?.treasuryLinkType === 'AUTOMATIC' ? 'badge-blue' : 'badge-amber'}`}>
+                        {t.branch?.treasuryLinkType === 'AUTOMATIC' ? 'تلقائي' : 'يدوي'}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 700 }}>{Number(t.balance).toFixed(2)} ج.م</td>
+                    <td style={{ fontWeight: 800 }}>{Number(t.balance).toLocaleString('ar-EG')} ج.م</td>
                     <td>
-                      {t.balance > 0 ? (
-                        <span className="badge badge-success">يوجد سيولة</span>
-                      ) : (
-                        <span className="badge badge-secondary">صفر</span>
-                      )}
+                      <span className={`tm-type-badge ${t.balance > 0 ? 'badge-green' : 'badge-blue'}`}>
+                        {t.balance > 0 ? 'يوجد سيولة' : 'صفر'}
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
       </div>
 
       {showTransferModal && (
         <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowTransferModal(false); }}>
-            <div className="modal" style={{ maxWidth: '450px' }}>
-              <div className="modal-header">
-                <h3>🔄 تحويل نقدية للخزينة المركزية</h3>
-                <button className="modal-close" onClick={() => setShowTransferModal(false)}>✕</button>
+          <div className="tm-modal-overlay" onClick={(e) => { if (e.target.classList.contains('tm-modal-overlay')) setShowTransferModal(false); }}>
+            <div className="tm-modal" style={{ maxWidth: '500px' }}>
+              <div className="tm-modal-header">
+                <h3>تحويل نقدية للمركزية</h3>
+                <button className="tm-modal-close" onClick={() => setShowTransferModal(false)}>✕</button>
               </div>
-              <div className="modal-body">
+              <div className="tm-modal-body">
                 <form id="transferForm" onSubmit={handleTransfer}>
-                  <div className="form-group">
+                  <div className="tm-form-group">
                     <label>من خزينة فرع:</label>
                     <select 
-                      className="form-control" 
+                      className="tm-input" 
                       value={transferData.fromBranchId} 
                       onChange={e => setTransferData({...transferData, fromBranchId: e.target.value})}
                       required
@@ -168,13 +195,13 @@ const TreasuryManagement = () => {
                         </option>
                       ))}
                     </select>
-                    <small style={{ color: 'var(--text-muted)' }}>ملاحظة: تظهر فقط الفروع ذات الربط اليدوي.</small>
+                    <small style={{ color: 'var(--tm-text-secondary)', marginTop: '4px', display: 'block' }}>ملاحظة: تظهر فقط الفروع ذات الربط اليدوي.</small>
                   </div>
-                  <div className="form-group">
+                  <div className="tm-form-group">
                     <label>المبلغ المراد تحويله:</label>
                     <input 
                       type="number" 
-                      className="form-control" 
+                      className="tm-input" 
                       value={transferData.amount} 
                       onChange={e => setTransferData({...transferData, amount: e.target.value})}
                       placeholder="0.00"
@@ -182,21 +209,21 @@ const TreasuryManagement = () => {
                       required 
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="tm-form-group">
                     <label>ملاحظات:</label>
                     <textarea 
-                      className="form-control" 
+                      className="tm-textarea" 
                       value={transferData.notes} 
                       onChange={e => setTransferData({...transferData, notes: e.target.value})}
                       placeholder="مثال: توريد إيراد الأسبوع..."
-                      rows="2"
+                      rows="3"
                     />
                   </div>
                 </form>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowTransferModal(false)}>إلغاء</button>
-                <button type="submit" form="transferForm" className="btn btn-primary" disabled={isSubmitting}>
+              <div className="tm-modal-footer">
+                <button type="button" className="tm-btn-ghost" onClick={() => setShowTransferModal(false)}>إلغاء</button>
+                <button type="submit" form="transferForm" className="tm-btn-primary" disabled={isSubmitting}>
                   {isSubmitting ? 'جاري التحويل...' : 'تأكيد التحويل'}
                 </button>
               </div>

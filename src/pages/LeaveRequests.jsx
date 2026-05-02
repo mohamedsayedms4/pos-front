@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
-import StatTile from '../components/common/StatTile';
+import '../styles/pages/LeavesPremium.css';
 
 const LeaveRequests = () => {
     const [requests, setRequests] = useState([]);
@@ -22,9 +23,7 @@ const LeaveRequests = () => {
         reason: ''
     });
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
         setLoading(true);
@@ -34,164 +33,173 @@ const LeaveRequests = () => {
                 Api.getMyLeaveBalances(user.id),
                 Api.getLeaveTypes()
             ]);
-            setRequests(reqs || []);
-            setBalances(bals || []);
-            setTypes(tps || []);
-        } catch (err) {
-            toast(err.message, 'error');
-        } finally {
-            setLoading(false);
-        }
+            setRequests(reqs || []); setBalances(bals || []); setTypes(tps || []);
+        } catch (err) { toast(err.message, 'error'); }
+        finally { setLoading(false); }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await Api.submitLeaveRequest({ ...form, userId: user.id });
-            toast('تم تقديم طلب الإجازة بنجاح', 'success');
-            setShowModal(false);
-            loadData();
-        } catch (err) {
-            toast(err.message, 'error');
-        }
+            toast('تم تقديم الطلب بنجاح', 'success'); setShowModal(false); loadData();
+        } catch (err) { toast(err.message, 'error'); }
     };
 
     const handleAction = (id, action) => {
-        const actionName = action === 'approve' ? 'الموافقة على' : 'رفض';
-        confirm(`هل أنت متأكد من ${actionName} هذا الطلب؟`, async () => {
+        confirm(`هل أنت متأكد من ${action === 'approve' ? 'الموافقة' : 'رفض'} هذا الطلب؟`, async () => {
             try {
                 if (action === 'approve') await Api.approveLeaveRequest(id);
                 else await Api.rejectLeaveRequest(id);
-                toast('تمت العملية بنجاح', 'success');
-                loadData();
-            } catch (err) {
-                toast(err.message, 'error');
-            }
+                toast('تمت العملية', 'success'); loadData();
+            } catch (err) { toast(err.message, 'error'); }
         });
     };
 
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case 'PENDING': return <span className="badge badge-warning">قيد الانتظار</span>;
-            case 'APPROVED': return <span className="badge badge-success">مقبول</span>;
-            case 'REJECTED': return <span className="badge badge-danger">مرفوض</span>;
-            default: return <span className="badge">{status}</span>;
-        }
-    };
-
     return (
-        <div className="page-section anim-fade-in">
-            {/* Balances Section */}
-            {!isAdmin && balances.length > 0 && (
-                <div className="stats-grid mb-4">
-                    {balances.map(b => (
-                        <StatTile
-                            key={b.id}
-                            id={`bal_${b.id}`}
-                            label={`رصيد ${b.leaveTypeNameAr}`}
-                            value={`${b.remaining} يوم`}
-                            icon="📅"
-                            defaults={{ color: b.remaining > 5 ? 'emerald' : 'orange', size: 'tile-wd-sm' }}
-                        />
-                    ))}
+        <div className="leaves-container">
+            {/* 1. Header */}
+            <div className="lea-header-row">
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="lea-breadcrumbs">
+                        <Link to="/dashboard">الرئيسية</Link> / <span>HR</span>
+                    </div>
+                    <h1>طلبات الإجازات</h1>
                 </div>
-            )}
-
-            <div className="card">
-                <div className="card-header">
-                    <h3>{isAdmin ? '📋 إدارة طلبات الإجازات' : '🏖️ طلباتي وإجازاتي'}</h3>
-                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                        + تقديم طلب إجازة
+                <div className="lea-header-actions">
+                    <button className="lea-btn-premium lea-btn-blue" onClick={() => setShowModal(true)}>
+                        <i className="fas fa-plus"></i> تقديم طلب جديد
                     </button>
                 </div>
-                <div className="card-body no-padding">
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                {isAdmin && <th>الموظف</th>}
-                                <th>نوع الإجازة</th>
-                                <th>من</th>
-                                <th>إلى</th>
-                                <th>الأيام</th>
-                                <th>الحالة</th>
-                                <th>إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr><td colSpan={isAdmin ? 7 : 6}><Loader /></td></tr>
-                            ) : requests.length === 0 ? (
-                                <tr><td colSpan={isAdmin ? 7 : 6} style={{ textAlign: 'center', padding: '40px' }}>لا توجد طلبات حالياً</td></tr>
-                            ) : (
-                                requests.map(req => (
+            </div>
+
+            {/* 2. Stats Grid (Show balances if employee, show overall if admin) */}
+            <div className="lea-stats-grid">
+                <div className="lea-stat-card">
+                    <div className="lea-stat-info">
+                        <h4>إجمالي الطلبات</h4>
+                        <div className="lea-stat-value">{requests.length}</div>
+                    </div>
+                    <div className="lea-stat-visual"><div className="lea-stat-icon icon-blue"><i className="fas fa-clipboard-list"></i></div></div>
+                </div>
+                <div className="lea-stat-card">
+                    <div className="lea-stat-info">
+                        <h4>بانتظار المراجعة</h4>
+                        <div className="lea-stat-value" style={{ color: 'var(--lea-accent-amber)' }}>{requests.filter(r => r.status === 'PENDING').length}</div>
+                    </div>
+                    <div className="lea-stat-visual"><div className="lea-stat-icon icon-amber"><i className="fas fa-hourglass-half"></i></div></div>
+                </div>
+                <div className="lea-stat-card">
+                    <div className="lea-stat-info">
+                        <h4>الطلبات المقبولة</h4>
+                        <div className="lea-stat-value" style={{ color: 'var(--lea-accent-green)' }}>{requests.filter(r => r.status === 'APPROVED').length}</div>
+                    </div>
+                    <div className="lea-stat-visual"><div className="lea-stat-icon icon-green"><i className="fas fa-check-circle"></i></div></div>
+                </div>
+                <div className="lea-stat-card">
+                    <div className="lea-stat-info">
+                        <h4>الطلبات المرفوضة</h4>
+                        <div className="lea-stat-value" style={{ color: '#f43f5e' }}>{requests.filter(r => r.status === 'REJECTED').length}</div>
+                    </div>
+                    <div className="lea-stat-visual"><div className="lea-stat-icon icon-purple"><i className="fas fa-times-circle"></i></div></div>
+                </div>
+            </div>
+
+            {/* 3. Table Card */}
+            <div className="lea-table-card">
+                <div className="lea-table-container">
+                    {loading ? (
+                        <div style={{ padding: '40px' }}><Loader message="جاري مراجعة الطلبات..." /></div>
+                    ) : requests.length === 0 ? (
+                        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--lea-text-secondary)' }}>
+                            <i className="fas fa-calendar-times" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
+                            <h3>لا توجد طلبات إجازة حالياً</h3>
+                        </div>
+                    ) : (
+                        <table className="lea-table">
+                            <thead>
+                                <tr>
+                                    {isAdmin && <th>الموظف</th>}
+                                    <th>نوع الإجازة</th>
+                                    <th>من</th>
+                                    <th>إلى</th>
+                                    <th>الأيام</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {requests.map(req => (
                                     <tr key={req.id}>
-                                        {isAdmin && <td><strong>{req.userName}</strong></td>}
-                                        <td>{req.leaveTypeNameAr}</td>
+                                        {isAdmin && <td><div style={{ fontWeight: 800 }}>{req.userName}</div></td>}
+                                        <td><span className="lea-type-badge badge-blue">{req.leaveTypeNameAr}</span></td>
                                         <td>{req.startDate}</td>
                                         <td>{req.endDate}</td>
-                                        <td><strong>{req.actualDays} يوم</strong></td>
-                                        <td>{getStatusBadge(req.status)}</td>
+                                        <td><div style={{ fontWeight: 900 }}>{req.actualDays} يوم</div></td>
                                         <td>
-                                            <div style={{ display: 'flex', gap: '5px' }}>
-                                                {isAdmin && req.status === 'PENDING' && (
+                                            <span className={`lea-type-badge ${req.status === 'APPROVED' ? 'badge-green' : req.status === 'REJECTED' ? 'badge-red' : 'badge-amber'}`}>
+                                                {req.status === 'APPROVED' ? 'مقبول ✓' : req.status === 'REJECTED' ? 'مرفوض ✕' : 'قيد الانتظار ⏳'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {isAdmin && req.status === 'PENDING' ? (
                                                     <>
-                                                        <button className="btn btn-sm btn-success" onClick={() => handleAction(req.id, 'approve')}>قبول</button>
-                                                        <button className="btn btn-sm btn-danger" onClick={() => handleAction(req.id, 'reject')}>رفض</button>
+                                                        <button className="lea-action-btn" title="قبول" onClick={() => handleAction(req.id, 'approve')}><i className="fas fa-check" style={{ color: 'var(--lea-accent-green)' }}></i></button>
+                                                        <button className="lea-action-btn" title="رفض" onClick={() => handleAction(req.id, 'reject')}><i className="fas fa-times" style={{ color: '#f43f5e' }}></i></button>
                                                     </>
-                                                )}
-                                                {!isAdmin && req.status === 'PENDING' && (
-                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>انتظار المراجعة</span>
-                                                )}
-                                                {req.status !== 'PENDING' && (
-                                                    <span style={{ fontSize: '0.8rem' }}>{req.createdAt?.split('T')[0]}</span>
+                                                ) : (
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--lea-text-secondary)' }}>
+                                                        {req.createdAt?.split('T')[0]}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 
             {showModal && (
                 <ModalContainer>
-                    <div className="modal-overlay active anim-fade-in" onClick={() => setShowModal(false)}>
-                        <div className="modal-content anim-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-                            <div className="modal-header">
-                                <h2>🚀 تقديم طلب إجازة جديد</h2>
-                                <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+                    <div className="lea-modal-overlay" onClick={() => setShowModal(false)}>
+                        <div className="lea-modal" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+                            <div className="lea-modal-header">
+                                <h3>🚀 تقديم طلب إجازة</h3>
+                                <button className="lea-modal-close" onClick={() => setShowModal(false)}>✕</button>
                             </div>
-                            <form onSubmit={handleSubmit}>
-                                <div className="modal-body" style={{ padding: '20px' }}>
-                                    <div className="form-group">
+                            <div className="lea-modal-body">
+                                <form id="leaForm" onSubmit={handleSubmit}>
+                                    <div className="lea-form-group">
                                         <label>نوع الإجازة</label>
-                                        <select className="form-control" required value={form.leaveTypeId} onChange={e => setForm({...form, leaveTypeId: e.target.value})}>
+                                        <select className="lea-input" required value={form.leaveTypeId} onChange={e => setForm({...form, leaveTypeId: e.target.value})}>
                                             <option value="">اختر النوع...</option>
                                             {types.map(t => <option key={t.id} value={t.id}>{t.nameAr}</option>)}
                                         </select>
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                        <div className="form-group">
+                                        <div className="lea-form-group">
                                             <label>تاريخ البدء</label>
-                                            <input type="date" className="form-control" required value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} />
+                                            <input type="date" className="lea-input" required value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} />
                                         </div>
-                                        <div className="form-group">
+                                        <div className="lea-form-group">
                                             <label>تاريخ الانتهاء</label>
-                                            <input type="date" className="form-control" required value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} />
+                                            <input type="date" className="lea-input" required value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} />
                                         </div>
                                     </div>
-                                    <div className="form-group">
+                                    <div className="lea-form-group">
                                         <label>السبب / ملاحظات</label>
-                                        <textarea className="form-control" rows="3" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} placeholder="اذكر سبب الإجازة هنا..."></textarea>
+                                        <textarea className="lea-input" rows="3" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} placeholder="اذكر سبب الإجازة..."></textarea>
                                     </div>
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
-                                    <button type="submit" className="btn btn-primary">إرسال الطلب</button>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
+                            <div className="lea-modal-footer">
+                                <button type="button" className="lea-btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
+                                <button type="submit" form="leaForm" className="lea-btn-primary">إرسال الطلب</button>
+                            </div>
                         </div>
                     </div>
                 </ModalContainer>

@@ -1,362 +1,281 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
-import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
-import StatTile from '../components/common/StatTile';
+import ModalContainer from '../components/common/ModalContainer';
+import '../styles/pages/WarehousesPremium.css';
 
 const Warehouses = () => {
-  const { toast, confirm } = useGlobalUI();
-  const [data, setData] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modalType, setModalType] = useState(null); // 'form', 'stock', null
-  const [activeWarehouse, setActiveWarehouse] = useState(null);
-  const [saving, setSaving] = useState(false);
-  
-  // Stock Management State
-  const [stockSearch, setStockSearch] = useState('');
-  const [stockProducts, setStockProducts] = useState([]);
-  const [loadingStock, setLoadingStock] = useState(false);
-  const [editingStock, setEditingStock] = useState(null); // {productId, quantity}
+    const { toast, confirm } = useGlobalUI();
+    const [data, setData] = useState([]);
+    const [branches, setBranches] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [modalType, setModalType] = useState(null); 
+    const [activeWarehouse, setActiveWarehouse] = useState(null);
+    const [saving, setSaving] = useState(false);
+    
+    const [stockSearch, setStockSearch] = useState('');
+    const [stockProducts, setStockProducts] = useState([]);
+    const [loadingStock, setLoadingStock] = useState(false);
+    const [editingStock, setEditingStock] = useState(null);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    branchId: '',
-    isDefault: false,
-    active: true
-  });
+    const [formData, setFormData] = useState({ name: '', code: '', branchId: '', isDefault: false, active: true });
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [whRes, brRes] = await Promise.all([
-        Api._request('/warehouses'),
-        Api.getBranches()
-      ]);
-      setData(whRes.data || whRes || []);
-      setBranches(brRes || []);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+    useEffect(() => { loadData(); }, []);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [whRes, brRes] = await Promise.all([Api._request('/warehouses'), Api.getBranches()]);
+            setData(whRes.data || whRes || []); setBranches(brRes || []);
+        } catch (err) { toast(err.message, 'error'); }
+        finally { setLoading(false); }
+    };
 
-  const openForm = (wh = null) => {
-    setActiveWarehouse(wh);
-    if (wh) {
-      setFormData({
-        name: wh.name || '',
-        code: wh.code || '',
-        branchId: wh.branchId || '',
-        isDefault: wh.isDefault || false,
-        active: wh.active ?? true
-      });
-    } else {
-      setFormData({
-        name: '',
-        code: '',
-        branchId: branches.length > 0 ? branches[0].id : '',
-        isDefault: false,
-        active: true
-      });
-    }
-    setModalType('form');
-  };
+    const openForm = (wh = null) => {
+        setActiveWarehouse(wh);
+        if (wh) setFormData({ name: wh.name || '', code: wh.code || '', branchId: wh.branchId || '', isDefault: wh.isDefault || false, active: wh.active ?? true });
+        else setFormData({ name: '', code: '', branchId: branches[0]?.id || '', isDefault: false, active: true });
+        setModalType('form');
+    };
 
-  const closeModal = () => {
-    setModalType(null);
-    setActiveWarehouse(null);
-  };
+    const closeModal = () => { setModalType(null); setActiveWarehouse(null); };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!formData.branchId) {
-      toast('يرجى اختيار الفرع التابع له المخزن', 'warning');
-      return;
-    }
-    setSaving(true);
-    try {
-      if (activeWarehouse) {
-        await Api._request(`/warehouses/${activeWarehouse.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(formData)
-        });
-        toast('تم تحديث المخزن بنجاح', 'success');
-      } else {
-        await Api._request('/warehouses', {
-          method: 'POST',
-          body: JSON.stringify(formData)
-        });
-        toast('تم إضافة المخزن بنجاح', 'success');
-      }
-      closeModal();
-      loadData();
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            const method = activeWarehouse ? 'PUT' : 'POST';
+            const url = activeWarehouse ? `/warehouses/${activeWarehouse.id}` : '/warehouses';
+            await Api._request(url, { method, body: JSON.stringify(formData) });
+            toast('تم الحفظ', 'success'); closeModal(); loadData();
+        } catch (err) { toast(err.message, 'error'); }
+        finally { setSaving(false); }
+    };
 
-  const openStockModal = async (wh) => {
-    setActiveWarehouse(wh);
-    setModalType('stock');
-    loadWarehouseStock(wh.id);
-  };
+    const openStockModal = (wh) => { setActiveWarehouse(wh); setModalType('stock'); loadWarehouseStock(wh.id); };
 
-  // Debounce stock search
-  useEffect(() => {
-    if (!activeWarehouse) return;
-    const timer = setTimeout(() => {
-      loadWarehouseStock(activeWarehouse.id, stockSearch);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [stockSearch]);
+    useEffect(() => {
+        if (!activeWarehouse || modalType !== 'stock') return;
+        const timer = setTimeout(() => loadWarehouseStock(activeWarehouse.id, stockSearch), 500);
+        return () => clearTimeout(timer);
+    }, [stockSearch]);
 
-  const loadWarehouseStock = async (whId, search = '') => {
-    if (!whId) return;
-    setLoadingStock(true);
-    try {
-      const res = await Api.getWarehouseProducts(whId, 0, 100, search, 'id,desc');
-      setStockProducts(res.items || []);
-    } catch (err) {
-      console.error('Stock load error:', err);
-    } finally {
-      setLoadingStock(false);
-    }
-  };
+    const loadWarehouseStock = async (whId, search = '') => {
+        setLoadingStock(true);
+        try {
+            const res = await Api.getWarehouseProducts(whId, 0, 50, search, 'id,desc');
+            setStockProducts(res.items || []);
+        } catch (err) { console.error(err); }
+        finally { setLoadingStock(false); }
+    };
 
-  const handleUpdateStock = async (productId, quantity) => {
-    try {
-      await Api.updateWarehouseStock(activeWarehouse.id, productId, quantity);
-      toast('تم تحديث المخزون', 'success');
-      loadWarehouseStock(activeWarehouse.id, stockSearch);
-      setEditingStock(null);
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  };
+    const handleUpdateStock = async (productId, quantity) => {
+        try {
+            await Api.updateWarehouseStock(activeWarehouse.id, productId, quantity);
+            toast('تم تحديث المخزون', 'success'); loadWarehouseStock(activeWarehouse.id, stockSearch); setEditingStock(null);
+        } catch (err) { toast(err.message, 'error'); }
+    };
 
-  return (
-    <div className="page-section" style={{ direction: 'rtl' }}>
-      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-        <StatTile
-          id="wh_count"
-          label="إجمالي المخازن"
-          value={data.length}
-          icon="📦"
-          defaults={{ color: 'amber', size: 'tile-wd-sm', order: 1 }}
-        />
-        <StatTile
-          id="wh_main"
-          label="مخازن افتراضية"
-          value={data.filter(w => w.isDefault).length}
-          icon="⭐"
-          defaults={{ color: 'blue', size: 'tile-sq-sm', order: 2 }}
-        />
-      </div>
-
-      <div className="card">
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>📦 إدارة المخازن</h3>
-          <button className="btn btn-primary" onClick={() => openForm()}>
-            <span>+</span> إضافة مخزن جديد
-          </button>
-        </div>
-        <div className="card-body no-padding">
-          <div className="table-wrapper">
-            {loading ? (
-              <Loader message="جاري تحميل المخازن..." />
-            ) : data.length === 0 ? (
-              <div className="empty-state">
-                <h4>لا توجد مخازن مضافة</h4>
-              </div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>الكود</th>
-                    <th>المخزن</th>
-                    <th>الفرع التابع له</th>
-                    <th>افتراضي</th>
-                    <th>الحالة</th>
-                    <th>الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((w, i) => (
-                    <tr key={w.id}>
-                      <td>{i + 1}</td>
-                      <td style={{ fontWeight: 500, color: 'var(--text-muted)' }}>{w.code}</td>
-                      <td style={{ fontWeight: 600 }}>{w.name}</td>
-                      <td>{w.branchName || branches.find(b => b.id === w.branchId)?.name || '—'}</td>
-                      <td>
-                        {w.isDefault ? <span className="badge badge-success">نعم</span> : <span className="badge badge-secondary">لا</span>}
-                      </td>
-                      <td>
-                        {w.active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">متوقف</span>}
-                      </td>
-                      <td>
-                        <div className="table-actions">
-                          <button className="btn btn-icon btn-ghost" title="إدارة المخزون" onClick={() => openStockModal(w)}>📦</button>
-                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(w)}>✏️</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {modalType === 'form' && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal">
-              <div className="modal-header">
-                <h3>{activeWarehouse ? 'تعديل بيانات المخزن' : 'إضافة مخزن جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="warehouseForm" onSubmit={handleSave}>
-                  <div className="form-group">
-                    <label>اسم المخزن *</label>
-                    <input className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-                  </div>
-                  <div className="form-group">
-                    <label>كود المخزن *</label>
-                    <input className="form-control" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} required placeholder="مثال: WH-001" />
-                  </div>
-                  <div className="form-group">
-                    <label>الفرع التابع له *</label>
-                    <select className="form-control" value={formData.branchId} onChange={e => setFormData({...formData, branchId: e.target.value})} required>
-                      <option value="">-- اختر الفرع --</option>
-                      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-                    <div>
-                        <label>مخزن افتراضي للفرع</label>
-                        <label className="toggle-switch">
-                        <input type="checkbox" checked={formData.isDefault} onChange={e => setFormData({...formData, isDefault: e.target.checked})} />
-                        <span className="toggle-slider"></span>
-                        </label>
+    return (
+        <div className="warehouses-container">
+            {/* 1. Header */}
+            <div className="war-header-row">
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="war-breadcrumbs">
+                        <Link to="/dashboard">الرئيسية</Link> / <span>المخازن</span>
                     </div>
-                    <div>
-                        <label>نشط</label>
-                        <label className="toggle-switch">
-                        <input type="checkbox" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} />
-                        <span className="toggle-slider"></span>
-                        </label>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '5px' }}>
-                    المخزن الافتراضي هو الذي يتم خصم/إضافة الكميات منه تلقائياً في هذا الفرع.
-                  </p>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="warehouseForm" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : 'حفظ'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
-
-      {modalType === 'stock' && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal" style={{ maxWidth: '800px', width: '90%' }}>
-              <div className="modal-header">
-                <h3>إدارة بضاعة مخزن: {activeWarehouse?.name}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
-              </div>
-              <div className="modal-body">
-                <div className="search-box" style={{ marginBottom: '20px' }}>
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="ابحث عن منتج في هذا المخزن..." 
-                    value={stockSearch}
-                    onChange={(e) => {
-                        setStockSearch(e.target.value);
-                    }}
-                  />
+                    <h1>إدارة المستودعات والمخازن</h1>
                 </div>
-                
-                {loadingStock ? <Loader /> : (
-                    <div className="table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                        <table className="data-table">
+                <div className="war-header-actions">
+                    <button className="war-btn-premium war-btn-blue" onClick={() => openForm()}>
+                        <i className="fas fa-plus-circle"></i> إضافة مخزن جديد
+                    </button>
+                </div>
+            </div>
+
+            {/* 2. Stats Grid */}
+            <div className="war-stats-grid">
+                <div className="war-stat-card">
+                    <div className="war-stat-info">
+                        <h4>إجمالي المخازن</h4>
+                        <div className="war-stat-value">{data.length}</div>
+                    </div>
+                    <div className="war-stat-visual"><div className="war-stat-icon icon-blue"><i className="fas fa-warehouse"></i></div></div>
+                </div>
+                <div className="war-stat-card">
+                    <div className="war-stat-info">
+                        <h4>مخازن افتراضية</h4>
+                        <div className="war-stat-value" style={{ color: 'var(--war-accent-amber)' }}>{data.filter(w => w.isDefault).length}</div>
+                    </div>
+                    <div className="war-stat-visual"><div className="war-stat-icon icon-amber"><i className="fas fa-star"></i></div></div>
+                </div>
+                <div className="war-stat-card">
+                    <div className="war-stat-info">
+                        <h4>المنتجات المسجلة</h4>
+                        <div className="war-stat-value" style={{ color: 'var(--war-accent-purple)' }}>{stockProducts.length}</div>
+                    </div>
+                    <div className="war-stat-visual"><div className="war-stat-icon icon-purple"><i className="fas fa-boxes"></i></div></div>
+                </div>
+                <div className="war-stat-card">
+                    <div className="war-stat-info">
+                        <h4>المخازن النشطة</h4>
+                        <div className="war-stat-value" style={{ color: 'var(--war-accent-green)' }}>{data.filter(w => w.active).length}</div>
+                    </div>
+                    <div className="war-stat-visual"><div className="war-stat-icon icon-green"><i className="fas fa-check-double"></i></div></div>
+                </div>
+            </div>
+
+            {/* 3. Table Card */}
+            <div className="war-table-card">
+                <div className="war-table-container">
+                    {loading ? (
+                        <div style={{ padding: '60px' }}><Loader message="جاري جلب بيانات المخازن..." /></div>
+                    ) : data.length === 0 ? (
+                        <div style={{ padding: '80px', textAlign: 'center', color: 'var(--war-text-secondary)' }}>
+                            <i className="fas fa-box-open" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
+                            <h3>لا توجد مخازن مضافة حالياً</h3>
+                        </div>
+                    ) : (
+                        <table className="war-table">
                             <thead>
                                 <tr>
-                                    <th>المنتج</th>
-                                    <th>الكمية الحالية</th>
-                                    <th>تعديل</th>
+                                    <th>المخزن</th>
+                                    <th>الفرع التابع له</th>
+                                    <th>النوع</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {stockProducts.map(p => (
-                                    <tr key={p.id}>
-                                        <td>{p.name}</td>
+                                {data.map(w => (
+                                    <tr key={w.id}>
                                         <td>
-                                            {editingStock?.productId === p.id ? (
-                                                <input 
-                                                    type="number" 
-                                                    className="form-control sm" 
-                                                    defaultValue={p.stock} 
-                                                    onBlur={(e) => handleUpdateStock(p.id, e.target.value)}
-                                                    autoFocus
-                                                />
-                                            ) : (
-                                                <span 
-                                                    style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--color-primary)' }}
-                                                    onClick={() => setEditingStock({ productId: p.id, quantity: p.stock })}
-                                                >
-                                                    {p.stock} {p.unitName}
-                                                </span>
-                                            )}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--war-accent-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}><i className="fas fa-cubes"></i></div>
+                                                <div><div style={{ fontWeight: 800 }}>{w.name}</div><div style={{ fontSize: '0.7rem', color: 'var(--war-text-secondary)' }}>كود: {w.code}</div></div>
+                                            </div>
+                                        </td>
+                                        <td>{w.branchName || branches.find(b => b.id === w.branchId)?.name || '—'}</td>
+                                        <td>
+                                            <span className={`war-type-badge ${w.isDefault ? 'badge-blue' : 'badge-ghost'}`}>
+                                                {w.isDefault ? '⭐ افتراضي' : 'ثانوي'}
+                                            </span>
                                         </td>
                                         <td>
-                                            <button className="btn btn-sm btn-ghost" onClick={() => setEditingStock({ productId: p.id, quantity: p.stock })}>🔢</button>
+                                            <span className={`war-type-badge ${w.active ? 'badge-green' : 'badge-red'}`}>
+                                                {w.active ? 'نشط ✓' : 'متوقف ✗'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div className="war-actions">
+                                                <button className="war-action-btn" title="الجرد" onClick={() => openStockModal(w)}><i className="fas fa-boxes"></i></button>
+                                                <button className="war-action-btn" title="تعديل" onClick={() => openForm(w)}><i className="fas fa-edit"></i></button>
+                                                <button className="war-action-btn delete" onClick={() => confirm(`حذف مخزن ${w.name}؟`, () => Api._request(`/warehouses/${w.id}`, {method:'DELETE'}).then(loadData))}><i className="fas fa-trash"></i></button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
-                                {stockProducts.length === 0 && (
-                                    <tr><td colSpan="3" style={{ textAlign: 'center' }}>لا توجد منتجات مطابقة</td></tr>
-                                )}
                             </tbody>
                         </table>
-                    </div>
-                )}
-                
-                <div style={{ marginTop: '20px', padding: '15px', background: 'var(--bg-hover)', borderRadius: '8px' }}>
-                    <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                        💡 <strong>نصيحة:</strong> لإضافة منتج جديد غير موجود في القائمة أعلاه، يرجى التوجه لصفحة "استلام المخزون" لعمل توريد رسمي، أو استخدم صفحة المنتجات.
-                    </p>
+                    )}
                 </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn btn-primary" onClick={closeModal}>إغلاق</button>
-              </div>
             </div>
-          </div>
-        </ModalContainer>
-      )}
-    </div>
-  );
+
+            {modalType === 'form' && (
+                <ModalContainer>
+                    <div className="war-modal-overlay" onClick={closeModal}>
+                        <div className="war-modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+                            <div className="war-modal-header">
+                                <h3>{activeWarehouse ? 'تعديل بيانات المخزن' : 'إضافة مخزن جديد'}</h3>
+                                <button className="war-modal-close" onClick={closeModal}>✕</button>
+                            </div>
+                            <div className="war-modal-body">
+                                <form id="warForm" onSubmit={handleSave}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                        <div className="war-form-group">
+                                            <label>اسم المخزن *</label>
+                                            <input className="war-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                                        </div>
+                                        <div className="war-form-group">
+                                            <label>كود المخزن *</label>
+                                            <input className="war-input" required value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="WH-01" />
+                                        </div>
+                                    </div>
+                                    <div className="war-form-group" style={{ marginTop: '20px' }}>
+                                        <label>الفرع التابع له *</label>
+                                        <select className="war-input" required value={formData.branchId} onChange={e => setFormData({...formData, branchId: e.target.value})}>
+                                            <option value="">-- اختر الفرع --</option>
+                                            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '30px', marginTop: '20px', background: 'rgba(99,102,241,0.05)', padding: '15px', borderRadius: '16px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={formData.isDefault} onChange={e => setFormData({...formData, isDefault: e.target.checked})} />
+                                            <span>مخزن افتراضي لهذا الفرع</span>
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} />
+                                            <span>نشط ومتاح للاستخدام</span>
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
+                            <div className="war-modal-footer">
+                                <button type="button" className="war-btn-ghost" onClick={closeModal}>إلغاء</button>
+                                <button type="submit" form="warForm" className="war-btn-primary" disabled={saving}>حفظ البيانات</button>
+                            </div>
+                        </div>
+                    </div>
+                </ModalContainer>
+            )}
+
+            {modalType === 'stock' && (
+                <ModalContainer>
+                    <div className="war-modal-overlay" onClick={closeModal}>
+                        <div className="war-modal" style={{ maxWidth: '800px', width: '95%' }} onClick={e => e.stopPropagation()}>
+                            <div className="war-modal-header">
+                                <h3>📦 بضاعة مخزن: {activeWarehouse?.name}</h3>
+                                <button className="war-modal-close" onClick={closeModal}>✕</button>
+                            </div>
+                            <div className="war-modal-body">
+                                <div className="war-search-box" style={{ marginBottom: '20px' }}>
+                                    <i className="fas fa-search"></i>
+                                    <input className="war-input" placeholder="بحث عن منتج في هذا المخزن..." value={stockSearch} onChange={e => setStockSearch(e.target.value)} />
+                                </div>
+                                <div className="war-table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                    {loadingStock ? <Loader /> : (
+                                        <table className="war-table">
+                                            <thead><tr><th>المنتج</th><th>الكمية الحالية</th><th>تعديل</th></tr></thead>
+                                            <tbody>
+                                                {stockProducts.map(p => (
+                                                    <tr key={p.id}>
+                                                        <td style={{ fontWeight: 800 }}>{p.name}</td>
+                                                        <td>
+                                                            {editingStock?.productId === p.id ? (
+                                                                <input type="number" className="war-input" style={{ width: '100px' }} defaultValue={p.stock} onBlur={(e) => handleUpdateStock(p.id, e.target.value)} autoFocus />
+                                                            ) : (
+                                                                <span style={{ fontWeight: 800, color: 'var(--war-accent-blue)' }}>{p.stock} {p.unitName}</span>
+                                                            )}
+                                                        </td>
+                                                        <td><button className="war-action-btn" onClick={() => setEditingStock({ productId: p.id, quantity: p.stock })}><i className="fas fa-edit"></i></button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="war-modal-footer">
+                                <button className="war-btn-primary" onClick={closeModal}>إغلاق النافذة</button>
+                            </div>
+                        </div>
+                    </div>
+                </ModalContainer>
+            )}
+        </div>
+    );
 };
 
 export default Warehouses;
