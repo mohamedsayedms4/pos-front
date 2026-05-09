@@ -2,9 +2,10 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-export const SERVER_URL = 'http://localhost:8080';
+// For Vite, environment variables must start with VITE_ and are accessed via import.meta.env
+export const SERVER_URL = import.meta.env.VITE_API_URL;
 
-// Use production URL when not running on Vite dev server (port 5173)
+// API versioned base path
 export const API_BASE = `${SERVER_URL}/api/v1`;
 
 

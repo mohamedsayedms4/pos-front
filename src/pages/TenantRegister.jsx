@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { SERVER_URL } from '../services/api';
 import logo from '../assets/img/logo.png';
 
 // Simple SVG Icons to replace MUI
@@ -43,7 +44,7 @@ const TenantRegister = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:8080/api/public/tenants/register', formData);
+      await axios.post(`${SERVER_URL}/api/public/tenants/register`, formData);
       setSuccess(true);
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
