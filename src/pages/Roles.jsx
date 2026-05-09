@@ -23,7 +23,14 @@ const Roles = () => {
     setLoading(true);
     try {
       const [rolesData, permsData] = await Promise.all([Api.getRolesFull(), Api.getPermissions()]);
-      setData(rolesData); setPermissions(permsData);
+      
+      // Filter out ROLE_SUPER_ADMIN if current user is not a super admin
+      const filteredRoles = Api.isSuperAdmin() 
+        ? rolesData 
+        : rolesData.filter(r => r.name !== 'ROLE_SUPER_ADMIN');
+
+      setData(filteredRoles); 
+      setPermissions(permsData);
     } catch (err) { toast(err.message, 'error'); }
     finally { setLoading(false); }
   };
@@ -52,7 +59,9 @@ const Roles = () => {
   };
 
   const handleDelete = (role) => {
-    if (role.name === 'ROLE_ADMIN') return toast('لا يمكن حذف دور المشرف الرئيسي', 'error');
+    if (role.name === 'ROLE_ADMIN' || role.name === 'ROLE_SUPER_ADMIN') {
+        return toast('لا يمكن حذف هذا الدور الأساسي للنظام', 'error');
+    }
     confirm(`حذف دور "${role.name}"؟`, async () => {
       try { await Api.deleteRole(role.id); toast('تم الحذف', 'success'); loadData(); }
       catch (err) { toast(err.message, 'error'); }
@@ -146,7 +155,7 @@ const Roles = () => {
                     <td>
                       <div className="rol-actions">
                         <button className="rol-action-btn" title="تعديل" onClick={() => openForm(r)}><i className="fas fa-edit"></i></button>
-                        <button className="rol-action-btn delete" title="حذف" disabled={r.name === 'ROLE_ADMIN'} onClick={() => handleDelete(r)}><i className="fas fa-trash"></i></button>
+                        <button className="rol-action-btn delete" title="حذف" disabled={r.name === 'ROLE_ADMIN' || r.name === 'ROLE_SUPER_ADMIN'} onClick={() => handleDelete(r)}><i className="fas fa-trash"></i></button>
                       </div>
                     </td>
                   </tr>
@@ -171,7 +180,7 @@ const Roles = () => {
                       <label>اسم الدور (English Only) *</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontWeight: 800, color: 'var(--rol-text-secondary)' }}>ROLE_</span>
-                        <input className="rol-input" required placeholder="MANAGER, CASHIER..." value={form.name} onChange={e => setForm({...form, name: e.target.value.toUpperCase().replace(/\s+/g, '_')})} disabled={activeRole?.name === 'ROLE_ADMIN'} />
+                        <input className="rol-input" required placeholder="MANAGER, CASHIER..." value={form.name} onChange={e => setForm({...form, name: e.target.value.toUpperCase().replace(/\s+/g, '_')})} disabled={activeRole?.name === 'ROLE_ADMIN' || activeRole?.name === 'ROLE_SUPER_ADMIN'} />
                       </div>
                    </div>
                    <div className="rol-form-group" style={{ marginTop: '24px' }}>

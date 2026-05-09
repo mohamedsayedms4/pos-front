@@ -2,7 +2,7 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-export const SERVER_URL = 'https://posapi.digitalrace.net';
+export const SERVER_URL = 'http://localhost:8080';
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
@@ -58,7 +58,10 @@ const Api = {
     const roles = user.roles || [];
     const perms = user.permissions || [];
 
-    // Admin override — full access
+    // Super Admin override — full access to everything
+    if (roles.includes('ROLE_SUPER_ADMIN')) return true;
+
+    // Admin override — full access to tenant features
     if (roles.includes('ROLE_ADMIN')) return true;
 
     // Check specific permission (works for ROLE_BRANCH_MANAGER with its perms)
@@ -71,7 +74,16 @@ const Api = {
   isAdmin() {
     const user = this._getUser();
     if (!user) return false;
-    return (user.roles || []).includes('ROLE_ADMIN');
+    return (user.roles || []).some(r => r === 'ROLE_ADMIN' || r === 'ROLE_SUPER_ADMIN');
+  },
+
+  /**
+   * Returns true if current user is a Super Admin (Global Owner).
+   */
+  isSuperAdmin() {
+    const user = this._getUser();
+    if (!user) return false;
+    return (user.roles || []).includes('ROLE_SUPER_ADMIN');
   },
 
   /**
@@ -211,13 +223,24 @@ const Api = {
         }
       }
 
+      if (response.status === 402) {
+        const err = await response.json().catch(() => ({}));
+        // Redirect to subscription expired page if not already there
+        if (window.location.pathname !== '/subscription-expired') {
+            window.location.href = '/subscription-expired';
+        }
+        throw new Error(err.message || 'انتهت صلاحية الاشتراك');
+      }
+
       if (response.status === 403) {
         throw new Error('ليس لديك صلاحية لهذا الإجراء');
       }
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || err.error || `Request failed: ${response.status}`);
+        const errData = await response.json().catch(() => ({}));
+        const error = new Error(errData.message || errData.error || `Request failed: ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
 
       if (response.status === 204) return null;
@@ -495,6 +518,68 @@ const Api = {
 
   async deleteProduct(id) {
     await this._request(`/products/${id}`, { method: 'DELETE' });
+  },
+
+  // ─── Product Requests ───
+  async lookupProductByCode(code) {
+    const res = await this._request(`/product-requests/lookup?code=${encodeURIComponent(code)}`);
+    return res.data;
+  },
+
+  async createProductAssignRequest(productCode, targetBranchId) {
+    const res = await this._request('/product-requests', {
+      method: 'POST',
+      body: JSON.stringify({ productCode, targetBranchId })
+    });
+    return res.data;
+  },
+
+  async getProductRequests() {
+    const res = await this._request('/product-requests');
+    return res.data;
+  },
+
+  async approveProductRequest(id, notes = '') {
+    const res = await this._request(`/product-requests/${id}/approve`, {
+      method: 'PUT',
+      body: JSON.stringify({ notes })
+    });
+    return res.data;
+  },
+
+  async rejectProductRequest(id, notes = '') {
+    const res = await this._request(`/product-requests/${id}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({ notes })
+    });
+    return res.data;
+  },
+
+  async getProductAssignMode() {
+    const res = await this._request('/product-requests/assign-mode');
+    return res.data?.mode || 'APPROVAL';
+  },
+
+  // ─── Tenant Settings ───
+  async getTenantSettings() {
+    const res = await this._request('/tenant/settings');
+    return res.data;
+  },
+
+  async updateTenantSetting(key, value) {
+    const res = await this._request(`/tenant/settings/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value })
+    });
+    return res.data;
+  },
+
+  async updateProductAssignMode(mode) {
+    const res = await this._request('/tenant/settings/product-assign-mode', {
+      method: 'PUT',
+      body: JSON.stringify({ mode })
+    });
+    return res.data;
   },
 
   // ─── Printer Config ───
@@ -1343,6 +1428,11 @@ const Api = {
     return res.data;
   },
 
+  async getWarehouses() {
+    const res = await this._request('/warehouses');
+    return res.data;
+  },
+
   async getWarehousesByBranch(branchId) {
     const res = await this._request(`/warehouses?branchId=${branchId}`);
     return res.data;
@@ -1563,6 +1653,50 @@ const Api = {
   async getAccountingEntries(page = 0, size = 10) {
     const res = await this._request(`/accounting/entries?page=${page}&size=${size}`);
     return res.data;
+  },
+  // ─── Super Admin ─────────────────────────────────────────────────────────────
+  async getSuperAdminTenants() {
+    const res = await this._request('/super-admin/tenants');
+    return res.data;
+  },
+
+  async updateTenantStatus(id, active) {
+    const res = await this._request(`/super-admin/tenants/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active })
+    });
+    return res.data;
+  },
+
+  async adjustTenantSubscription(id, payload) {
+    const res = await this._request(`/super-admin/tenants/${id}/subscription`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+    return res.data;
+  },
+
+  async getSuperAdminStats() {
+    const res = await this._request('/super-admin/stats');
+    return res.data;
+  },
+
+  // ─── Recurring Invoices ───
+  async getRecurringInvoices() {
+    const res = await this._request('/sales/recurring');
+    return res.data;
+  },
+
+  async createRecurringInvoice(data) {
+    const res = await this._request('/sales/recurring', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async processRecurringInvoicesManual() {
+    await this._request('/sales/recurring/process', { method: 'POST' });
   }
 };
 

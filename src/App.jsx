@@ -10,6 +10,7 @@ import Purchases from './pages/Purchases.jsx'
 import Users from './pages/Users.jsx'
 import ProductInteractions from './pages/ProductInteractions.jsx'
 import CustomerOffers from './pages/CustomerOffers.jsx'
+import ProductRequests from './pages/ProductRequests.jsx'
 import Audit from './pages/Audit.jsx'
 import Notifications from './pages/Notifications.jsx'
 import ProductDetails from './pages/ProductDetails.jsx'
@@ -60,6 +61,10 @@ import EmployeeCustody from './pages/EmployeeCustody.jsx'
 import TenantRegister from './pages/TenantRegister.jsx'
 import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
+import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx'
+import SubscriptionExpired from './pages/SubscriptionExpired.jsx'
+import RecurringInvoices from './pages/RecurringInvoices.jsx'
+import CreditNotes from './pages/CreditNotes.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -100,6 +105,7 @@ function App() {
                 <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/terms" element={<TermsOfUse />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/subscription-expired" element={<SubscriptionExpired />} />
                 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/customer-order" element={<CustomerOrder />} />
@@ -114,6 +120,8 @@ function App() {
                       <Route path="/sales" element={<Sales />} />
                       <Route path="/sales/analytics" element={<SalesAnalytics />} />
                       <Route path="/returns" element={<Returns />} />
+                      <Route path="/credit-notes" element={<CreditNotes />} />
+                      <Route path="/recurring-invoices" element={<RecurringInvoices />} />
                       <Route path="/online-orders" element={<OnlineOrders />} />
                     </Route>
 
@@ -123,6 +131,7 @@ function App() {
                       <Route path="/products/:id" element={<ProductDetails />} />
                       <Route path="/products/analytics" element={<ProductAnalytics />} />
                       <Route path="/products/interactions" element={<ProductInteractions />} />
+                      <Route path="/products/requests" element={<ProductRequests />} />
                       <Route path="/products/offers" element={<CustomerOffers />} />
                       <Route path="/categories" element={<Categories />} />
                       <Route path="/inventory/report" element={<InventoryReport />} />
@@ -210,6 +219,9 @@ function App() {
                     <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>
                       <Route path="/warehouses" element={<Warehouses />} />
                     </Route>
+
+                    {/* Super Admin */}
+                    <Route path="/super-admin" element={<SuperAdminDashboard />} />
 
                     {/* Generic */}
                     <Route path="/notifications" element={<Notifications />} />

@@ -103,31 +103,40 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
 
           {link('/dashboard', 'fas fa-home', 'الرئيسية')}
 
-          {Api.can('SALE_WRITE') && link('/pos', 'fas fa-laptop-code', 'نقطة البيع (POS)')}
-
-          {Api.can('PRODUCT_READ') && (
-            <>
-              {link('/products', 'fas fa-boxes', 'المنتجات')}
-              {link('/products/interactions', 'fas fa-chart-pie', 'تفاعل العملاء')}
-              {link('/categories', 'fas fa-layer-group', 'الفئات')}
-            </>
-          )}
-
-          {Api.can('DAMAGED_GOODS_MANAGE') && link('/damaged', 'fas fa-trash-alt', 'التوالف والهوالك')}
-
-          {Api.can('SUPPLIER_READ') && link('/suppliers', 'fas fa-truck-loading', 'الموردين')}
-          {Api.can('CUSTOMER_READ') && link('/customers', 'fas fa-users', 'العملاء')}
-          {Api.can('PURCHASE_READ') && link('/purchases', 'fas fa-shopping-basket', 'المشتريات')}
-
+          {/* ── Sales ── */}
           {Api.can('SALE_READ') && (
             <>
-              {link('/sales', 'fas fa-file-invoice-dollar', 'فواتير المبيعات')}
-              {link('/returns', 'fas fa-undo-alt', 'مرتجع المبيعات')}
-              {link('/online-orders', 'fas fa-globe-americas', 'الطلبات الإلكترونية')}
+              <div className="sp-section-title">المبيعات</div>
+              {link('/sales', 'fas fa-file-invoice', 'إدارة الفواتير')}
+              {Api.can('SALE_WRITE') && link('/pos', 'fas fa-plus-circle', 'إنشاء فاتورة')}
+              {link('/credit-notes', 'fas fa-file-signature', 'إشعارات دائنة')}
+              {link('/returns', 'fas fa-undo', 'الفواتير المرتجعة')}
+              {link('/recurring-invoices', 'fas fa-sync', 'الفواتير الدورية')}
+              {link('/debts', 'fas fa-user-check', 'مدفوعات العملاء')}
+              {link('/settings', 'fas fa-cog', 'إعدادات المبيعات')}
             </>
           )}
 
-          {Api.can('STOCK_READ') && link('/stock-receipts', 'fas fa-box-open', 'استلام المخزون')}
+          {/* ── Inventory & Stock ── */}
+          {Api.can('PRODUCT_READ') && (
+            <>
+              <div className="sp-section-title">المخزون والمشتريات</div>
+              {link('/products', 'fas fa-boxes', 'المنتجات')}
+              {link('/products/requests', 'fas fa-hand-holding-box', 'طلبات المنتجات')}
+              {link('/categories', 'fas fa-layer-group', 'الفئات')}
+              {link('/suppliers', 'fas fa-truck-loading', 'الموردين')}
+              {link('/purchases', 'fas fa-shopping-basket', 'المشتريات')}
+              {link('/stock-receipts', 'fas fa-box-open', 'استلام المخزون')}
+              {link('/damaged', 'fas fa-trash-alt', 'التوالف والهوالك')}
+              {link('/warehouses', 'fas fa-warehouse', 'إدارة المخازن')}
+            </>
+          )}
+
+          {/* ── Customers & Engagement ── */}
+          <div className="sp-section-title">العملاء والتفاعل</div>
+          {link('/customers', 'fas fa-users', 'العملاء')}
+          {link('/products/interactions', 'fas fa-chart-pie', 'تفاعل العملاء')}
+          {link('/online-orders', 'fas fa-globe-americas', 'الطلبات الإلكترونية')}
 
           {/* ── Accounts ── */}
           <div className="sp-section-title">الحسابات والتقارير</div>
@@ -174,6 +183,14 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }) => {
           {Api.can('PRODUCT_READ') && link('/inventory/report', 'fas fa-clipboard-list', 'الجرد التفصيلي')}
           {isAdmin && link('/settings', 'fas fa-cogs', 'إعدادات المتجر')}
           {Api.can('AUDIT_READ') && link('/offline-audit', 'fas fa-search-location', 'فحص البيانات المحلية')}
+
+          {/* ── Super Admin ── */}
+          {Api.isSuperAdmin() && (
+            <>
+              <div className="sp-section-title">السوبر أدمن</div>
+              {link('/super-admin', 'fas fa-user-shield', 'لوحة التحكم العامة')}
+            </>
+          )}
 
         </nav>
 

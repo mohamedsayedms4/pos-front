@@ -118,6 +118,11 @@ const Products = () => {
   const [stockForm, setStockForm] = useState({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
   const [savingStock, setSavingStock] = useState(false);
   const [allWarehouses, setAllWarehouses] = useState([]);
+  
+  // Conflict / Request Modal State
+  const [conflictProduct, setConflictProduct] = useState(null);
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
   /**
    * Convert a blob: URL to a data: URL (base64-embedded).
@@ -436,9 +441,35 @@ const Products = () => {
       closeModal();
       loadData();
     } catch (err) {
+      if (err.status === 409 || err.message.includes('409') || err.message.includes('مستخدم بالفعل')) {
+          // Trigger conflict lookup
+          try {
+              const existing = await Api.lookupProductByCode(formData.productCode);
+              if (existing) {
+                  setConflictProduct(existing);
+                  setIsConflictModalOpen(true);
+                  return; // Don't show the error toast
+              }
+          } catch (lookupErr) {
+              console.error('Failed to lookup conflict product:', lookupErr);
+          }
+      }
       toast(err.message, 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRequestAssignment = async () => {
+    setRequesting(true);
+    try {
+      await Api.createProductAssignRequest(conflictProduct.productCode, globalBranchId || selectedBranchId);
+      toast('تم إرسال طلب التعيين للأدمن بنجاح', 'success');
+      setIsConflictModalOpen(false);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setRequesting(false);
     }
   };
 
@@ -1106,6 +1137,50 @@ const Products = () => {
                 <button type="button" className="prd-btn-ghost" onClick={() => setShowStockModal(false)}>إلغاء</button>
                 <button type="submit" form="stockForm" className="prd-btn-primary" disabled={savingStock}>
                   {savingStock ? 'جاري الحفظ...' : 'تحديث المخزون'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+      {/* CONFLICT / REQUEST MODAL */}
+      {isConflictModalOpen && (
+        <ModalContainer>
+          <div className="prd-modal-overlay" onClick={() => setIsConflictModalOpen(false)}>
+            <div className="prd-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', border: '1px solid #f59e0b' }}>
+              <div className="prd-modal-header" style={{ borderBottom: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                <h3 style={{ color: '#f59e0b' }}>
+                    <i className="fas fa-exclamation-triangle" style={{ marginLeft: '10px' }}></i>
+                    هذا المنتج موجود بالفعل!
+                </h3>
+                <button className="prd-modal-close" onClick={() => setIsConflictModalOpen(false)}>✕</button>
+              </div>
+              <div className="prd-modal-body" style={{ textAlign: 'center', padding: '30px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                    <p style={{ color: 'var(--prd-text-secondary)', marginBottom: '10px' }}>
+                        المنتج صاحب الكود <strong>{conflictProduct?.productCode}</strong> مسجل مسبقاً في النظام.
+                    </p>
+                    <div style={{ background: 'var(--prd-glass-bg)', padding: '15px', borderRadius: '12px', border: '1px solid var(--prd-glass-border)' }}>
+                        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{conflictProduct?.name}</div>
+                        <div style={{ fontSize: '0.85rem', marginTop: '5px', color: 'var(--prd-primary)' }}>
+                            <i className="fas fa-building" style={{ marginLeft: '5px' }}></i>
+                            يتبع لفرع: {conflictProduct?.branch?.name || 'فرع آخر'}
+                        </div>
+                    </div>
+                </div>
+                <p style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    بما أن الباركود يجب أن يكون فريداً، يمكنك طلب "تعيين" هذا المنتج لفرعك الحالي. سيقوم الأدمن بمراجعة طلبك ونقل المنتج.
+                </p>
+              </div>
+              <div className="prd-modal-footer">
+                <button className="prd-btn-ghost" onClick={() => setIsConflictModalOpen(false)}>إلغاء</button>
+                <button 
+                    className="prd-btn-primary" 
+                    style={{ background: '#f59e0b' }} 
+                    onClick={handleRequestAssignment}
+                    disabled={requesting}
+                >
+                  {requesting ? 'جاري الإرسال...' : 'إرسال طلب للأدمن'}
                 </button>
               </div>
             </div>

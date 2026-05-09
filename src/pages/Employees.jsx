@@ -76,7 +76,7 @@ const Employees = () => {
   const [editJobTitle, setEditJobTitle] = useState(null);
   const [jtSaving, setJtSaving] = useState(false);
 
-  const API_BASE_URL = 'https://posapi.digitalrace.net/api/v1';
+  const API_BASE_URL = 'http://localhost:8080/api/v1';
 
   const formatDateForInput = (date) => {
     if (!date) return '';

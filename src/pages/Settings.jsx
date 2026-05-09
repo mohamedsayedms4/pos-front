@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import StoreApi from '../services/storeApi';
+import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import HeroSectionManager from '../components/settings/HeroSectionManager';
@@ -16,12 +17,21 @@ const Settings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [assignMode, setAssignMode] = useState('APPROVAL'); // AUTO or APPROVAL
 
     useEffect(() => { loadInfo(); }, []);
 
     const loadInfo = async () => {
         setLoading(true);
-        try { const res = await StoreApi.getStoreInfoAdmin(); if (res.success) setInfo(res.data); }
+        try { 
+            const [storeRes, modeRes] = await Promise.all([
+                StoreApi.getStoreInfoAdmin(),
+                Api.getProductAssignMode().catch(() => 'APPROVAL')
+            ]);
+            
+            if (storeRes.success) setInfo(storeRes.data); 
+            setAssignMode(modeRes);
+        }
         catch (e) { toast('خطأ في تحميل الإعدادات', 'error'); }
         finally { setLoading(false); }
     };
@@ -46,6 +56,16 @@ const Settings = () => {
             else { toast(res.message, 'error'); }
         } catch (e) { toast('خطأ في الرفع', 'error'); }
         finally { setUploading(false); }
+    };
+
+    const handleToggleAssignMode = async (mode) => {
+        try {
+            await Api.updateProductAssignMode(mode);
+            setAssignMode(mode);
+            toast(`تم تغيير وضع تعيين المنتجات إلى: ${mode === 'AUTO' ? 'تلقائي' : 'يدوي (بموافقة)'}`, 'success');
+        } catch (e) {
+            toast(e.message, 'error');
+        }
     };
 
     if (loading) return <Loader />;
@@ -135,6 +155,67 @@ const Settings = () => {
                     </div>
                 </div>
             </form>
+
+            <div className="set-table-card" style={{ marginTop: '40px', padding: '32px' }}>
+                <h2 style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <i className="fas fa-cogs" style={{ color: 'var(--set-primary)' }}></i>
+                    إعدادات النظام المتقدمة
+                </h2>
+                
+                <div style={{ background: 'rgba(99,102,241,0.03)', padding: '24px', borderRadius: '20px', border: '1px solid var(--set-border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                        <div style={{ flex: 1, minWidth: '300px' }}>
+                            <h3 style={{ margin: '0 0 8px 0' }}>نظام تعيين المنتجات بين الفروع</h3>
+                            <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--set-text-secondary)', lineHeight: 1.6 }}>
+                                حدد كيفية التعامل مع إضافة منتج موجود مسبقاً في فرع آخر.
+                                <br />
+                                <strong>الوضع التلقائي:</strong> يتم نسخ بيانات المنتج للفرع الجديد فوراً.
+                                <br />
+                                <strong>طلب إذن:</strong> يتطلب موافقة الأدمن قبل التعيين.
+                            </p>
+                        </div>
+                        
+                        <div style={{ display: 'flex', background: 'var(--set-bg)', padding: '6px', borderRadius: '12px', border: '1px solid var(--set-border)' }}>
+                            <button 
+                                type="button"
+                                onClick={() => handleToggleAssignMode('APPROVAL')}
+                                style={{
+                                    padding: '10px 24px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    transition: 'all 0.3s',
+                                    background: assignMode === 'APPROVAL' ? 'var(--set-primary)' : 'transparent',
+                                    color: assignMode === 'APPROVAL' ? '#fff' : 'var(--set-text-secondary)',
+                                    boxShadow: assignMode === 'APPROVAL' ? '0 4px 12px rgba(99,102,241,0.3)' : 'none'
+                                }}
+                            >
+                                طلب إذن (يدوي)
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => handleToggleAssignMode('AUTO')}
+                                style={{
+                                    padding: '10px 24px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    transition: 'all 0.3s',
+                                    background: assignMode === 'AUTO' ? 'var(--set-primary)' : 'transparent',
+                                    color: assignMode === 'AUTO' ? '#fff' : 'var(--set-text-secondary)',
+                                    boxShadow: assignMode === 'AUTO' ? '0 4px 12px rgba(99,102,241,0.3)' : 'none'
+                                }}
+                            >
+                                تعيين تلقائي
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="set-table-card" style={{ marginTop: '40px', padding: '32px' }}>
                 <h2 style={{ marginBottom: '24px' }}>🖼️ إدارة البنرات الإعلانية (Hero Sections)</h2>
