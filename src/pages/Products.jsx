@@ -493,10 +493,10 @@ const Products = () => {
   };
 
   const handleDelete = async (id, name) => {
-    confirm(`سيتم حذف المنتج "${name}" نهائياً`, async () => {
+    confirm(`هل أنت متأكد من حذف المنتج "${name}"؟`, async () => {
       try {
-        await Api.deleteProduct(id);
-        toast('تم حذف المنتج بنجاح', 'success');
+        await Api.deleteProduct(id, selectedBranchId);
+        toast(selectedBranchId ? 'تم حذف المنتج من هذا الفرع بنجاح' : 'تم حذف المنتج من جميع الفروع بنجاح', 'success');
         loadData();
       } catch (err) {
         toast(err.message, 'error');

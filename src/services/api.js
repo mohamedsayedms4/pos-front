@@ -517,8 +517,27 @@ const Api = {
     return res.data;
   },
 
-  async deleteProduct(id) {
-    await this._request(`/products/${id}`, { method: 'DELETE' });
+  async deleteProduct(id, branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    await this._request(`/products/${id}${branchQuery}`, { method: 'DELETE' });
+  },
+
+  async deleteProductGlobal(id) {
+    await this._request(`/products/${id}/global`, { method: 'DELETE' });
+  },
+
+  async restoreProduct(id, branchId) {
+    await this._request(`/products/${id}/restore?branchId=${branchId}`, { method: 'POST' });
+  },
+
+  async restoreProductGlobal(id) {
+    await this._request(`/products/${id}/restore/global`, { method: 'POST' });
+  },
+
+  async getDeletedProducts(branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/products/trash${branchQuery}`);
+    return res.data;
   },
 
   // ─── Product Requests ───
