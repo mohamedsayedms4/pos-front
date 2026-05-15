@@ -23,6 +23,15 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const getBranchInventory = (product, branchId) => {
+    if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
+    if (branchId) {
+      const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
+      if (inv) return inv;
+    }
+    return product.branchInventories[0];
+  };
+
   useEffect(() => {
     const loadStats = async () => {
       setLoading(true);
@@ -42,8 +51,15 @@ const Dashboard = () => {
         }
 
         const productsArray = products.items || [];
-        const lowStockItems = productsArray.filter(p => Number(p.stock) < 10 && Number(p.stock) > 0);
-        const outOfStockItems = productsArray.filter(p => Number(p.stock) <= 0);
+        const lowStockItems = productsArray.filter(p => {
+          const inv = getBranchInventory(p, globalBranchId);
+          const stock = Number(inv?.stock || 0);
+          return stock < 10 && stock > 0;
+        });
+        const outOfStockItems = productsArray.filter(p => {
+          const inv = getBranchInventory(p, globalBranchId);
+          return Number(inv?.stock || 0) <= 0;
+        });
         const recent = [...productsArray].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
         const suppliersArray = suppliers.items || suppliers.content || (Array.isArray(suppliers) ? suppliers : []);
@@ -393,12 +409,15 @@ const Dashboard = () => {
             {stats.recentProducts.length > 0 ? (
               <table className="data-table">
                 <tbody>
-                  {stats.recentProducts.map(p => (
-                    <tr key={p.id || p.name}>
-                      <td>{p.name}</td>
-                      <td style={{ textAlign: 'left', color: 'var(--metro-green)' }}>{Number(p.salePrice).toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {stats.recentProducts.map(p => {
+                    const inv = getBranchInventory(p, globalBranchId);
+                    return (
+                      <tr key={p.id || p.name}>
+                        <td>{p.name}</td>
+                        <td style={{ textAlign: 'left', color: 'var(--metro-green)' }}>{Number(inv?.salePrice || 0).toFixed(2)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (
@@ -415,14 +434,18 @@ const Dashboard = () => {
             {stats.lowStock.slice(0, 5).length > 0 ? (
               <table className="data-table">
                 <tbody>
-                  {stats.lowStock.slice(0, 5).map(p => (
-                    <tr key={p.id || p.name}>
-                      <td>{p.name}</td>
-                      <td style={{ textAlign: 'left' }}>
-                        <span className={`badge ${p.stock == 0 ? 'badge-danger' : 'badge-warning'}`}>{p.stock}</span>
-                      </td>
-                    </tr>
-                  ))}
+                  {stats.lowStock.slice(0, 5).map(p => {
+                    const inv = getBranchInventory(p, globalBranchId);
+                    const stock = Number(inv?.stock || 0);
+                    return (
+                      <tr key={p.id || p.name}>
+                        <td>{p.name}</td>
+                        <td style={{ textAlign: 'left' }}>
+                          <span className={`badge ${stock == 0 ? 'badge-danger' : 'badge-warning'}`}>{stock}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (

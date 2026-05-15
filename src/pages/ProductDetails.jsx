@@ -160,10 +160,14 @@ const ProductDetails = () => {
     if (id) {
       loadProduct();
       loadUnits();
-      loadDistribution();
       loadWarehouses();
     }
   }, [id]);
+
+  const getBranchInventory = (prod, bId = null) => {
+    if (!prod || !prod.branchInventories || prod.branchInventories.length === 0) return null;
+    return prod.branchInventories[0]; // For details header, we show the first one or a summary
+  };
 
   const printCode = async (type) => {
     if (type === 'qrcode') {
@@ -333,33 +337,50 @@ const ProductDetails = () => {
               <span style={{ color: 'var(--det-text-secondary)' }}>|</span>
               <span style={{ color: 'var(--det-text-secondary)' }}>كود: <strong>{product.productCode || '—'}</strong></span>
               <span style={{ color: 'var(--det-text-secondary)' }}>|</span>
-              <span style={{ color: stockColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: stockColor }}></span>
-                {stockText}
-              </span>
+              {(() => {
+                const totalStock = product.branchInventories?.reduce((acc, inv) => acc + (inv.stock || 0), 0) || 0;
+                const isAvailable = totalStock > 0;
+                const sColor = isAvailable ? '#10b981' : '#ef4444';
+                return (
+                  <span style={{ color: sColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: sColor }}></span>
+                    {isAvailable ? 'متوفر بالمخزن' : 'نفذت الكمية'} ({totalStock})
+                  </span>
+                );
+              })()}
             </div>
           </div>
 
           <div className="det-metrics-grid">
-            <div className="det-metric-item">
-              <div className="det-metric-label"><i className="fas fa-tag"></i> سعر البيع</div>
-              <div className="det-metric-value" style={{ color: '#10b981' }}>{Number(product.salePrice).toLocaleString()} <small>ج.م</small></div>
-            </div>
-            <div className="det-metric-item">
-              <div className="det-metric-label"><i className="fas fa-shopping-basket"></i> سعر الشراء</div>
-              <div className="det-metric-value">{Number(product.purchasePrice).toLocaleString()} <small>ج.م</small></div>
-            </div>
-            <div className="det-metric-item">
-              <div className="det-metric-label"><i className="fas fa-boxes"></i> المخزون</div>
-              <div className="det-metric-value">{Number(product.stock).toLocaleString()} <small>{product.unitName || 'قطعة'}</small></div>
-            </div>
+            {(() => {
+              const mainInv = getBranchInventory(product);
+              return (
+                <>
+                  <div className="det-metric-item">
+                    <div className="det-metric-label"><i className="fas fa-tag"></i> سعر البيع</div>
+                    <div className="det-metric-value" style={{ color: '#10b981' }}>{Number(mainInv?.salePrice || 0).toLocaleString()} <small>ج.م</small></div>
+                  </div>
+                  <div className="det-metric-item">
+                    <div className="det-metric-label"><i className="fas fa-shopping-basket"></i> سعر الشراء</div>
+                    <div className="det-metric-value">{Number(mainInv?.purchasePrice || 0).toLocaleString()} <small>ج.م</small></div>
+                  </div>
+                  <div className="det-metric-item">
+                    <div className="det-metric-label"><i className="fas fa-boxes"></i> إجمالي المخزون</div>
+                    <div className="det-metric-value">
+                      {product.branchInventories?.reduce((acc, inv) => acc + (inv.stock || 0), 0).toLocaleString()} 
+                      <small>{product.unitName || 'قطعة'}</small>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             <div className="det-metric-item">
               <div className="det-metric-label"><i className="fas fa-chart-line"></i> الكمية المباعة</div>
-              <div className="det-metric-value" style={{ color: '#3b82f6' }}>{Number(product.soldQuantity || 0).toLocaleString()}</div>
+              <div className="det-metric-value" style={{ color: '#3b82f6' }}>{product.branchInventories?.reduce((acc, inv) => acc + (inv.soldQuantity || 0), 0).toLocaleString()}</div>
             </div>
             <div className="det-metric-item">
               <div className="det-metric-label"><i className="fas fa-hand-holding-usd"></i> الربح الفعلي</div>
-              <div className="det-metric-value" style={{ color: '#f59e0b' }}>{Number(product.realizedProfit || 0).toLocaleString()} <small>ج.م</small></div>
+              <div className="det-metric-value" style={{ color: '#f59e0b' }}>{product.branchInventories?.reduce((acc, inv) => acc + (inv.realizedProfit || 0), 0).toLocaleString()} <small>ج.م</small></div>
             </div>
             <div className="det-metric-item">
               <div className="det-metric-label"><i className="fas fa-eye"></i> المشاهدات</div>
@@ -463,10 +484,50 @@ const ProductDetails = () => {
         </div>
       </div>
 
+      {/* Branch Inventory & Pricing */}
+      <div className="det-section-card">
+        <div className="det-section-header">
+          <h3><i className="fas fa-building" style={{ color: '#3b82f6' }}></i> توفر المنتج وأسعاره في الفروع</h3>
+        </div>
+
+        <div className="det-table-wrapper">
+          <table className="det-table branch-inventory">
+            <thead>
+              <tr>
+                <th>الفرع</th>
+                <th>سعر الشراء</th>
+                <th>سعر البيع</th>
+                <th>المخزون</th>
+                <th>المبيعات</th>
+                <th>الربح المحقق</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!product.branchInventories || product.branchInventories.length === 0 ? (
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--det-text-secondary)' }}>غير متوفر في أي فرع حالياً</td></tr>
+              ) : (
+                product.branchInventories.map((inv, idx) => (
+                  <tr key={idx}>
+                    <td data-label="الفرع">
+                       <div style={{ fontWeight: 700 }}>{inv.branchName}</div>
+                    </td>
+                    <td data-label="سعر الشراء">{Number(inv.purchasePrice || 0).toLocaleString()}</td>
+                    <td data-label="سعر البيع" style={{ fontWeight: 800, color: '#10b981' }}>{Number(inv.salePrice || 0).toLocaleString()}</td>
+                    <td data-label="المخزون" style={{ fontSize: '1.1rem', fontWeight: 800 }}>{Number(inv.stock || 0).toLocaleString()}</td>
+                    <td data-label="المبيعات">{Number(inv.soldQuantity || 0).toLocaleString()}</td>
+                    <td data-label="الربح المحقق" style={{ color: '#f59e0b', fontWeight: 700 }}>{Number(inv.realizedProfit || 0).toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Stock Distribution */}
       <div className="det-section-card">
         <div className="det-section-header">
-          <h3><i className="fas fa-warehouse" style={{ color: '#3b82f6' }}></i> توزيع المخزون على الفروع</h3>
+          <h3><i className="fas fa-warehouse" style={{ color: '#3b82f6' }}></i> تفاصيل المخازن (الكميات والحدود)</h3>
           <button className="det-btn-action" style={{ background: 'var(--det-glass)', border: '1px solid var(--det-glass-border)', color: 'var(--det-text-primary)' }} onClick={() => { setStockForm({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' }); setShowStockModal(true); }}>
             <i className="fas fa-sync"></i> تحديث المخزون
           </button>
@@ -485,7 +546,7 @@ const ProductDetails = () => {
             </thead>
             <tbody>
               {distribution.length === 0 ? (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--det-text-secondary)' }}>غير متوفر في أي مخزن حالياً</td></tr>
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--det-text-secondary)' }}>لا توجد بيانات مخازن تفصيلية متاحة</td></tr>
               ) : (
                 distribution.map((item, idx) => {
                   const isLow = item.minQuantity != null && Number(item.quantity) <= Number(item.minQuantity);

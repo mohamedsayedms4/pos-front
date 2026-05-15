@@ -129,6 +129,15 @@ const Purchases = () => {
 
   const [paymentAmount, setPaymentAmount] = useState('');
 
+  const getBranchInventory = (product, branchId) => {
+    if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
+    if (branchId) {
+      const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
+      if (inv) return inv;
+    }
+    return product.branchInventories[0];
+  };
+
   useEffect(() => {
     const user = Api._getUser();
     const branchFromUrl = searchParams.get('branchId');
@@ -263,7 +272,8 @@ const Purchases = () => {
       return;
     }
 
-    setItemForm(prev => ({ ...prev, productId, unitId: '', unitPrice: prod.purchasePrice || 0 }));
+    const inv = getBranchInventory(prod, formSelectedBranchId);
+    setItemForm(prev => ({ ...prev, productId, unitId: '', unitPrice: inv?.purchasePrice || 0 }));
 
     setLoadingUnits(true);
     try {
@@ -276,7 +286,7 @@ const Purchases = () => {
           ...prev,
           productId,
           unitId: defaultUnit.id,
-          unitPrice: defaultUnit.purchasePrice || prod.purchasePrice || 0
+          unitPrice: defaultUnit.purchasePrice || inv?.purchasePrice || 0
         }));
       }
     } catch {

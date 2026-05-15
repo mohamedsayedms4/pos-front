@@ -28,6 +28,15 @@ const RecurringInvoices = () => {
 
     const [newItem, setNewItem] = useState({ productId: '', quantity: 1, unitPrice: 0 });
 
+    const getBranchInventory = (product, branchId) => {
+        if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
+        if (branchId) {
+            const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
+            if (inv) return inv;
+        }
+        return product.branchInventories[0];
+    };
+
     useEffect(() => {
         fetchTemplates();
         loadMetadata();
@@ -229,7 +238,8 @@ const RecurringInvoices = () => {
                                     <div className="rec-item-add-row">
                                         <select className="rec-input" value={newItem.productId} onChange={e => {
                                             const p = products.find(x => x.id === parseInt(e.target.value));
-                                            setNewItem({...newItem, productId: e.target.value, unitPrice: p?.salePrice || 0})
+                                            const inv = getBranchInventory(p, formData.branchId);
+                                            setNewItem({...newItem, productId: e.target.value, unitPrice: inv?.salePrice || 0})
                                         }}>
                                             <option value="">اختر صنف...</option>
                                             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

@@ -215,12 +215,15 @@ const OfflineAudit = () => {
               <h2>📋 عينة منتجات</h2>
             </div>
             <div className="panel-body compact-scroll">
-              {products.slice(0, 10).map(p => (
-                <div key={p.id} className="mini-product-card">
-                  <span className="p-title">{p.name}</span>
-                  <span className="p-price">{p.salePrice}</span>
-                </div>
-              ))}
+              {products.slice(0, 10).map(p => {
+                const inv = p.branchInventories && p.branchInventories.length > 0 ? p.branchInventories[0] : null;
+                return (
+                  <div key={p.id} className="mini-product-card">
+                    <span className="p-title">{p.name}</span>
+                    <span className="p-price">{inv?.salePrice || '0.00'}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

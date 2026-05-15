@@ -24,6 +24,15 @@ const OrderCustomer = () => {
     const socketClientRef = useRef(null);
     const observerTarget = useRef(null);
 
+    const getBranchInventory = (product, branchId) => {
+        if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
+        if (branchId) {
+            const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
+            if (inv) return inv;
+        }
+        return product.branchInventories[0];
+    };
+
     // WebSocket
     useEffect(() => {
         const token = localStorage.getItem('pos_access_token');
@@ -101,7 +110,10 @@ const OrderCustomer = () => {
         setSelections(prev => prev.filter(s => s._id !== selId));
     };
 
-    const selTotal = selections.reduce((s, i) => s + Number(i.salePrice || 0), 0);
+    const selTotal = selections.reduce((s, i) => {
+        const inv = getBranchInventory(i, branchId);
+        return s + Number(inv?.salePrice || 0);
+    }, 0);
 
     const getImg = (p) => {
         if (!p.imageUrls?.[0]) return null;
@@ -140,7 +152,7 @@ const OrderCustomer = () => {
                                     </div>
                                     <div className="oc-card-body">
                                         <div className="oc-card-name">{p.name}</div>
-                                        <div className="oc-card-price">{Number(p.salePrice).toFixed(2)} <small>ج.م</small></div>
+                                        <div className="oc-card-price">{Number(getBranchInventory(p, branchId)?.salePrice || 0).toFixed(2)} <small>ج.م</small></div>
                                     </div>
                                     <div className="oc-card-overlay"><span>+ إضافة</span></div>
                                 </div>
@@ -172,7 +184,7 @@ const OrderCustomer = () => {
                                     </div>
                                     <div className="oc-sel-info">
                                         <div className="oc-sel-name">{item.name}</div>
-                                        <div className="oc-sel-price">{Number(item.salePrice).toFixed(2)} ج.م</div>
+                                        <div className="oc-sel-price">{Number(getBranchInventory(item, branchId)?.salePrice || 0).toFixed(2)} ج.م</div>
                                     </div>
                                     <button className="oc-sel-del" onClick={() => removeSelection(item._id)}>✕</button>
                                 </div>

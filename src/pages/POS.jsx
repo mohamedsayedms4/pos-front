@@ -22,6 +22,15 @@ const getProductImage = (product) => {
   return null;
 };
 
+const getBranchInventory = (product, branchId) => {
+  if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
+  if (branchId) {
+    const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
+    if (inv) return inv;
+  }
+  return product.branchInventories[0];
+};
+
 const POS = () => {
   const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
   const [connected, setConnected] = useState(false);
@@ -209,23 +218,27 @@ const POS = () => {
   }, [browseSearch, browseProducts]);
 
   const addToCart = useCallback((product) => {
+    const inv = getBranchInventory(product, selectedBranchId);
+    const stock = inv?.stock || 0;
+    const salePrice = inv?.salePrice || 0;
+
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) {
-        if (existing.qty + 1 > product.stock) {
+        if (existing.qty + 1 > stock) {
           setTimeout(() => toast('تجاوزت الرصيد المتاح', 'warning'), 10);
           return prev;
         }
         return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
       }
-      if (product.stock <= 0) {
+      if (stock <= 0) {
         setTimeout(() => toast('نفذ المخزون', 'warning'), 10);
         return prev;
       }
-      return [...prev, { id: product.id, name: product.name, price: product.salePrice, qty: 1, stock: product.stock, unitName: product.unitName }];
+      return [...prev, { id: product.id, name: product.name, price: salePrice, qty: 1, stock: stock, unitName: product.unitName }];
     });
     if (searchInputRef.current) searchInputRef.current.focus();
-  }, [toast]);
+  }, [toast, selectedBranchId]);
 
   const updateQty = (id, newQty) => {
     setCart(prev => {
@@ -378,17 +391,20 @@ const POS = () => {
         <div className="pos-grid-container">
           <div className="pos-grid">
             {browseProducts.map(p => {
-              const outOfStock = p.stock <= 0;
+              const inv = getBranchInventory(p, selectedBranchId);
+              const stock = inv?.stock || 0;
+              const salePrice = inv?.salePrice || 0;
+              const outOfStock = stock <= 0;
               const imgSrc = getProductImage(p);
               return (
                 <div key={p.id} className={`pos-item-card ${outOfStock ? 'out-stock' : ''}`} onClick={() => !outOfStock && addToCart(p)}>
                   <div className="pos-item-image">
                     {imgSrc ? <img src={imgSrc} alt={p.name} /> : <div className="placeholder-icon">📦</div>}
-                    <div className="stock-badge">{outOfStock ? 'نفذ' : `${p.stock} متوفر`}</div>
+                    <div className="stock-badge">{outOfStock ? 'نفذ' : `${stock} متوفر`}</div>
                   </div>
                   <div className="pos-item-details">
                     <div className="pos-item-name" title={p.name}>{p.name}</div>
-                    <div className="pos-item-price">{p.salePrice.toFixed(2)} ج.م</div>
+                    <div className="pos-item-price">{salePrice.toFixed(2)} ج.م</div>
                   </div>
                 </div>
               );

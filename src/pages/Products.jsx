@@ -125,6 +125,18 @@ const Products = () => {
   const [requesting, setRequesting] = useState(false);
 
   /**
+   * Helper to find inventory for a specific branch or fallback to the first one.
+   */
+  const getBranchInventory = (product, branchId) => {
+    if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
+    if (branchId) {
+      const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
+      if (inv) return inv;
+    }
+    return product.branchInventories[0];
+  };
+
+  /**
    * Convert a blob: URL to a data: URL (base64-embedded).
    * This ensures the image bytes are fully loaded BEFORE we write the print HTML.
    */
@@ -387,12 +399,13 @@ const Products = () => {
   const openForm = async (product = null) => {
     setEditProduct(product);
     if (product) {
+      const inv = getBranchInventory(product, selectedBranchId);
       setFormData({
         name: product.name || '',
         description: product.description || '',
-        purchasePrice: product.purchasePrice || '',
-        salePrice: product.salePrice || '',
-        stock: product.stock || '0',
+        purchasePrice: inv?.purchasePrice || '',
+        salePrice: inv?.salePrice || '',
+        stock: inv?.stock || '0',
         productCode: product.productCode || '',
         categoryId: product.categoryId || '',
         unitName: product.unitName || 'القطعة',
@@ -526,7 +539,10 @@ const Products = () => {
     }
   };
 
-  const lowStockItems = data.filter(p => Number(p.stock) <= 10).slice(0, 3);
+  const lowStockItems = data.filter(p => {
+    const inv = getBranchInventory(p, selectedBranchId);
+    return inv && Number(inv.stock) <= 10;
+  }).slice(0, 3);
   const filteredItems = useMemo(() => {
     let result = data.filter(p => {
       const matchesSearch = !debouncedSearch || 
@@ -543,8 +559,17 @@ const Products = () => {
     // Sorting
     result.sort((a, b) => {
       const [field, order] = sort.split(',');
-      const valA = a[field] ?? '';
-      const valB = b[field] ?? '';
+      
+      let valA, valB;
+      if (field === 'salePrice' || field === 'purchasePrice' || field === 'stock') {
+        const invA = getBranchInventory(a, selectedBranchId);
+        const invB = getBranchInventory(b, selectedBranchId);
+        valA = invA ? invA[field] : 0;
+        valB = invB ? invB[field] : 0;
+      } else {
+        valA = a[field] ?? '';
+        valB = b[field] ?? '';
+      }
       
       if (typeof valA === 'string') {
         const comparison = valA.localeCompare(valB, 'ar');
@@ -867,13 +892,20 @@ const Products = () => {
                       </td>
                       <td>{p.categoryName || '—'}</td>
                       <td><code>{p.productCode || '—'}</code></td>
-                      <td>{Number(p.purchasePrice).toFixed(2)}</td>
-                      <td style={{ fontWeight: 700 }}>{Number(p.salePrice).toFixed(2)}</td>
-                      <td>
-                        <span className={`prd-stock-badge ${Number(p.stock) <= 5 ? 'prd-stock-out' : Number(p.stock) <= 15 ? 'prd-stock-low' : 'prd-stock-ok'}`}>
-                          {Number(p.stock).toFixed(0)}
-                        </span>
-                      </td>
+                      {(() => {
+                        const inv = getBranchInventory(p, selectedBranchId);
+                        return (
+                          <>
+                            <td>{inv ? Number(inv.purchasePrice).toFixed(2) : '0.00'}</td>
+                            <td style={{ fontWeight: 700 }}>{inv ? Number(inv.salePrice).toFixed(2) : '0.00'}</td>
+                            <td>
+                              <span className={`prd-stock-badge ${!inv || Number(inv.stock) <= 5 ? 'prd-stock-out' : Number(inv.stock) <= 15 ? 'prd-stock-low' : 'prd-stock-ok'}`}>
+                                {inv ? Number(inv.stock).toFixed(0) : '0'}
+                              </span>
+                            </td>
+                          </>
+                        );
+                      })()}
                       <td>
                         <div className="prd-actions">
                           <button className="prd-action-btn prd-btn-stock" onClick={() => openStockModal(p)} title="توزيع المخزون">
