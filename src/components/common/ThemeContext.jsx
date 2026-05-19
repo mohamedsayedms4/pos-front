@@ -1,9 +1,9 @@
-import * as React from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 
-const ThemeContext = React.createContext();
+const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = React.useState(() => {
+  const [theme, setTheme] = useState(() => {
     // Check localStorage or system preference
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('app-theme');
@@ -13,7 +13,7 @@ export const ThemeProvider = ({ children }) => {
     return 'dark';
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       // Apply theme to document element
       document.documentElement.setAttribute('data-theme', theme);
@@ -41,7 +41,7 @@ export const ThemeProvider = ({ children }) => {
 };
 
 export const useTheme = () => {
-  const context = React.useContext(ThemeContext);
+  const context = useContext(ThemeContext);
   if (!context) throw new Error('useTheme must be used within ThemeProvider');
   return context;
 };

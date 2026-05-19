@@ -3,21 +3,26 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Api, { API_BASE } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
-import '../styles/pages/ProductDetailsPremium.css';
+import { useBranch } from '../context/BranchContext';
+import html2pdf from 'html2pdf.js';
+import SingleProductPdf from '../components/pdf/SingleProductPdf';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useGlobalUI();
+  const { selectedBranchId } = useBranch();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mainImage, setMainImage] = useState(null);
+  const pdfRef = React.useRef(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // ─── Unit management ───────────────────────────────────────────────────────
   const [units, setUnits] = useState([]);
   const [showUnitForm, setShowUnitForm] = useState(false);
-  const [editingUnit, setEditingUnit] = useState(null);
+  const [editingUnit, setEditingUnit] = useState(null); // null = add mode
   const [unitForm, setUnitForm] = useState({
     unitName: '', conversionFactor: '', purchasePrice: '', salePrice: '',
     isDefaultPurchase: false, isDefaultSale: false
@@ -88,7 +93,6 @@ const ProductDetails = () => {
   };
 
   const handleDeleteUnit = async (unitId) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذه الوحدة؟')) return;
     try {
       await Api.deleteProductUnit(id, unitId);
       toast('تم حذف الوحدة', 'success');
@@ -129,6 +133,7 @@ const ProductDetails = () => {
       toast('تم تحديث المخزون بنجاح', 'success');
       setShowStockModal(false);
       loadDistribution();
+      // Also reload product to update global stock
       const prod = await Api.getProduct(id);
       setProduct(prod);
     } catch (err) {
@@ -160,14 +165,10 @@ const ProductDetails = () => {
     if (id) {
       loadProduct();
       loadUnits();
+      loadDistribution();
       loadWarehouses();
     }
   }, [id]);
-
-  const getBranchInventory = (prod, bId = null) => {
-    if (!prod || !prod.branchInventories || prod.branchInventories.length === 0) return null;
-    return prod.branchInventories[0]; // For details header, we show the first one or a summary
-  };
 
   const printCode = async (type) => {
     if (type === 'qrcode') {
@@ -191,11 +192,13 @@ const ProductDetails = () => {
     }
 
     try {
+      // 1. Get Image URL and Config
       const imageUrl = await Api.getProductBarcodeLabel(id);
       const config = await Api.getPrinterConfig();
       const width = config.labelWidthMm || 40;
       const height = config.labelHeightMm || 30;
 
+      // 2. Pre-load image as data URL to avoid blank labels
       const dataUrl = await new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -210,6 +213,7 @@ const ProductDetails = () => {
         img.src = imageUrl;
       });
 
+      // 3. Print using hidden iframe (no landscape, size:auto)
       const oldFrame = document.getElementById('__barcode_print_frame');
       if (oldFrame) oldFrame.remove();
 
@@ -258,69 +262,114 @@ const ProductDetails = () => {
           if (f) f.remove();
         };
       }
+
       toast('جاري تحضير ملصق الباركود...', 'success');
+
     } catch (err) {
       toast('فشل في الطباعة: ' + err.message, 'error');
     }
   };
 
-  if (loading) return <Loader message="جاري تحميل تفاصيل المنتج..." />;
+  const handleDownloadPdf = () => {
+    if (!product) return;
+    setGeneratingPdf(true);
+    toast('جاري تحضير ملف PDF...', 'success');
+    setTimeout(() => {
+      if (pdfRef.current) {
+        const opt = {
+          margin:       0,
+          filename:     `product_${product.productCode || product.id}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().from(pdfRef.current).set(opt).save().then(() => {
+          setGeneratingPdf(false);
+          toast('تم تحميل التقرير بنجاح', 'success');
+        }).catch(() => setGeneratingPdf(false));
+      } else {
+        setGeneratingPdf(false);
+      }
+    }, 500);
+  };
+
+  if (loading) {
+    return <Loader message="جاري تحميل تفاصيل المنتج..." />;
+  }
 
   if (error || !product) {
     return (
-      <div className="details-page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="det-info-card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⚠️</div>
-          <h2>{error ? 'حدث خطأ' : 'لم يتم العثور على المنتج'}</h2>
-          <p style={{ color: 'var(--det-text-secondary)', marginBottom: '30px' }}>{error || 'رقم المنتج غير صحيح أو مفقود'}</p>
-          <button className="det-btn-back" style={{ margin: '0 auto' }} onClick={() => navigate('/products')}>العودة للمنتجات</button>
-        </div>
+      <div className="page-section empty-state">
+        <div className="empty-icon">⚠️</div>
+        <h4>{error ? 'حدث خطأ' : 'لم يتم العثور على المنتج'}</h4>
+        <p>{error || 'رقم المنتج غير صحيح أو مفقود'}</p>
+        <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={() => navigate('/products')}>العودة للمنتجات</button>
       </div>
     );
   }
 
-  const stockColor = Number(product.stock) > 0 ? '#10b981' : '#ef4444';
-  const stockText = Number(product.stock) > 0 ? 'متوفر بالمخزن' : 'نفذت الكمية';
+  const branchList = product.branchInventories || [];
+  const totalStock = branchList.reduce((sum, bi) => sum + Number(bi.stock || 0), 0);
+  const totalSoldQuantity = branchList.reduce((sum, bi) => sum + Number(bi.soldQuantity || 0), 0);
+  const totalRealizedProfit = branchList.reduce((sum, bi) => sum + Number(bi.realizedProfit || 0), 0);
+
+  // Find active or default branch prices
+  const activeInventory = branchList.find(bi => Number(bi.branchId) === Number(selectedBranchId)) || branchList[0] || {};
+  const currentPurchasePrice = activeInventory.purchasePrice ?? 0;
+  const currentSalePrice = activeInventory.salePrice ?? 0;
+
+  const badgeColor = totalStock > 0 ? 'var(--accent-emerald)' : 'var(--metro-red)';
+  const badgeText = totalStock > 0 ? 'متوفر بالمخزن' : 'نفذت الكمية';
 
   return (
-    <div className="details-page-container">
-      <div className="det-toolbar">
-        <button className="det-btn-back" onClick={() => navigate('/products')}>
-          <i className="fas fa-arrow-right"></i>
-          <span>العودة للمنتجات</span>
+    <div className="page-section">
+      <div className="toolbar" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost" onClick={() => navigate('/products')}>← عودة للمنتجات</button>
+        <div style={{ flex: 1 }}></div>
+        <button className="btn" style={{ background: 'var(--metro-blue)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(59,130,246,0.2)' }} onClick={() => printCode('barcode')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="2" y="5" width="3" height="14" /><rect x="7" y="5" width="1" height="14" />
+            <rect x="10" y="5" width="3" height="14" /><rect x="15" y="5" width="2" height="14" />
+            <rect x="19" y="5" width="3" height="14" />
+          </svg>
+          طباعة باركود
         </button>
-        <div className="det-actions">
-          <button className="det-btn-action" style={{ background: '#3b82f6', color: '#fff' }} onClick={() => printCode('barcode')}>
-            <i className="fas fa-barcode"></i>
-            <span>طباعة باركود</span>
-          </button>
-          <button className="det-btn-action" style={{ background: '#8b5cf6', color: '#fff' }} onClick={() => printCode('qrcode')}>
-            <i className="fas fa-qrcode"></i>
-            <span>طباعة QR</span>
-          </button>
-        </div>
+        <button className="btn" style={{ background: 'var(--accent-purple, #8b5cf6)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(139,92,246,0.2)' }} onClick={() => printCode('qrcode')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" /><path d="M14 14h7v7h-7z" /><path d="M14 14v-2M14 21v-2M21 14v-2M21 21v-2M21 17h2M18 17h.01" />
+          </svg>
+          طباعة QR
+        </button>
+        <button className="btn" style={{ background: '#e74c3c', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(231,76,60,0.2)' }} onClick={handleDownloadPdf} disabled={generatingPdf}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
+            <path d="M9.5 17.5l1.5-3 1.5 3 1.5-3 1.5 3" stroke="currentColor" strokeWidth="1" fill="none"/>
+          </svg>
+          {generatingPdf ? 'جاري التحضير...' : 'تنزيل PDF'}
+        </button>
       </div>
 
-      <div className="det-main-grid">
-        {/* Gallery Section */}
-        <div className="det-gallery-card">
-          <div className="det-main-img-wrapper">
+      <div className="product-details-grid">
+        {/* Gallery */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: (product.imageUrls && product.imageUrls.length > 1) ? '20px' : '0', minHeight: '200px', alignItems: 'center' }}>
             {mainImage
-              ? <img src={mainImage} className="det-main-img" alt={product.name} />
-              : <div style={{ fontSize: '80px' }}>📦</div>
+              ? <img src={mainImage} style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} alt="Main Product" />
+              : <div style={{ fontSize: '100px', color: 'var(--text-dim)' }}>📦</div>
             }
           </div>
           {product.imageUrls && product.imageUrls.length > 0 && (
-            <div className="det-thumbnails">
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', paddingTop: '15px', borderTop: '1px solid var(--border-color)' }}>
               {product.imageUrls.map(img => {
                 const thumbUrl = img.startsWith('http') ? img : `${API_BASE}/products/images/${img.split('/').pop()}`;
                 return (
                   <img
                     key={thumbUrl}
                     src={thumbUrl}
-                    className={`det-thumb ${mainImage === thumbUrl ? 'active' : ''}`}
                     alt="thumbnail"
                     onClick={() => setMainImage(thumbUrl)}
+                    style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: mainImage === thumbUrl ? '2px solid var(--metro-blue)' : '2px solid var(--border-color)', cursor: 'pointer', background: 'var(--bg-card)' }}
                   />
                 );
               })}
@@ -328,296 +377,351 @@ const ProductDetails = () => {
           )}
         </div>
 
-        {/* Info Section */}
-        <div className="det-info-card">
-          <div className="det-product-header">
-            <h2>{product.name}</h2>
-            <div className="det-meta-row">
-              <span className="det-badge">{product.categoryName || 'بدون فئة'}</span>
-              <span style={{ color: 'var(--det-text-secondary)' }}>|</span>
-              <span style={{ color: 'var(--det-text-secondary)' }}>كود: <strong>{product.productCode || '—'}</strong></span>
-              <span style={{ color: 'var(--det-text-secondary)' }}>|</span>
-              {(() => {
-                const totalStock = product.branchInventories?.reduce((acc, inv) => acc + (inv.stock || 0), 0) || 0;
-                const isAvailable = totalStock > 0;
-                const sColor = isAvailable ? '#10b981' : '#ef4444';
-                return (
-                  <span style={{ color: sColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: sColor }}></span>
-                    {isAvailable ? 'متوفر بالمخزن' : 'نفذت الكمية'} ({totalStock})
-                  </span>
-                );
-              })()}
-            </div>
-          </div>
-
-          <div className="det-metrics-grid">
-            {(() => {
-              const mainInv = getBranchInventory(product);
-              return (
+        {/* Details */}
+        <div className="card">
+          <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '20px', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0', color: 'var(--text-primary)' }}>
+              {product.name}
+            </h2>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '0.9rem', flexWrap: 'wrap' }}>
+              <span style={{ background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>{product.categoryName || 'بدون فئة'}</span>
+              <span style={{ color: 'var(--text-muted)' }}>|</span>
+              <span style={{ color: 'var(--text-muted)' }}>كود: <strong>{product.productCode || '—'}</strong></span>
+              {units && units.length > 0 && (
                 <>
-                  <div className="det-metric-item">
-                    <div className="det-metric-label"><i className="fas fa-tag"></i> سعر البيع</div>
-                    <div className="det-metric-value" style={{ color: '#10b981' }}>{Number(mainInv?.salePrice || 0).toLocaleString()} <small>ج.م</small></div>
-                  </div>
-                  <div className="det-metric-item">
-                    <div className="det-metric-label"><i className="fas fa-shopping-basket"></i> سعر الشراء</div>
-                    <div className="det-metric-value">{Number(mainInv?.purchasePrice || 0).toLocaleString()} <small>ج.م</small></div>
-                  </div>
-                  <div className="det-metric-item">
-                    <div className="det-metric-label"><i className="fas fa-boxes"></i> إجمالي المخزون</div>
-                    <div className="det-metric-value">
-                      {product.branchInventories?.reduce((acc, inv) => acc + (inv.stock || 0), 0).toLocaleString()} 
-                      <small>{product.unitName || 'قطعة'}</small>
-                    </div>
+                  <span style={{ color: 'var(--text-muted)' }}>|</span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {units.map(u => (
+                      <span key={u.id} className="badge" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--accent-emerald)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '0.75rem' }}>
+                        📦 {u.unitName} = {u.conversionFactor} {product.unitName || 'قطعة'}
+                      </span>
+                    ))}
                   </div>
                 </>
-              );
-            })()}
-            <div className="det-metric-item">
-              <div className="det-metric-label"><i className="fas fa-chart-line"></i> الكمية المباعة</div>
-              <div className="det-metric-value" style={{ color: '#3b82f6' }}>{product.branchInventories?.reduce((acc, inv) => acc + (inv.soldQuantity || 0), 0).toLocaleString()}</div>
+              )}
+              <span style={{ color: 'var(--text-muted)' }}>|</span>
+              <span style={{ color: badgeColor, fontWeight: 600 }}>{badgeText}</span>
             </div>
-            <div className="det-metric-item">
-              <div className="det-metric-label"><i className="fas fa-hand-holding-usd"></i> الربح الفعلي</div>
-              <div className="det-metric-value" style={{ color: '#f59e0b' }}>{product.branchInventories?.reduce((acc, inv) => acc + (inv.realizedProfit || 0), 0).toLocaleString()} <small>ج.م</small></div>
+          </div>
+
+          <div className="card-body no-padding product-info-metrics">
+            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>سعر البيع (الفرع الحالي)</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-emerald-light)' }}>{Number(currentSalePrice).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>ج.م</span></div>
             </div>
-            <div className="det-metric-item">
-              <div className="det-metric-label"><i className="fas fa-eye"></i> المشاهدات</div>
-              <div className="det-metric-value">{product.viewCount || 0}</div>
+
+            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>سعر الشراء (الفرع الحالي)</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{Number(currentPurchasePrice).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>ج.م</span></div>
             </div>
-            <div className="det-metric-item det-full-width">
-              <div className="det-metric-label"><i className="fas fa-info-circle"></i> الوصف</div>
-              <div style={{ color: 'var(--det-text-secondary)', lineHeight: 1.6 }}>{product.description || 'لا يوجد وصف متاح لهذا المنتج.'}</div>
+
+            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>إجمالي المخزون (كل الفروع)</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{Number(totalStock).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{product.unitName || 'القطعة'}</span></div>
+            </div>
+
+            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>إجمالي المبيعات (كل الفروع)</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--metro-blue)' }}>{Number(totalSoldQuantity).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{product.unitName || 'القطعة'}</span></div>
+            </div>
+
+            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>إجمالي الأرباح (كل الفروع)</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-amber)' }}>{Number(totalRealizedProfit).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>ج.م</span></div>
+            </div>
+
+            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>مرات المشاهدة</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>👁️ {product.viewCount || 0}</div>
+            </div>
+
+            <div style={{ gridColumn: 'span 3', background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>الوصف</div>
+              <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{product.description || 'لا يوجد وصف متاح لهذا المنتج.'}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Units Management */}
-      <div className="det-section-card">
-        <div className="det-section-header">
-          <h3><i className="fas fa-layer-group" style={{ color: '#8b5cf6' }}></i> وحدات التغليف والكميات الجملة</h3>
-          <button className="det-btn-action" style={{ background: 'var(--det-glass)', border: '1px solid var(--det-glass-border)', color: 'var(--det-text-primary)' }} onClick={openAddUnit}>
-            <i className="fas fa-plus"></i> إضافة وحدة
-          </button>
+      {/* ═══ Branch Inventories Section ══════════════════════════════════════════ */}
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="card-header">
+          <h3>📍 أسعار ومخزون الفروع التفصيلية</h3>
         </div>
+        <div className="card-body no-padding">
+          <div className="table-wrapper">
+            {(!product.branchInventories || product.branchInventories.length === 0) ? (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px' }}>
+                لا توجد بيانات فروع متوفرة لهذا المنتج.
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>الفرع</th>
+                    <th>سعر الشراء</th>
+                    <th>سعر البيع</th>
+                    <th>المخزون</th>
+                    <th>الكمية المباعة</th>
+                    <th>الربح الفعلي</th>
+                    <th>المتجر الإلكتروني</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {product.branchInventories.map((bi) => {
+                    const isCurrent = Number(bi.branchId) === Number(selectedBranchId);
+                    return (
+                      <tr key={bi.branchId} style={{ background: isCurrent ? 'var(--bg-hover)' : 'transparent', borderLeft: isCurrent ? '4px solid var(--metro-blue)' : 'none' }}>
+                        <td style={{ fontWeight: 600 }}>
+                          📍 {bi.branchName} {isCurrent && <span style={{ fontSize: '0.75rem', color: 'var(--metro-blue)', marginRight: '5px' }}>(الفرع النشط الحالي)</span>}
+                        </td>
+                        <td>{Number(bi.purchasePrice).toFixed(2)} ج.م</td>
+                        <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{Number(bi.salePrice).toFixed(2)} ج.م</td>
+                        <td>
+                          <span className={`badge ${Number(bi.stock) <= 5 ? 'badge-danger' : Number(bi.stock) <= 15 ? 'badge-warning' : 'badge-success'}`}>
+                            {Number(bi.stock).toFixed(0)}
+                          </span>
+                        </td>
+                        <td>{Number(bi.soldQuantity).toFixed(0)}</td>
+                        <td style={{ fontWeight: 600, color: 'var(--accent-amber)' }}>{Number(bi.realizedProfit).toFixed(2)} ج.م</td>
+                        <td>
+                          <span className={`badge ${bi.showInStore ? 'badge-success' : 'badge-secondary'}`}>
+                            {bi.showInStore ? '🌐 معروض أونلاين' : '🔒 مخفي'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
 
-        {showUnitForm && (
-          <div className="det-info-card" style={{ marginBottom: '24px', background: 'rgba(0,0,0,0.1)' }}>
-            <form onSubmit={handleSaveUnit}>
-               <h4 style={{ marginBottom: '20px' }}>{editingUnit ? 'تعديل الوحدة' : 'إضافة وحدة جديدة'}</h4>
-               <div className="ana-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-                  <div className="form-group">
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>اسم الوحدة</label>
-                    <input className="form-control" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                      value={unitForm.unitName} onChange={e => setUnitForm({ ...unitForm, unitName: e.target.value })} required />
-                  </div>
-                  <div className="form-group">
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>معامل التحويل</label>
-                    <input className="form-control" type="number" step="0.001" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                      value={unitForm.conversionFactor} onChange={e => setUnitForm({ ...unitForm, conversionFactor: e.target.value })} required />
-                  </div>
-                  <div className="form-group">
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>سعر الشراء</label>
-                    <input className="form-control" type="number" step="0.01" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                      value={unitForm.purchasePrice} onChange={e => setUnitForm({ ...unitForm, purchasePrice: e.target.value })} />
-                  </div>
-                  <div className="form-group">
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>سعر البيع</label>
-                    <input className="form-control" type="number" step="0.01" style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                      value={unitForm.salePrice} onChange={e => setUnitForm({ ...unitForm, salePrice: e.target.value })} />
-                  </div>
-               </div>
-               <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={unitForm.isDefaultPurchase} onChange={e => setUnitForm({ ...unitForm, isDefaultPurchase: e.target.checked })} /> افتراضي شراء
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={unitForm.isDefaultSale} onChange={e => setUnitForm({ ...unitForm, isDefaultSale: e.target.checked })} /> افتراضي بيع
-                  </label>
-               </div>
-               <div style={{ display: 'flex', gap: '12px' }}>
-                  <button type="submit" className="det-btn-action" style={{ background: '#3b82f6', color: '#fff' }} disabled={savingUnit}>
-                    {savingUnit ? 'جاري الحفظ...' : 'حفظ الوحدة'}
-                  </button>
-                  <button type="button" className="det-btn-action" style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444' }} onClick={() => setShowUnitForm(false)}>إلغاء</button>
-               </div>
+      {/* ═══ Unit Management Section ══════════════════════════════════════════ */}
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="card-header">
+          <h3>📦 وحدات التغليف والكميات الجملة</h3>
+          <button className="btn btn-primary btn-sm" onClick={openAddUnit}>+ إضافة وحدة</button>
+        </div>
+        <div className="card-body">
+
+          {/* Unit Form */}
+          {showUnitForm && (
+            <form onSubmit={handleSaveUnit} style={{
+              background: 'var(--bg-elevated)', borderRadius: '8px',
+              padding: '20px', marginBottom: '20px', border: '1px solid var(--border-color)'
+            }}>
+              <h4 style={{ marginBottom: '16px' }}>{editingUnit ? 'تعديل الوحدة' : 'إضافة وحدة جديدة'}</h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>اسم الوحدة *</label>
+                  <input className="form-control" placeholder="كرتونة، شكارة، دستة..." value={unitForm.unitName}
+                    onChange={e => setUnitForm({ ...unitForm, unitName: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label>معامل التحويل * <small style={{ color: 'var(--text-muted)' }}>(كم وحدة أساسية بداخلها)</small></label>
+                  <input className="form-control" type="number" step="0.001" min="0.001" placeholder="12، 10، 6..." value={unitForm.conversionFactor}
+                    onChange={e => setUnitForm({ ...unitForm, conversionFactor: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label>سعر الشراء</label>
+                  <input className="form-control" type="number" step="0.01" min="0" placeholder="120.00" value={unitForm.purchasePrice}
+                    onChange={e => setUnitForm({ ...unitForm, purchasePrice: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>سعر البيع بالجملة</label>
+                  <input className="form-control" type="number" step="0.01" min="0" placeholder="150.00" value={unitForm.salePrice}
+                    onChange={e => setUnitForm({ ...unitForm, salePrice: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '20px', marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={unitForm.isDefaultPurchase}
+                    onChange={e => setUnitForm({ ...unitForm, isDefaultPurchase: e.target.checked })} />
+                  الوحدة الافتراضية للشراء
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={unitForm.isDefaultSale}
+                    onChange={e => setUnitForm({ ...unitForm, isDefaultSale: e.target.checked })} />
+                  الوحدة الافتراضية للبيع
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="submit" className="btn btn-primary" disabled={savingUnit}>
+                  {savingUnit ? 'جاري الحفظ...' : (editingUnit ? 'حفظ التعديل' : 'إضافة الوحدة')}
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowUnitForm(false)}>إلغاء</button>
+              </div>
             </form>
-          </div>
-        )}
+          )}
 
-        <div className="det-table-wrapper">
-          <table className="det-table units">
-            <thead>
-              <tr>
-                <th>اسم الوحدة</th>
-                <th>معامل التحويل</th>
-                <th>سعر الشراء</th>
-                <th>سعر البيع</th>
-                <th>افتراضي</th>
-                <th>إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {units.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--det-text-secondary)' }}>لا توجد وحدات إضافية</td></tr>
-              ) : (
-                units.map(u => (
-                  <tr key={u.id}>
-                    <td data-label="اسم الوحدة" style={{ fontWeight: 700 }}>{u.unitName}</td>
-                    <td data-label="معامل التحويل">×{u.conversionFactor} {product.unitName || 'قطعة'}</td>
-                    <td data-label="سعر الشراء">{Number(u.purchasePrice || 0).toLocaleString()}</td>
-                    <td data-label="سعر البيع">{Number(u.salePrice || 0).toLocaleString()}</td>
-                    <td data-label="افتراضي">{u.isDefaultPurchase ? '📥 ' : ''} {u.isDefaultSale ? '📤' : ''}</td>
-                    <td data-label="إجراءات">
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="det-btn-action" style={{ padding: '6px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }} onClick={() => openEditUnit(u)}><i className="fas fa-edit"></i></button>
-                        <button className="det-btn-action" style={{ padding: '6px', background: 'rgba(239,68,68,0.1)', color: '#ef4444' }} onClick={() => handleDeleteUnit(u.id)}><i className="fas fa-trash"></i></button>
-                      </div>
-                    </td>
+          {/* Units Table */}
+          {units.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px' }}>
+              لا توجد وحدات جملة محددة — المنتج يُباع ويُشترى بالوحدة الأساسية ({product.unitName || 'قطعة'})
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>اسم الوحدة</th>
+                    <th>معامل التحويل</th>
+                    <th>= كم وحدة أساسية</th>
+                    <th>سعر الشراء</th>
+                    <th>سعر البيع الجملة</th>
+                    <th>افتراضي شراء</th>
+                    <th>افتراضي بيع</th>
+                    <th>إجراءات</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Branch Inventory & Pricing */}
-      <div className="det-section-card">
-        <div className="det-section-header">
-          <h3><i className="fas fa-building" style={{ color: '#3b82f6' }}></i> توفر المنتج وأسعاره في الفروع</h3>
-        </div>
-
-        <div className="det-table-wrapper">
-          <table className="det-table branch-inventory">
-            <thead>
-              <tr>
-                <th>الفرع</th>
-                <th>سعر الشراء</th>
-                <th>سعر البيع</th>
-                <th>المخزون</th>
-                <th>المبيعات</th>
-                <th>الربح المحقق</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!product.branchInventories || product.branchInventories.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--det-text-secondary)' }}>غير متوفر في أي فرع حالياً</td></tr>
-              ) : (
-                product.branchInventories.map((inv, idx) => (
-                  <tr key={idx}>
-                    <td data-label="الفرع">
-                       <div style={{ fontWeight: 700 }}>{inv.branchName}</div>
-                    </td>
-                    <td data-label="سعر الشراء">{Number(inv.purchasePrice || 0).toLocaleString()}</td>
-                    <td data-label="سعر البيع" style={{ fontWeight: 800, color: '#10b981' }}>{Number(inv.salePrice || 0).toLocaleString()}</td>
-                    <td data-label="المخزون" style={{ fontSize: '1.1rem', fontWeight: 800 }}>{Number(inv.stock || 0).toLocaleString()}</td>
-                    <td data-label="المبيعات">{Number(inv.soldQuantity || 0).toLocaleString()}</td>
-                    <td data-label="الربح المحقق" style={{ color: '#f59e0b', fontWeight: 700 }}>{Number(inv.realizedProfit || 0).toLocaleString()}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Stock Distribution */}
-      <div className="det-section-card">
-        <div className="det-section-header">
-          <h3><i className="fas fa-warehouse" style={{ color: '#3b82f6' }}></i> تفاصيل المخازن (الكميات والحدود)</h3>
-          <button className="det-btn-action" style={{ background: 'var(--det-glass)', border: '1px solid var(--det-glass-border)', color: 'var(--det-text-primary)' }} onClick={() => { setStockForm({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' }); setShowStockModal(true); }}>
-            <i className="fas fa-sync"></i> تحديث المخزون
-          </button>
-        </div>
-
-        <div className="det-table-wrapper">
-          <table className="det-table stock">
-            <thead>
-              <tr>
-                <th>الفرع / المخزن</th>
-                <th>الكمية المتوفرة</th>
-                <th>الحد الأدنى</th>
-                <th>الحالة</th>
-                <th>إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {distribution.length === 0 ? (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'var(--det-text-secondary)' }}>لا توجد بيانات مخازن تفصيلية متاحة</td></tr>
-              ) : (
-                distribution.map((item, idx) => {
-                  const isLow = item.minQuantity != null && Number(item.quantity) <= Number(item.minQuantity);
-                  return (
-                    <tr key={idx}>
-                      <td data-label="الفرع / المخزن">
-                         <div style={{ fontWeight: 700 }}>{item.warehouseName}</div>
-                         <div style={{ fontSize: '0.8rem', color: 'var(--det-text-secondary)' }}>{item.branchName}</div>
+                </thead>
+                <tbody>
+                  {units.map(u => (
+                    <tr key={u.id}>
+                      <td style={{ fontWeight: 600 }}>{u.unitName}</td>
+                      <td>×{u.conversionFactor}</td>
+                      <td style={{ color: 'var(--accent-emerald)' }}>
+                        1 {u.unitName} = <strong>{u.conversionFactor}</strong> {product.unitName || 'قطعة'}
                       </td>
-                      <td data-label="الكمية المتوفرة" style={{ fontSize: '1.1rem', fontWeight: 800 }}>{Number(item.quantity).toLocaleString()}</td>
-                      <td data-label="الحد الأدنى">{item.minQuantity || '—'}</td>
-                      <td data-label="الحالة">
-                        <span className="det-badge" style={{ background: isLow ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', color: isLow ? '#ef4444' : '#10b981', border: 'none' }}>
-                          {isLow ? '⚠️ منخفض' : '✅ جيد'}
-                        </span>
-                      </td>
-                      <td data-label="إجراءات">
-                         <button className="det-btn-action" style={{ padding: '6px', background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }} onClick={() => { setStockForm({ warehouseId: item.warehouseId, quantity: item.quantity, minQuantity: item.minQuantity || '', maxQuantity: item.maxQuantity || '' }); setShowStockModal(true); }}><i className="fas fa-edit"></i></button>
+                      <td>{u.purchasePrice ? Number(u.purchasePrice).toFixed(2) : '—'}</td>
+                      <td>{u.salePrice ? Number(u.salePrice).toFixed(2) : '—'}</td>
+                      <td style={{ textAlign: 'center' }}>{u.isDefaultPurchase ? '✅' : '—'}</td>
+                      <td style={{ textAlign: 'center' }}>{u.isDefaultSale ? '✅' : '—'}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openEditUnit(u)}>✏️</button>
+                          <button className="btn btn-icon btn-ghost" title="حذف" style={{ color: 'var(--metro-red)' }} onClick={() => handleDeleteUnit(u.id)}>🗑️</button>
+                        </div>
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* ═══ Stock Distribution Section ══════════════════════════════════════════ */}
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0 }}>🏭 توزيع المخزون على الفروع والمخازن</h3>
+          <button className="btn btn-primary btn-sm" onClick={() => {
+            setStockForm({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
+            setShowStockModal(true);
+          }}>+ إضافة/تعديل مخزون</button>
+        </div>
+        <div className="card-body no-padding">
+          <div className="table-wrapper">
+            {distribution.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px' }}>
+                هذا المنتج غير موجود حالياً في أي مخزن.
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>الفرع</th>
+                    <th>المخزن</th>
+                    <th>الكمية المتوفرة</th>
+                    <th>الحد الأدنى</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {distribution.map((item, idx) => {
+                    const isLow = item.minQuantity != null && Number(item.quantity) <= Number(item.minQuantity);
+                    return (
+                      <tr key={`${item.warehouseId}-${idx}`}>
+                        <td>📍 {item.branchName}</td>
+                        <td style={{ fontWeight: 600 }}>🏭 {item.warehouseName}</td>
+                        <td>{Number(item.quantity).toFixed(2)} {product.unitName || 'قطعة'}</td>
+                        <td>{item.minQuantity != null ? Number(item.minQuantity).toFixed(2) : '—'}</td>
+                        <td>
+                          {isLow ? (
+                            <span className="badge badge-danger">⚠️ مخزون منخفض</span>
+                          ) : (
+                            <span className="badge badge-success">✅ متوفر</span>
+                          )}
+                        </td>
+                        <td>
+                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => {
+                            setStockForm({
+                              warehouseId: item.warehouseId,
+                              quantity: item.quantity,
+                              minQuantity: item.minQuantity || '',
+                              maxQuantity: item.maxQuantity || ''
+                            });
+                            setShowStockModal(true);
+                          }}>✏️</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Stock Modal */}
+      {/* Stock Management Modal */}
       {showStockModal && (
-        <div className="det-modal-overlay" onClick={() => setShowStockModal(false)}>
-          <div className="det-modal" onClick={e => e.stopPropagation()}>
-            <div className="det-modal-header">
+        <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal" style={{ width: '100%', maxWidth: '500px' }}>
+            <div className="modal-header">
               <h3>توزيع المخزون</h3>
-              <button style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }} onClick={() => setShowStockModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
             </div>
-            <div className="det-modal-body">
-               <form id="stockForm" onSubmit={handleUpdateStock}>
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px' }}>المخزن المستهدف</label>
-                    <select className="form-control" style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                      value={stockForm.warehouseId} onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
-                      <option value="">اختر المخزن...</option>
-                      {warehouses.map(w => <option key={w.id} value={w.id}>{w.branchName} - {w.name}</option>)}
-                    </select>
+            <div className="modal-body">
+              <form id="stockForm" onSubmit={handleUpdateStock}>
+                <div className="form-group">
+                  <label>المخزن المستهدف *</label>
+                  <select className="form-control" value={stockForm.warehouseId} 
+                    onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
+                    <option value="">اختر المخزن...</option>
+                    {warehouses.map(w => (
+                      <option key={w.id} value={w.id}>
+                        {w.branchName} - {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>الكمية الحالية في هذا المخزن *</label>
+                  <input className="form-control" type="number" step="0.001" value={stockForm.quantity}
+                    onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
+                </div>
+                <div className="grid grid-2 gap-15">
+                  <div className="form-group">
+                    <label>الحد الأدنى (تنبيه)</label>
+                    <input className="form-control" type="number" step="0.001" value={stockForm.minQuantity}
+                      onChange={e => setStockForm({ ...stockForm, minQuantity: e.target.value })} placeholder="اختياري" />
                   </div>
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px' }}>الكمية الحالية</label>
-                    <input className="form-control" type="number" step="0.001" style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                      value={stockForm.quantity} onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
+                  <div className="form-group">
+                    <label>الحد الأقصى</label>
+                    <input className="form-control" type="number" step="0.001" value={stockForm.maxQuantity}
+                      onChange={e => setStockForm({ ...stockForm, maxQuantity: e.target.value })} placeholder="اختياري" />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '8px' }}>الحد الأدنى</label>
-                      <input className="form-control" type="number" step="0.001" style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                        value={stockForm.minQuantity} onChange={e => setStockForm({ ...stockForm, minQuantity: e.target.value })} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '8px' }}>الحد الأقصى</label>
-                      <input className="form-control" type="number" step="0.001" style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--det-bg-dark)', border: '1px solid var(--det-glass-border)', color: '#fff' }}
-                        value={stockForm.maxQuantity} onChange={e => setStockForm({ ...stockForm, maxQuantity: e.target.value })} />
-                    </div>
-                  </div>
-               </form>
+                </div>
+              </form>
             </div>
-            <div className="det-modal-footer">
-               <button className="det-btn-action" style={{ background: 'transparent', color: 'var(--det-text-secondary)' }} onClick={() => setShowStockModal(false)}>إلغاء</button>
-               <button type="submit" form="stockForm" className="det-btn-action" style={{ background: '#3b82f6', color: '#fff' }} disabled={savingStock}>
-                 {savingStock ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-               </button>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost" onClick={() => setShowStockModal(false)}>إلغاء</button>
+              <button type="submit" form="stockForm" className="btn btn-primary" disabled={savingStock}>
+                {savingStock ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Hidden PDF Renderer */}
+      {product && (
+        <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+          <div ref={pdfRef}>
+            <SingleProductPdf product={product} />
           </div>
         </div>
       )}

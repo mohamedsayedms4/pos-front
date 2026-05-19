@@ -56,9 +56,11 @@ const StatTile = ({ id, label, value, subtitle, icon, defaults = {}, onClick, to
     }
   };
 
+  const isHexColor = config.color && config.color.startsWith('#');
+
   return (
     <div 
-      className={`stat-card ${config.color} ${config.size} ${isEditMode ? 'editing-tile' : ''} ${className}`}
+      className={`stat-card ${isHexColor ? '' : config.color} ${config.size} ${isEditMode ? 'editing-tile' : ''} ${className}`}
       draggable={isEditMode}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -69,6 +71,7 @@ const StatTile = ({ id, label, value, subtitle, icon, defaults = {}, onClick, to
         position: 'relative', 
         cursor: isEditMode ? 'grab' : (onClick ? 'pointer' : 'default'),
         order: config.order || 0,
+        backgroundColor: isHexColor ? config.color : undefined,
         ...style
       }}
     >

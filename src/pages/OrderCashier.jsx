@@ -3,12 +3,10 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Api, { API_BASE } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
-import { useBranch } from '../context/BranchContext';
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 
 const OrderCashier = () => {
-    const { selectedBranchId } = useBranch();
     const [cart, setCart] = useState([]);
     const [connected, setConnected] = useState(false);
     const [customers, setCustomers] = useState([]);
@@ -18,15 +16,6 @@ const OrderCashier = () => {
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const { toast } = useGlobalUI();
     const soundRef = useRef(null);
-
-    const getBranchInventory = (product, branchId) => {
-        if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
-        if (branchId) {
-            const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
-            if (inv) return inv;
-        }
-        return product.branchInventories[0];
-    };
 
     useEffect(() => {
         Api.getCustomers(0, 100).then(data => {
@@ -51,11 +40,10 @@ const OrderCashier = () => {
                         if (existing) {
                             return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
                         }
-                        const inv = getBranchInventory(product, selectedBranchId);
                         return [...prev, {
                             id: product.id, name: product.name,
-                            price: Number(inv?.salePrice || 0), qty: 1,
-                            stock: inv?.stock || 999, unitName: product.unitName || ''
+                            price: Number(product.salePrice), qty: 1,
+                            stock: product.stock || 999, unitName: product.unitName || ''
                         }];
                     });
                     if (soundRef.current) { soundRef.current.currentTime = 0; soundRef.current.play().catch(() => {}); }

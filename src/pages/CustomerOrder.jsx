@@ -11,18 +11,7 @@ const PAGE_SIZE = 24;
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 
 /* ─── Product Card for Customers ─── */
-const CustomerProductCard = ({ product, onSelect, branchId }) => {
-  const getBranchInventory = (p, bId) => {
-    if (!p || !p.branchInventories || p.branchInventories.length === 0) return null;
-    if (bId) {
-      const inv = p.branchInventories.find(i => String(i.branchId) === String(bId));
-      if (inv) return inv;
-    }
-    return p.branchInventories[0];
-  };
-
-  const inv = getBranchInventory(product, branchId);
-
+const CustomerProductCard = ({ product, onSelect }) => {
   const imageUrl = product.imageUrls && product.imageUrls.length > 0 && product.imageUrls[0].startsWith('http')
     ? product.imageUrls[0]
     : product.imageUrls && product.imageUrls.length > 0 
@@ -40,7 +29,7 @@ const CustomerProductCard = ({ product, onSelect, branchId }) => {
       </div>
       <div className="product-details">
         <h3>{product.name}</h3>
-        <div className="price">{Number(inv?.salePrice || 0).toFixed(2)} <span>ج.م</span></div>
+        <div className="price">{Number(product.salePrice).toFixed(2)} <span>ج.م</span></div>
       </div>
       <button className="add-btn">+</button>
     </div>
@@ -146,7 +135,7 @@ const CustomerOrder = () => {
 
       <div className="customer-grid">
         {products.map(p => (
-          <CustomerProductCard key={p.id} product={p} onSelect={handleSelect} branchId={branchId} />
+          <CustomerProductCard key={p.id} product={p} onSelect={handleSelect} />
         ))}
         {/* Sentinel */}
         <div ref={observerTarget} style={{ height: '20px', width: '100%' }}></div>

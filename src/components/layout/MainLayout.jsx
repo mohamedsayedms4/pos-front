@@ -8,9 +8,6 @@ import { useGlobalUI } from '../common/GlobalUI';
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('sidebar_collapsed') === 'true';
-  });
   const [isIdle, setIsIdle] = useState(false);
   const idleTimer = useRef(null);
   const { showToast } = useGlobalUI();
@@ -46,8 +43,10 @@ const MainLayout = () => {
   };
 
   useEffect(() => {
+    // Track previous route
     if (currentPathRef.current !== location.pathname) {
       const prevPath = currentPathRef.current;
+      // Map base path for dynamic IDs (e.g. /products/89 -> /products)
       const basePath = '/' + prevPath.split('/')[1];
       prevRouteRef.current = {
         path: prevPath,
@@ -61,13 +60,16 @@ const MainLayout = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
       setIsIdle(true);
-    }, 30000);
+    }, 30000); // 30 seconds
   };
 
   useEffect(() => {
+    // Connect to WebSocket base connection
     ChatService.connect();
 
+    // Subscribe to global messaging updates
     const unsubscribe = ChatService.onMessage((msg) => {
+      // If message is from someone else and user is NOT on the messages page
       const isSelf = msg.senderId === JSON.parse(localStorage.getItem('pos_user'))?.id;
       if (!isSelf && window.location.pathname !== '/messages') {
         showToast(`💬 رسالة جديدة من ${msg.senderName}: ${msg.content.substring(0, 30)}${msg.content.length > 30 ? '...' : ''}`, 'info', () => {
@@ -85,7 +87,7 @@ const MainLayout = () => {
       }
       resetIdleTimer();
     };
-
+    
     wakeEvents.forEach(event => window.addEventListener(event, handleInteraction));
     ambientEvents.forEach(event => window.addEventListener(event, handleInteraction));
 
@@ -103,21 +105,10 @@ const MainLayout = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  const toggleCollapse = () => {
-    const next = !sidebarCollapsed;
-    setSidebarCollapsed(next);
-    localStorage.setItem('sidebar_collapsed', String(next));
-  };
-
   return (
     <div className="app-layout">
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={toggleCollapse}
-      />
-      <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <main className="main-content">
         <Topbar 
           onMenuToggle={toggleSidebar} 
           prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 

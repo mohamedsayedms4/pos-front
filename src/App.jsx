@@ -3,14 +3,16 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Products from './pages/Products.jsx'
+import AddProduct from './pages/AddProduct.jsx'
 import Categories from './pages/Categories.jsx'
+import CategoryDetails from './pages/CategoryDetails.jsx'
 import Suppliers from './pages/Suppliers.jsx'
 import ProductAnalytics from './pages/ProductAnalytics.jsx'
 import Purchases from './pages/Purchases.jsx'
+import PurchaseDetails from './pages/PurchaseDetails.jsx'
 import Users from './pages/Users.jsx'
 import ProductInteractions from './pages/ProductInteractions.jsx'
 import CustomerOffers from './pages/CustomerOffers.jsx'
-import ProductRequests from './pages/ProductRequests.jsx'
 import Audit from './pages/Audit.jsx'
 import Notifications from './pages/Notifications.jsx'
 import ProductDetails from './pages/ProductDetails.jsx'
@@ -21,6 +23,7 @@ import StockReceipts from './pages/StockReceipts.jsx'
 import POS from './pages/POS.jsx'
 import Customers from './pages/Customers.jsx'
 import Sales from './pages/Sales.jsx'
+import SaleDetails from './pages/SaleDetails.jsx'
 import Returns from './pages/Returns.jsx'
 import Treasury from './pages/Treasury.jsx'
 import TreasuryManagement from './pages/TreasuryManagement.jsx'
@@ -43,6 +46,7 @@ import StoreWishlistPage from './pages/StoreWishlistPage.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsOfUse from './pages/TermsOfUse.jsx'
 import FixedAssets from './pages/FixedAssets.jsx'
+import DeletedProducts from './pages/DeletedProducts.jsx'
 import LeaveTypes from './pages/LeaveTypes.jsx'
 import LeaveRequests from './pages/LeaveRequests.jsx'
 import Settings from './pages/Settings.jsx'
@@ -59,12 +63,9 @@ import FacebookAdsDashboard from './pages/FacebookAdsDashboard.jsx'
 import OfflineAudit from './pages/OfflineAudit.jsx'
 import EmployeeCustody from './pages/EmployeeCustody.jsx'
 import TenantRegister from './pages/TenantRegister.jsx'
+import LandingPage from './pages/LandingPage.jsx'
 import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
-import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx'
-import SubscriptionExpired from './pages/SubscriptionExpired.jsx'
-import RecurringInvoices from './pages/RecurringInvoices.jsx'
-import CreditNotes from './pages/CreditNotes.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -91,7 +92,7 @@ function App() {
             <TileEditorModal />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<TenantRegister />} />
                 
@@ -105,7 +106,6 @@ function App() {
                 <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/terms" element={<TermsOfUse />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/subscription-expired" element={<SubscriptionExpired />} />
                 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/customer-order" element={<CustomerOrder />} />
@@ -118,22 +118,25 @@ function App() {
                     <Route element={<ProtectedRoute permission="SALE_READ" />}>
                       <Route path="/pos" element={<POS />} />
                       <Route path="/sales" element={<Sales />} />
+                      <Route path="/sales/view/:id" element={<SaleDetails />} />
                       <Route path="/sales/analytics" element={<SalesAnalytics />} />
                       <Route path="/returns" element={<Returns />} />
-                      <Route path="/credit-notes" element={<CreditNotes />} />
-                      <Route path="/recurring-invoices" element={<RecurringInvoices />} />
                       <Route path="/online-orders" element={<OnlineOrders />} />
                     </Route>
 
                     {/* Products & Inventory */}
                     <Route element={<ProtectedRoute permission="PRODUCT_READ" />}>
                       <Route path="/products" element={<Products />} />
+                      <Route path="/products/add" element={<AddProduct />} />
+                      <Route path="/products/edit/:id" element={<AddProduct />} />
                       <Route path="/products/:id" element={<ProductDetails />} />
                       <Route path="/products/analytics" element={<ProductAnalytics />} />
+                      <Route path="/products/deleted" element={<DeletedProducts />} />
                       <Route path="/products/interactions" element={<ProductInteractions />} />
-                      <Route path="/products/requests" element={<ProductRequests />} />
                       <Route path="/products/offers" element={<CustomerOffers />} />
                       <Route path="/categories" element={<Categories />} />
+                      <Route path="/categories/:id" element={<CategoryDetails />} />
+                      <Route path="/categories/:categoryId/products" element={<Products />} />
                       <Route path="/inventory/report" element={<InventoryReport />} />
                     </Route>
 
@@ -150,6 +153,7 @@ function App() {
                     <Route element={<ProtectedRoute permission="PURCHASE_READ" />}>
                       <Route path="/purchases" element={<Purchases />} />
                       <Route path="/purchases/:supplierName" element={<Purchases />} />
+                      <Route path="/purchases/view/:id" element={<PurchaseDetails />} />
                       <Route path="/stock-receipts" element={<StockReceipts />} />
                     </Route>
 
@@ -219,9 +223,6 @@ function App() {
                     <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>
                       <Route path="/warehouses" element={<Warehouses />} />
                     </Route>
-
-                    {/* Super Admin */}
-                    <Route path="/super-admin" element={<SuperAdminDashboard />} />
 
                     {/* Generic */}
                     <Route path="/notifications" element={<Notifications />} />

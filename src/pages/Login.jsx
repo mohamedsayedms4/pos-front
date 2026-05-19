@@ -144,7 +144,7 @@ const Login = () => {
       <div className="login-card">
         <div className="login-logo">
           <div className="logo-icon">◆</div>
-          <h1>{businessName ? businessName : 'نظام نقاط البيع'}</h1>
+          <h1>{businessName ? businessName : 'بسيط ERP'}</h1>
           <p>{businessName ? 'أهلاً بك مرة أخرى' : 'قم بتسجيل الدخول للمتابعة'}</p>
         </div>
 

@@ -1,37 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
-import '../styles/pages/TreasuryPremium.css';
-
-const CustomSelect = ({ options, value, onChange, icon }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find(o => o.value === value) || options[0];
-  return (
-    <div className="trs-custom-select-container">
-      <div className={`trs-custom-select-header ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)}>
-        <i className={`fas ${icon} icon-start`}></i>
-        <span className="selected-text">{selectedOption.label}</span>
-        <i className="fas fa-chevron-down icon-end"></i>
-      </div>
-      {isOpen && (
-        <>
-          <div className="trs-custom-select-overlay" onClick={() => setIsOpen(false)}></div>
-          <div className="trs-custom-select-dropdown">
-            {options.map(opt => (
-              <div key={opt.value} className={`trs-custom-select-item ${opt.value === value ? 'active' : ''}`} onClick={() => { onChange(opt.value); setIsOpen(false); }}>
-                {opt.label}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
+import StatTile from '../components/common/StatTile';
 
 const Treasury = () => {
+  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [treasury, setTreasury] = useState(null);
@@ -42,6 +17,7 @@ const Treasury = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
 
+  // Pagination & Search state
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -49,18 +25,31 @@ const Treasury = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const pageSize = 20;
 
+  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
   useEffect(() => {
     const user = Api._getUser();
     const branchFromUrl = searchParams.get('branchId');
-    if (branchFromUrl) setSelectedBranchId(branchFromUrl);
-    else if (user && user.branchId) setSelectedBranchId(user.branchId);
 
-    Api.getBranches().then(setBranches).catch(() => {});
+    if (branchFromUrl) {
+      setSelectedBranchId(branchFromUrl);
+    } else if (user && user.branchId) {
+      setSelectedBranchId(user.branchId);
+    }
+
+    const loadBranches = async () => {
+      try {
+        const data = await Api.getBranches();
+        setBranches(data);
+      } catch (e) { }
+    };
+    loadBranches();
   }, [location.search]);
 
   useEffect(() => {
@@ -78,8 +67,30 @@ const Treasury = () => {
       setTotalPages(res.totalPages || 0);
       setTotalElements(res.totalItems || res.totalElements || 0);
       setCurrentPage(res.currentPage ?? res.number ?? 0);
-    } catch (err) { toast(err.message, 'error'); }
-    finally { setLoading(false); }
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRowClick = (t) => {
+    if (!t.sourceId) return;
+
+    if (t.source === 'SALE') {
+      navigate(`/sales/view/${t.sourceId}`);
+    } else if (t.source === 'PURCHASE') {
+      navigate(`/purchases/view/${t.sourceId}`);
+    } else if (t.source === 'RETURN') {
+      // In the current system, we might be able to go to /sales/view or /returns
+      // If sourceId is the return ID, navigating to /returns is safest.
+      navigate(`/returns`);
+    } else if (t.source === 'DEBT_PAYMENT' || t.source === 'INSTALLMENT_PAYMENT') {
+      navigate(`/debts`);
+    } else if (t.source === 'EXPENSE') {
+      navigate(`/expenses`);
+    }
+    // other sources can be ignored or customized later
   };
 
   const calculateSummary = () => {
@@ -90,159 +101,188 @@ const Treasury = () => {
 
   const summary = calculateSummary();
 
-  const sourceConfig = {
-    SALE: { label: 'فاتورة مبيعات', color: '#6366f1' },
-    RETURN: { label: 'مرتجع مبيعات', color: '#f59e0b' },
-    PURCHASE: { label: 'فاتورة مشتريات', color: '#ef4444' },
-    INSTALLMENT_PAYMENT: { label: 'قسط مورد', color: '#8b5cf6' },
-    SUPPLIER_PAYMENT: { label: 'دفعة مورد', color: '#10b981' },
-  };
-
   return (
-    <div className="treasury-container">
-      {/* 1. Header */}
-      <div className="trs-header-row">
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="trs-breadcrumbs">
-            <Link to="/dashboard">الرئيسية</Link> / <span>المالية</span>
-          </div>
-          <h1>الخزنة المركزية</h1>
-        </div>
-        <div className="trs-header-actions">
-          <button className="trs-btn-premium trs-btn-blue" onClick={() => loadData()}>
-            <i className="fas fa-sync-alt"></i> تحديث
-          </button>
-        </div>
+    <div className="page-section" style={{ direction: 'rtl' }}>
+      <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+        <StatTile
+          id="trs_balance"
+          label="رصيد الخزنة الحالي"
+          value={treasury ? `${treasury.balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م` : '0.00 ج.م'}
+          icon="💰"
+          defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+        />
+        <StatTile
+          id="trs_total_in"
+          label="إجمالي الوارد (بالصفحة)"
+          value={summary.totalIn.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+          icon="↗️"
+          defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
+        />
+        <StatTile
+          id="trs_total_out"
+          label="إجمالي الصادر (بالصفحة)"
+          value={summary.totalOut.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+          icon="↘️"
+          defaults={{ color: 'crimson', size: 'tile-sq-sm', order: 3 }}
+        />
       </div>
 
-      {/* 2. Stats Grid */}
-      <div className="trs-stats-grid">
-        <div className="trs-stat-card">
-          <div className="trs-stat-info">
-            <h4>رصيد الخزنة</h4>
-            <div className="trs-stat-value">{treasury ? treasury.balance.toLocaleString('ar-EG') : '0'} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
-          </div>
-          <div className="trs-stat-visual">
-            <div className="trs-stat-icon icon-blue">
-              <i className="fas fa-vault"></i>
-            </div>
-          </div>
-        </div>
-        <div className="trs-stat-card">
-          <div className="trs-stat-info">
-            <h4>إجمالي الوارد</h4>
-            <div className="trs-stat-value">{summary.totalIn.toLocaleString('ar-EG')} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
-          </div>
-          <div className="trs-stat-visual">
-            <div className="trs-stat-icon icon-green">
-              <i className="fas fa-arrow-trend-up"></i>
-            </div>
-          </div>
-        </div>
-        <div className="trs-stat-card">
-          <div className="trs-stat-info">
-            <h4>إجمالي الصادر</h4>
-            <div className="trs-stat-value">{summary.totalOut.toLocaleString('ar-EG')} <span style={{fontSize: '0.8rem'}}>ج.م</span></div>
-          </div>
-          <div className="trs-stat-visual">
-            <div className="trs-stat-icon icon-amber">
-              <i className="fas fa-arrow-trend-down"></i>
-            </div>
-          </div>
-        </div>
-        <div className="trs-stat-card">
-          <div className="trs-stat-info">
-            <h4>عدد المعاملات</h4>
-            <div className="trs-stat-value">{totalElements} <span style={{fontSize: '0.8rem'}}>حركة</span></div>
-          </div>
-          <div className="trs-stat-visual">
-            <div className="trs-stat-icon icon-purple">
-              <i className="fas fa-receipt"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="card">
+        <div className="card-header">
+          <h3>🏦 سجل المعاملات المالية</h3>
+          <div className="toolbar">
+            <select
+              className="form-control"
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              style={{ width: '180px', height: '40px', padding: '0 10px' }}
+              disabled={!Api.can('ROLE_ADMIN')}
+            >
+              <option value="">الخزنة المركزية</option>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
 
-      {/* 3. Toolbar */}
-      <div className="trs-toolbar-card">
-        <div className="trs-toolbar-left">
-          <CustomSelect 
-            icon="fa-store"
-            value={selectedBranchId}
-            onChange={val => { setSelectedBranchId(val); setCurrentPage(0); }}
-            options={[{ value: '', label: 'الخزنة المركزية' }, ...branches.map(b => ({ value: b.id.toString(), label: b.name }))]}
-          />
-        </div>
-        <div className="trs-toolbar-right">
-          <div className="trs-search-box">
-            <i className="fas fa-search"></i>
-            <input type="text" placeholder="بحث في الملاحظات أو المصدر..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <div className="search-input">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="بحث سريع..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(0);
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-secondary" onClick={() => loadData()} disabled={loading}>
+                {loading ? '⏳' : '🔄'} تحديث
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* 4. Table Card */}
-      <div className="trs-table-card">
-        <div className="trs-table-container">
-          {loading ? (
-            <div style={{ padding: '40px' }}><Loader message="جاري التحميل..." /></div>
-          ) : transactions.length === 0 ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--trs-text-secondary)' }}>
-              <i className="fas fa-receipt" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
-              <h3>لا توجد حركات مالية</h3>
-            </div>
-          ) : (
-            <table className="trs-table">
+        <div className="card-body no-padding">
+          <div className="table-wrapper">
+            <table className="data-table">
               <thead>
                 <tr>
-                  <th>التاريخ والوقت</th>
+                  <th style={{ width: '200px' }}>التاريخ والوقت</th>
                   <th>المصدر المالي</th>
                   <th>نوع الحركة</th>
                   <th>المبلغ</th>
-                  <th>الملاحظات</th>
+                  <th>التفاصيل والملاحظات</th>
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((t, idx) => (
-                  <tr key={t.id || idx}>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5">
+                      <Loader message="جاري جلب البيانات من الخزنة..." />
+                    </td>
+                  </tr>
+                ) : transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center" style={{ padding: '40px', color: 'var(--text-dim)' }}>
+                      <div style={{ fontSize: '3rem', marginBottom: '10px', opacity: 0.2 }}>🗃</div>
+                      لا يوجد حركات مالية مسجلة حالياً
+                    </td>
+                  </tr>
+                ) : transactions.map((t, idx) => (
+                  <tr
+                    key={t.id || idx}
+                    onClick={() => handleRowClick(t)}
+                    style={{ cursor: t.sourceId ? 'pointer' : 'default', transition: 'background 0.2s ease' }}
+                    className={t.sourceId ? 'hoverable-row' : ''}
+                    onMouseEnter={(e) => { if (t.sourceId) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                    onMouseLeave={(e) => { if (t.sourceId) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <td style={{ fontWeight: 600, color: 'var(--text-white)' }}>
+                      {new Date(t.transactionDate).toLocaleString('ar-EG', {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      })}
+                    </td>
                     <td>
-                      <div style={{ fontWeight: 800, color: 'var(--trs-text-primary)' }}>
-                        {new Date(t.transactionDate).toLocaleDateString('ar-EG')}
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--trs-text-secondary)' }}>
-                        {new Date(t.transactionDate).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          width: '8px', height: '8px',
+                          background: t.source === 'SALE' ? 'var(--metro-blue)' :
+                            t.source === 'PURCHASE' ? 'var(--metro-orange)' :
+                              'var(--metro-purple)'
+                        }}></span>
+                        {(() => {
+                          switch (t.source) {
+                            case 'SALE': return 'فاتورة مبيعات';
+                            case 'RETURN': return 'مرتجع مبيعات';
+                            case 'PURCHASE': return 'فاتورة مشتريات';
+                            case 'INSTALLMENT_PAYMENT': return 'قسط مورد';
+                            case 'SUPPLIER_PAYMENT': return 'دفعة مورد';
+                            case 'DEBT_PAYMENT': return 'سداد قسط/دين';
+                            case 'DAMAGED_GOODS': return 'إهلاك بضاعة';
+                            case 'EXPENSE': return 'مصروفات';
+                            case 'CHECK_COLLECTION': return 'تحصيل شيك';
+                            case 'ADJUSTMENT': return 'تسوية مالية';
+                            default: return t.source;
+                          }
+                        })()}
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: sourceConfig[t.source]?.color || '#94a3b8' }}></span>
-                        {sourceConfig[t.source]?.label || t.source}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`trs-type-badge ${t.type === 'IN' ? 'badge-green' : 'badge-blue'}`}>
-                        <i className={`fas ${t.type === 'IN' ? 'fa-plus-circle' : 'fa-minus-circle'}`}></i> {t.type === 'IN' ? 'وارد' : 'صادر'}
+                      <span className={`badge ${t.type === 'IN' ? 'badge-success' : 'badge-danger'}`} style={{ minWidth: '60px', justifyContent: 'center' }}>
+                        {t.type === 'IN' ? 'وارد +' : 'صادر -'}
                       </span>
                     </td>
-                    <td style={{ fontSize: '1.1rem', fontWeight: 800, color: t.type === 'IN' ? 'var(--trs-accent-green)' : 'var(--trs-accent-amber)' }}>
-                      {t.amount.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+                    <td style={{ fontSize: '1.05rem' }}>
+                      <strong className={t.type === 'IN' ? 'text-success' : 'text-danger'}>
+                        {t.amount.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+                      </strong>
                     </td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--trs-text-secondary)', maxWidth: '250px' }}>{t.description}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      {(() => {
+                        if (!t.description) return '';
+                        let d = t.description;
+                        d = d.replace(/First payment for purchase invoice #/g, 'دفعة مقدمة لفاتورة مشتريات رقم: ');
+                        d = d.replace(/Payment for purchase invoice #/g, 'سداد لفاتورة مشتريات رقم: ');
+                        d = d.replace(/Manual payment to supplier:/g, 'دفعة نقدية للمورد:');
+                        d = d.replace(/Manual payment to supplier/g, 'دفعة نقدية للمورد');
+                        d = d.replace(/Refund for return from invoice #/g, 'استرداد نقدي لمرتجع من الفاتورة: ');
+                        d = d.replace(/Payment for invoice/g, 'سداد للفاتورة رقم');
+                        d = d.replace(/Payment of/g, 'سداد مبلغ');
+                        d = d.replace(/for installment/g, 'للقسط رقم');
+                        d = d.replace(/المصدر: PURCHASE/g, 'المصدر: مشتريات');
+                        d = d.replace(/المصدر: SALE/g, 'المصدر: مبيعات');
+                        return d;
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
-        <div className="trs-pagination">
-          <div className="trs-pagination-info">عرض {transactions.length} من {totalElements} حركة</div>
-          <div className="trs-pagination-btns">
-            <button className="trs-page-btn" disabled={currentPage === 0} onClick={() => setCurrentPage(prev => prev - 1)}>السابق</button>
-            <button className="trs-page-btn active">{currentPage + 1}</button>
-            <button className="trs-page-btn" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(prev => prev + 1)}>التالي</button>
           </div>
         </div>
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination" style={{ marginTop: '10px' }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ width: 'auto', padding: '0 15px' }}
+            disabled={currentPage === 0}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+          >
+            السابق
+          </button>
+          <button className="active">{currentPage + 1}</button>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ width: 'auto', padding: '0 15px' }}
+            disabled={currentPage >= totalPages - 1}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+          >
+            التالي
+          </button>
+        </div>
+      )}
     </div>
   );
 };

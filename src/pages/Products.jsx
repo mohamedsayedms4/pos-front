@@ -1,66 +1,28 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import JsBarcode from 'jsbarcode';
-import { 
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid 
-} from 'recharts';
 import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
 import ScannerModal from '../components/common/ScannerModal';
+import StatTile from '../components/common/StatTile';
 import { useBranch } from '../context/BranchContext';
-import '../styles/pages/ProductsPremium.css';
-
-// Reusable CustomSelect Component for Premium UI
-// Reusable CustomSelect Component (Matched with Categories/Suppliers)
-const CustomSelect = ({ options, value, onChange, icon, label }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const containerRef = React.useRef(null);
-
-  React.useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => String(opt.value) === String(value));
-
-  return (
-    <div className="prd-custom-select-container" ref={containerRef}>
-      <div className={`prd-custom-select-header ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)}>
-        {icon && <span className="icon-start">{icon}</span>}
-        <span className="selected-text">{selectedOption ? selectedOption.label : label}</span>
-        <i className={`fas fa-chevron-down icon-end ${isOpen ? 'rotate' : ''}`}></i>
-      </div>
-      
-      {isOpen && (
-        <div className="prd-custom-select-dropdown">
-          {options.map(option => (
-            <div 
-              key={option.value} 
-              className={`prd-custom-select-item ${String(value) === String(option.value) ? 'active' : ''}`}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-            >
-              {option.label}
-              {String(value) === String(option.value) && <i className="fas fa-check"></i>}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+import html2pdf from 'html2pdf.js';
+import SingleProductPdf from '../components/pdf/SingleProductPdf';
 
 const Products = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { categoryId } = useParams();
+  const getImageUrl = (p) => {
+    if (!p) return null;
+    const url = p.imageUrl || (p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : null);
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return `${SERVER_URL}${url}`;
+    return `${SERVER_URL}/api/v1/products/images/${url.split('/').pop()}`;
+  };
   const { toast, confirm } = useGlobalUI();
   const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
   
@@ -74,10 +36,22 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
   const [branches, setBranches] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [selectedBranchId, setSelectedBranchId] = useState(() => {
+    const user = Api._getUser();
+    const isAdmin = (user?.roles || []).some(r => r.includes('ADMIN'));
+    return (!isAdmin && user?.branchId) ? user.branchId : '';
+  });
+  const [categoryFilter, setCategoryFilter] = useState(categoryId || '');
+
+  useEffect(() => {
+    setCategoryFilter(categoryId || '');
+  }, [categoryId]);
+
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   // Debounce search input
   useEffect(() => {
@@ -87,15 +61,7 @@ const Products = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editProduct, setEditProduct] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة', showInStore: true,
-    units: [] // List of packaging units
-  });
-  const [images, setImages] = useState(null);
-  const [saving, setSaving] = useState(false);
+  // Modal states for add/edit product have been migrated to the standalone AddProduct page.
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
@@ -103,6 +69,10 @@ const Products = () => {
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [printProduct, setPrintProduct] = useState(null);
   const [printing, setPrinting] = useState(false);
+
+  // Single PDF Export State
+  const [pdfProduct, setPdfProduct] = useState(null);
+  const pdfRef = React.useRef(null);
 
   // Printer Config State
   const [printerConfigModalOpen, setPrinterConfigModalOpen] = useState(false);
@@ -118,23 +88,6 @@ const Products = () => {
   const [stockForm, setStockForm] = useState({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
   const [savingStock, setSavingStock] = useState(false);
   const [allWarehouses, setAllWarehouses] = useState([]);
-  
-  // Conflict / Request Modal State
-  const [conflictProduct, setConflictProduct] = useState(null);
-  const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-
-  /**
-   * Helper to find inventory for a specific branch or fallback to the first one.
-   */
-  const getBranchInventory = (product, branchId) => {
-    if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
-    if (branchId) {
-      const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
-      if (inv) return inv;
-    }
-    return product.branchInventories[0];
-  };
 
   /**
    * Convert a blob: URL to a data: URL (base64-embedded).
@@ -250,6 +203,26 @@ const Products = () => {
     }
   };
 
+  const handleDownloadSinglePdf = (product) => {
+    setPdfProduct(product);
+    toast('جاري تحضير ملف PDF...', 'success');
+    setTimeout(() => {
+      if (pdfRef.current) {
+        const opt = {
+          margin:       0,
+          filename:     `product_${product.productCode || product.id}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().from(pdfRef.current).set(opt).save().then(() => {
+          setPdfProduct(null);
+          toast('تم تحميل التقرير بنجاح', 'success');
+        });
+      }
+    }, 500); // Give React time to render the hidden component
+  };
+
   const openPrinterConfig = async () => {
     try {
       const config = await Api.getPrinterConfig();
@@ -320,8 +293,10 @@ const Products = () => {
 
     if (branchFromUrl) {
       setSelectedBranchId(branchFromUrl);
-    } else if (globalBranchId) {
+    } else if (globalBranchId !== undefined && globalBranchId !== null && globalBranchId !== '') {
       setSelectedBranchId(globalBranchId);
+    } else if (globalBranchId === null) {
+      setSelectedBranchId(''); // Explicitly selected "All Branches"
     } else if (user && user.branchId) {
       setSelectedBranchId(user.branchId);
     }
@@ -331,16 +306,18 @@ const Products = () => {
     }
   }, [location.search, globalBranchId, contextBranches]);
 
-  const loadData = async (searchQuery = '', sortOrder = sort, branchId = selectedBranchId) => {
+  const loadData = async (pageNumber = page, size = pageSize, searchQuery = debouncedSearch, sortOrder = sort, branchId = selectedBranchId, categoryId = categoryFilter) => {
     setLoading(true);
     try {
-      const [productsData, categoriesData, statsData, salesData] = await Promise.all([
-        Api.getProductsPaged(0, 1000, searchQuery, sortOrder, branchId).then(res => res.items),
+      const [productsRes, categoriesData, statsData, salesData] = await Promise.all([
+        Api.getProductsPaged(pageNumber, size, searchQuery, sortOrder, branchId, categoryId),
         Api.getCategories().catch(() => []),
         Api.getProductStatistics(branchId).catch(() => null),
         Api.getDailySaleStats(7, branchId).catch(() => [])
       ]);
-      setData(productsData);
+      setData(productsRes.items);
+      setTotalPages(productsRes.totalPages);
+      setTotalElements(productsRes.totalElements);
       setCategories(categoriesData);
       setStats(statsData);
       setDailySales(Array.isArray(salesData) ? salesData.map(d => ({
@@ -360,11 +337,20 @@ const Products = () => {
     toast(`تم سحب الكود: ${barcode}`, 'info', true);
   };
 
+  // Reset page to 0 when filters change
   useEffect(() => {
-    loadData(debouncedSearch, sort, selectedBranchId);
-    // Pre-load warehouses for distribution modal
+    setPage(0);
+  }, [debouncedSearch, sort, selectedBranchId, categoryFilter]);
+
+  // Load data when page, page size, or filters change
+  useEffect(() => {
+    loadData(page, pageSize, debouncedSearch, sort, selectedBranchId, categoryFilter);
+  }, [page, pageSize, debouncedSearch, sort, selectedBranchId, categoryFilter]);
+
+  // One-time load for warehouses
+  useEffect(() => {
     Api.getAllWarehouses().then(res => setAllWarehouses(res || [])).catch(() => {});
-  }, [debouncedSearch, sort, selectedBranchId]);
+  }, []);
 
   const openStockModal = (product) => {
     setStockProduct(product);
@@ -388,7 +374,7 @@ const Products = () => {
       });
       toast('تم تحديث المخزون بنجاح', 'success');
       setShowStockModal(false);
-      loadData(debouncedSearch, sort, selectedBranchId);
+      loadData(page, pageSize, debouncedSearch, sort, selectedBranchId, categoryFilter);
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -396,121 +382,14 @@ const Products = () => {
     }
   };
 
-  const openForm = async (product = null) => {
-    setEditProduct(product);
-    if (product) {
-      const inv = getBranchInventory(product, selectedBranchId);
-      setFormData({
-        name: product.name || '',
-        description: product.description || '',
-        purchasePrice: inv?.purchasePrice || '',
-        salePrice: inv?.salePrice || '',
-        stock: inv?.stock || '0',
-        productCode: product.productCode || '',
-        categoryId: product.categoryId || '',
-        unitName: product.unitName || 'القطعة',
-        showInStore: product.showInStore !== false,
-        units: product.units || []
-      });
-    } else {
-      setFormData({
-        name: '', description: '', purchasePrice: '', salePrice: '', stock: '0', productCode: '', categoryId: '', unitName: 'القطعة', showInStore: true,
-        units: []
-      });
-    }
-    setImages(null);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditProduct(null);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.purchasePrice || !formData.salePrice) {
-      toast('يرجى ملء الحقول المطلوبة', 'warning');
-      return;
-    }
-
-    setSaving(true);
-    const apiData = {
-      ...formData,
-      purchasePrice: parseFloat(formData.purchasePrice),
-      salePrice: parseFloat(formData.salePrice),
-      stock: parseFloat(formData.stock) || 0,
-      showInStore: formData.showInStore,
-      categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
-    };
-
-    try {
-      if (editProduct) {
-        await Api.updateProduct(editProduct.id, apiData, images);
-      } else {
-        await Api.createProduct(apiData, images, selectedBranchId);
-      }
-      toast(editProduct ? 'تم تحديث المنتج بنجاح' : 'تم إضافة المنتج بنجاح', 'success');
-      closeModal();
-      loadData();
-    } catch (err) {
-      if (err.status === 409 || err.message.includes('409') || err.message.includes('مستخدم بالفعل')) {
-          // Trigger conflict lookup
-          try {
-              const existing = await Api.lookupProductByCode(formData.productCode);
-              if (existing) {
-                  setConflictProduct(existing);
-                  setIsConflictModalOpen(true);
-                  return; // Don't show the error toast
-              }
-          } catch (lookupErr) {
-              console.error('Failed to lookup conflict product:', lookupErr);
-          }
-      }
-      toast(err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRequestAssignment = async () => {
-    setRequesting(true);
-    try {
-      await Api.createProductAssignRequest(conflictProduct.productCode, globalBranchId || selectedBranchId);
-      toast('تم إرسال طلب التعيين للأدمن بنجاح', 'success');
-      setIsConflictModalOpen(false);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setRequesting(false);
-    }
-  };
-
-  const addUnitRow = () => {
-    setFormData({
-      ...formData,
-      units: [...formData.units, { unitName: '', conversionFactor: 1, purchasePrice: 0, salePrice: 0 }]
-    });
-  };
-
-  const removeUnitRow = (index) => {
-    const newUnits = [...formData.units];
-    newUnits.splice(index, 1);
-    setFormData({ ...formData, units: newUnits });
-  };
-
-  const updateUnitRow = (index, field, value) => {
-    const newUnits = [...formData.units];
-    newUnits[index] = { ...newUnits[index], [field]: value };
-    setFormData({ ...formData, units: newUnits });
-  };
+  // Modal form helper methods have been moved to the standalone AddProduct page.
 
   const handleDelete = async (id, name) => {
-    confirm(`هل أنت متأكد من حذف المنتج "${name}"؟`, async () => {
+    confirm(`سيتم حذف المنتج "${name}" نهائياً`, async () => {
       try {
-        await Api.deleteProduct(id, selectedBranchId);
-        toast(selectedBranchId ? 'تم حذف المنتج من هذا الفرع بنجاح' : 'تم حذف المنتج من جميع الفروع بنجاح', 'success');
-        loadData();
+        await Api.deleteProduct(id);
+        toast('تم حذف المنتج بنجاح', 'success');
+        loadData(page, pageSize, debouncedSearch, sort, selectedBranchId, categoryFilter);
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -529,9 +408,7 @@ const Products = () => {
       const dataUrl = await _blobUrlToDataUrl(imageUrl);
       _openPrintWindow(dataUrl, width, height);
 
-      setPrintModalOpen(false);
       toast('جاري تحضير ملصق الباركود للطباعة...', 'success');
-
     } catch (err) {
       toast('فشل تحضير الباركود أو الطباعة: ' + err.message, 'error');
     } finally {
@@ -539,589 +416,407 @@ const Products = () => {
     }
   };
 
-  const lowStockItems = data.filter(p => {
-    const inv = getBranchInventory(p, selectedBranchId);
-    return inv && Number(inv.stock) <= 10;
-  }).slice(0, 3);
-  const filteredItems = useMemo(() => {
-    let result = data.filter(p => {
-      const matchesSearch = !debouncedSearch || 
-        (p.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        (p.productCode || '').toLowerCase().includes(debouncedSearch.toLowerCase());
-      
-      const matchesCategory = !categoryFilter || p.categoryId === parseInt(categoryFilter);
-      
-      const matchesBranch = !selectedBranchId || p.branchId === parseInt(selectedBranchId);
-      
-      return matchesSearch && matchesCategory && matchesBranch;
-    });
+  const renderPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    let start = Math.max(0, page - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages - 1, start + maxVisible - 1);
+    
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(0, end - maxVisible + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(
+        <button 
+          key={i} 
+          className={page === i ? 'active' : ''} 
+          onClick={() => setPage(i)}
+        >
+          {i + 1}
+        </button>
+      );
+    }
+    return pages;
+  };
 
-    // Sorting
-    result.sort((a, b) => {
-      const [field, order] = sort.split(',');
-      
-      let valA, valB;
-      if (field === 'salePrice' || field === 'purchasePrice' || field === 'stock') {
-        const invA = getBranchInventory(a, selectedBranchId);
-        const invB = getBranchInventory(b, selectedBranchId);
-        valA = invA ? invA[field] : 0;
-        valB = invB ? invB[field] : 0;
-      } else {
-        valA = a[field] ?? '';
-        valB = b[field] ?? '';
-      }
-      
-      if (typeof valA === 'string') {
-        const comparison = valA.localeCompare(valB, 'ar');
-        return order === 'asc' ? comparison : -comparison;
-      } else {
-        return order === 'asc' ? valA - valB : valB - valA;
-      }
-    });
-
-    return result;
-  }, [data, debouncedSearch, categoryFilter, selectedBranchId, sort]);
-
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const currentItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, categoryFilter, selectedBranchId, sort]);
+  const filteredItems = data.filter(p => !categoryFilter || p.categoryId === parseInt(categoryFilter));
 
   return (
-    <div className="products-page-container">
-      {/* Header Section */}
-      <div className="prd-header-container">
-        <div className="prd-breadcrumbs">
-          <Link to="/">الرئيسية</Link>
-          <span>/</span>
-          <span>المنتجات</span>
+    <>
+      <style>{`
+        /* Responsive CSS Overrides for Products Page */
+        @media (max-width: 1024px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .toolbar {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+            display: flex !important;
+          }
+          .toolbar select, 
+          .toolbar .search-input,
+          .toolbar .search-input input {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 40px !important;
+          }
+          .toolbar-actions {
+            width: 100% !important;
+            display: flex !important;
+            gap: 8px !important;
+            flex-wrap: wrap !important;
+          }
+          .toolbar-actions button {
+            flex: 1 1 45% !important;
+            justify-content: center !important;
+          }
+          .toolbar-actions .btn-primary {
+            flex: 1 1 100% !important;
+          }
+          
+          .table-wrapper {
+            overflow-x: auto !important;
+            width: 100% !important;
+            -webkit-overflow-scrolling: touch !important;
+            border: 1px solid var(--border-subtle) !important;
+            border-radius: 8px !important;
+          }
+          .data-table {
+            min-width: 850px !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .page-section {
+            padding: 12px !important;
+          }
+          .card {
+            padding: 12px !important;
+            border-radius: 12px !important;
+          }
+          .card-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .card-header h3 {
+            font-size: 1.2rem !important;
+            text-align: center !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+          }
+          .stats-grid .stat-tile-value {
+            font-size: 1.2rem !important;
+          }
+          .stats-grid .stat-tile-label {
+            font-size: 0.75rem !important;
+          }
+          
+          .pagination {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+            padding: 12px !important;
+          }
+          .pagination > div {
+            justify-content: center !important;
+            text-align: center !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+          }
+          .pagination button {
+            flex: 1 !important;
+            padding: 8px 10px !important;
+            font-size: 0.8rem !important;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .toolbar-actions button {
+            flex: 1 1 100% !important;
+          }
+        }
+      `}</style>
+      <div className="page-section">
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+          <StatTile
+            id="prod_total"
+            label="إجمالي المنتجات"
+            value={stats?.totalProducts || 0}
+            icon="📦"
+            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+          />
+          <StatTile
+            id="prod_capital"
+            label="قيمة المخزون (ج.م)"
+            value={(stats?.totalInventoryCapital || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            icon="💰"
+            defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
+          />
+          <StatTile
+            id="prod_profit"
+            label="الأرباح المتوقعة"
+            value={(stats?.totalExpectedProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            icon="📈"
+            defaults={{ color: 'purple', size: 'tile-wd-sm', order: 3 }}
+          />
+          <StatTile
+            id="prod_sales"
+            label="إجمالي المبيعات"
+            value={(stats?.totalRealizedSales || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            icon="🛒"
+            defaults={{ color: 'amber', size: 'tile-wd-sm', order: 4 }}
+          />
         </div>
-        <div className="prd-header-row">
-          <h1>المنتجات</h1>
-          <div className="prd-header-actions">
-            <button className="prd-btn-primary" onClick={() => openForm(null)}>
-              <i className="fas fa-plus"></i>
-              <span>إضافة منتج</span>
-            </button>
-            <Link to="/products/analytics" className="prd-btn-ghost" title="تحليلات متقدمة">
-              <span>تحليلات</span>
-              <i className="fas fa-chart-pie"></i>
-            </Link>
-            <button className="prd-btn-ghost" onClick={handleExportExcel} title="تصدير إكسيل">
-              <span>إكسيل</span>
-              <i className="fas fa-file-excel"></i>
-            </button>
-            <button className="prd-btn-ghost" onClick={handleExportPdf} title="تصدير PDF">
-              <span>PDF</span>
-              <i className="fas fa-file-pdf"></i>
-            </button>
-            <button className="prd-btn-ghost" onClick={openPrinterConfig} title="إعدادات الطابعة">
-              <span>إعدادات</span>
-              <i className="fas fa-cog"></i>
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <div className="products-dashboard">
-        {/* SUMMARY CARDS */}
-        <div className="prd-stats-grid">
-          <div className="prd-stat-card">
-            <div className="prd-stat-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-              <i className="fas fa-box"></i>
-            </div>
-            <div className="prd-stat-info">
-              <div className="prd-stat-label">إجمالي المنتجات</div>
-              <div className="prd-stat-value">{stats?.totalProducts || 0}</div>
-              <div className={`prd-stat-trend ${stats?.totalProductsGrowth >= 0 ? 'prd-trend-up' : 'prd-trend-down'}`}>
-                <i className={`fas fa-caret-${stats?.totalProductsGrowth >= 0 ? 'up' : 'down'}`}></i>
-                <span>{Math.abs(stats?.totalProductsGrowth || 0).toFixed(1)}% هذا الشهر</span>
-              </div>
-            </div>
-          </div>
+        <div className="card">
+          <div className="card-header">
+            <h3>📦 إدارة المنتجات</h3>
+            <div className="toolbar">
+              <div className="search-input">
 
-          <div className="prd-stat-card">
-            <div className="prd-stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-              <i className="fas fa-money-bill-wave"></i>
-            </div>
-            <div className="prd-stat-info">
-              <div className="prd-stat-label">قيمة المخزون</div>
-              <div className="prd-stat-value">
-                {(stats?.totalInventoryCapital || 0).toLocaleString()}
-                <span style={{ fontSize: '0.9rem', marginRight: '4px' }}>ج.م</span>
+                <input
+                    type="text"
+                  placeholder="بحث عن منتج..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
-              <div className={`prd-stat-trend ${stats?.totalInventoryCapitalGrowth >= 0 ? 'prd-trend-up' : 'prd-trend-down'}`}>
-                <i className={`fas fa-caret-${stats?.totalInventoryCapitalGrowth >= 0 ? 'up' : 'down'}`}></i>
-                <span>{Math.abs(stats?.totalInventoryCapitalGrowth || 0).toFixed(1)}% هذا الشهر</span>
-              </div>
-            </div>
-          </div>
 
-          <div className="prd-stat-card">
-            <div className="prd-stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-              <i className="fas fa-chart-line"></i>
-            </div>
-            <div className="prd-stat-info">
-              <div className="prd-stat-label">الأرباح المتوقعة</div>
-              <div className="prd-stat-value">
-                {(stats?.totalExpectedProfit || 0).toLocaleString()}
-                <span style={{ fontSize: '0.9rem', marginRight: '4px' }}>ج.م</span>
-              </div>
-              <div className={`prd-stat-trend ${stats?.totalExpectedProfitGrowth >= 0 ? 'prd-trend-up' : 'prd-trend-down'}`}>
-                <i className={`fas fa-caret-${stats?.totalExpectedProfitGrowth >= 0 ? 'up' : 'down'}`}></i>
-                <span>{Math.abs(stats?.totalExpectedProfitGrowth || 0).toFixed(1)}% هذا الشهر</span>
+              {(Api._getUser()?.roles || []).some(r => r.includes('ADMIN')) && (
+                <select 
+                  className="form-control" 
+                  value={selectedBranchId || ''} 
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                >
+                  <option value="">🏢 كل الفروع</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>📍 {b.name}</option>)}
+                </select>
+              )}
+
+              <select 
+                className="form-control" 
+                value={categoryFilter} 
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+              >
+                <option value="">كل الفئات</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+
+              <select 
+                className="form-control" 
+                value={sort} 
+                onChange={(e) => setSort(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+              >
+                <option value="id,desc">الأحدث أولاً</option>
+                <option value="id,asc">الأقدم أولاً</option>
+                <option value="name,asc">الاسم (أ-ي)</option>
+                <option value="name,desc">الاسم (ي-أ)</option>
+                <option value="salePrice,desc">الأعلى سعراً</option>
+                <option value="salePrice,asc">الأقل سعراً</option>
+                <option value="stock,desc">الأكثر مخزوناً</option>
+                <option value="stock,asc">الأقل مخزوناً</option>
+              </select>
+
+              <div className="toolbar-actions" style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportingExcel || data.length === 0}>
+                  {exportingExcel ? '⏳' : '📊'} إكسيل
+                </button>
+                <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportingPdf || data.length === 0}>
+                  {exportingPdf ? '⏳' : '📄'} PDF
+                </button>
+                <button className="btn btn-secondary" onClick={openPrinterConfig} title="إعدادات طابعة الباركود">
+                  ⚙️
+                </button>
+                {Api.can('PRODUCT_WRITE') && (
+                  <button className="btn btn-primary" onClick={() => navigate('/products/add')}>
+                    <span>+</span> إضافة منتج
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="prd-stat-card">
-            <div className="prd-stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
-              <i className="fas fa-shopping-cart"></i>
+          <div className="card-body no-padding">
+            <div className="table-wrapper">
+              {loading ? (
+                <Loader message="جاري تحميل المنتجات..." />
+              ) : filteredItems.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📦</div>
+                  <h4>لا توجد منتجات</h4>
+                  <p>قم بإضافة منتجات جديدة للبدء</p>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>صورة</th>
+                      <th>المنتج</th>
+                      <th>الفئة</th>
+                      <th>الكود</th>
+                      <th>سعر الشراء</th>
+                      <th>سعر البيع</th>
+                      <th>المخزون</th>
+                      <th>الحالة</th>
+                      <th>الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredItems.map((p, i) => (
+                      <tr key={p.id}>
+                        <td style={{ color: 'var(--text-muted)' }}>{page * pageSize + i + 1}</td>
+                        <td>
+                          <Link to={`/products/${p.id}`} style={{ display: 'inline-block' }}>
+                            {getImageUrl(p) ? (
+                              <img src={getImageUrl(p)} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
+                            ) : (
+                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📦</div>
+                            )}
+                          </Link>
+                        </td>
+                        <td>
+                          <Link to={`/products/${p.id}`} className="product-title-link">
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer' }}>{p.name}</span>
+                          </Link>
+                        </td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{p.categoryName || '—'}</td>
+                        <td><code style={{ color: 'var(--text-muted)' }}>{p.productCode || '—'}</code></td>
+                        <td>{Number(p.purchasePrice).toFixed(2)}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{Number(p.salePrice).toFixed(2)}</td>
+                        <td>
+                          <span className={`badge ${Number(p.stock) <= 5 ? 'badge-danger' : Number(p.stock) <= 15 ? 'badge-warning' : 'badge-success'}`}>
+                            {Number(p.stock).toFixed(0)}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: Number(p.stock) > 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}></div>
+                            <span>{Number(p.stock) > 0 ? 'متوفر' : 'منتهي'}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button className="btn btn-icon btn-ghost" onClick={() => handleDownloadSinglePdf(p)} title="تنزيل كـ PDF">📄</button>
+                            <button className="btn btn-icon btn-ghost" onClick={() => openStockModal(p)} title="توزيع المخزون">🏭</button>
+                            {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/products/edit/${p.id}`)} title="تعديل">✏️</button>}
+                            {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" onClick={() => handleDelete(p.id, p.name)} title="حذف">🗑️</button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
-            <div className="prd-stat-info">
-              <div className="prd-stat-label">إجمالي المبيعات</div>
-              <div className="prd-stat-value">
-                {dailySales.reduce((acc, curr) => acc + curr.value, 0).toLocaleString()}
-                <span style={{ fontSize: '0.9rem', marginRight: '4px' }}>طلب</span>
-              </div>
-              <div className={`prd-stat-trend ${stats?.totalSalesGrowth >= 0 ? 'prd-trend-up' : 'prd-trend-down'}`}>
-                <i className={`fas fa-caret-${stats?.totalSalesGrowth >= 0 ? 'up' : 'down'}`}></i>
-                <span>{Math.abs(stats?.totalSalesGrowth || 0).toFixed(1)}% هذا الشهر</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ANALYTICS GRID */}
-        <div className="prd-analytics-grid">
-          <div className="prd-analytics-card">
-            <div className="prd-card-title-row">
-              <div className="prd-card-title">
-                <i className="fas fa-chart-area" style={{ color: 'var(--prd-primary)' }}></i>
-                مبيعات آخر 7 أيام
-              </div>
-              <CustomSelect 
-                label="آخر 7 أيام"
-                value="7"
-                options={[{ label: 'آخر 7 أيام', value: '7' }, { label: 'آخر 30 يوم', value: '30' }]}
-                onChange={() => {}}
-              />
-            </div>
-            <div className="prd-chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailySales}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--prd-primary)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--prd-primary)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--prd-glass-border)" />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="var(--prd-text-secondary)" 
-                    fontSize={11} 
-                    tickLine={false} 
-                    axisLine={false}
-                    tick={{ fill: 'var(--prd-text-secondary)' }}
-                  />
-                  <YAxis 
-                    stroke="var(--prd-text-secondary)" 
-                    fontSize={11} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(val) => val >= 1000 ? `${(val/1000).toFixed(0)}K` : val}
-                    tick={{ fill: 'var(--prd-text-secondary)' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'var(--prd-card-bg)', 
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid var(--prd-glass-border)', 
-                      borderRadius: '12px',
-                      boxShadow: 'var(--prd-shadow)',
-                      color: 'var(--prd-text-primary)'
-                    }}
-                    itemStyle={{ color: 'var(--prd-primary)', fontWeight: 700 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="var(--prd-primary)" 
-                    strokeWidth={4} 
-                    dot={{ r: 5, fill: 'var(--prd-primary)', stroke: '#fff', strokeWidth: 2 }}
-                    activeDot={{ r: 8, strokeWidth: 0 }}
-                    fillOpacity={1}
-                    fill="url(#colorValue)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="prd-analytics-card">
-            <div className="prd-card-title-row">
-              <div className="prd-card-title">
-                <i className="fas fa-bell" style={{ color: '#ef4444' }}></i>
-                تنبيهات المخزون
-              </div>
-              <button className="prd-btn-ghost" style={{ padding: '6px 10px', fontSize: '0.8rem' }}>عرض الكل</button>
-            </div>
-            <div className="prd-alerts-list">
-              {lowStockItems.length > 0 ? lowStockItems.map(item => (
-                <div key={item.id} className="prd-alert-item">
-                  <div className="prd-alert-icon">
-                    <i className="fas fa-exclamation-triangle"></i>
+            {!loading && data.length > 0 && (
+              <div className="pagination" style={{ borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', flexWrap: 'wrap', gap: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    عرض {data.length} من إجمالي {totalElements} منتج
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>عدد الصفوف:</span>
+                    <select 
+                      className="form-control" 
+                      value={pageSize} 
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setPage(0);
+                      }}
+                      style={{ width: '70px', height: '34px', padding: '0 5px', fontSize: '0.85rem', borderRadius: '0' }}
+                    >
+                      <option value="5">5</option>
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
                   </div>
-                  <div className="prd-alert-info">
-                    <div className="prd-alert-name">{item.name}</div>
-                    <div className="prd-alert-stock">متبقي {item.stock} {item.unitName || 'قطعة'}</div>
-                  </div>
-                  <button className="prd-action-btn prd-btn-stock" onClick={() => openStockModal(item)}>
-                    <i className="fas fa-plus"></i>
+                </div>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  <button 
+                    disabled={page === 0} 
+                    onClick={() => setPage(p => p - 1)}
+                    style={{ width: 'auto', padding: '0 15px', borderRadius: '0' }}
+                  >
+                    السابق
+                  </button>
+                  {renderPageNumbers()}
+                  <button 
+                    disabled={page >= totalPages - 1} 
+                    onClick={() => setPage(p => p + 1)}
+                    style={{ width: 'auto', padding: '0 15px', borderRadius: '0' }}
+                  >
+                    التالي
                   </button>
                 </div>
-              )) : (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--prd-text-secondary)', opacity: 0.5 }}>
-                  <i className="fas fa-check-circle" style={{ fontSize: '2.5rem', marginBottom: '12px', color: '#10b981' }}></i>
-                  <p>كل المنتجات متوفرة</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* PRODUCTS TABLE CARD */}
-        <div className="prd-main-card">
-          <div className="prd-toolbar">
-            <div className="prd-toolbar-left">
-              <CustomSelect 
-                label="ترتيب حسب"
-                value={sort}
-                options={[
-                  { label: 'ترتيب: الاسم (أ-ي)', value: 'name,asc' },
-                  { label: 'ترتيب: الاسم (ي-أ)', value: 'name,desc' },
-                  { label: 'ترتيب: السعر (أقل)', value: 'salePrice,asc' },
-                  { label: 'ترتيب: السعر (أعلى)', value: 'salePrice,desc' },
-                  { label: 'ترتيب: المخزون', value: 'stock,desc' },
-                  { label: 'ترتيب: الأحدث', value: 'id,desc' }
-                ]}
-                onChange={setSort}
-                icon={<i className="fas fa-sort-amount-down"></i>}
-              />
-              <CustomSelect 
-                label="كل الفئات"
-                value={categoryFilter}
-                options={[
-                  { label: 'كل الفئات', value: '' },
-                  ...categories.map(c => ({ label: c.name, value: c.id }))
-                ]}
-                onChange={setCategoryFilter}
-                icon={<i className="fas fa-filter"></i>}
-              />
-              
-              {branches.length > 1 && (
-                <CustomSelect 
-                  label="كل الفروع"
-                  value={selectedBranchId}
-                  options={[
-                    { label: 'كل الفروع', value: '' },
-                    ...branches.map(b => ({ label: b.name, value: b.id }))
-                  ]}
-                  onChange={setSelectedBranchId}
-                  icon={<i className="fas fa-building"></i>}
-                />
-              )}
-            </div>
-
-            <div className="prd-toolbar-right">
-              <div className="prd-search-box">
-                <i className="fas fa-search"></i>
-                <input 
-                  type="text" 
-                  placeholder="ابحث عن منتج بالاسم أو الباركود..." 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)} 
-                />
               </div>
-            </div>
-          </div>
-
-          <div className="prd-table-container">
-            {loading ? (
-              <Loader message="جاري تحميل المنتجات..." />
-            ) : filteredItems.length === 0 ? (
-              <div style={{ padding: '60px', textAlign: 'center', color: 'var(--prd-text-secondary)' }}>
-                <i className="fas fa-box-open" style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.2 }}></i>
-                <h4>لا توجد منتجات</h4>
-                <p>قم بإضافة منتجات جديدة للبدء</p>
-              </div>
-            ) : (
-              <table className="prd-table">
-                <thead>
-                  <tr>
-                    <th>المنتج</th>
-                    <th>الفئة</th>
-                    <th>الكود</th>
-                    <th>سعر الشراء</th>
-                    <th>سعر البيع</th>
-                    <th>المخزون</th>
-                    <th>الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentItems.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        <div className="prd-product-cell">
-                          <img 
-                            src={p.imageUrls && p.imageUrls.length > 0 
-                              ? (p.imageUrls[0].startsWith('http') ? p.imageUrls[0] : `${SERVER_URL}${p.imageUrls[0]}`) 
-                              : '/placeholder-product.png'} 
-                            className="prd-product-img" 
-                            alt={p.name} 
-                          />
-                          <div className="prd-product-info">
-                            <Link to={`/products/${p.id}`} className="prd-product-name">{p.name}</Link>
-                            <span className="prd-product-sku">{p.unitName || 'قطعة'}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{p.categoryName || '—'}</td>
-                      <td><code>{p.productCode || '—'}</code></td>
-                      {(() => {
-                        const inv = getBranchInventory(p, selectedBranchId);
-                        return (
-                          <>
-                            <td>{inv ? Number(inv.purchasePrice).toFixed(2) : '0.00'}</td>
-                            <td style={{ fontWeight: 700 }}>{inv ? Number(inv.salePrice).toFixed(2) : '0.00'}</td>
-                            <td>
-                              <span className={`prd-stock-badge ${!inv || Number(inv.stock) <= 5 ? 'prd-stock-out' : Number(inv.stock) <= 15 ? 'prd-stock-low' : 'prd-stock-ok'}`}>
-                                {inv ? Number(inv.stock).toFixed(0) : '0'}
-                              </span>
-                            </td>
-                          </>
-                        );
-                      })()}
-                      <td>
-                        <div className="prd-actions">
-                          <button className="prd-action-btn prd-btn-stock" onClick={() => openStockModal(p)} title="توزيع المخزون">
-                            <i className="fas fa-warehouse"></i>
-                          </button>
-                          <button className="prd-action-btn prd-btn-edit" onClick={() => openForm(p)} title="تعديل">
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button className="prd-action-btn prd-btn-delete" onClick={() => handleDelete(p.id, p.name)} title="حذف">
-                            <i className="fas fa-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             )}
-          </div>
-
-          <div className="prd-pagination">
-            <div>عرض {filteredItems.length} من أصل {data.length} منتج</div>
-            <div className="prd-page-buttons">
-              <button 
-                className="prd-page-btn" 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <i className="fas fa-chevron-right"></i>
-              </button>
-              
-              {[...Array(totalPages)].map((_, i) => (
-                <button 
-                  key={i + 1}
-                  className={`prd-page-btn ${currentPage === i + 1 ? 'active' : ''}`}
-                  onClick={() => setCurrentPage(i + 1)}
-                >
-                  {i + 1}
-                </button>
-              ))}
-
-              <button 
-                className="prd-page-btn" 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <i className="fas fa-chevron-left"></i>
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
-      {isModalOpen && (
-        <ModalContainer>
-          <div className="prd-modal-overlay" onClick={(e) => { if (e.target.classList.contains('prd-modal-overlay')) closeModal(); }}>
-            <div className="prd-modal">
-              <div className="prd-modal-header">
-                <h3>{editProduct ? 'تعديل منتج' : 'إضافة منتج جديد'}</h3>
-                <button className="prd-modal-close" onClick={closeModal}>✕</button>
-              </div>
-              <div className="prd-modal-body">
-                <form id="productForm" onSubmit={handleSave}>
-                  <div className="prd-form-group">
-                    <label className="prd-label">اسم المنتج *</label>
-                    <input className="prd-input" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
-                  </div>
-                  
-                  <div className="prd-form-group">
-                    <label className="prd-label">الوصف</label>
-                    <textarea className="prd-input" style={{ minHeight: '80px' }} name="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
-                  </div>
 
-                  <div className="prd-form-row">
-                    <div className="prd-form-group">
-                      <label className="prd-label">سعر الشراء *</label>
-                      <input className="prd-input" type="number" step="0.01" name="purchasePrice" value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })} required />
-                    </div>
-                    <div className="prd-form-group">
-                      <label className="prd-label">سعر البيع *</label>
-                      <input className="prd-input" type="number" step="0.01" name="salePrice" value={formData.salePrice} onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })} required />
-                    </div>
-                  </div>
-
-                  <div className="prd-form-row">
-                    <div className="prd-form-group">
-                      <label className="prd-label">المخزون الحالي</label>
-                      <input className="prd-input" type="number" step="0.001" name="stock" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} />
-                    </div>
-                    <div className="prd-form-group">
-                      <label className="prd-label">كود المنتج (باركود)</label>
-                      <input className="prd-input" name="productCode" value={formData.productCode} onChange={(e) => setFormData({ ...formData, productCode: e.target.value })} placeholder="اتركه فارغاً للتوليد التلقائي" />
-                    </div>
-                  </div>
-
-                  <div className="prd-form-row">
-                    <div className="prd-form-group">
-                      <label className="prd-label">الفئة</label>
-                      <select className="prd-input" name="categoryId" value={formData.categoryId} onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}>
-                        <option value="">بدون فئة</option>
-                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="prd-form-group">
-                      <label className="prd-label">الوحدة الأساسية (قطاعي) *</label>
-                      <input className="prd-input" name="unitName" value={formData.unitName} onChange={(e) => setFormData({ ...formData, unitName: e.target.value })} required placeholder="كيس، قطعة، كيلو..." />
-                    </div>
-                  </div>
-
-                  <div className="prd-checkbox-group">
-                    <input type="checkbox" id="showInStore" checked={formData.showInStore} onChange={(e) => setFormData({ ...formData, showInStore: e.target.checked })} style={{ width: '20px', height: '20px' }} />
-                    <label htmlFor="showInStore" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: formData.showInStore ? 'var(--prd-primary)' : 'var(--prd-text-secondary)' }}>
-                      عرض المنتج في المتجر الإلكتروني (أونلاين)
-                    </label>
-                  </div>
-
-                  <div className="prd-units-section">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--prd-text-primary)' }}>
-                        <i className="fas fa-boxes" style={{ marginLeft: '8px' }}></i>
-                        وحدات الجملة والتعبئة
-                      </h4>
-                      <button type="button" className="prd-btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={addUnitRow}>
-                        + إضافة وحدة
-                      </button>
-                    </div>
-
-                    {formData.units.length === 0 ? (
-                      <div style={{ textAlign: 'center', color: 'var(--prd-text-secondary)', fontSize: '0.85rem', padding: '20px' }}>
-                        لا توجد وحدات إضافية (مثل كرتونة، دستة...)
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {formData.units.map((unit, index) => (
-                          <div key={index} className="prd-unit-card">
-                            <div className="prd-form-group" style={{ marginBottom: 0 }}>
-                              <label className="prd-label">اسم الوحدة</label>
-                              <input className="prd-input" value={unit.unitName} onChange={(e) => updateUnitRow(index, 'unitName', e.target.value)} placeholder="مثلاً: كرتونة" />
-                            </div>
-                            <div className="prd-form-group" style={{ marginBottom: 0 }}>
-                              <label className="prd-label">المعامل</label>
-                              <input className="prd-input" type="number" value={unit.conversionFactor} onChange={(e) => updateUnitRow(index, 'conversionFactor', e.target.value)} placeholder="كم قطعة؟" />
-                            </div>
-                            <div className="prd-form-group" style={{ marginBottom: 0 }}>
-                              <label className="prd-label">شراء</label>
-                              <input className="prd-input" type="number" value={unit.purchasePrice} onChange={(e) => updateUnitRow(index, 'purchasePrice', e.target.value)} />
-                            </div>
-                            <div className="prd-form-group" style={{ marginBottom: 0 }}>
-                              <label className="prd-label">بيع</label>
-                              <input className="prd-input" type="number" value={unit.salePrice} onChange={(e) => updateUnitRow(index, 'salePrice', e.target.value)} />
-                            </div>
-                            <button type="button" className="prd-action-btn prd-btn-delete" style={{ marginBottom: '6px' }} onClick={() => removeUnitRow(index)}>
-                              <i className="fas fa-times"></i>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="prd-form-group" style={{ marginTop: '20px' }}>
-                    <label className="prd-label">صور المنتج</label>
-                    <input className="prd-input" type="file" name="images" multiple accept="image/*" onChange={(e) => setImages(e.target.files)} />
-                  </div>
-                </form>
-              </div>
-              <div className="prd-modal-footer">
-                <button type="button" className="prd-btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="productForm" className="prd-btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : (editProduct ? 'تحديث المنتج' : 'حفظ المنتج')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
 
       {printerConfigModalOpen && printerConfig && (
         <ModalContainer>
-          <div className="prd-modal-overlay" onClick={(e) => { if (e.target.classList.contains('prd-modal-overlay')) setPrinterConfigModalOpen(false); }}>
-            <div className="prd-modal" style={{ maxWidth: '500px' }}>
-              <div className="prd-modal-header">
-                <h3><i className="fas fa-print" style={{ marginLeft: '12px' }}></i>إعدادات طابعة الباركود</h3>
-                <button className="prd-modal-close" onClick={() => setPrinterConfigModalOpen(false)}>✕</button>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrinterConfigModalOpen(false); }}>
+            <div className="modal" style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>⚙️ إعدادات طابعة الباركود</h3>
+                <button className="modal-close" onClick={() => setPrinterConfigModalOpen(false)}>✕</button>
               </div>
-              <div className="prd-modal-body">
+              <div className="modal-body">
                 <form id="printerConfigForm" onSubmit={savePrinterConfig}>
-                  <div className="prd-form-group">
-                    <label className="prd-label">اختر الطابعة</label>
+                  <div className="form-group">
+                    <label>اختر الطابعة</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <select className="prd-input" value={printerConfig.printerName} onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })} required>
+                      <select className="form-control" value={printerConfig.printerName} onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })} required>
                         <option value="">-- اختر طابعة --</option>
                         {availablePrinters.map(name => <option key={name} value={name}>{name}</option>)}
                       </select>
-                      <button type="button" className="prd-action-btn" onClick={refreshPrinters} disabled={loadingPrinters}>
-                        {loadingPrinters ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-sync"></i>}
+                      <button type="button" className="btn btn-icon" onClick={refreshPrinters} disabled={loadingPrinters}>
+                        {loadingPrinters ? '⏳' : '🔄'}
                       </button>
                     </div>
                   </div>
-                  <div className="prd-form-row">
-                    <div className="prd-form-group">
-                      <label className="prd-label">العرض (مم)</label>
-                      <input className="prd-input" type="number" step="0.1" value={printerConfig.labelWidthMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelWidthMm: parseFloat(e.target.value) })} required />
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>العرض (مم)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelWidthMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelWidthMm: parseFloat(e.target.value) })} required />
                     </div>
-                    <div className="prd-form-group">
-                      <label className="prd-label">الطول (مم)</label>
-                      <input className="prd-input" type="number" step="0.1" value={printerConfig.labelHeightMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelHeightMm: parseFloat(e.target.value) })} required />
+                    <div className="form-group">
+                      <label>الطول (مم)</label>
+                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelHeightMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelHeightMm: parseFloat(e.target.value) })} required />
                     </div>
                   </div>
                 </form>
               </div>
-              <div className="prd-modal-footer">
-                <button type="button" className="prd-btn-ghost" style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--prd-primary)' }} onClick={handleTestPrint} disabled={testingPrint}>
-                  {testingPrint ? 'جاري...' : <><i className="fas fa-print" style={{ marginLeft: '8px' }}></i>طباعة تجريبية</>}
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleTestPrint} disabled={testingPrint}>
+                  {testingPrint ? 'جاري...' : '🖨️ طباعة تجريبية'}
                 </button>
-                <button type="button" className="prd-btn-ghost" onClick={() => setPrinterConfigModalOpen(false)}>إلغاء</button>
-                <button type="submit" form="printerConfigForm" className="prd-btn-primary" disabled={savingConfig}>
+                <button type="button" className="btn btn-ghost" onClick={() => setPrinterConfigModalOpen(false)}>إلغاء</button>
+                <button type="submit" form="printerConfigForm" className="btn btn-primary" disabled={savingConfig}>
                   {savingConfig ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
                 </button>
               </div>
@@ -1132,94 +827,56 @@ const Products = () => {
 
       {showStockModal && (
         <ModalContainer>
-          <div className="prd-modal-overlay" onClick={(e) => { if (e.target.classList.contains('prd-modal-overlay')) setShowStockModal(false); }}>
-            <div className="prd-modal" style={{ maxWidth: '500px' }}>
-              <div className="prd-modal-header">
-                <h3><i className="fas fa-warehouse" style={{ marginLeft: '12px' }}></i>توزيع المخزون: {stockProduct?.name}</h3>
-                <button className="prd-modal-close" onClick={() => setShowStockModal(false)}>✕</button>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowStockModal(false); }}>
+            <div className="modal" style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>📦 توزيع المنتج: {stockProduct?.name}</h3>
+                <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
               </div>
-              <div className="prd-modal-body">
+              <div className="modal-body">
                 <form id="stockForm" onSubmit={handleUpdateStock}>
-                  <div className="prd-form-group">
-                    <label className="prd-label">المخزن</label>
-                    <select className="prd-input" value={stockForm.warehouseId} onChange={(e) => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
-                      <option value="">-- اختر المخزن --</option>
+                  <div className="form-group">
+                    <label>المخزن المستهدف *</label>
+                    <select className="form-control" value={stockForm.warehouseId} onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
+                      <option value="">اختر المخزن...</option>
                       {allWarehouses.map(w => <option key={w.id} value={w.id}>{w.branchName} - {w.name}</option>)}
                     </select>
                   </div>
-                  <div className="prd-form-group">
-                    <label className="prd-label">الكمية الحالية في هذا المخزن</label>
-                    <input className="prd-input" type="number" step="0.001" value={stockForm.quantity} onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
+                  <div className="form-group">
+                    <label>الكمية الحالية في هذا المخزن *</label>
+                    <input className="form-control" type="number" step="0.001" value={stockForm.quantity} onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
                   </div>
-                  <div className="prd-form-row">
-                    <div className="prd-form-group">
-                      <label className="prd-label">الحد الأدنى (تنبيه)</label>
-                      <input className="prd-input" type="number" step="0.001" value={stockForm.minQuantity}
+                  <div className="grid grid-2 gap-15">
+                    <div className="form-group">
+                      <label>الحد الأدنى (تنبيه)</label>
+                      <input className="form-control" type="number" step="0.001" value={stockForm.minQuantity}
                         onChange={e => setStockForm({ ...stockForm, minQuantity: e.target.value })} placeholder="اختياري" />
                     </div>
-                    <div className="prd-form-group">
-                      <label className="prd-label">الحد الأقصى</label>
-                      <input className="prd-input" type="number" step="0.001" value={stockForm.maxQuantity}
+                    <div className="form-group">
+                      <label>الحد الأقصى</label>
+                      <input className="form-control" type="number" step="0.001" value={stockForm.maxQuantity}
                         onChange={e => setStockForm({ ...stockForm, maxQuantity: e.target.value })} placeholder="اختياري" />
                     </div>
                   </div>
                 </form>
               </div>
-              <div className="prd-modal-footer">
-                <button type="button" className="prd-btn-ghost" onClick={() => setShowStockModal(false)}>إلغاء</button>
-                <button type="submit" form="stockForm" className="prd-btn-primary" disabled={savingStock}>
-                  {savingStock ? 'جاري الحفظ...' : 'تحديث المخزون'}
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setShowStockModal(false)}>إلغاء</button>
+                <button type="submit" form="stockForm" className="btn btn-primary" disabled={savingStock}>
+                  {savingStock ? 'جاري الحفظ...' : 'حفظ التوزيع'}
                 </button>
               </div>
             </div>
           </div>
         </ModalContainer>
       )}
-      {/* CONFLICT / REQUEST MODAL */}
-      {isConflictModalOpen && (
-        <ModalContainer>
-          <div className="prd-modal-overlay" onClick={() => setIsConflictModalOpen(false)}>
-            <div className="prd-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', border: '1px solid #f59e0b' }}>
-              <div className="prd-modal-header" style={{ borderBottom: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                <h3 style={{ color: '#f59e0b' }}>
-                    <i className="fas fa-exclamation-triangle" style={{ marginLeft: '10px' }}></i>
-                    هذا المنتج موجود بالفعل!
-                </h3>
-                <button className="prd-modal-close" onClick={() => setIsConflictModalOpen(false)}>✕</button>
-              </div>
-              <div className="prd-modal-body" style={{ textAlign: 'center', padding: '30px' }}>
-                <div style={{ marginBottom: '20px' }}>
-                    <p style={{ color: 'var(--prd-text-secondary)', marginBottom: '10px' }}>
-                        المنتج صاحب الكود <strong>{conflictProduct?.productCode}</strong> مسجل مسبقاً في النظام.
-                    </p>
-                    <div style={{ background: 'var(--prd-glass-bg)', padding: '15px', borderRadius: '12px', border: '1px solid var(--prd-glass-border)' }}>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{conflictProduct?.name}</div>
-                        <div style={{ fontSize: '0.85rem', marginTop: '5px', color: 'var(--prd-primary)' }}>
-                            <i className="fas fa-building" style={{ marginLeft: '5px' }}></i>
-                            يتبع لفرع: {conflictProduct?.branch?.name || 'فرع آخر'}
-                        </div>
-                    </div>
-                </div>
-                <p style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
-                    بما أن الباركود يجب أن يكون فريداً، يمكنك طلب "تعيين" هذا المنتج لفرعك الحالي. سيقوم الأدمن بمراجعة طلبك ونقل المنتج.
-                </p>
-              </div>
-              <div className="prd-modal-footer">
-                <button className="prd-btn-ghost" onClick={() => setIsConflictModalOpen(false)}>إلغاء</button>
-                <button 
-                    className="prd-btn-primary" 
-                    style={{ background: '#f59e0b' }} 
-                    onClick={handleRequestAssignment}
-                    disabled={requesting}
-                >
-                  {requesting ? 'جاري الإرسال...' : 'إرسال طلب للأدمن'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
-    </div>
+
+      {/* Hidden Container for PDF Generation */}
+      <div style={{ display: 'none' }}>
+        {pdfProduct && <SingleProductPdf ref={pdfRef} product={pdfProduct} />}
+      </div>
+
+    </>
   );
 };
 

@@ -25,12 +25,13 @@ export const BranchProvider = ({ children }) => {
         const user = Api._getUser();
         const isAdmin = (user?.roles || []).some(r => r.includes('ADMIN'));
         
-        // If no branch is selected and there are branches, select the first one if not admin
-        if (!selectedBranchId && data?.length > 0) {
-            if (!isAdmin) {
-               setSelectedBranchId(data[0].id);
-               localStorage.setItem('selected_branch_id', data[0].id);
-            }
+        // If not admin, force selection to their assigned branch
+        if (!isAdmin && user?.branchId) {
+            setSelectedBranchId(user.branchId);
+            localStorage.setItem('selected_branch_id', user.branchId);
+        } else if (!selectedBranchId && data?.length > 0 && !isAdmin) {
+            setSelectedBranchId(data[0].id);
+            localStorage.setItem('selected_branch_id', data[0].id);
         }
       } catch (err) {
         console.error("Error fetching branches:", err);

@@ -1,1 +1,12 @@
 @import './assets/css/main.css';
+
+.product-title-link {
+  text-decoration: none;
+}
+.product-title-link span {
+  transition: color 0.2s ease;
+}
+.product-title-link:hover span {
+  color: var(--metro-blue) !important;
+  text-decoration: underline;
+}

@@ -2,10 +2,9 @@
  * POS API Client — Centralized HTTP layer with JWT auth
  */
 // Base server URL (without /api/v1 prefix)
-// For Vite, environment variables must start with VITE_ and are accessed via import.meta.env
-export const SERVER_URL = import.meta.env.VITE_API_URL;
+export const SERVER_URL = 'http://localhost:8080';
 
-// API versioned base path
+// Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
 
 
@@ -48,6 +47,17 @@ const Api = {
     localStorage.setItem('pos_user', JSON.stringify(user));
   },
 
+  async getTenantDetails(slug) {
+    const res = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${encodeURIComponent(slug)}`);
+    if (!res.ok) throw new Error('فشل في جلب بيانات المؤسسة');
+    return await res.json();
+  },
+
+  async getCurrentTenantDetails() {
+    const res = await this._request('/tenant/current');
+    return res.data;
+  },
+
   /**
    * Check if current user has a specific permission.
    * Admins (ROLE_ADMIN) and Branch Managers (ROLE_BRANCH_MANAGER) get their respective permissions.
@@ -59,10 +69,7 @@ const Api = {
     const roles = user.roles || [];
     const perms = user.permissions || [];
 
-    // Super Admin override — full access to everything
-    if (roles.includes('ROLE_SUPER_ADMIN')) return true;
-
-    // Admin override — full access to tenant features
+    // Admin override — full access
     if (roles.includes('ROLE_ADMIN')) return true;
 
     // Check specific permission (works for ROLE_BRANCH_MANAGER with its perms)
@@ -75,16 +82,7 @@ const Api = {
   isAdmin() {
     const user = this._getUser();
     if (!user) return false;
-    return (user.roles || []).some(r => r === 'ROLE_ADMIN' || r === 'ROLE_SUPER_ADMIN');
-  },
-
-  /**
-   * Returns true if current user is a Super Admin (Global Owner).
-   */
-  isSuperAdmin() {
-    const user = this._getUser();
-    if (!user) return false;
-    return (user.roles || []).includes('ROLE_SUPER_ADMIN');
+    return (user.roles || []).includes('ROLE_ADMIN');
   },
 
   /**
@@ -187,7 +185,9 @@ const Api = {
   // ─────────────────────────────────────────────────────────────────────────────
 
   async _request(path, options = {}) {
-    const url = `${API_BASE}${path}`;
+    const url = path.startsWith('/v2')
+      ? `${SERVER_URL}/api${path}`
+      : `${API_BASE}${path}`;
     const headers = options.headers || {};
 
     if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
@@ -224,24 +224,13 @@ const Api = {
         }
       }
 
-      if (response.status === 402) {
-        const err = await response.json().catch(() => ({}));
-        // Redirect to subscription expired page if not already there
-        if (window.location.pathname !== '/subscription-expired') {
-            window.location.href = '/subscription-expired';
-        }
-        throw new Error(err.message || 'انتهت صلاحية الاشتراك');
-      }
-
       if (response.status === 403) {
         throw new Error('ليس لديك صلاحية لهذا الإجراء');
       }
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        const error = new Error(errData.message || errData.error || `Request failed: ${response.status}`);
-        error.status = response.status;
-        throw error;
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || err.error || `Request failed: ${response.status}`);
       }
 
       if (response.status === 204) return null;
@@ -321,32 +310,39 @@ const Api = {
   },
 
   // ─── Products ───
-  async getProducts(page = 0, size = 1000) {
-    const res = await this._request(`/products?page=${page}&size=${size}`);
-    // Support both old array format and new PaginatedResponse/PageImpl format
-    return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
+  async getProducts(page = 0, size = 1000, branchId = null) {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/products?page=${page}&size=${size}${branchQuery}`);
+    return res.data.items || res.data.content || res.data || [];
   },
 
-  async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc', branchId = null) {
+  async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc', branchId = null, categoryId = null) {
     const searchQuery = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const branchQuery = branchId ? `&branchId=${branchId}` : '';
-    const res = await this._request(`/products?page=${page}&size=${size}${searchQuery}${sortQuery}${branchQuery}`);
-    const raw = res.data;
-    if (Array.isArray(raw)) {
-      return { items: raw, totalPages: 1, totalElements: raw.length, page: 0 };
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `&branchId=${branchId}` : '';
+    
+    let endpoint;
+    if (categoryId && categoryId !== 'null' && categoryId !== 'undefined' && categoryId !== '' && !search) {
+      endpoint = `/v2/products/category/${categoryId}?page=${page}&size=${size}${sortQuery}${branchQuery}`;
+    } else {
+      endpoint = `/v2/products?page=${page}&size=${size}${searchQuery}${sortQuery}${branchQuery}`;
     }
+
+    console.log(`%c[🚀 API CALL] Requesting Products Endpoint: ${endpoint} | Selected Branch: ${branchId || 'All Branches'}`, 'color: #00ff00; font-weight: bold; font-size: 14px;');
+
+    const res = await this._request(endpoint);
+    const raw = res.data;
     return {
-      items: raw.items || raw.content || [],
+      items: raw.items || [],
       totalPages: raw.totalPages ?? 1,
-      totalElements: raw.totalElements ?? 0,
-      page: raw.number ?? page,
+      totalElements: raw.totalItems ?? 0,
+      page: raw.currentPage ?? page,
     };
   },
 
   async getProductsByCategory(categoryId, page = 0, size = 1000) {
-    const res = await this._request(`/products/category/${categoryId}?page=${page}&size=${size}`);
-    return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
+    const res = await this._request(`/v2/products/category/${categoryId}?page=${page}&size=${size}`);
+    return res.data.items || [];
   },
 
 
@@ -354,8 +350,8 @@ const Api = {
   async exportProductsExcel(search = '', sort = 'id,desc', branchId = null) {
     const query = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const branchQuery = branchId ? `&branchId=${branchId}` : '';
-    const res = await fetch(`${API_BASE}/products/export/excel?${query}${sortQuery}${branchQuery}`, {
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${SERVER_URL}/api/v2/products/export/excel?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
     if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
@@ -368,11 +364,57 @@ const Api = {
     window.URL.revokeObjectURL(url);
   },
 
+  async importProductsExcel(file, branchId = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/v2/products/import${branchQuery}`, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    return res;
+  },
+
+  async downloadProductsImportTemplate() {
+    const res = await fetch(`${SERVER_URL}/api/v2/products/import/template`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل تحميل قالب الاستيراد من السيرفر');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products_import_template.xlsx';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async getDeletedProducts(branchId = null) {
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/v2/products/trash${branchQuery}`);
+    return res ? res.data : [];
+  },
+
+  async restoreProductGlobal(id) {
+    const res = await this._request(`/v2/products/${id}/restore/global`, {
+      method: 'POST'
+    });
+    return res;
+  },
+
+  async restoreProductInBranch(id, branchId) {
+    const res = await this._request(`/v2/products/${id}/restore?branchId=${branchId}`, {
+      method: 'POST'
+    });
+    return res;
+  },
+
   async exportProductsPdf(search = '', sort = 'id,desc', branchId = null) {
     const query = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
-    const branchQuery = branchId ? `&branchId=${branchId}` : '';
-    const res = await fetch(`${API_BASE}/products/export/pdf?${query}${sortQuery}${branchQuery}`, {
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${SERVER_URL}/api/v2/products/export/pdf?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
     if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
@@ -442,36 +484,37 @@ const Api = {
   },
 
   async getProductStatistics(branchId = null) {
-    const branchQuery = branchId ? `?branchId=${branchId}` : '';
-    const res = await this._request(`/products/statistics${branchQuery}`);
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/v2/products/statistics${branchQuery}`);
     return res.data;
   },
 
-  async getDailyProductStats(days = 30) {
-    const res = await this._request(`/products/daily-stats?days=${days}`);
+  async getDailyProductStats(days = 30, branchId = null) {
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/v2/products/daily-stats?days=${days}${branchQuery}`);
     return res.data;
   },
 
   async incrementProductView(id) {
     try {
-      await this._request(`/products/${id}/view`, { method: 'POST' });
+      await this._request(`/v2/products/${id}/view`, { method: 'POST' });
     } catch (e) {
       // Just ignore if it fails, not critical
     }
   },
 
   async getProduct(id) {
-    const res = await this._request(`/products/${id}`);
+    const res = await this._request(`/v2/products/${id}`);
     return res.data;
   },
 
   async getProductBarcode(id) {
-    const res = await this._request(`/products/${id}/barcode`);
+    const res = await this._request(`/v2/products/${id}/barcode`);
     return res.data;
   },
 
   async getProductBarcodeLabel(id) {
-    const res = await fetch(`${API_BASE}/products/${id}/barcode/label`, {
+    const res = await fetch(`${SERVER_URL}/api/v2/products/${id}/barcode/label`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
     if (!res.ok) throw new Error("فشل تحميل صورة الباركود من السيرفر");
@@ -480,7 +523,7 @@ const Api = {
   },
 
   async getProductQrCode(id) {
-    const res = await this._request(`/products/${id}/qrcode`);
+    const res = await this._request(`/v2/products/${id}/qrcode`);
     return res.data;
   },
 
@@ -492,8 +535,8 @@ const Api = {
         formData.append('images', img);
       }
     }
-    const branchQuery = branchId ? `?branchId=${branchId}` : '';
-    const res = await this._request(`/products${branchQuery}`, {
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/v2/products${branchQuery}`, {
       method: 'POST',
       body: formData,
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
@@ -509,7 +552,7 @@ const Api = {
         formData.append('images', img);
       }
     }
-    const res = await this._request(`/products/${id}`, {
+    const res = await this._request(`/v2/products/${id}`, {
       method: 'PUT',
       body: formData,
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
@@ -517,89 +560,8 @@ const Api = {
     return res.data;
   },
 
-  async deleteProduct(id, branchId = null) {
-    const branchQuery = branchId ? `?branchId=${branchId}` : '';
-    await this._request(`/products/${id}${branchQuery}`, { method: 'DELETE' });
-  },
-
-  async deleteProductGlobal(id) {
-    await this._request(`/products/${id}/global`, { method: 'DELETE' });
-  },
-
-  async restoreProduct(id, branchId) {
-    await this._request(`/products/${id}/restore?branchId=${branchId}`, { method: 'POST' });
-  },
-
-  async restoreProductGlobal(id) {
-    await this._request(`/products/${id}/restore/global`, { method: 'POST' });
-  },
-
-  async getDeletedProducts(branchId = null) {
-    const branchQuery = branchId ? `?branchId=${branchId}` : '';
-    const res = await this._request(`/products/trash${branchQuery}`);
-    return res.data;
-  },
-
-  // ─── Product Requests ───
-  async lookupProductByCode(code) {
-    const res = await this._request(`/product-requests/lookup?code=${encodeURIComponent(code)}`);
-    return res.data;
-  },
-
-  async createProductAssignRequest(productCode, targetBranchId) {
-    const res = await this._request('/product-requests', {
-      method: 'POST',
-      body: JSON.stringify({ productCode, targetBranchId })
-    });
-    return res.data;
-  },
-
-  async getProductRequests() {
-    const res = await this._request('/product-requests');
-    return res.data;
-  },
-
-  async approveProductRequest(id, notes = '') {
-    const res = await this._request(`/product-requests/${id}/approve`, {
-      method: 'PUT',
-      body: JSON.stringify({ notes })
-    });
-    return res.data;
-  },
-
-  async rejectProductRequest(id, notes = '') {
-    const res = await this._request(`/product-requests/${id}/reject`, {
-      method: 'PUT',
-      body: JSON.stringify({ notes })
-    });
-    return res.data;
-  },
-
-  async getProductAssignMode() {
-    const res = await this._request('/product-requests/assign-mode');
-    return res.data?.mode || 'APPROVAL';
-  },
-
-  // ─── Tenant Settings ───
-  async getTenantSettings() {
-    const res = await this._request('/tenant/settings');
-    return res.data;
-  },
-
-  async updateTenantSetting(key, value) {
-    const res = await this._request(`/tenant/settings/${key}`, {
-      method: 'PUT',
-      body: JSON.stringify({ value })
-    });
-    return res.data;
-  },
-
-  async updateProductAssignMode(mode) {
-    const res = await this._request('/tenant/settings/product-assign-mode', {
-      method: 'PUT',
-      body: JSON.stringify({ mode })
-    });
-    return res.data;
+  async deleteProduct(id) {
+    await this._request(`/v2/products/${id}`, { method: 'DELETE' });
   },
 
   // ─── Printer Config ───
@@ -631,12 +593,12 @@ const Api = {
   },
 
   async getAvailablePrinters() {
-    const res = await this._request('/products/printers');
+    const res = await this._request('/v2/products/printers');
     return res.data;
   },
 
   async directPrintBarcode(productId, copies, printerName) {
-    const res = await this._request(`/products/${productId}/barcode/direct-print?copies=${copies}&printerName=${encodeURIComponent(printerName)}`, {
+    const res = await this._request(`/v2/products/${productId}/barcode/direct-print?copies=${copies}&printerName=${encodeURIComponent(printerName)}`, {
       method: 'POST'
     });
     return res.data;
@@ -645,11 +607,6 @@ const Api = {
   // ─── Categories ───
   async getCategories(rootsOnly = false) {
     const res = await this._request(`/categories?rootsOnly=${rootsOnly}`);
-    return res.data;
-  },
-
-  async getCategoryStatistics() {
-    const res = await this._request('/categories/statistics');
     return res.data;
   },
 
@@ -834,6 +791,11 @@ const Api = {
     return res.data;
   },
 
+  async getPurchaseById(id) {
+    const res = await this._request(`/purchases/${id}`);
+    return res.data;
+  },
+
   async getSupplierPurchases(supplierId, page = 0, size = 1000) {
     const res = await this._request(`/purchases/supplier/${supplierId}?page=${page}&size=${size}`);
     return Array.isArray(res.data) ? res.data : (res.data.items || res.data.content || res.data);
@@ -860,28 +822,48 @@ const Api = {
     });
   },
 
-  async getSalesSummary(date = '') {
-    const res = await this._request(`/sales/analytics/summary${date ? `?date=${date}` : ''}`);
+  async getSalesSummary(date = '', branchId = '') {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (branchId) params.append('branchId', branchId);
+    const queryString = params.toString();
+    const res = await this._request(`/sales/analytics/summary${queryString ? `?${queryString}` : ''}`);
     return res.data;
   },
 
-  async getCashierAnalytics(date = '') {
-    const res = await this._request(`/sales/analytics/cashiers${date ? `?date=${date}` : ''}`);
+  async getCashierAnalytics(date = '', branchId = '') {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (branchId) params.append('branchId', branchId);
+    const queryString = params.toString();
+    const res = await this._request(`/sales/analytics/cashiers${queryString ? `?${queryString}` : ''}`);
     return res.data;
   },
 
-  async getProductAnalytics(date = '') {
-    const res = await this._request(`/sales/analytics/products${date ? `?date=${date}` : ''}`);
+  async getProductAnalytics(date = '', branchId = '') {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (branchId) params.append('branchId', branchId);
+    const queryString = params.toString();
+    const res = await this._request(`/sales/analytics/products${queryString ? `?${queryString}` : ''}`);
     return res.data;
   },
 
-  async getHourlyAnalytics(date = '') {
-    const res = await this._request(`/sales/analytics/hourly${date ? `?date=${date}` : ''}`);
+  async getHourlyAnalytics(date = '', branchId = '') {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (branchId) params.append('branchId', branchId);
+    const queryString = params.toString();
+    const res = await this._request(`/sales/analytics/hourly${queryString ? `?${queryString}` : ''}`);
     return res.data;
   },
 
-  async getReturnAnalytics(date = '') {
-    const res = await this._request(`/sales/analytics/returns${date ? `?date=${date}` : ''}`);
+  async getReturnAnalytics(date = '', branchId = '') {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date);
+    if (branchId) params.append('branchId', branchId);
+    const queryString = params.toString();
+    const res = await this._request(`/sales/analytics/returns${queryString ? `?${queryString}` : ''}`);
     return res.data;
   },
 
@@ -1210,6 +1192,11 @@ const Api = {
     return res.data;
   },
 
+  async getSaleById(id) {
+    const res = await this._request(`/sales/${id}`);
+    return res.data;
+  },
+
   async createSale(data) {
     const res = await this._request('/sales', {
       method: 'POST',
@@ -1253,8 +1240,9 @@ const Api = {
   },
 
   // ─── Damaged Goods ───
-  async getDamagedProducts(page = 0, size = 10, search = '') {
-    const res = await this._request(`/damaged?page=${page}&size=${size}&search=${encodeURIComponent(search)}`);
+  async getDamagedProducts(page = 0, size = 10, search = '', branchId = '') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/damaged?page=${page}&size=${size}&search=${encodeURIComponent(search)}${branchQuery}`);
     return res.data;
   },
 
@@ -1445,11 +1433,6 @@ const Api = {
   // ─── Branches & Warehouses ───
   async getBranches() {
     const res = await this._request('/branches');
-    return res.data;
-  },
-
-  async getWarehouses() {
-    const res = await this._request('/warehouses');
     return res.data;
   },
 
@@ -1673,50 +1656,6 @@ const Api = {
   async getAccountingEntries(page = 0, size = 10) {
     const res = await this._request(`/accounting/entries?page=${page}&size=${size}`);
     return res.data;
-  },
-  // ─── Super Admin ─────────────────────────────────────────────────────────────
-  async getSuperAdminTenants() {
-    const res = await this._request('/super-admin/tenants');
-    return res.data;
-  },
-
-  async updateTenantStatus(id, active) {
-    const res = await this._request(`/super-admin/tenants/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ active })
-    });
-    return res.data;
-  },
-
-  async adjustTenantSubscription(id, payload) {
-    const res = await this._request(`/super-admin/tenants/${id}/subscription`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload)
-    });
-    return res.data;
-  },
-
-  async getSuperAdminStats() {
-    const res = await this._request('/super-admin/stats');
-    return res.data;
-  },
-
-  // ─── Recurring Invoices ───
-  async getRecurringInvoices() {
-    const res = await this._request('/sales/recurring');
-    return res.data;
-  },
-
-  async createRecurringInvoice(data) {
-    const res = await this._request('/sales/recurring', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    return res.data;
-  },
-
-  async processRecurringInvoicesManual() {
-    await this._request('/sales/recurring/process', { method: 'POST' });
   }
 };
 

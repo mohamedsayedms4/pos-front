@@ -22,15 +22,6 @@ const getProductImage = (product) => {
   return null;
 };
 
-const getBranchInventory = (product, branchId) => {
-  if (!product || !product.branchInventories || product.branchInventories.length === 0) return null;
-  if (branchId) {
-    const inv = product.branchInventories.find(i => String(i.branchId) === String(branchId));
-    if (inv) return inv;
-  }
-  return product.branchInventories[0];
-};
-
 const POS = () => {
   const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
   const [connected, setConnected] = useState(false);
@@ -44,9 +35,7 @@ const POS = () => {
   const [lastInvoice, setLastInvoice] = useState(null);
 
   const [branches, setBranches] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
 
   const { toast, confirm } = useGlobalUI();
   const searchInputRef = useRef(null);
@@ -61,26 +50,55 @@ const POS = () => {
   const observerTarget = useRef(null);
 
   // Initialize
+  // Initialize
   useEffect(() => {
     const user = Api._getUser();
-    if (globalBranchId) {
-      setSelectedBranchId(globalBranchId);
-    } else if (user && user.branchId) {
-      setSelectedBranchId(user.branchId);
-    }
-    if (contextBranches && contextBranches.length > 0) {
-      setBranches(contextBranches);
-    } else {
-      // Try local branches
-      db.branches.toArray().then(data => {
-        if (data.length > 0) setBranches(data);
-      });
-    }
+    
+    const initData = async () => {
+      if (globalBranchId) {
+        setSelectedBranchId(globalBranchId);
+      } else if (user && user.branchId) {
+        setSelectedBranchId(user.branchId);
+      }
+      
+      let initialBranches = [];
+      if (contextBranches && contextBranches.length > 0) {
+        initialBranches = contextBranches;
+        setBranches(contextBranches);
+      } else {
+        initialBranches = await db.branches.toArray();
+        if (initialBranches.length > 0) setBranches(initialBranches);
+      }
+
+      // If no branch is selected yet, and we have branches, auto-select the first one
+      if (!globalBranchId && (!user || !user.branchId) && initialBranches.length > 0) {
+        setSelectedBranchId(initialBranches[0].id);
+      }
+    };
+
+    initData();
     
     // Init Sync Service
     SyncService.initAutoSync();
     if (navigator.onLine) {
-      SyncService.pullDataFromServer(globalBranchId);
+      SyncService.pullDataFromServer(globalBranchId).then(async (success) => {
+        if (success) {
+          // Re-load branches from DB to get newly synced ones
+          const freshBranches = await db.branches.toArray();
+          if (freshBranches.length > 0) {
+            setBranches(freshBranches);
+            // If no branch is selected, select the first one
+            setSelectedBranchId(prev => {
+              if (!prev) {
+                return freshBranches[0].id;
+              }
+              return prev;
+            });
+          }
+          // Re-load customers
+          loadCustomers();
+        }
+      });
     }
     
     // Check pending count
@@ -95,23 +113,7 @@ const POS = () => {
     return () => clearInterval(interval);
   }, [globalBranchId, contextBranches]);
 
-  const loadWarehouses = async (branchId) => {
-    try {
-      let data = [];
-      if (navigator.onLine) {
-        data = await Api.getWarehousesByBranch(branchId);
-      } else {
-        data = await db.warehouses.where('branchId').equals(Number(branchId)).toArray();
-      }
-      setWarehouses(data);
-      if (data.length > 0) setSelectedWarehouseId(data[0].id);
-    } catch (e) {
-      console.error("Failed to load warehouses", e);
-      // Fallback
-      const local = await db.warehouses.where('branchId').equals(Number(branchId)).toArray();
-      setWarehouses(local);
-    }
-  };
+
 
   const loadCustomers = async () => {
     try {
@@ -125,8 +127,8 @@ const POS = () => {
     }
   };
 
-  const loadBrowsePage = useCallback(async (page, search, append = false, warehouseId = selectedWarehouseId) => {
-    if (!warehouseId && !search) {
+  const loadBrowsePage = useCallback(async (page, search, append = false, branchId = selectedBranchId) => {
+    if (!branchId && !search) {
       if (!append) setBrowseProducts([]);
       return;
     }
@@ -153,7 +155,7 @@ const POS = () => {
     };
 
     try {
-      const data = await Api.getWarehouseProducts(warehouseId, page, PAGE_SIZE, search, 'id,desc');
+      const data = await Api.getProductsPaged(page, PAGE_SIZE, search, 'id,desc', branchId);
       setBrowseProducts(prev => append ? [...prev, ...data.items] : data.items);
       setBrowseTotalPages(data.totalPages);
       setBrowsePage(page);
@@ -166,26 +168,16 @@ const POS = () => {
     } finally {
       setBrowseLoading(false);
     }
-  }, [toast, selectedWarehouseId]);
+  }, [toast, selectedBranchId]);
 
-  // Handle warehouse loading
+  // Handle branch change -> load products
   useEffect(() => {
     if (selectedBranchId) {
-      loadWarehouses(selectedBranchId);
-    } else {
-      setWarehouses([]);
-      setSelectedWarehouseId('');
-    }
-  }, [selectedBranchId]);
-
-  // Handle warehouse change -> load products
-  useEffect(() => {
-    if (selectedWarehouseId) {
-      loadBrowsePage(0, browseSearch, false, selectedWarehouseId);
+      loadBrowsePage(0, browseSearch, false, selectedBranchId);
     } else {
       setBrowseProducts([]);
     }
-  }, [selectedWarehouseId]);
+  }, [selectedBranchId]);
 
   const handleBrowseSearch = (val) => {
     setBrowseSearch(val);
@@ -218,27 +210,23 @@ const POS = () => {
   }, [browseSearch, browseProducts]);
 
   const addToCart = useCallback((product) => {
-    const inv = getBranchInventory(product, selectedBranchId);
-    const stock = inv?.stock || 0;
-    const salePrice = inv?.salePrice || 0;
-
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) {
-        if (existing.qty + 1 > stock) {
+        if (existing.qty + 1 > product.stock) {
           setTimeout(() => toast('تجاوزت الرصيد المتاح', 'warning'), 10);
           return prev;
         }
         return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
       }
-      if (stock <= 0) {
+      if (product.stock <= 0) {
         setTimeout(() => toast('نفذ المخزون', 'warning'), 10);
         return prev;
       }
-      return [...prev, { id: product.id, name: product.name, price: salePrice, qty: 1, stock: stock, unitName: product.unitName }];
+      return [...prev, { id: product.id, name: product.name, price: product.salePrice, qty: 1, stock: product.stock, unitName: product.unitName }];
     });
     if (searchInputRef.current) searchInputRef.current.focus();
-  }, [toast, selectedBranchId]);
+  }, [toast]);
 
   const updateQty = (id, newQty) => {
     setCart(prev => {
@@ -282,8 +270,8 @@ const POS = () => {
   }, [total, cart.length]);
 
   const handleCheckout = async () => {
-    if (!selectedBranchId || !selectedWarehouseId) {
-      toast('يرجى اختيار الفرع والمخزن أولاً', 'warning');
+    if (!selectedBranchId) {
+      toast('يرجى اختيار الفرع أولاً', 'warning');
       return;
     }
 
@@ -294,7 +282,6 @@ const POS = () => {
         discount,
         paidAmount,
         branchId: selectedBranchId,
-        warehouseId: selectedWarehouseId,
         items: cart.map(i => ({ productId: i.id, quantity: i.qty, unitPrice: i.price }))
       };
 
@@ -336,8 +323,7 @@ const POS = () => {
               discount: discount,
               items: cart.map(i => ({ productName: i.name, quantity: i.qty, unitPrice: i.price, totalPrice: i.qty * i.price })),
               createdAt: new Date().toISOString(),
-              branchName: branches.find(b => b.id == selectedBranchId)?.name || '',
-              warehouseName: warehouses.find(w => w.id == selectedWarehouseId)?.name || ''
+              branchName: branches.find(b => b.id == selectedBranchId)?.name || ''
             };
             
             setLastInvoice(fakeInvoice);
@@ -391,20 +377,17 @@ const POS = () => {
         <div className="pos-grid-container">
           <div className="pos-grid">
             {browseProducts.map(p => {
-              const inv = getBranchInventory(p, selectedBranchId);
-              const stock = inv?.stock || 0;
-              const salePrice = inv?.salePrice || 0;
-              const outOfStock = stock <= 0;
+              const outOfStock = p.stock <= 0;
               const imgSrc = getProductImage(p);
               return (
                 <div key={p.id} className={`pos-item-card ${outOfStock ? 'out-stock' : ''}`} onClick={() => !outOfStock && addToCart(p)}>
                   <div className="pos-item-image">
                     {imgSrc ? <img src={imgSrc} alt={p.name} /> : <div className="placeholder-icon">📦</div>}
-                    <div className="stock-badge">{outOfStock ? 'نفذ' : `${stock} متوفر`}</div>
+                    <div className="stock-badge">{outOfStock ? 'نفذ' : `${p.stock} متوفر`}</div>
                   </div>
                   <div className="pos-item-details">
                     <div className="pos-item-name" title={p.name}>{p.name}</div>
-                    <div className="pos-item-price">{salePrice.toFixed(2)} ج.م</div>
+                    <div className="pos-item-price">{p.salePrice.toFixed(2)} ج.م</div>
                   </div>
                 </div>
               );
@@ -432,10 +415,7 @@ const POS = () => {
             <option value="">-- الفرع --</option>
             {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
-          <select className="form-control pos-select" value={selectedWarehouseId} onChange={e => setSelectedWarehouseId(e.target.value)}>
-            <option value="">-- المخزن --</option>
-            {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
+
           <select className="form-control pos-select" value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
             <option value="">عميل نقدي (كاش)</option>
             {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
