@@ -81,8 +81,17 @@ const Dashboard = () => {
     loadCounts();
   }, [globalBranchId]);
 
+  const getBaseDomain = () => {
+    if (window.location.hostname === 'localhost') return 'digitalrace.net';
+    const parts = window.location.hostname.split('.');
+    if (parts.length >= 3 && parts[0] !== 'www') {
+      return parts.slice(1).join('.') + (window.location.port ? ':' + window.location.port : '');
+    }
+    return window.location.host;
+  };
+
   const storeUrl = tenantInfo
-    ? `https://${window.location.hostname === 'localhost' ? 'digitalrace.net' : window.location.host}/${tenantInfo.slug}/login`
+    ? `https://${tenantInfo.slug}.${getBaseDomain()}/login`
     : '';
 
   const handleCopyLink = () => {

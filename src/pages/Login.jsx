@@ -19,7 +19,7 @@ const Login = () => {
     const detectBySubdomain = async () => {
       const hostname = window.location.hostname;
       const parts = hostname.split('.');
-      if (parts.length >= 3 && parts[0] !== 'www' && hostname.includes('digitalrace.net')) {
+      if (parts.length >= 3 && parts[0] !== 'www' && parts[0] !== 'localhost') {
         const slug = parts[0];
         console.log(`[Subdomain Detected] Slug: ${slug}`);
         const resolvedId = await resolveAndSetTenant(slug);

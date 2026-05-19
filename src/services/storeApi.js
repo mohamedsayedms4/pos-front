@@ -19,13 +19,10 @@ const StoreApi = {
     
     // 3. Resolve by subdomain if needed
     const hostname = window.location.hostname;
-    const isDR = hostname.endsWith('digitalrace.net');
-    const isMobily = hostname.endsWith('mobily.cloud');
+    const parts = hostname.split('.');
     
-    if (isDR || isMobily) {
-        const parts = hostname.split('.');
-        if (parts.length >= 3 && parts[0] !== 'www') {
-            const slug = parts[0];
+    if (parts.length >= 3 && parts[0] !== 'www' && parts[0] !== 'localhost') {
+        const slug = parts[0];
             
             // If the slug changed or we don't have a saved ID, resolve it
             if (!saved || localStorage.getItem('public_tenant_slug') !== slug) {
