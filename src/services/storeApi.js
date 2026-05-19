@@ -52,7 +52,6 @@ const StoreApi = {
                 return this._resolvingPromise;
             }
         }
-    }
 
     return saved || '1';
   },
