@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Api, { SERVER_URL } from '../services/api';
+import logo2 from '../assets/img/logo2.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -12,7 +13,27 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isResolving, setIsResolving] = useState(false);
   const [suggestedTenants, setSuggestedTenants] = useState([]);
+  const [logoUrl, setLogoUrl] = useState(logo2);
+  const [softwareName, setSoftwareName] = useState('بسيط ERP');
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    // Set default favicon
+    const link = document.querySelector("link[rel~='icon']");
+    if (link) link.href = logo2;
+
+    Api.getGlobalConfig()
+      .then((cfg) => {
+        if (cfg) {
+          if (cfg.logoUrl) {
+            setLogoUrl(cfg.logoUrl);
+            if (link) link.href = cfg.logoUrl;
+          }
+          if (cfg.softwareName) setSoftwareName(cfg.softwareName);
+        }
+      })
+      .catch((err) => console.error('Error loading global config:', err));
+  }, []);
 
   // 1. Detect by Subdomain on Mount
   React.useEffect(() => {
@@ -143,8 +164,12 @@ const Login = () => {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="login-logo">
-          <div className="logo-icon">◆</div>
-          <h1>{businessName ? businessName : 'بسيط ERP'}</h1>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '16px' }} />
+          ) : (
+            <div className="logo-icon">◆</div>
+          )}
+          <h1>{businessName ? businessName : softwareName}</h1>
           <p>{businessName ? 'أهلاً بك مرة أخرى' : 'قم بتسجيل الدخول للمتابعة'}</p>
         </div>
 
@@ -223,8 +248,8 @@ const Login = () => {
           <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '8px' }}>
             ليس لديك حساب؟ <a href="/register" style={{ color: 'var(--metro-blue)', fontWeight: '600', textDecoration: 'none' }}>إنشاء شركة جديدة</a>
           </p>
-          <p style={{ color: 'var(--text-dim)', fontSize: '0.6875rem', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-            POS System React v1.0
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+            جميع الحقوق محفوظة لدى Remotly
           </p>
         </div>
       </div>

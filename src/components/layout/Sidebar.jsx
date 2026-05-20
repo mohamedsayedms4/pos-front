@@ -26,8 +26,14 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   // Load logo from global config
   useEffect(() => {
+    const link = document.querySelector("link[rel~='icon']");
+    if (link) link.href = logoUrl || logo2;
+
     Api.getGlobalConfig().then(cfg => {
-      if (cfg && cfg.logoUrl) setLogoUrl(cfg.logoUrl);
+      if (cfg && cfg.logoUrl) {
+        setLogoUrl(cfg.logoUrl);
+        if (link) link.href = cfg.logoUrl;
+      }
     }).catch(() => {});
   }, []);
 

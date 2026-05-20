@@ -1,0 +1,962 @@
+﻿diff --git a/src/main/resources/react-app copy/src/pages/LandingPage.jsx b/src/main/resources/react-app copy/src/pages/LandingPage.jsx
+index 7e2799c..e759f1e 100644
+--- a/src/main/resources/react-app copy/src/pages/LandingPage.jsx	
++++ b/src/main/resources/react-app copy/src/pages/LandingPage.jsx	
+@@ -1,14 +1,15 @@
+ import React, { useState, useEffect } from 'react';
+ import { Link } from 'react-router-dom';
+ import Api from '../services/api';
+ import logo2 from '../assets/img/logo2.png';
++import systemImg from '../assets/img/landing-page/system.png';
+ 
+ // SVG Icons for elegant UI look to avoid external library loading issues
+ const Icons = {
+   Speed: (props) => (
+     <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+       <circle cx="12" cy="12" r="10" />
+       <path d="M12 6v6l4 2" />
+     </svg>
+   ),
+   Store: (props) => (
+@@ -74,20 +75,51 @@ const Icons = {
+       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+     </svg>
+   ),
+   Globe: (props) => (
+     <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+       <circle cx="12" cy="12" r="10" />
+       <line x1="2" y1="12" x2="22" y2="12" />
+       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+     </svg>
+   ),
++  BookOpen: (props) => (
++    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
++      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
++      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
++    </svg>
++  ),
++  Package: (props) => (
++    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
++      <path d="M16.5 9.4 7.55 4.24a1.79 1.79 0 0 0-1.8 0L2.3 6a1.8 1.8 0 0 0-1 1.6v6.22a1.8 1.8 0 0 0 1 1.6L5.75 17a1.79 1.79 0 0 0 1.8 0L11 14.84a1.8 1.8 0 0 0 1-1.6V7a1.8 1.8 0 0 0-1-1.6L7.5 3" />
++      <path d="M12 22V12" />
++      <path d="m12 12 8.71-5.04M12 12 3.29 6.96" />
++    </svg>
++  ),
++  Briefcase: (props) => (
++    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
++      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
++      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
++    </svg>
++  ),
++  Settings: (props) => (
++    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
++      <circle cx="12" cy="12" r="3" />
++      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
++    </svg>
++  ),
++  LeftArrow: (props) => (
++    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
++      <line x1="20" y1="12" x2="4" y2="12" />
++      <polyline points="10 18 4 12 10 6" />
++    </svg>
++  ),
+ };
+ 
+ const LandingPage = () => {
+   const [logoUrl, setLogoUrl] = useState(logo2);
+   const [softwareName, setSoftwareName] = useState('Ï¿Ï│┘èÏÀ ERP');
+   const [isYearly, setIsYearly] = useState(true);
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const [activeTab, setActiveTab] = useState('pos');
+   const [scrolled, setScrolled] = useState(false);
+   const [openFaq, setOpenFaq] = useState(null);
+@@ -116,20 +148,40 @@ const LandingPage = () => {
+           if (cfg.logoUrl) {
+             setLogoUrl(cfg.logoUrl);
+             if (link) link.href = cfg.logoUrl;
+           }
+           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
+         }
+       })
+       .catch((err) => console.error('Error loading global config:', err));
+   }, []);
+ 
++  // Initialize scroll animations
++  useEffect(() => {
++    const observer = new IntersectionObserver(
++      (entries) => {
++        entries.forEach((entry) => {
++          if (entry.isIntersecting) {
++            entry.target.classList.add('is-visible');
++          }
++        });
++      },
++      { threshold: 0.1 }
++    );
++
++    document.querySelectorAll('.animate-on-scroll').forEach((el) => {
++      observer.observe(el);
++    });
++
++    return () => observer.disconnect();
++  }, []);
++
+   const toggleFaq = (index) => {
+     setOpenFaq(openFaq === index ? null : index);
+   };
+ 
+   const faqData = [
+     {
+       q: "┘ç┘ä ┘èÏ¬ÏÀ┘äÏ¿ Ï¿Ï│┘èÏÀ ERP Ï┤Ï▒ÏºÏí ÏúÏ¼┘çÏ▓Ï® ┘âÏºÏ┤┘èÏ▒ ┘àÏ«ÏÁÏÁÏ®Ïƒ",
+       a: "Ï¿Ïº┘äÏ¬Ïú┘â┘èÏ» ┘äÏº! Ï¿Ï│┘èÏÀ ERP ┘ç┘ê ┘åÏ©Ïº┘à Ï│Ï¡ÏºÏ¿┘è ┘àÏ¬ÏÀ┘êÏ▒ ┘èÏ╣┘à┘ä ┘àÏ¿ÏºÏ┤Ï▒Ï® Ï╣Ï¿Ï▒ ┘àÏ¬ÏÁ┘üÏ¡ Ïº┘äÏÑ┘åÏ¬Ï▒┘åÏ¬ ┘à┘å Ïú┘è Ï¼┘çÏºÏ▓ Ï¬┘à┘ä┘â┘ç Ï¡Ïº┘ä┘èÏº┘ïÏî Ï│┘êÏºÏí ┘âÏº┘å ┘â┘àÏ¿┘è┘êÏ¬Ï▒Ïî Ï¬ÏºÏ¿┘äÏ¬ (iPad Ïú┘ê Android)Ïî Ïú┘ê Ï¡Ï¬┘ë ┘çÏºÏ¬┘ü ┘àÏ¡┘à┘ê┘ä. ┘å┘ê┘üÏ▒ ┘ä┘â ┘àÏ▒┘ê┘åÏ® Ï¬Ï┤Ï║┘è┘ä ┘âÏº┘à┘äÏ® Ï»┘ê┘å Ï¬┘âÏº┘ä┘è┘ü ÏÑÏÂÏº┘ü┘èÏ®."
+     },
+     {
+@@ -204,135 +256,272 @@ const LandingPage = () => {
+           </nav>
+ 
+           {/* Header Action Buttons */}
+           <div className="header-cta-group">
+             <Link to="/login" className="btn-nav-login">
+               <Icons.Lock style={{ width: '16px', height: '16px' }} />
+               <span>Ï¬Ï│Ï¼┘è┘ä Ïº┘äÏ»Ï«┘ê┘ä</span>
+             </Link>
+             <div className="btn-register-container">
+               <Link to="/register" className="btn-nav-register">ÏºÏ¿Ï»Ïú Ïº┘äÏºÏ│Ï¬Ï«Ï»Ïº┘à ┘àÏ¼Ïº┘åÏº┘ï</Link>
+-              <span className="btn-register-caption">Ï»┘ê┘å Ïº┘äÏ¡ÏºÏ¼Ï® ┘äÏ¿ÏÀÏº┘éÏ® ÏºÏªÏ¬┘àÏº┘å</span>
+             </div>
+             
+-            {/* Globe icon to replicate Daftra header */}
+-            <button className="icon-utility-btn" title="Ïº┘äÏ╣Ï▒Ï¿┘èÏ®">
+-              <Icons.Globe style={{ width: '20px', height: '20px' }} />
+-            </button>
+           </div>
+ 
+           <button className="mobile-menu-trigger" onClick={() => setMobileMenuOpen(true)}>
+             <Icons.Menu />
+           </button>
+         </div>
+       </header>
+ 
+       {/* Hero Section */}
+       <section className="hero-section">
++        {/* Stock Chart Background SVG */}
++        <div className="hero-stock-bg">
++          <svg preserveAspectRatio="none" viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
++            <defs>
++              <linearGradient id="greenLine" x1="0%" y1="0%" x2="100%" y2="0%">
++                <stop offset="0%" stopColor="#22c55e" stopOpacity="0.2" />
++                <stop offset="100%" stopColor="#22c55e" stopOpacity="1" />
++              </linearGradient>
++              <linearGradient id="redLine" x1="0%" y1="0%" x2="100%" y2="0%">
++                <stop offset="0%" stopColor="#ef4444" stopOpacity="0.2" />
++                <stop offset="100%" stopColor="#ef4444" stopOpacity="0.9" />
++              </linearGradient>
++              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
++                <feGaussianBlur stdDeviation="6" result="blur" />
++                <feComposite in="SourceGraphic" in2="blur" operator="over" />
++              </filter>
++              <filter id="glowRed" x="-20%" y="-20%" width="140%" height="140%">
++                <feGaussianBlur stdDeviation="5" result="blur" />
++                <feComposite in="SourceGraphic" in2="blur" operator="over" />
++              </filter>
++            </defs>
++
++            {/* Grid Lines */}
++            <g stroke="#334155" strokeWidth="1" strokeOpacity="0.6">
++              <line x1="0" y1="50" x2="1000" y2="50" />
++              <line x1="0" y1="100" x2="1000" y2="100" />
++              <line x1="0" y1="150" x2="1000" y2="150" />
++              <line x1="0" y1="200" x2="1000" y2="200" />
++              <line x1="0" y1="250" x2="1000" y2="250" />
++              <line x1="0" y1="300" x2="1000" y2="300" />
++              <line x1="0" y1="350" x2="1000" y2="350" />
++                       <path 
++                d="M0,280 L100,240 L200,270 L300,180 L400,160 L500,200 L600,120 L700,70 L800,100 L900,30 L1000,20" 
++                fill="none" 
++                stroke="#4ade80" 
++                strokeWidth="2" 
++              />
++            </g>
++          </svg>
++        </div>
+         <div className="container hero-container">
+-          <h1 className="hero-title">┘åÏ©Ïº┘à ERP ┘àÏ¬┘âÏº┘à┘ä ┘äÏÑÏ»ÏºÏ▒Ï® ÏúÏ╣┘àÏº┘ä┘â</h1>
++          <h1 className="hero-title animate-on-scroll fade-up">┘åÏ©Ïº┘à ERP ┘àÏ¬┘âÏº┘à┘ä ┘äÏÑÏ»ÏºÏ▒Ï® ÏúÏ╣┘àÏº┘ä┘â</h1>
+           
+-          <p className="hero-desc">
++          <p className="hero-desc animate-on-scroll fade-up delay-100">
+             {softwareName} ┘ç┘ê Ï┤Ï▒┘è┘â┘â Ïº┘äÏ▒┘é┘à┘è Ïº┘äÏú┘àÏ½┘ä ┘äÏÑÏ»ÏºÏ▒Ï® Ï¼┘à┘èÏ╣ Ï¼┘êÏº┘åÏ¿ ÏúÏ╣┘àÏº┘ä┘â. Ï¿Ï▒┘åÏº┘àÏ¼ Ï│Ï¡ÏºÏ¿┘è Ïó┘à┘å Ï¿┘ç┘ê┘èÏ® Ï╣Ï▒Ï¿┘èÏ® ÏúÏÁ┘è┘äÏ® ┘ê┘êÏºÏ¼┘çÏ® Ï╣ÏÁÏ▒┘èÏ® Ï¬Ï»Ï╣┘à Ïº┘äÏ╣Ï▒Ï¿┘èÏ® ┘êÏº┘äÏÑ┘åÏ¼┘ä┘èÏ▓┘èÏ®Ïî ┘èÏÂ┘à┘å Ï│┘äÏº┘àÏ® Ï¿┘èÏº┘åÏºÏ¬┘â ┘ê┘èÏ▒Ïº┘ü┘é┘â Ïú┘è┘å┘àÏº ┘â┘åÏ¬. ÏúÏÁÏ»Ï▒ Ïº┘ä┘ü┘êÏºÏ¬┘èÏ▒ Ïº┘äÏÑ┘ä┘âÏ¬Ï▒┘ê┘å┘èÏ® Ïº┘ä┘àÏ╣Ï¬┘àÏ»Ï® ┘êÏúÏ»Ï▒ ┘àÏ¿┘èÏ╣ÏºÏ¬┘âÏî ┘àÏ«Ï▓┘ê┘å┘âÏî Ï╣┘à┘äÏºÏª┘âÏî ┘à┘êÏ©┘ü┘è┘âÏî Ï¡Ï│ÏºÏ¿ÏºÏ¬┘âÏî ┘êÏ»┘êÏ▒Ï® Ï╣┘à┘ä┘â ┘à┘å ┘à┘âÏº┘å ┘êÏºÏ¡Ï»Ïî ┘àÏ╣ Ï¡┘ä┘ê┘ä ÏÑÏ»ÏºÏ▒Ï® Ï┤Ïº┘à┘äÏ® ┘ê┘éÏºÏ¿┘äÏ® ┘ä┘äÏ¬Ï«ÏÁ┘èÏÁ ┘äÏú┘âÏ½Ï▒ ┘à┘å 50 ┘åÏ┤ÏºÏÀÏº┘ï Ï¬Ï¼ÏºÏ▒┘èÏº┘ï.
+           </p>
+ 
+-          <div className="hero-cta-area">
++          <div className="hero-cta-area animate-on-scroll fade-up delay-200">
+             <Link to="/register" className="btn-hero-green">
+               ÏºÏ¿Ï»Ïú Ïº┘äÏºÏ│Ï¬Ï«Ï»Ïº┘à ┘àÏ¼Ïº┘åÏº┘ï
+             </Link>
+             
+             <div className="sub-features-row">
+               <div className="sub-feature-item">
+                 <span className="sparkle-icon">Ô£│</span>
+                 <span>Ï¬Ï¼Ï▒Ï¿Ï® ┘àÏ¼Ïº┘å┘èÏ®</span>
+               </div>
+-              <div className="sub-feature-item">
+-                <span className="sparkle-icon">Ô£│</span>
+-                <span>┘äÏº Ï¡ÏºÏ¼Ï® ┘äÏ¿ÏÀÏº┘éÏ® ÏºÏªÏ¬┘àÏº┘å</span>
+-              </div>
++
+               <div className="sub-feature-item">
+                 <span className="sparkle-icon">Ô£│</span>
+                 <span>Ï¼Ïº┘çÏ▓ ┘ä┘äÏ╣┘à┘ä ┘ü┘êÏ▒Ïº┘ï</span>
+               </div>
+               <div className="sub-feature-item">
+                 <span className="sparkle-icon">Ô£│</span>
+                 <span>Ï┤Ïº┘à┘ä ┘äÏ¼┘à┘èÏ╣ Ïº┘äÏ¬ÏÀÏ¿┘è┘éÏºÏ¬</span>
+               </div>
+             </div>
+           </div>
+         </div>
+       </section>
++      <div className="hero-system-image-wrapper animate-on-scroll fade-up">
++        <div className="system-mockup-frame">
++          <div className="system-mockup-topbar">
++            <span className="mockup-dot red"></span>
++            <span className="mockup-dot yellow"></span>
++            <span className="mockup-dot green"></span>
++          </div>
++          <div className="system-mockup-body">
++            <img src={systemImg} alt="┘êÏºÏ¼┘çÏ® Ïº┘ä┘åÏ©Ïº┘à" className="hero-system-image" />
++          </div>
++        </div>
++      </div>
+ 
+-      {/* Modules Features Grid Section */}
++      {/* Modules Features Grid Section (Daftra Style) */}
+       <section id="features" className="modules-grid-section">
+         <div className="container">
+-          <div className="section-header-centered">
+-            <h2>ÏÑÏ»ÏºÏ▒Ï® Ï░┘â┘èÏ® Ï┤Ïº┘à┘äÏ® Ï¬┘åÏºÏ│Ï¿ ÏÀ┘à┘êÏ¡ ÏúÏ╣┘àÏº┘ä┘â</h2>
+-            <p>┘â┘ä Ïº┘ä┘à┘à┘èÏ▓ÏºÏ¬ ┘êÏº┘äÏú┘åÏ©┘àÏ® Ïº┘ä┘üÏ▒Ï╣┘èÏ® Ïº┘äÏ¬┘è Ï¬Ï¡Ï¬ÏºÏ¼┘çÏº ┘äÏ¬Ï│┘è┘èÏ▒ Ï¬Ï¼ÏºÏ▒Ï¬┘â ┘êÏ¬┘êÏ│┘èÏ╣ ┘åÏÀÏº┘é ÏúÏ╣┘àÏº┘ä┘â Ï¬┘à Ï»┘àÏ¼┘çÏº ┘êÏ¿┘åÏºÏñ┘çÏº Ï¿Ï¬┘âÏº┘à┘ä ÏºÏ│Ï¬Ï½┘åÏºÏª┘è.</p>
+-          </div>
++          <div className="daftra-modules-grid">
++            {/* 1. Ïº┘ä┘àÏ¿┘èÏ╣ÏºÏ¬ */}
++            <div className="daftra-module-item animate-on-scroll fade-up">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon purple-theme">
++                  <Icons.Store />
++                </span>
++                <h3 className="daftra-module-title">Ïº┘ä┘àÏ¿┘èÏ╣ÏºÏ¬</h3>
++                <span className="daftra-module-arrow blue-theme">
++                  <Icons.LeftArrow />
++                </span>
++              </div>
++              <p className="daftra-module-desc">
++                Ïº┘ä┘üÏºÏ¬┘êÏ▒Ï® Ïº┘äÏÑ┘ä┘âÏ¬Ï▒┘ê┘å┘èÏ® ┘êÏº┘äÏÂÏ▒┘èÏ¿┘èÏ®Ïî ┘å┘éÏºÏÀ Ïº┘äÏ¿┘èÏ╣Ïî Ïº┘ä┘ü┘êÏºÏ¬┘èÏ▒ ┘êÏ╣Ï▒┘êÏÂ Ïº┘äÏúÏ│Ï╣ÏºÏ▒Ïî Ïº┘äÏú┘éÏ│ÏºÏÀÏî Ïº┘äÏ╣Ï▒┘êÏÂ ┘êÏº┘ä┘àÏ¿┘èÏ╣ÏºÏ¬ Ïº┘ä┘àÏ│Ï¬┘çÏ»┘üÏ® ┘êÏº┘äÏ╣┘à┘ê┘äÏºÏ¬.
++              </p>
++            </div>
++
++            {/* 2. Ïº┘ä┘àÏ¡ÏºÏ│Ï¿Ï® Ïº┘äÏ╣Ïº┘àÏ® */}
++            <div className="daftra-module-item animate-on-scroll fade-up delay-100">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon green-theme">
++                  <Icons.BookOpen />
++                </span>
++                <h3 className="daftra-module-title">Ïº┘ä┘àÏ¡ÏºÏ│Ï¿Ï® Ïº┘äÏ╣Ïº┘àÏ®</h3>
++              </div>
++              <p className="daftra-module-desc">
++                Ï»┘ä┘è┘ä Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬Ïî Ï»┘üÏ¬Ï▒ Ïº┘äÏúÏ│Ï¬ÏºÏ░Ïî ┘é┘è┘êÏ» Ïº┘ä┘è┘ê┘à┘èÏ®Ïî Ïº┘ä┘àÏÁÏ▒┘ê┘üÏºÏ¬Ïî ┘àÏ▒Ïº┘âÏ▓ Ïº┘äÏ¬┘â┘ä┘üÏ®Ïî ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏúÏÁ┘ê┘äÏî Ï»┘êÏ▒Ï® Ïº┘äÏ┤┘è┘âÏºÏ¬Ïî Ïº┘äÏ¬┘éÏºÏ▒┘èÏ▒ Ïº┘ä┘àÏº┘ä┘èÏ®.
++              </p>
++            </div>
+ 
+-          <div className="modules-grid">
+-            <div className="module-card">
+-              <div className="module-icon-wrap blue-theme">
+-                <Icons.Chart />
++            {/* 3. Ïº┘ä┘àÏ«Ï▓┘ê┘å */}
++            <div className="daftra-module-item animate-on-scroll fade-up delay-200">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon rose-theme">
++                  <Icons.Package />
++                </span>
++                <h3 className="daftra-module-title">Ïº┘ä┘àÏ«Ï▓┘ê┘å</h3>
+               </div>
+-              <h3>Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ Ïº┘äÏ╣Ïº┘àÏ® ┘êÏº┘ä┘àÏº┘ä┘èÏ®</h3>
+-              <p>Ï┤Ï¼Ï▒Ï® Ï¡Ï│ÏºÏ¿ÏºÏ¬ Ï»┘è┘åÏº┘à┘è┘â┘èÏ®Ïî ┘é┘è┘êÏ» ┘àÏ¡ÏºÏ│Ï¿┘èÏ® ┘è┘ê┘à┘èÏ® Ï¬┘ä┘éÏºÏª┘èÏ®Ïî ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ«Ï▓ÏºÏª┘å ┘êÏº┘äÏ¿┘å┘ê┘âÏî ┘êÏÑÏÁÏ»ÏºÏ▒ ┘ü┘êÏ▒┘è ┘ä┘à┘èÏ▓Ïº┘å Ïº┘ä┘àÏ▒ÏºÏ¼Ï╣Ï® ┘êÏº┘äÏúÏ▒Ï¿ÏºÏ¡ ┘êÏº┘äÏ«Ï│ÏºÏªÏ▒.</p>
++              <p className="daftra-module-desc">
++                Ïº┘ä┘à┘åÏ¬Ï¼ÏºÏ¬ ┘êÏº┘äÏ«Ï»┘àÏºÏ¬Ïî Ï¬Ï¬Ï¿Ï╣ Ïº┘ä┘àÏ«Ï▓┘ê┘åÏî Ïº┘äÏ¼Ï▒Ï»Ïî Ïº┘ä┘àÏ┤Ï¬Ï▒┘èÏºÏ¬Ïî Ïº┘ä┘àÏ│Ï¬┘êÏ»Ï╣ÏºÏ¬Ïî Ïº┘äÏúÏ░┘ê┘å Ïº┘ä┘àÏ«Ï▓┘å┘èÏ®Ïî Ïº┘ä┘à┘êÏ▒Ï»┘è┘åÏî ┘é┘êÏºÏª┘à Ïº┘äÏúÏ│Ï╣ÏºÏ▒Ïî Ï»┘êÏ▒Ï® Ïº┘ä┘àÏ┤Ï¬Ï▒┘èÏºÏ¬.
++              </p>
+             </div>
+ 
+-            <div className="module-card">
+-              <div className="module-icon-wrap green-theme">
+-                <Icons.Speed />
++            {/* 4. Ïº┘ä┘à┘êÏºÏ▒Ï» Ïº┘äÏ¿Ï┤Ï▒┘èÏ® */}
++            <div className="daftra-module-item animate-on-scroll fade-up">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon amber-theme">
++                  <Icons.Users />
++                </span>
++                <h3 className="daftra-module-title">Ïº┘ä┘à┘êÏºÏ▒Ï» Ïº┘äÏ¿Ï┤Ï▒┘èÏ®</h3>
+               </div>
+-              <h3>┘å┘éÏºÏÀ Ïº┘äÏ¿┘èÏ╣ ┘êÏº┘ä┘ü┘êÏºÏ¬┘èÏ▒</h3>
+-              <p>┘êÏºÏ¼┘çÏ® ┘âÏºÏ┤┘èÏ▒ ┘üÏºÏª┘éÏ® Ïº┘äÏ│Ï▒Ï╣Ï® Ï¬Ï»Ï╣┘à ┘éÏºÏ▒Ïª Ïº┘äÏ¿ÏºÏ▒┘â┘êÏ»Ïî Ï«┘èÏºÏ▒ÏºÏ¬ Ïº┘äÏ»┘üÏ╣ Ïº┘ä┘àÏ¬Ï╣Ï»Ï»Ï®Ïî ┘êÏ¬┘ê┘ä┘èÏ» Ïº┘ä┘ü┘êÏºÏ¬┘èÏ▒ Ïº┘äÏÑ┘ä┘âÏ¬Ï▒┘ê┘å┘èÏ® Ïº┘ä┘àÏ¬┘êÏº┘ü┘éÏ® ┘àÏ╣ Ïº┘äÏÂÏ▒ÏºÏªÏ¿ Ï¿┘åÏ│Ï¿Ï® 100%.</p>
++              <p className="daftra-module-desc">
++                Ï┤Ïñ┘ê┘å Ïº┘ä┘à┘êÏ©┘ü┘è┘åÏî Ïº┘äÏ¡ÏÂ┘êÏ▒ ┘êÏº┘äÏº┘åÏÁÏ▒Ïº┘üÏî Ïº┘ä┘àÏ▒Ï¬Ï¿ÏºÏ¬Ïî Ïº┘äÏ╣┘é┘êÏ»Ïî Ïº┘ä┘ç┘è┘â┘ä Ïº┘äÏ¬┘åÏ©┘è┘à┘èÏî Ïº┘äÏÑÏ¼ÏºÏ▓ÏºÏ¬Ïî Ïº┘äÏÀ┘äÏ¿ÏºÏ¬Ïî Ïº┘äÏ│┘ä┘ü.
++              </p>
+             </div>
+ 
+-            <div className="module-card">
+-              <div className="module-icon-wrap purple-theme">
+-                <Icons.Branch />
++            {/* 5. Ï╣┘äÏº┘éÏºÏ¬ Ïº┘äÏ╣┘à┘äÏºÏí */}
++            <div className="daftra-module-item animate-on-scroll fade-up delay-100">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon cyan-theme">
++                  <Icons.Briefcase />
++                </span>
++                <h3 className="daftra-module-title">Ï╣┘äÏº┘éÏºÏ¬ Ïº┘äÏ╣┘à┘äÏºÏí</h3>
+               </div>
+-              <h3>ÏÑÏ»ÏºÏ▒Ï® Ïº┘ä┘àÏ«ÏºÏ▓┘å ┘êÏº┘ä┘àÏ│Ï¬┘êÏ»Ï╣ÏºÏ¬</h3>
+-              <p>┘àÏ▒Ïº┘éÏ¿Ï® ┘àÏ│Ï¬┘ê┘èÏºÏ¬ ┘àÏ«Ï▓┘ê┘å┘â ┘äÏ¡Ï©┘èÏº┘ïÏî Ï¼Ï▒Ï» Ïº┘ä┘à┘åÏ¬Ï¼ÏºÏ¬ Ï¿Ïº┘äÏ¿ÏºÏ▒┘â┘êÏ»Ïî ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏÁ┘äÏºÏ¡┘èÏºÏ¬Ïî ┘êÏ¬Ï¡┘ê┘è┘ä Ïº┘äÏ¿ÏÂÏºÏªÏ╣ Ï¿┘è┘å Ïº┘ä┘üÏ▒┘êÏ╣ Ï¿┘å┘éÏ▒Ï® Ï▓Ï▒ ┘êÏºÏ¡Ï»Ï®.</p>
++              <p className="daftra-module-desc">
++                ┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ╣┘à┘äÏºÏíÏî Ïº┘ä┘à┘êÏºÏ╣┘èÏ»Ïî ┘å┘éÏºÏÀ Ïº┘ä┘ê┘äÏºÏíÏî Ïº┘äÏ╣ÏÂ┘ê┘èÏºÏ¬ ┘êÏº┘äÏºÏ┤Ï¬Ï▒Ïº┘âÏºÏ¬Ïî Ïº┘ä┘å┘éÏºÏÀ ┘êÏº┘äÏúÏ▒ÏÁÏ»Ï®Ïî Ï¡ÏÂ┘êÏ▒ Ïº┘äÏ╣┘à┘äÏºÏíÏî Ïº┘äÏ¬Ïú┘à┘è┘åÏºÏ¬.
++              </p>
+             </div>
+ 
+-            <div className="module-card">
+-              <div className="module-icon-wrap amber-theme">
+-                <Icons.Users />
++            {/* 6. ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ╣┘à┘ä┘èÏºÏ¬ */}
++            <div className="daftra-module-item animate-on-scroll fade-up delay-200">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon blue-theme">
++                  <Icons.Settings />
++                </span>
++                <h3 className="daftra-module-title">ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ╣┘à┘ä┘èÏºÏ¬</h3>
++              </div>
++              <p className="daftra-module-desc">
++                Ïú┘êÏº┘àÏ▒ Ïº┘äÏ┤Ï║┘ä ┘êÏÑÏ»ÏºÏ▒Ï® Ïº┘ä┘àÏ┤ÏºÏ▒┘èÏ╣Ïî Ï»┘êÏ▒ÏºÏ¬ Ïº┘äÏ╣┘à┘äÏî Ï¬Ï¬Ï¿Ï╣ Ïº┘ä┘ê┘éÏ¬Ïî ÏÑÏ»ÏºÏ▒Ï® Ïº┘ä┘êÏ¡Ï»ÏºÏ¬ ┘êÏº┘äÏÑ┘èÏ¼ÏºÏ▒ÏºÏ¬Ïî Ï╣┘é┘êÏ» Ïº┘äÏÑ┘èÏ¼ÏºÏ▒Ïî Ïº┘äÏ¡Ï¼┘êÏ▓ÏºÏ¬Ïî ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ¬ÏÁ┘å┘èÏ╣.
++              </p>
++            </div>
++          </div>
++        </div>
++      </section>╣.
++              </p>
++            </div>
++          </div>
++        </div>
++      </section>e">Ïº┘ä┘àÏ¡ÏºÏ│Ï¿Ï® Ïº┘äÏ╣Ïº┘àÏ®</h3>
+               </div>
+-              <h3>Ï┤Ïñ┘ê┘å Ïº┘ä┘à┘êÏ©┘ü┘è┘å ┘êÏº┘ä┘àÏ▒Ï¬Ï¿ÏºÏ¬</h3>
+-              <p>Ï¬┘åÏ©┘è┘à Ï┤┘üÏ¬ÏºÏ¬ Ïº┘äÏ╣┘à┘ä ┘ê┘à┘êÏºÏ╣┘èÏ» Ïº┘äÏ¡ÏÂ┘êÏ▒ ┘êÏº┘äÏº┘åÏÁÏ▒Ïº┘üÏî ÏºÏ¡Ï¬Ï│ÏºÏ¿ Ïº┘äÏ▒┘êÏºÏ¬Ï¿ ┘êÏº┘äÏ«ÏÁ┘ê┘àÏºÏ¬ ┘êÏº┘äÏ¿Ï»┘äÏºÏ¬ Ïó┘ä┘èÏº┘ïÏî ┘ê┘à┘ä┘üÏºÏ¬ Ï┤Ïº┘à┘äÏ® ┘ä┘â┘ä ┘à┘êÏ©┘ü.</p>
++              <p className="daftra-module-desc">
++                Ï»┘ä┘è┘ä Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬Ïî Ï»┘üÏ¬Ï▒ Ïº┘äÏúÏ│Ï¬ÏºÏ░Ïî ┘é┘è┘êÏ» Ïº┘ä┘è┘ê┘à┘èÏ®Ïî Ïº┘ä┘àÏÁÏ▒┘ê┘üÏºÏ¬Ïî ┘àÏ▒Ïº┘âÏ▓ Ïº┘äÏ¬┘â┘ä┘üÏ®Ïî ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏúÏÁ┘ê┘äÏî Ï»┘êÏ▒Ï® Ïº┘äÏ┤┘è┘âÏºÏ¬Ïî ┘êÏº┘äÏ¬┘éÏºÏ▒┘èÏ▒ Ïº┘ä┘àÏº┘ä┘èÏ®.
++              </p>
+             </div>
+ 
+-            <div className="module-card">
+-              <div className="module-icon-wrap cyan-theme">
+-                <Icons.Shield />
++            {/* 3. Ïº┘ä┘àÏ«Ï▓┘ê┘å */}
++            <div className="daftra-module-item animate-on-scroll fade-up delay-200">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon rose-theme">
++                  <Icons.Branch />
++                </span>
++                <h3 className="daftra-module-title">Ïº┘ä┘àÏ«Ï▓┘ê┘å</h3>
+               </div>
+-              <h3>ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ╣┘à┘äÏºÏí ┘êÏº┘ä┘à┘êÏ▒Ï»┘è┘å</h3>
+-              <p>Ï»┘ä┘è┘ä Ï╣┘à┘äÏºÏí ┘àÏ¬┘âÏº┘à┘ä ┘è┘êÏÂÏ¡ Ï│Ï¼┘ä Ïº┘ä┘àÏ┤Ï¬Ï▒┘èÏºÏ¬Ïî ┘àÏ¬ÏºÏ¿Ï╣Ï® ┘àÏ»┘è┘ê┘å┘èÏºÏ¬ Ïº┘äÏ╣┘à┘äÏºÏí ┘êÏº┘ä┘à┘êÏ▒Ï»┘è┘åÏî ┘êÏ¬┘åÏ¿┘è┘çÏºÏ¬ ┘à┘êÏºÏ╣┘èÏ» Ï¼Ï»Ïº┘ê┘ä Ïº┘äÏ¬Ï¡ÏÁ┘è┘ä ┘êÏº┘ä┘ü┘êÏ¬Ï▒Ï®.</p>
++              <p className="daftra-module-desc">
++                Ïº┘ä┘à┘åÏ¬Ï¼ÏºÏ¬ ┘êÏº┘äÏ«Ï»┘àÏºÏ¬Ïî Ï¬Ï¬Ï¿Ï╣ Ïº┘ä┘àÏ«Ï▓┘ê┘åÏî Ïº┘äÏ¼Ï▒Ï»Ïî Ïº┘ä┘àÏ┤Ï¬Ï▒┘èÏºÏ¬Ïî Ïº┘ä┘àÏ│Ï¬┘êÏ»Ï╣ÏºÏ¬Ïî Ïº┘äÏúÏ░┘ê┘å Ïº┘ä┘àÏ«Ï▓┘å┘èÏ®Ïî Ïº┘ä┘à┘êÏ▒Ï»┘è┘åÏî ┘é┘êÏºÏª┘à Ïº┘äÏúÏ│Ï╣ÏºÏ▒Ïî ┘êÏ»┘êÏ▒Ï® Ïº┘ä┘àÏ┤Ï¬Ï▒┘èÏºÏ¬.
++              </p>
+             </div>
+ 
+-            <div className="module-card">
+-              <div className="module-icon-wrap rose-theme">
+-                <Icons.Store />
++            {/* 4. Ïº┘ä┘à┘êÏºÏ▒Ï» Ïº┘äÏ¿Ï┤Ï▒┘èÏ® */}
++            <div className="daftra-module-item animate-on-scroll fade-up">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon amber-theme">
++                  <Icons.Users />
++                </span>
++                <h3 className="daftra-module-title">Ïº┘ä┘à┘êÏºÏ▒Ï» Ïº┘äÏ¿Ï┤Ï▒┘èÏ®</h3>
+               </div>
+-              <h3>┘àÏ¬Ï¼Ï▒ ÏÑ┘ä┘âÏ¬Ï▒┘ê┘å┘è ┘àÏ»┘àÏ¼ ┘ê┘àÏ¬Ï▓Ïº┘à┘å</h3>
+-              <p>Ïú┘åÏ┤Ïª ┘àÏ¬Ï¼Ï▒┘â Ïº┘äÏ«ÏºÏÁ ┘ü┘êÏ▒Ïº┘ïÏî ┘êÏºÏ╣Ï▒ÏÂ ┘à┘åÏ¬Ï¼ÏºÏ¬┘â ┘äÏ¬┘ä┘é┘è Ïº┘äÏÀ┘äÏ¿ÏºÏ¬Ïî ┘àÏ╣ ┘àÏ▓Ïº┘à┘åÏ® ┘âÏº┘à┘äÏ® ┘êÏ¬┘ä┘éÏºÏª┘èÏ® ┘ä┘â┘à┘èÏºÏ¬ Ïº┘ä┘àÏ«Ï▓┘ê┘å ┘êÏº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ Ïº┘ä┘àÏº┘ä┘èÏ®.</p>
++              <p className="daftra-module-desc">
++                Ï┤Ïñ┘ê┘å Ïº┘ä┘à┘êÏ©┘ü┘è┘åÏî Ïº┘äÏ¡ÏÂ┘êÏ▒ ┘êÏº┘äÏº┘åÏÁÏ▒Ïº┘üÏî Ïº┘ä┘àÏ▒Ï¬Ï¿ÏºÏ¬Ïî Ïº┘äÏ╣┘é┘êÏ»Ïî Ïº┘ä┘ç┘è┘â┘ä Ïº┘äÏ¬┘åÏ©┘è┘à┘èÏî Ïº┘äÏÑÏ¼ÏºÏ▓ÏºÏ¬Ïî Ïº┘äÏÀ┘äÏ¿ÏºÏ¬Ïî ┘êÏº┘äÏ│┘ä┘ü.
++              </p>
++            </div>
++
++            {/* 5. Ï╣┘äÏº┘éÏºÏ¬ Ïº┘äÏ╣┘à┘äÏºÏí */}
++            <div className="daftra-module-item animate-on-scroll fade-up delay-100">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon cyan-theme">
++                  <Icons.Shield />
++                </span>
++                <h3 className="daftra-module-title">Ï╣┘äÏº┘éÏºÏ¬ Ïº┘äÏ╣┘à┘äÏºÏí</h3>
++              </div>
++              <p className="daftra-module-desc">
++                ┘àÏ¬ÏºÏ¿Ï╣Ï® Ïº┘äÏ╣┘à┘äÏºÏíÏî Ïº┘ä┘à┘êÏºÏ╣┘èÏ»Ïî ┘å┘éÏºÏÀ Ïº┘ä┘ê┘äÏºÏíÏî Ïº┘äÏ╣ÏÂ┘ê┘èÏºÏ¬ ┘êÏº┘äÏºÏ┤Ï¬Ï▒Ïº┘âÏºÏ¬Ïî Ïº┘ä┘å┘éÏºÏÀ ┘êÏº┘äÏúÏ▒ÏÁÏ»Ï®Ïî Ï¡ÏÂ┘êÏ▒ Ïº┘äÏ╣┘à┘äÏºÏíÏî ┘êÏº┘äÏ¬Ïú┘à┘è┘åÏºÏ¬.
++              </p>
++            </div>
++
++            {/* 6. ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ╣┘à┘ä┘èÏºÏ¬ */}
++            <div className="daftra-module-item animate-on-scroll fade-up delay-200">
++              <div className="daftra-module-header">
++                <span className="daftra-module-icon blue-theme">
++                  <Icons.Speed />
++                </span>
++                <h3 className="daftra-module-title">ÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ╣┘à┘ä┘èÏºÏ¬</h3>
++              </div>
++              <p className="daftra-module-desc">
++                Ïú┘êÏº┘àÏ▒ Ïº┘äÏ┤Ï║┘ä ┘êÏÑÏ»ÏºÏ▒Ï® Ïº┘ä┘àÏ┤ÏºÏ▒┘èÏ╣Ïî Ï»┘êÏ▒ÏºÏ¬ Ïº┘äÏ╣┘à┘äÏî Ï¬Ï¬Ï¿Ï╣ Ïº┘ä┘ê┘éÏ¬Ïî ÏÑÏ»ÏºÏ▒Ï® Ïº┘ä┘êÏ¡Ï»ÏºÏ¬ ┘êÏº┘äÏÑ┘èÏ¼ÏºÏ▒ÏºÏ¬Ïî Ï╣┘é┘êÏ» Ïº┘äÏÑ┘èÏ¼ÏºÏ▒Ïî Ïº┘äÏ¡Ï¼┘êÏ▓ÏºÏ¬Ïî ┘êÏÑÏ»ÏºÏ▒Ï® Ïº┘äÏ¬ÏÁ┘å┘èÏ╣.
++              </p>
+             </div>
+           </div>
+         </div>
+       </section>
+ 
+       {/* Interactive Tabs Showcase (Daftra Style Showcase) */}
+       <section className="interactive-showcase-section">
+         <div className="container">
+-          <div className="showcase-card">
++          <div className="showcase-card animate-on-scroll fade-up">
+             <div className="tabs-header">
+               <button className={activeTab === 'pos' ? 'active-tab' : ''} onClick={() => setActiveTab('pos')}>
+                 ┘âÏºÏ┤┘èÏ▒ Ïº┘ä┘àÏ¿┘èÏ╣ÏºÏ¬
+               </button>
+               <button className={activeTab === 'inventory' ? 'active-tab' : ''} onClick={() => setActiveTab('inventory')}>
+                 Ïº┘ä┘àÏ«ÏºÏ▓┘å ┘êÏº┘ä┘üÏ▒┘êÏ╣
+               </button>
+               <button className={activeTab === 'finance' ? 'active-tab' : ''} onClick={() => setActiveTab('finance')}>
+                 Ïº┘äÏ¡Ï│ÏºÏ¿ÏºÏ¬ ┘êÏº┘äÏ¬┘éÏºÏ▒┘èÏ▒
+               </button>
+@@ -436,69 +625,69 @@ const LandingPage = () => {
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+       </section>
+ 
+       {/* Pricing Section */}
+       <section id="pricing" className="pricing-section">
+         <div className="container">
+-          <div className="section-header-centered">
++          <div className="section-header-centered animate-on-scroll fade-up">
+             <h2>Ï«ÏÀÏÀ ÏúÏ│Ï╣ÏºÏ▒ ┘àÏ▒┘åÏ® Ï¬Ï¬┘åÏºÏ│Ï¿ ┘àÏ╣ Ï¡Ï¼┘à ┘åÏ┤ÏºÏÀ┘â</h2>
+             <p>ÏºÏ«Ï¬Ï▒ Ïº┘äÏ«ÏÀÏ® Ïº┘ä┘à┘åÏºÏ│Ï¿Ï® ┘äÏúÏ╣┘àÏº┘ä┘â Ïº┘äÏó┘å. Ï¼┘à┘èÏ╣ Ïº┘äÏ«ÏÀÏÀ Ï¬Ï¬ÏÂ┘à┘å Ïú┘àÏº┘åÏº┘ï ┘üÏºÏª┘éÏº┘ï ┘êÏ»Ï╣┘àÏº┘ï ┘ü┘å┘èÏº┘ï ┘àÏ¬┘âÏº┘à┘äÏº┘ï.</p>
+             
+             <div className="pricing-toggle-container">
+               <span className={!isYearly ? 'active' : ''}>Ï┤┘çÏ▒┘èÏº┘ï</span>
+               <button className={`pricing-toggle-switch ${isYearly ? 'active' : ''}`} onClick={() => setIsYearly(!isYearly)}>
+                 <span className="switch-dot"></span>
+               </button>
+               <span className={isYearly ? 'active' : ''}>Ï│┘å┘ê┘èÏº┘ï (┘ê┘üÏ▒ 20% ­ƒÄü)</span>
+             </div>
+           </div>
+ 
+           <div className="pricing-grid">
+-            <div className="pricing-card">
++            <div className="pricing-card animate-on-scroll fade-up">
+               <h3>Ïº┘äÏ¿Ïº┘éÏ® Ïº┘ä┘üÏ▒Ï»┘èÏ®</h3>
+               <p className="pricing-card-desc">┘àÏ½Ïº┘ä┘èÏ® ┘ä┘ä┘àÏ¬ÏºÏ¼Ï▒ Ïº┘äÏÁÏ║┘èÏ▒Ï® ┘êÏº┘ä┘àÏ│Ï¬┘é┘äÏ® ┘äÏ¿Ï»Ïí Ï¬┘åÏ©┘è┘à ÏúÏ╣┘àÏº┘ä┘çÏº Ïº┘äÏ│Ï▒┘èÏ╣Ï®.</p>
+               <div className="price-box">
+                 <span className="price-num">{isYearly ? "199" : "249"}</span>
+                 <span className="price-curr">Ï¼.┘à / Ï┤┘çÏ▒┘èÏº┘ï</span>
+               </div>
+               <ul className="pricing-features-list">
+                 <li><Icons.Check className="feat-check" /> <span>┘å┘éÏÀÏ® Ï¿┘èÏ╣ ┘êÏºÏ¡Ï»Ï® (┘âÏºÏ┤┘èÏ▒ ┘êÏºÏ¡Ï»)</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>┘àÏ«Ï▓┘å ┘êÏºÏ¡Ï» ┘àÏ¬┘âÏº┘à┘ä</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>Ï»Ï╣┘à ┘âÏº┘à┘ä ┘ä┘ä┘ü┘êÏºÏ¬┘èÏ▒ ┘êÏº┘äÏ¿ÏºÏ▒┘â┘êÏ»</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>Ïº┘äÏ¬┘éÏºÏ▒┘èÏ▒ ┘êÏº┘ä┘àÏ¿┘èÏ╣ÏºÏ¬ Ïº┘ä┘è┘ê┘à┘èÏ®</span></li>
+               </ul>
+               <Link to="/register" className="btn-pricing-secondary">ÏºÏ¿Ï»Ïú ┘àÏ¼Ïº┘åÏº┘ï Ïº┘äÏó┘å</Link>
+             </div>
+ 
+-            <div className="pricing-card active-card">
++            <div className="pricing-card active-card animate-on-scroll fade-up delay-100">
+               <div className="popular-badge">Ïº┘äÏú┘âÏ½Ï▒ ÏºÏ«Ï¬┘èÏºÏ▒Ïº┘ï</div>
+               <h3>Ïº┘äÏ¿Ïº┘éÏ® Ïº┘äÏºÏ¡Ï¬Ï▒Ïº┘ü┘èÏ®</h3>
+               <p className="pricing-card-desc">Ïº┘äÏ¡┘ä Ïº┘äÏú┘àÏ½┘ä ┘ä┘äÏ┤Ï▒┘âÏºÏ¬ Ïº┘ä┘àÏ¬┘êÏ│Ï╣Ï® ┘êÏÑÏ»ÏºÏ▒Ï® Ïº┘ä┘üÏ▒┘êÏ╣ Ïº┘ä┘àÏ¬Ï╣Ï»Ï»Ï® ┘êÏº┘ä┘àÏ«ÏºÏ▓┘å Ïº┘ä┘àÏ┤Ï¬Ï▒┘âÏ®.</p>
+               <div className="price-box">
+                 <span className="price-num">{isYearly ? "399" : "499"}</span>
+                 <span className="price-curr">Ï¼.┘à / Ï┤┘çÏ▒┘èÏº┘ï</span>
+               </div>
+               <ul className="pricing-features-list">
+                 <li><Icons.Check className="feat-check" /> <span>Ï¡Ï¬┘ë 3 ┘üÏ▒┘êÏ╣ / ┘å┘éÏºÏÀ Ï¿┘èÏ╣ ┘àÏ¬Ï╣Ï»Ï»Ï®</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>┘àÏ▓Ïº┘à┘åÏ® Ïº┘ä┘àÏ«ÏºÏ▓┘å ┘êÏº┘äÏ¬Ï¡┘ê┘è┘ä Ïº┘ä┘ü┘êÏ▒┘è</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>Ïº┘äÏ¬┘éÏºÏ▒┘èÏ▒ Ïº┘ä┘àÏº┘ä┘èÏ® Ïº┘ä┘àÏ¬┘éÏ»┘àÏ® ┘êÏº┘ä┘àÏÁÏ▒┘ê┘üÏºÏ¬</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>ÏÑÏ»ÏºÏ▒Ï® Ïº┘ä┘à┘êÏºÏ▒Ï» Ïº┘äÏ¿Ï┤Ï▒┘èÏ® ┘êÏº┘äÏ▒┘êÏºÏ¬Ï¿ ┘êÏº┘äÏ┤┘üÏ¬ÏºÏ¬</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>┘àÏ¬Ï¼Ï▒ ÏÑ┘ä┘âÏ¬Ï▒┘ê┘å┘è ┘àÏ¬┘âÏº┘à┘ä ┘àÏ»┘àÏ¼ ┘ê┘åÏ┤ÏÀ</span></li>
+               </ul>
+               <Link to="/register" className="btn-pricing-primary">ÏºÏ¿Ï»Ïú Ï¬Ï¼Ï▒Ï¿Ï¬┘â Ïº┘äÏºÏ¡Ï¬Ï▒Ïº┘ü┘èÏ®</Link>
+             </div>
+ 
+-            <div className="pricing-card">
++            <div className="pricing-card animate-on-scroll fade-up delay-200">
+               <h3>Ï¿Ïº┘éÏ® Ïº┘ä┘àÏñÏ│Ï│ÏºÏ¬</h3>
+               <p className="pricing-card-desc">┘ä┘ä┘àÏñÏ│Ï│ÏºÏ¬ ┘êÏº┘äÏ┤Ï▒┘âÏºÏ¬ Ïº┘ä┘âÏ¿Ï▒┘ë Ïº┘äÏ¬┘è Ï¬Ï¿Ï¡Ï½ Ï╣┘å Ïú┘éÏÁ┘ë Ï╣Ï▓┘ä ┘êÏ¬┘üÏÁ┘è┘ä ┘àÏ«ÏÁÏÁ Ï¿Ïº┘ä┘âÏº┘à┘ä.</p>
+               <div className="price-box">
+                 <span className="price-num">{isYearly ? "799" : "999"}</span>
+                 <span className="price-curr">Ï¼.┘à / Ï┤┘çÏ▒┘èÏº┘ï</span>
+               </div>
+               <ul className="pricing-features-list">
+                 <li><Icons.Check className="feat-check" /> <span>Ï╣Ï»Ï» ┘üÏ▒┘êÏ╣ ┘ê┘å┘éÏºÏÀ Ï¿┘èÏ╣ Ï║┘èÏ▒ ┘àÏ¡Ï»┘êÏ»</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>┘éÏºÏ╣Ï»Ï® Ï¿┘èÏº┘åÏºÏ¬ ┘àÏ«ÏÁÏÁÏ® ┘üÏºÏª┘éÏ® Ïº┘äÏ│Ï▒Ï╣Ï®</span></li>
+                 <li><Icons.Check className="feat-check" /> <span>┘êÏºÏ¼┘çÏºÏ¬ Ï▒Ï¿ÏÀ ┘àÏ«ÏÁÏÁÏ® (Custom API)</span></li>
+@@ -506,26 +695,26 @@ const LandingPage = () => {
+               </ul>
+               <Link to="/register" className="btn-pricing-secondary">Ï¬┘êÏºÏÁ┘ä ┘àÏ╣┘åÏº Ïº┘äÏó┘å</Link>
+             </div>
+           </div>
+         </div>
+       </section>
+ 
+       {/* FAQ Section */}
+       <section id="faq" className="faq-section">
+         <div className="container">
+-          <div className="section-header-centered">
++          <div className="section-header-centered animate-on-scroll fade-up">
+             <h2>┘äÏ»┘è┘â ÏúÏ│Ïª┘äÏ®Ïƒ ┘åÏ¡┘å ┘å┘ê┘üÏ▒ ┘ä┘â ┘â┘ä Ïº┘äÏÑÏ¼ÏºÏ¿ÏºÏ¬</h2>
+             <p>Ï¬ÏÁ┘üÏ¡ Ïº┘äÏúÏ│Ïª┘äÏ® Ïº┘äÏ┤ÏºÏªÏ╣Ï® Ï¡┘ê┘ä ┘åÏ©Ïº┘à {softwareName} ┘ê┘â┘è┘ü ┘è┘à┘â┘å Ïú┘å ┘èÏ│ÏºÏ╣Ï»┘â ┘ü┘è Ï¬┘å┘à┘èÏ® ÏúÏ╣┘àÏº┘ä┘â.</p>
+           </div>
+ 
+-          <div className="faq-grid">
++          <div className="faq-grid animate-on-scroll fade-up">
+             {faqData.map((faq, index) => (
+               <div className={`faq-card-item ${openFaq === index ? 'faq-active' : ''}`} key={index}>
+                 <button className="faq-question-trigger" onClick={() => toggleFaq(index)}>
+                   <span>{faq.q}</span>
+                   <span className="faq-indicator-icon">{openFaq === index ? 'ÔêÆ' : '+'}</span>
+                 </button>
+                 <div className="faq-answer-panel">
+                   <p>{faq.a}</p>
+                 </div>
+               </div>
+@@ -757,80 +946,105 @@ const LandingPage = () => {
+         .mobile-menu-trigger svg {
+           width: 28px;
+           height: 28px;
+         }
+ 
+         /* ÔöÇÔöÇÔöÇ Hero Section ÔöÇÔöÇÔöÇ */
+         .hero-section {
+           padding: 80px 0 60px 0;
+           background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.03) 0%, rgba(255, 255, 255, 1) 70%);
+           position: relative;
++          min-height: calc(100vh - 80px);
++          display: flex;
++          align-items: center;
++          justify-content: center;
++          overflow: hidden;
+         }
+ 
+-        /* Replicating the diagonal thin grid lines from Daftra */
+-        .hero-section::before {
+-          content: "";
++        /* Stock Chart SVG Background */
++        .hero-stock-bg {
+           position: absolute;
+           top: 0;
+           left: 0;
+-          right: 0;
+-          bottom: 0;
+-          background-image: 
+-            linear-gradient(135deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+-            linear-gradient(45deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+-          background-size: 60px 60px;
++          width: 100%;
++          height: 100%;
++          opacity: 0.12;
+           pointer-events: none;
+           z-index: 1;
+         }
+ 
++        .hero-stock-bg svg {
++          width: 100%;
++          height: 100%;
++          object-fit: cover;
++        }
++
++        .animated-stock-line-up {
++          animation: floatUpLine 6s ease-in-out infinite alternate;
++        }
++
++        .animated-stock-line-down {
++          animation: floatDownLine 8s ease-in-out infinite alternate;
++        }
++
++        @keyframes floatUpLine {
++          0% { transform: translateY(0); }
++          100% { transform: translateY(-30px); }
++        }
++
++        @keyframes floatDownLine {
++          0% { transform: translateY(0); }
++          100% { transform: translateY(20px); }
++        }
++
+         .hero-container {
+           position: relative;
+           z-index: 2;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           text-align: center;
+         }
+ 
+         .hero-title {
+-          font-size: 3.4rem;
++          font-size: 4.8rem;
+           font-weight: 900;
+           color: #0f172a;
+           margin-bottom: 24px;
+           letter-spacing: -1.5px;
+           line-height: 1.2;
+         }
+ 
+         .hero-desc {
+-          font-size: 1.2rem;
++          font-size: 1.6rem;
+           color: #475569;
+-          max-width: 900px;
+-          margin: 0 auto 40px auto;
++          max-width: 1050px;
++          margin: 0 auto 50px auto;
+           line-height: 1.8;
+           font-weight: 500;
+         }
+ 
+         .hero-cta-area {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           gap: 24px;
+           width: 100%;
+         }
+ 
+         .btn-hero-green {
+           background-color: #28a745;
+           color: #ffffff;
+-          padding: 18px 48px;
+-          font-size: 1.3rem;
++          padding: 22px 64px;
++          font-size: 1.6rem;
+           font-weight: 800;
+-          border-radius: 6px;
++          border-radius: 8px;
+           text-decoration: none;
+           transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+           box-shadow: 0 10px 25px rgba(40, 167, 69, 0.25);
+         }
+ 
+         .btn-hero-green:hover {
+           background-color: #218838;
+           transform: translateY(-2px);
+           box-shadow: 0 12px 30px rgba(40, 167, 69, 0.35);
+         }
+@@ -840,36 +1054,108 @@ const LandingPage = () => {
+           flex-wrap: wrap;
+           align-items: center;
+           justify-content: center;
+           gap: 24px;
+           margin-top: 10px;
+         }
+ 
+         .sub-feature-item {
+           display: flex;
+           align-items: center;
+-          gap: 8px;
+-          font-size: 0.95rem;
++          gap: 10px;
++          font-size: 1.2rem;
+           color: #475569;
+           font-weight: 700;
+         }
+ 
+         .sparkle-icon {
+           color: #2563eb;
+-          font-size: 1.1rem;
++          font-size: 1.4rem;
+         }
+ 
++        /* ÔöÇÔöÇÔöÇ System Image Mockup ÔöÇÔöÇÔöÇ */
++        .hero-system-image-wrapper {
++          position: relative;
++          z-index: 10;
++          display: flex;
++          justify-content: center;
++          margin-top: 0;
++          padding: 80px 24px 80px 24px;
++          background: linear-gradient(to bottom, #ffffff, #f8fafc);
++        }
++
++        .system-mockup-frame {
++          width: 100%;
++          max-width: 1050px;
++          border-radius: 16px;
++          overflow: hidden;
++          box-shadow: 0 25px 80px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.06);
++          border: 1px solid #e2e8f0;
++          background-color: #ffffff;
++          transform: scale(0.95);
++          transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
++        }
++
++        .hero-system-image-wrapper.is-visible .system-mockup-frame {
++          transform: scale(1);
++        }
++
++        .system-mockup-topbar {
++          background-color: #f1f5f9;
++          border-bottom: 1px solid #e2e8f0;
++          padding: 12px 18px;
++          display: flex;
++          align-items: center;
++          gap: 8px;
++        }
++
++        .system-mockup-body {
++          background-color: #ffffff;
++          line-height: 0;
++        }
++
++        .hero-system-image {
++          width: 100%;
++          height: auto;
++          display: block;
++        }
++
++        /* Animations */
++        .animate-on-scroll {
++          opacity: 0;
++          visibility: hidden;
++          transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
++          will-change: opacity, visibility;
++        }
++        
++        .animate-on-scroll.is-visible {
++          opacity: 1;
++          visibility: visible;
++        }
++
++        .fade-up {
++          transform: translateY(40px);
++        }
++        
++        .fade-up.is-visible {
++          transform: translateY(0);
++        }
++        
++        .delay-100 { transition-delay: 100ms; }
++        .delay-200 { transition-delay: 200ms; }
++        .delay-300 { transition-delay: 300ms; }
++
+         /* ÔöÇÔöÇÔöÇ Modules Grid ÔöÇÔöÇÔöÇ */
+         .modules-grid-section {
+-          padding: 80px 0;
+-          background-color: #ffffff;
+-          border-top: 1px solid #f1f5f9;
++          padding: 100px 0;
++          background-color: #f8fafc;
++          border-top: 1px solid #e2e8f0;
+         }
+ 
+         .section-header-centered {
+           text-align: center;
+           max-width: 750px;
+           margin: 0 auto 60px auto;
+         }
+ 
+         .section-header-centered h2 {
+           font-size: 2.2rem;
+@@ -877,94 +1163,100 @@ const LandingPage = () => {
+           color: #0f172a;
+           margin-bottom: 16px;
+         }
+ 
+         .section-header-centered p {
+           font-size: 1.1rem;
+           color: #64748b;
+           line-height: 1.6;
+         }
+ 
+-        .modules-grid {
++        /* ÔöÇÔöÇÔöÇ Daftra style modules grid ÔöÇÔöÇÔöÇ */
++        .daftra-modules-grid {
+           display: grid;
+           grid-template-columns: repeat(3, 1fr);
+-          gap: 30px;
++          gap: 60px 48px;
++          margin-top: 60px;
+         }
+ 
+-        .module-card {
+-          background-color: #ffffff;
+-          border: 1px solid #e2e8f0;
+-          border-radius: 12px;
+-          padding: 35px 30px;
+-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
++        .daftra-module-item {
+           display: flex;
+           flex-direction: column;
+           align-items: flex-start;
+           text-align: right;
+         }
+ 
+-        .module-card:hover {
+-          transform: translateY(-6px);
+-          border-color: #cbd5e1;
+-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+-        }
+-
+-        .module-icon-wrap {
+-          width: 50px;
+-          height: 50px;
+-          border-radius: 10px;
++        .daftra-module-header {
+           display: flex;
+           align-items: center;
+-          justify-content: center;
+-          margin-bottom: 24px;
++          gap: 10px;
++          margin-bottom: 12px;
++          direction: rtl;
+         }
+ 
+-        .module-icon-wrap svg {
+-          width: 26px;
+-          height: 26px;
++        .daftra-module-icon {
++          display: inline-flex;
++          align-items: center;
++          justify-content: center;
++          font-size: 1.4rem;
+         }
+ 
+-        .module-icon-wrap.blue-theme { background-color: rgba(37, 99, 235, 0.08); color: #2563eb; }
+-        .module-icon-wrap.green-theme { background-color: rgba(16, 185, 129, 0.08); color: #10b981; }
+-        .module-icon-wrap.purple-theme { background-color: rgba(139, 92, 246, 0.08); color: #8b5cf6; }
+-        .module-icon-wrap.amber-theme { background-color: rgba(245, 158, 11, 0.08); color: #f59e0b; }
+-        .module-icon-wrap.cyan-theme { background-color: rgba(6, 182, 212, 0.08); color: #06b6d4; }
+-        .module-icon-wrap.rose-theme { background-color: rgba(244, 63, 94, 0.08); color: #f43f5e; }
++        .daftra-module-icon.purple-theme { color: #8b5cf6; }
++        .daftra-module-icon.green-theme { color: #10b981; }
++        .daftra-module-icon.rose-theme { color: #f43f5e; }
++        .daftra-module-icon.amber-theme { color: #f59e0b; }
++        .daftra-module-icon.cyan-theme { color: #06b6d4; }
++        .daftra-module-icon.blue-theme { color: #3b82f6; }
+ 
+-        .module-card h3 {
++        .daftra-module-title {
+           font-size: 1.3rem;
+-          font-weight: 800;
++          font-weight: 750;
+           color: #0f172a;
+-          margin-bottom: 12px;
++          margin: 0;
+         }
+ 
+-        .module-card p {
++        .daftra-module-desc {
+           font-size: 0.95rem;
+           color: #475569;
+-          line-height: 1.6;
++          line-height: 1.7;
+           margin: 0;
++          font-weight: 500;
++        }
++
++        @media (max-width: 991px) {
++          .daftra-modules-grid {
++            grid-template-columns: repeat(2, 1fr);
++            gap: 40px 30px;
++          }
++        }
++
++        @media (max-width: 600px) {
++          .daftra-modules-grid {
++            grid-template-columns: 1fr;
++            gap: 32px 0;
++          }
+         }
+ 
+         /* ÔöÇÔöÇÔöÇ Showcase Section ÔöÇÔöÇÔöÇ */
+         .interactive-showcase-section {
+-          padding: 80px 0;
++          padding: 100px 0;
+           background-color: #f8fafc;
+           border-top: 1px solid #e2e8f0;
+           border-bottom: 1px solid #e2e8f0;
+         }
+ 
+         .showcase-card {
+           background-color: #ffffff;
+           border: 1px solid #e2e8f0;
+-          border-radius: 16px;
++          border-radius: 20px;
+           padding: 40px;
+-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.02);
++          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.04);
+         }
+ 
+         .tabs-header {
+           display: flex;
+           justify-content: center;
+           gap: 10px;
+           border-bottom: 2px solid #f1f5f9;
+           padding-bottom: 16px;
+           margin-bottom: 40px;
+           flex-wrap: wrap;
+@@ -1328,22 +1620,24 @@ const LandingPage = () => {
+ 
+         .status-dot {
+           width: 8px;
+           height: 8px;
+           background-color: #10b981;
+           border-radius: 50%;
+         }
+ 
+         /* ÔöÇÔöÇÔöÇ Pricing Section ÔöÇÔöÇÔöÇ */
+         .pricing-section {
+-          padding: 80px 0;
++          padding: 100px 0;
+           background-color: #ffffff;
++          border-top: none;
++          border-bottom: none;
+         }
+ 
+         .pricing-toggle-container {
+           display: inline-flex;
+           align-items: center;
+           gap: 16px;
+           margin-top: 24px;
+           background-color: #f1f5f9;
+           padding: 6px 16px;
+           border-radius: 50px;
+@@ -1537,21 +1831,21 @@ const LandingPage = () => {
+           transition: background-color 0.2s ease;
+           box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+         }
+ 
+         .btn-pricing-primary:hover {
+           background-color: #1d4ed8;
+         }
+ 
+         /* ÔöÇÔöÇÔöÇ FAQ Section ÔöÇÔöÇÔöÇ */
+         .faq-section {
+-          padding: 80px 0;
++          padding: 100px 0;
+           background-color: #f8fafc;
+           border-top: 1px solid #e2e8f0;
+           border-bottom: 1px solid #e2e8f0;
+         }
+ 
+         .faq-grid {
+           max-width: 800px;
+           margin: 0 auto;
+           display: flex;
+           flex-direction: column;
