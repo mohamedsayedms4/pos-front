@@ -5,6 +5,7 @@ import Topbar from './Topbar';
 import AlwaysOnDisplay from '../common/AlwaysOnDisplay';
 import ChatService from '../../services/ChatService';
 import { useGlobalUI } from '../common/GlobalUI';
+import FooterInfoBar from './FooterInfoBar';
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,7 +40,8 @@ const MainLayout = () => {
     '/attendance': 'الحضور',
     '/shifts': 'الورديات',
     '/damaged': 'الهوالك',
-    '/online-orders': 'طلبات المتجر'
+    '/online-orders': 'طلبات المتجر',
+    '/super-admin/subscriptions': 'إدارة الاشتراكات',
   };
 
   useEffect(() => {
@@ -108,14 +110,17 @@ const MainLayout = () => {
   return (
     <div className="app-layout">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="main-content">
-        <Topbar 
-          onMenuToggle={toggleSidebar} 
-          prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 
-        />
-        <div className="page-content">
-          <Outlet />
+      <main className="main-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <div style={{ flex: '1 0 auto' }}>
+          <Topbar 
+            onMenuToggle={toggleSidebar} 
+            prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 
+          />
+          <div className="page-content">
+            <Outlet />
+          </div>
         </div>
+        <FooterInfoBar />
       </main>
       {isIdle && <AlwaysOnDisplay />}
     </div>
@@ -123,3 +128,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

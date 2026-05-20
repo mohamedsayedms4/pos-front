@@ -93,8 +93,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
             ← عودة لـ {prevInfo.label}
           </button>
         )}
-        <h2 className="page-title desktop-only" style={{ marginLeft: '10px' }}>بسيط ERP</h2>
-        
+
 
       </div>
       <div className="topbar-right">

@@ -514,7 +514,12 @@ const LandingPage = () => {
           <div className="footer-links">
             <h4>تواصل معنا</h4>
             <p>البريد الإلكتروني: info@digitalrace.net</p>
-            <p>الدعم الفني: support@digitalrace.net</p>
+            <p>
+              الدعم الفني:{' '}
+              <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                support@digitalrace.net
+              </a>
+            </p>
           </div>
         </div>
         <div className="footer-copyright">

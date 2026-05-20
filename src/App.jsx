@@ -66,6 +66,8 @@ import TenantRegister from './pages/TenantRegister.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
+import SuperAdminSubscriptions from './pages/SuperAdminSubscriptions.jsx'
+import StoreInactive from './pages/StoreInactive.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -111,6 +113,7 @@ function App() {
                   <Route path="/customer-order" element={<CustomerOrder />} />
                   <Route path="/order-customer" element={<OrderCustomer />} />
                   <Route path="/order-cashier" element={<OrderCashier />} />
+                  <Route path="/store-inactive" element={<StoreInactive />} />
                   <Route element={<MainLayout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
                     
@@ -223,6 +226,9 @@ function App() {
                     <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>
                       <Route path="/warehouses" element={<Warehouses />} />
                     </Route>
+
+                    {/* Super Admin */}
+                    <Route path="/super-admin/subscriptions" element={<SuperAdminSubscriptions />} />
 
                     {/* Generic */}
                     <Route path="/notifications" element={<Notifications />} />

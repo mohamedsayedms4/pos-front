@@ -230,6 +230,17 @@ const Api = {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
+        
+        // Handle inactive store or expired subscription (402)
+        if (response.status === 402 || err.errorCode === 'SHOP_DISABLED' || err.errorCode === 'SUBSCRIPTION_EXPIRED') {
+          const currentPath = window.location.pathname;
+          if (!currentPath.includes('/store-inactive') && !currentPath.includes('/login') && !currentPath.includes('/register') && currentPath !== '/') {
+            localStorage.setItem('inactive_reason_code', err.errorCode || 'SHOP_DISABLED');
+            localStorage.setItem('inactive_reason_msg', err.message || 'عذراً، هذا المتجر غير نشط حالياً. يرجى التواصل مع الإدارة.');
+            window.location.href = '/store-inactive';
+          }
+        }
+
         throw new Error(err.message || err.error || `Request failed: ${response.status}`);
       }
 
@@ -1656,7 +1667,94 @@ const Api = {
   async getAccountingEntries(page = 0, size = 10) {
     const res = await this._request(`/accounting/entries?page=${page}&size=${size}`);
     return res.data;
+  },
+
+  // ─── Super Admin — Subscription Management ─────────────────────────────────
+  isSuperAdmin() {
+    const user = this._getUser();
+    if (!user) return false;
+    return (user.roles || []).includes('ROLE_SUPER_ADMIN');
+  },
+
+  async getSuperAdminTenants() {
+    const res = await this._request('/super-admin/tenants');
+    return res.data || [];
+  },
+
+  async getSuperAdminStats() {
+    const res = await this._request('/super-admin/stats');
+    return res.data || {};
+  },
+
+  async toggleTenantStatus(tenantId, active) {
+    return await this._request(`/super-admin/tenants/${tenantId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active })
+    });
+  },
+
+  async extendTenantSubscription(tenantId, { months, days }) {
+    const body = months ? { months } : { days };
+    return await this._request(`/super-admin/tenants/${tenantId}/subscription`, {
+      method: 'PATCH',
+      body: JSON.stringify(body)
+    });
+  },
+
+  async submitSubscriptionRequest({ packageName, durationMonths, amount, paymentMethod, senderDetail, receiptFile }) {
+    const formData = new FormData();
+    formData.append('packageName', packageName);
+    formData.append('durationMonths', durationMonths);
+    formData.append('amount', amount);
+    formData.append('paymentMethod', paymentMethod);
+    formData.append('senderDetail', senderDetail);
+    formData.append('receipt', receiptFile);
+
+    return await this._request('/subscriptions/request', {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+  },
+
+  async getMySubscriptionRequests() {
+    const res = await this._request('/subscriptions/my-requests');
+    return res.data || [];
+  },
+
+  async getSuperAdminSubscriptionRequests(status = '') {
+    const statusQuery = status ? `?status=${status}` : '';
+    const res = await this._request(`/super-admin/subscriptions/requests${statusQuery}`);
+    return res.data || [];
+  },
+
+  async approveSubscriptionRequest(id) {
+    return await this._request(`/super-admin/subscriptions/requests/${id}/approve`, {
+      method: 'POST'
+    });
+  },
+
+  async rejectSubscriptionRequest(id, reason) {
+    return await this._request(`/super-admin/subscriptions/requests/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+  },
+
+  async getGlobalConfig() {
+    const res = await fetch(`${SERVER_URL}/api/public/system-config`);
+    if (!res.ok) throw new Error('فشل في جلب إعدادات النظام');
+    const data = await res.json();
+    return data.data;
+  },
+
+  async updateGlobalConfig(configData) {
+    return await this._request('/super-admin/system-config', {
+      method: 'PUT',
+      body: JSON.stringify(configData)
+    });
   }
 };
 
 export default Api;
+

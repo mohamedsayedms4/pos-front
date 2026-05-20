@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import Api, { API_BASE } from '../../services/api';
+import logo2 from '../../assets/img/logo2.png';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const [user, setUser] = useState(Api._getUser() || { name: 'Admin', role: 'مدير النظام' });
+  const [logoUrl, setLogoUrl] = useState(logo2);
   const location = useLocation();
 
   const isProductsPageActive = location.pathname.startsWith('/products');
@@ -22,6 +24,13 @@ const Sidebar = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
+  // Load logo from global config
+  useEffect(() => {
+    Api.getGlobalConfig().then(cfg => {
+      if (cfg && cfg.logoUrl) setLogoUrl(cfg.logoUrl);
+    }).catch(() => {});
+  }, []);
+
   const avatarUrl = user?.profilePicture
     ? `${API_BASE}/products/images/${user.profilePicture}`
     : null;
@@ -31,8 +40,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     <aside className={`sidebar ${isOpen ? 'open' : ''}`} id="sidebar">
       <div className="sidebar-header">
         <button className="sidebar-close-btn" onClick={onClose}>✕</button>
-        <NavLink to="/dashboard" className="logo-mark" style={{ margin: '0 auto', fontSize: '24px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
-          ◆
+        <NavLink to="/dashboard" className="logo-mark" style={{ margin: '0 auto', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }} onClick={onClose}>
+          <img src={logoUrl} alt="Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
         </NavLink>
       </div>
 
@@ -417,6 +426,16 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>فحص البيانات المحلية</span>
               </NavLink>
             )}
+          </>
+        )}
+        {/* ────────────────── Super Admin ────────────────── */}
+        {Api.isSuperAdmin && Api.isSuperAdmin() && (
+          <>
+            <div className="nav-section-title">🔑 Super Admin</div>
+            <NavLink to="/super-admin/subscriptions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">💳</span>
+              <span>إدارة الاشتراكات</span>
+            </NavLink>
           </>
         )}
       </nav>

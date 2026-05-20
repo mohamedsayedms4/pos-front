@@ -2660,10 +2660,12 @@ body[dir="ltr"] .search-input input {
   align-items: center;
   gap: 10px;
   margin: 0 15px;
-  padding: 5px 10px;
-  border-radius: var(--radius-md);
+  padding: 0 10px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.05);
   transition: all 0.2s ease;
+  align-self: stretch;
+  height: 100%;
 }
 
 .topbar-user:hover {

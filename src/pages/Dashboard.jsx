@@ -3,12 +3,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useBranch } from '../context/BranchContext';
+import { useGlobalUI } from '../components/common/GlobalUI';
+import ModalContainer from '../components/common/ModalContainer';
 import SalesAnalytics from './SalesAnalytics';
 import Purchases from './Purchases';
 import Returns from './Returns';
 import ProfitLoss from './ProfitLoss';
 import Customers from './Customers';
 import Expenses from './Expenses';
+import '../styles/pages/StoreInactivePremium.css';
+
+const PACKAGES = [
+  { name: 'باقة 1 شهر', months: 1, price: 150 },
+  { name: 'باقة 3 أشهر', months: 3, price: 400 },
+  { name: 'باقة سنة كاملة', months: 12, price: 1200 }
+];
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -29,12 +38,35 @@ const Dashboard = () => {
     receipts: 0
   });
 
+  const { toast } = useGlobalUI ? useGlobalUI() : { toast: console.log };
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(PACKAGES[0]);
+  const [paymentMethod, setPaymentMethod] = useState('VODAFONE_CASH');
+  const [senderDetail, setSenderDetail] = useState('');
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [myRequests, setMyRequests] = useState([]);
+  const [pendingRequest, setPendingRequest] = useState(null);
+
+  const loadRequests = async () => {
+    try {
+      const requests = await Api.getMySubscriptionRequests();
+      setMyRequests(requests);
+      const pending = requests.find(r => r.status === 'PENDING');
+      setPendingRequest(pending || null);
+    } catch (err) {
+      console.error('Failed to load subscription requests', err);
+    }
+  };
+
   useEffect(() => {
     Api.getCurrentTenantDetails()
       .then(res => {
         if (res) setTenantInfo(res);
       })
       .catch(err => console.error('Error fetching tenant details:', err));
+      
+    loadRequests();
   }, []);
 
   useEffect(() => {
@@ -105,7 +137,55 @@ const Dashboard = () => {
   };
 
   const handleManageSubscription = () => {
-    alert('إدارة الاشتراك: للترقية أو تجديد الاشتراك، يرجى التواصل مع الدعم الفني لمجموعة ديجيتال ريس.');
+    if (pendingRequest) {
+      toast('لديك طلب تجديد قيد المراجعة حالياً بالفعل. يرجى الانتظار لحين مراجعته وتفعيله. ⏳', 'warning');
+    } else {
+      setShowModal(true);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setReceiptFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmitSubscription = async (e) => {
+    e.preventDefault();
+    if (!senderDetail.trim()) {
+      toast('يرجى كتابة رقم الهاتف المحول منه أو اسم حساب InstaPay', 'error');
+      return;
+    }
+    if (!receiptFile) {
+      toast('يرجى إرفاق صورة إيصال التحويل (Screenshot)', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await Api.submitSubscriptionRequest({
+        packageName: selectedPackage.name,
+        durationMonths: selectedPackage.months,
+        amount: selectedPackage.price,
+        paymentMethod,
+        senderDetail,
+        receiptFile
+      });
+
+      toast('تم إرسال طلب التجديد بنجاح! جاري مراجعته من قبل الإدارة. 🎉', 'success');
+      setShowModal(false);
+      
+      // Reset form
+      setSenderDetail('');
+      setReceiptFile(null);
+      
+      // Refresh requests
+      loadRequests();
+    } catch (err) {
+      toast(err.message || 'فشل في إرسال طلب التجديد', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatDateArabic = (dateStr) => {
@@ -129,11 +209,31 @@ const Dashboard = () => {
   return (
     <div className="page-section">
       <style dangerouslySetInnerHTML={{__html: `
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @keyframes drift {
+          0% {
+            transform: translate(0, 0) rotate(0deg);
+          }
+          50% {
+            transform: translate(8%, 8%) rotate(180deg);
+          }
+          100% {
+            transform: translate(0, 0) rotate(360deg);
+          }
+        }
+
         .subscription-banner-card {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          background: linear-gradient(135deg, var(--metro-indigo, #6A00FF) 0%, var(--metro-purple, #881798) 100%);
+          background: linear-gradient(-45deg, var(--metro-indigo, #6A00FF), var(--metro-purple, #881798), #b624a9, var(--metro-indigo, #6A00FF));
+          background-size: 400% 400%;
+          animation: gradientShift 15s ease infinite;
           border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.05));
           padding: 24px 30px;
           margin-bottom: 30px;
@@ -143,8 +243,36 @@ const Dashboard = () => {
           box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
+        .subscription-banner-card::before {
+          content: "";
+          position: absolute;
+          top: -40%;
+          left: -40%;
+          width: 140%;
+          height: 140%;
+          background: radial-gradient(circle at 30% 30%, rgba(255, 0, 128, 0.35) 0%, rgba(106, 0, 255, 0) 60%);
+          animation: drift 20s alternate infinite ease-in-out;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        .subscription-banner-card::after {
+          content: "";
+          position: absolute;
+          bottom: -40%;
+          right: -40%;
+          width: 140%;
+          height: 140%;
+          background: radial-gradient(circle at 70% 70%, rgba(0, 242, 254, 0.25) 0%, rgba(136, 23, 152, 0) 60%);
+          animation: drift 25s alternate-reverse infinite ease-in-out;
+          z-index: 1;
+          pointer-events: none;
+        }
+
         [data-theme='light'] .subscription-banner-card {
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+          background: linear-gradient(-45deg, #4f46e5, #7c3aed, #ec4899, #4f46e5);
+          background-size: 400% 400%;
+          animation: gradientShift 15s ease infinite;
           border-color: #e2e8f0;
         }
 
@@ -484,8 +612,19 @@ const Dashboard = () => {
             </div>
             <div className="sub-banner-plan">
               <span className="plan-label">الباقة الحالية :</span>
-              <span className="plan-badge">
-                {isExpired ? 'المجانية (منتهية)' : 'التجريبية (نشطة)'}
+              <span 
+                className="plan-badge" 
+                style={tenantInfo?.packageName ? { 
+                  background: 'rgba(255, 215, 0, 0.25)', 
+                  borderColor: 'rgba(255, 215, 0, 0.6)', 
+                  color: '#ffd700',
+                  fontWeight: '700'
+                } : {}}
+              >
+                {tenantInfo?.packageName 
+                  ? `👑 ${tenantInfo.packageName} (نشطة)` 
+                  : (isExpired ? '❌ المجانية (منتهية)' : '🎁 الفترة التجريبية (نشطة)')
+                }
               </span>
             </div>
             <div className="sub-banner-dates">
@@ -493,6 +632,24 @@ const Dashboard = () => {
               <span className="date-separator">|</span>
               <span>تاريخ الإنتهاء: <strong className="date-highlight">{formatDateArabic(tenantInfo?.subscriptionExpiry)}</strong></span>
             </div>
+            {pendingRequest && (
+              <div style={{
+                marginTop: '12px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                padding: '6px 12px',
+                fontSize: '0.9rem',
+                color: '#fbbf24',
+                fontFamily: 'Cairo, sans-serif',
+                fontWeight: '600',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                width: 'fit-content'
+              }}>
+                ⏳ طلب التجديد لـ ({pendingRequest.packageName}) قيد المراجعة حالياً.
+              </div>
+            )}
           </div>
           <div className="sub-banner-left">
             <div className="store-link-section">
@@ -693,6 +850,131 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+      )}
+
+      {/* Manual Subscription Form Modal */}
+      {showModal && (
+        <ModalContainer>
+          <div className="sa-sub-modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="sa-sub-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '20px' }}>
+              <div className="sa-sub-modal-header" style={{ paddingBottom: '1.25rem' }}>
+                <h3>💳 طلب تجديد الاشتراك وتفعيل المتجر</h3>
+                <button className="sa-sub-modal-close" onClick={() => setShowModal(false)}>
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleSubmitSubscription}>
+                <div className="sa-sub-modal-body" style={{ maxHeight: '75vh', overflowY: 'auto', padding: '1.5rem' }}>
+                  
+                  {/* Instructions Card */}
+                  <div className="si-instructions-card">
+                    <h4>📱 تعليمات التحويل والدفع:</h4>
+                    <ul>
+                      <li>فودافون كاش: <strong>01012345678</strong></li>
+                      <li>انستا باي: <strong>pos@instapay</strong></li>
+                      <li style={{ color: '#ef4444', fontWeight: 'bold' }}>يرجى أخذ لقطة شاشة للتحويل (Screenshot) لرفعها كإثبات.</li>
+                    </ul>
+                  </div>
+
+                  {/* 1. Package Select */}
+                  <div className="sa-sub-form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>اختر باقة الاشتراك المناسبة:</label>
+                    <div className="si-package-grid">
+                      {PACKAGES.map((pkg) => (
+                        <div 
+                          key={pkg.months} 
+                          className={`si-package-card ${selectedPackage.months === pkg.months ? 'active' : ''}`}
+                          onClick={() => setSelectedPackage(pkg)}
+                        >
+                          <div className="si-pkg-name">{pkg.name}</div>
+                          <div className="si-pkg-price">{pkg.price} ج.م</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Payment Method Select */}
+                  <div className="sa-sub-form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>طريقة الدفع المستخدمة:</label>
+                    <div className="sa-sub-extend-type-group" style={{ margin: 0 }}>
+                      <button
+                        type="button"
+                        className={`sa-sub-extend-type-btn ${paymentMethod === 'VODAFONE_CASH' ? 'active' : ''}`}
+                        onClick={() => setPaymentMethod('VODAFONE_CASH')}
+                        style={{ width: '50%' }}
+                      >
+                        🔴 فودافون كاش
+                      </button>
+                      <button
+                        type="button"
+                        className={`sa-sub-extend-type-btn ${paymentMethod === 'INSTAPAY' ? 'active' : ''}`}
+                        onClick={() => setPaymentMethod('INSTAPAY')}
+                        style={{ width: '50%' }}
+                      >
+                        ⚡ انستا باي
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3. Sender Phone/Username */}
+                  <div className="sa-sub-form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>
+                      {paymentMethod === 'VODAFONE_CASH' 
+                        ? 'رقم الهاتف الذي قمت بالتحويل منه:' 
+                        : 'معرف انستا باي أو الاسم المحول منه:'}
+                    </label>
+                    <input
+                      className="sa-sub-form-input"
+                      type="text"
+                      required
+                      placeholder={paymentMethod === 'VODAFONE_CASH' ? 'مثال: 010XXXXXXXX' : 'مثال: name@instapay'}
+                      value={senderDetail}
+                      onChange={(e) => setSenderDetail(e.target.value)}
+                    />
+                  </div>
+
+                  {/* 4. Screenshot Upload */}
+                  <div className="sa-sub-form-group" style={{ marginBottom: '0.5rem' }}>
+                    <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>صورة إيصال التحويل (Screenshot):</label>
+                    <input
+                      type="file"
+                      required
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                      id="si-file-input"
+                    />
+                    <label htmlFor="si-file-input" className="si-file-label">
+                      <span className="si-file-icon">📸</span>
+                      <span className="si-file-text">
+                        {receiptFile ? receiptFile.name : 'اختر صورة الإيصال أو اسحبها هنا'}
+                      </span>
+                    </label>
+                  </div>
+
+                </div>
+                <div className="sa-sub-modal-footer" style={{ padding: '1.25rem 1.5rem' }}>
+                  <button 
+                    type="button" 
+                    className="sa-sub-btn-ghost" 
+                    onClick={() => setShowModal(false)}
+                    disabled={submitting}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="sa-sub-btn-primary"
+                    disabled={submitting}
+                  >
+                    {submitting && <span className="sa-sub-spinner"></span>}
+                    {submitting ? 'جاري إرسال الطلب...' : 'إرسال طلب التفعيل'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </ModalContainer>
       )}
     </div>
   );

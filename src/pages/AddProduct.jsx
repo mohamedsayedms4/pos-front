@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Api from '../services/api';
+import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import { useBranch } from '../context/BranchContext';
 import Loader from '../components/common/Loader';
@@ -480,7 +480,7 @@ const AddProduct = () => {
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     {existingImages.map((imgUrl, idx) => {
                       const filename = imgUrl.split('/').pop();
-                      const fullUrl = imgUrl.startsWith('http') ? imgUrl : `${Api.SERVER_URL || 'http://localhost:8080'}/products/images/${filename}`;
+                      const fullUrl = imgUrl.startsWith('http') ? imgUrl : `${SERVER_URL}/api/v1/products/images/${filename}`;
                       return (
                         <div key={idx} style={{ position: 'relative', width: '70px', height: '70px', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
                           <img src={fullUrl} alt={`Product thumbnail ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
