@@ -13,7 +13,7 @@ const ProtectedRoute = ({ permission }) => {
     }
 
     if (permission && !Api.can(permission)) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/403" replace />;
     }
 
     return <Outlet />;

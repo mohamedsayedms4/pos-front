@@ -428,6 +428,13 @@ const Sidebar = ({ isOpen, onClose }) => {
             )}
           </>
         )}
+        {/* ────────────────── الدعم الفني ────────────────── */}
+        <div className="nav-section-title">الدعم الفني</div>
+        <NavLink to="/tickets" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+          <span className="nav-icon">🛠️</span>
+          <span>تذاكر الدعم الفني</span>
+        </NavLink>
+
         {/* ────────────────── Super Admin ────────────────── */}
         {Api.isSuperAdmin && Api.isSuperAdmin() && (
           <>
@@ -439,6 +446,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           </>
         )}
       </nav>
+
 
 
       <div className="sidebar-footer">

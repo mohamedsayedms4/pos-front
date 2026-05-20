@@ -68,6 +68,7 @@ import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
 import SuperAdminSubscriptions from './pages/SuperAdminSubscriptions.jsx'
 import StoreInactive from './pages/StoreInactive.jsx'
+import Tickets from './pages/Tickets.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -78,6 +79,9 @@ import OrderCashier from './pages/OrderCashier.jsx'
 
 import MainLayout from './components/layout/MainLayout.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
+import Error403 from './pages/Error403.jsx'
+import Error404 from './pages/Error404.jsx'
+import Error500 from './pages/Error500.jsx'
 
 import { GlobalUIProvider } from './components/common/GlobalUI'
 import { ThemeProvider } from './components/common/ThemeContext'
@@ -108,6 +112,8 @@ function App() {
                 <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/terms" element={<TermsOfUse />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/403" element={<Error403 />} />
+                <Route path="/500" element={<Error500 />} />
                 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/customer-order" element={<CustomerOrder />} />
@@ -230,6 +236,9 @@ function App() {
                     {/* Super Admin */}
                     <Route path="/super-admin/subscriptions" element={<SuperAdminSubscriptions />} />
 
+                    {/* Technical Support */}
+                    <Route path="/tickets" element={<Tickets />} />
+
                     {/* Generic */}
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/messages" element={<Messages />} />
@@ -237,6 +246,7 @@ function App() {
                     <Route path="/settings" element={<Settings />} />
                   </Route>
                 </Route>
+                <Route path="*" element={<Error404 />} />
               </Routes>
             </BrowserRouter>
           </TileProvider>

@@ -6,9 +6,74 @@ export const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
+// Centralized LocalStorage Obfuscation to protect sensitive client-side data
+const originalGetItem = localStorage.getItem.bind(localStorage);
+const originalSetItem = localStorage.setItem.bind(localStorage);
+
+const SEC_KEY = 'pos_secure_obfuscation_salt_2026';
+const PREFIX = 'possec_';
+const ENCRYPTED_KEYS = [
+  'pos_access_token',
+  'pos_refresh_token',
+  'pos_user',
+  'pos_tenant_id',
+  'pos_tenant_slug',
+  'inactive_reason_code',
+  'inactive_reason_msg'
+];
+
+function obfuscate(str) {
+  if (!str) return '';
+  if (str.startsWith(PREFIX)) return str;
+  try {
+    const utf8Str = unescape(encodeURIComponent(str));
+    let xorStr = '';
+    for (let i = 0; i < utf8Str.length; i++) {
+      xorStr += String.fromCharCode(utf8Str.charCodeAt(i) ^ SEC_KEY.charCodeAt(i % SEC_KEY.length));
+    }
+    return PREFIX + btoa(xorStr);
+  } catch (e) {
+    return str;
+  }
+}
+
+function deobfuscate(encoded) {
+  if (!encoded) return '';
+  if (!encoded.startsWith(PREFIX)) return encoded;
+  try {
+    const actualCipher = encoded.slice(PREFIX.length);
+    const decodedB64 = atob(actualCipher);
+    let xorStr = '';
+    for (let i = 0; i < decodedB64.length; i++) {
+      xorStr += String.fromCharCode(decodedB64.charCodeAt(i) ^ SEC_KEY.charCodeAt(i % SEC_KEY.length));
+    }
+    return decodeURIComponent(escape(xorStr));
+  } catch (e) {
+    return encoded;
+  }
+}
+
+localStorage.getItem = function (key) {
+  const val = originalGetItem(key);
+  if (ENCRYPTED_KEYS.includes(key) && val) {
+    return deobfuscate(val);
+  }
+  return val;
+};
+
+localStorage.setItem = function (key, val) {
+  if (ENCRYPTED_KEYS.includes(key) && val !== null && val !== undefined) {
+    originalSetItem(key, obfuscate(String(val)));
+  } else {
+    originalSetItem(key, val);
+  }
+};
 
 
 const Api = {
+  _refreshIntervalId: null,
+  _refreshPromise: null,
+
   _getToken() {
     return localStorage.getItem('pos_access_token');
   },
@@ -35,6 +100,7 @@ const Api = {
     localStorage.removeItem('pos_refresh_token');
     localStorage.removeItem('pos_user');
     localStorage.removeItem('pos_tenant_id');
+    this.stopTokenRefreshInterval();
   },
 
   _getUser() {
@@ -213,14 +279,18 @@ const Api = {
       // If 401 try refresh
       if (response.status === 401 && this._getRefreshToken()) {
         const refreshed = await this._tryRefresh();
-        if (refreshed) {
+        if (refreshed === true) {
           headers['Authorization'] = `Bearer ${this._getToken()}`;
           response = await fetch(url, { ...options, headers });
-        } else {
+        } else if (refreshed === 'REFUSED') {
           this._clearTokens();
           console.warn('Session expired - redirecting to login');
           window.location.href = '/login';
           throw new Error('Session expired');
+        } else {
+          // Temporary network failure or server error.
+          // Do not clear tokens, but fail this request.
+          throw new Error('لا يمكن الاتصال بالسيرفر حالياً، يرجى المحاولة لاحقاً');
         }
       }
 
@@ -266,20 +336,62 @@ const Api = {
   },
 
   async _tryRefresh() {
-    try {
-      const res = await fetch(`${API_BASE}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: this._getRefreshToken() })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        this._setTokens(data.data.accessToken, data.data.refreshToken);
-        return true;
+    if (this._refreshPromise) {
+      return this._refreshPromise;
+    }
+
+    this._refreshPromise = (async () => {
+      try {
+        const refreshToken = this._getRefreshToken();
+        if (!refreshToken) return false;
+
+        const res = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          this._setTokens(data.data.accessToken, data.data.refreshToken);
+          return true;
+        }
+
+        // 4xx client errors (excluding network timeout 408 / rate limit 429) mean the refresh token is invalid/revoked
+        if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+          return 'REFUSED';
+        }
+
+        return false;
+      } catch (err) {
+        console.error('Refresh token API call failed due to network/server issue:', err);
+        return false;
+      } finally {
+        this._refreshPromise = null;
       }
-      return false;
-    } catch {
-      return false;
+    })();
+
+    return this._refreshPromise;
+  },
+
+  startTokenRefreshInterval() {
+    if (this._refreshIntervalId) {
+      clearInterval(this._refreshIntervalId);
+    }
+    this._refreshIntervalId = setInterval(async () => {
+      console.log('[Interval] Proactive token refresh ticking...');
+      const refreshed = await this._tryRefresh();
+      if (refreshed === 'REFUSED') {
+        console.warn('[Interval] Token explicitly refused. Logging out.');
+        this.logout();
+      }
+    }, 180000); // 3 minutes in ms (proactive buffer for 5-minute access token)
+  },
+
+  stopTokenRefreshInterval() {
+    if (this._refreshIntervalId) {
+      clearInterval(this._refreshIntervalId);
+      this._refreshIntervalId = null;
     }
   },
 
@@ -297,6 +409,7 @@ const Api = {
     if (res.data.user && res.data.user.tenantId) {
       this._setTenantId(res.data.user.tenantId);
     }
+    this.startTokenRefreshInterval();
     return res.data;
   },
 
@@ -1753,8 +1866,57 @@ const Api = {
       method: 'PUT',
       body: JSON.stringify(configData)
     });
+  },
+
+  // ─── Technical Support Tickets ─────────────────────────────────────────────
+  async submitSupportTicket({ type, description, attachment }) {
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('description', description);
+    if (attachment) {
+      formData.append('attachment', attachment);
+    }
+    return await this._request('/tickets', {
+      method: 'POST',
+      body: formData
+    });
+  },
+
+  async getTenantSupportTickets() {
+    const res = await this._request('/tickets');
+    return res.data || [];
+  },
+
+  async getSuperAdminSupportTickets() {
+    const res = await this._request('/super-admin/tickets');
+    return res.data || [];
+  },
+
+  async replyToSupportTicket(id, { reply, status }) {
+    const res = await this._request(`/super-admin/tickets/${id}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ reply, status })
+    });
+    return res.data;
   }
 };
+
+
+if (Api._getRefreshToken()) {
+  // Proactively refresh token once on load to ensure the session is fresh,
+  // then start the background refresh interval scheduler.
+  Api._tryRefresh().then((refreshed) => {
+    if (refreshed === 'REFUSED') {
+      console.warn('[Boot] Refresh token invalid or expired. Logging out.');
+      Api.logout();
+    } else {
+      Api.startTokenRefreshInterval();
+    }
+  }).catch(() => {
+    // On network failure on boot, still start the interval to retry later
+    Api.startTokenRefreshInterval();
+  });
+}
 
 export default Api;
 
