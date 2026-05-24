@@ -75,6 +75,7 @@ localStorage.setItem = function (key, val) {
 
 
 const Api = {
+  API_BASE,
   _refreshIntervalId: null,
   _refreshPromise: null,
 
