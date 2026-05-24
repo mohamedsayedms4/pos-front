@@ -4,8 +4,9 @@
 const envUrl = import.meta.env.VITE_API_URL;
 // Base server URL (without /api/v1 prefix) - dynamically resolves in production
 export const SERVER_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
-  ? window.location.origin
+  ? 'https://posapi.digitalrace.net'
   : (envUrl || 'http://localhost:8080');
+
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
