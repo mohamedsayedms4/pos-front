@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Api, { SERVER_URL } from '../services/api';
 import logo2 from '../assets/img/logo2.png';
 
@@ -172,11 +172,13 @@ const Login = () => {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="login-logo">
-          {logoUrl ? (
-            <img src={logoUrl} alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '16px' }} />
-          ) : (
-            <div className="logo-icon">◆</div>
-          )}
+          <Link to="/" style={{ display: 'inline-block' }}>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '16px' }} />
+            ) : (
+              <div className="logo-icon">◆</div>
+            )}
+          </Link>
           <h1>{businessName ? businessName : softwareName}</h1>
           <p>{businessName ? 'أهلاً بك مرة أخرى' : 'قم بتسجيل الدخول للمتابعة'}</p>
         </div>

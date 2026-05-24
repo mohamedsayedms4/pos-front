@@ -241,27 +241,34 @@ const LandingPage = () => {
             <span className="brand-logo-text">{softwareName}</span>
           </div>
 
+          {mobileMenuOpen && (
+            <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />
+          )}
+
           {/* Navigation links */}
           <nav className={`desktop-nav ${mobileMenuOpen ? 'mobile-nav-active' : ''}`}>
-            {mobileMenuOpen && (
+            <div className="mobile-menu-header">
+              <div className="logo-section">
+                <img src={logoUrl} alt={softwareName} className="brand-logo-img" />
+                <span className="brand-logo-text">{softwareName}</span>
+              </div>
               <button className="close-mobile-menu" onClick={() => setMobileMenuOpen(false)}>
                 <Icons.Close />
               </button>
-            )}
+            </div>
+
             <a href="#features" onClick={() => setMobileMenuOpen(false)}>البرامج والحلول</a>
             <a href="#demo" onClick={() => setMobileMenuOpen(false)}>مجالات العمل</a>
             <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>الأسعار</a>
             <a href="#faq" onClick={() => setMobileMenuOpen(false)}>الأسئلة الشائعة</a>
             
-            {mobileMenuOpen && (
-              <div className="mobile-cta-group">
-                <Link to={isLoggedIn ? "/dashboard" : "/login"} className="btn-nav-login">
-                  <Icons.Lock style={{ width: '16px', height: '16px' }} />
-                  <span>تسجيل الدخول</span>
-                </Link>
-                <Link to="/register" className="btn-nav-register">ابدأ الاستخدام مجاناً</Link>
-              </div>
-            )}
+            <div className="mobile-cta-group">
+              <Link to={isLoggedIn ? "/dashboard" : "/login"} className="btn-nav-login">
+                <Icons.Lock style={{ width: '16px', height: '16px' }} />
+                <span>تسجيل الدخول</span>
+              </Link>
+              <Link to="/register" className="btn-nav-register">ابدأ الاستخدام مجاناً</Link>
+            </div>
           </nav>
 
           {/* Header Action Buttons */}
@@ -860,6 +867,18 @@ const LandingPage = () => {
           display: flex;
           align-items: center;
           gap: 24px;
+        }
+
+        .mobile-menu-header {
+          display: none;
+        }
+
+        .mobile-menu-backdrop {
+          display: none;
+        }
+
+        .mobile-cta-group {
+          display: none;
         }
 
         .desktop-nav a {
@@ -2240,9 +2259,6 @@ const LandingPage = () => {
           .brand-logo-text {
             font-size: 1.25rem;
           }
-          .desktop-nav {
-            display: none;
-          }
           .header-cta-group {
             display: none;
           }
@@ -2250,37 +2266,121 @@ const LandingPage = () => {
             display: block;
           }
 
-          /* Mobile Nav Panel drawer */
-          .desktop-nav.mobile-nav-active {
+          /* Modern Animated Drawer for Mobile */
+          .desktop-nav {
             display: flex;
             flex-direction: column;
             position: fixed;
             top: 0;
+            right: -320px; /* Offscreen initially */
+            bottom: 0;
+            width: 300px;
+            height: 100vh;
+            background-color: #ffffff;
+            box-shadow: -10px 0 30px rgba(15, 23, 42, 0.1);
+            z-index: 1002;
+            padding: 24px;
+            gap: 12px;
+            align-items: flex-start;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+            box-sizing: border-box;
+            visibility: hidden;
+          }
+
+          .desktop-nav.mobile-nav-active {
+            right: 0;
+            visibility: visible;
+          }
+
+          .mobile-menu-backdrop {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
             right: 0;
             bottom: 0;
-            width: 280px;
-            background-color: #ffffff;
-            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.08);
+            background-color: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
             z-index: 1001;
-            padding: 80px 24px 40px 24px;
-            gap: 20px;
-            align-items: flex-start;
+            animation: fadeIn 0.25s ease-out;
+          }
+
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+
+          .mobile-menu-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 16px;
+          }
+
+          .mobile-menu-header .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .mobile-menu-header .brand-logo-img {
+            height: 36px;
+            width: 36px;
+            object-fit: contain;
+          }
+
+          .mobile-menu-header .brand-logo-text {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
           }
 
           .close-mobile-menu {
-            display: block;
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
             border: none;
             color: #0f172a;
             cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+          }
+
+          .close-mobile-menu:hover {
+            background-color: #e2e8f0;
           }
 
           .close-mobile-menu svg {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
+          }
+
+          .desktop-nav a {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 16px;
+            color: #334155;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            text-align: right;
+            text-decoration: none;
+          }
+
+          .desktop-nav a:hover {
+            background-color: #f8fafc;
+            color: #2563eb;
+            padding-right: 20px;
           }
 
           .mobile-cta-group {
@@ -2288,16 +2388,51 @@ const LandingPage = () => {
             flex-direction: column;
             gap: 12px;
             width: 100%;
-            margin-top: 30px;
+            margin-top: auto; /* Push to the bottom */
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
           }
 
           .mobile-cta-group .btn-nav-login {
-            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
             justify-content: center;
+            width: 100%;
+            height: 48px;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            transition: background-color 0.2s ease;
+            box-sizing: border-box;
+            text-decoration: none;
+          }
+
+          .mobile-cta-group .btn-nav-login:hover {
+            background-color: #e2e8f0;
           }
 
           .mobile-cta-group .btn-nav-register {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
+            height: 48px;
+            background-color: #2563eb;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+          }
+
+          .mobile-cta-group .btn-nav-register:hover {
+            background-color: #1d4ed8;
           }
 
           .hero-title {

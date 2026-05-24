@@ -70,7 +70,9 @@ const TenantRegister = () => {
       <div className="register-left">
         <div className="register-card">
           <div className="register-header">
-            <img src={logo2} alt="Logo" className="register-logo" />
+            <Link to="/" style={{ display: 'inline-block' }}>
+              <img src={logo2} alt="Logo" className="register-logo" />
+            </Link>
             <h2>إنشاء حساب جديد</h2>
             <p>ابدأ رحلتك في إدارة أعمالك باحترافية</p>
           </div>
