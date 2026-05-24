@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import Api, { SERVER_URL } from '../services/api';
 import logo2 from '../assets/img/logo2.png';
 
 // Simple SVG Icons to replace MUI
@@ -18,7 +19,6 @@ const Icons = {
 const TenantRegister = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
     businessName: '',
     slug: '',
@@ -44,25 +44,26 @@ const TenantRegister = () => {
     setLoading(true);
     try {
       const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      // 1. Register the new tenant
       await axios.post(`${serverUrl}/api/public/tenants/register`, formData);
-      setSuccess(true);
-      setTimeout(() => navigate('/login'), 3000);
+
+      // 2. Resolve tenant ID from slug
+      const resolveRes = await fetch(`${serverUrl}/api/public/tenants/resolve/${encodeURIComponent(formData.slug)}`);
+      if (!resolveRes.ok) throw new Error('تعذر التحقق من بيانات الشركة بعد التسجيل');
+      const tenantData = await resolveRes.json();
+
+      // 3. Auto-login — no need to ask the user to log in again
+      await Api.login(formData.adminEmail, formData.password, tenantData.id);
+
+      // 4. Go straight to the dashboard
+      navigate('/dashboard');
     } catch (err) {
-      alert(err.response?.data || 'Registration failed. Please try again.');
+      alert(err.response?.data || err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="register-success-container">
-        <Icons.CheckCircle />
-        <h1>تهانينا! تم إنشاء حسابك بنجاح</h1>
-        <p>جاري تحويلك لصفحة تسجيل الدخول...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="tenant-register-page">
@@ -153,7 +154,7 @@ const TenantRegister = () => {
             </div>
 
             <button type="submit" className="btn-register" disabled={loading}>
-              {loading ? 'جاري الإنشاء...' : 'ابدأ الاستخدام مجاناً الآن'}
+              {loading ? 'جاري إنشاء الحساب وتسجيل الدخول...' : 'ابدأ الاستخدام مجاناً الآن'}
               {!loading && <Icons.ArrowForward className="btn-icon" />}
             </button>
 

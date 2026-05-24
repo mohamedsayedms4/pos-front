@@ -4,6 +4,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 import StatTile from '../components/common/StatTile';
+import { translatePermission } from '../utils/permissionTranslations';
 
 const Users = () => {
   const { toast, confirm } = useGlobalUI();
@@ -463,7 +464,7 @@ const Users = () => {
                             const newPerms = e.target.checked ? [...accessForm.permissions, p] : accessForm.permissions.filter(perm => perm !== p);
                             setAccessForm({ ...accessForm, permissions: newPerms });
                           }} style={{ accentColor: 'var(--accent-emerald)' }} />
-                          {p}
+                          {translatePermission(p)}
                         </label>
                       ))}
                     </div>

@@ -18,6 +18,14 @@ const Login = () => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    const token = Api._getToken();
+    const user = Api._getUser();
+    if (token && user) {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
+
+  React.useEffect(() => {
     // Set default favicon
     const link = document.querySelector("link[rel~='icon']");
     if (link) link.href = logo2;

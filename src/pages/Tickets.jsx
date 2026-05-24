@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Api from '../services/api';
+import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
@@ -675,13 +675,13 @@ const Tickets = () => {
                       overflow: 'hidden'
                     }}>
                       <a
-                        href={selectedTicket.imageUrl.startsWith('/api') ? `${Api.SERVER_URL || 'http://localhost:8080'}${selectedTicket.imageUrl}` : selectedTicket.imageUrl}
+                        href={selectedTicket.imageUrl.startsWith('/api') ? `${SERVER_URL}${selectedTicket.imageUrl}` : selectedTicket.imageUrl}
                         target="_blank"
                         rel="noreferrer"
                         title="اضغط لفتح الصورة كاملة"
                       >
                         <img
-                          src={selectedTicket.imageUrl.startsWith('/api') ? `${Api.SERVER_URL || 'http://localhost:8080'}${selectedTicket.imageUrl}` : selectedTicket.imageUrl}
+                          src={selectedTicket.imageUrl.startsWith('/api') ? `${SERVER_URL}${selectedTicket.imageUrl}` : selectedTicket.imageUrl}
                           alt="Support Ticket Attachment"
                           style={{
                             maxWidth: '100%',

@@ -3,6 +3,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
+import { translatePermission } from '../utils/permissionTranslations';
 
 const Roles = () => {
   const { toast, confirm } = useGlobalUI();
@@ -148,7 +149,7 @@ const Roles = () => {
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                             {r.permissions.length > 0 ? (
                               r.permissions.map(p => (
-                                <span key={p} className="badge badge-ghost" style={{ fontSize: '0.75rem', opacity: 0.8 }}>{p}</span>
+                                <span key={p} className="badge badge-ghost" style={{ fontSize: '0.75rem', opacity: 0.8 }}>{translatePermission(p)}</span>
                               ))
                             ) : (
                               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>لا توجد صلاحيات</span>
@@ -238,7 +239,7 @@ const Roles = () => {
                             onChange={() => togglePermission(p)}
                             style={{ accentColor: 'var(--accent-primary)' }}
                           />
-                          <span style={{ fontSize: '0.85rem' }}>{p}</span>
+                          <span style={{ fontSize: '0.85rem' }}>{translatePermission(p)}</span>
                         </label>
                       ))}
                     </div>

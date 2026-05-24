@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import logo2 from '../assets/img/logo2.png';
@@ -123,6 +123,15 @@ const LandingPage = () => {
   const [activeTab, setActiveTab] = useState('pos');
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const user = Api._getUser();
+    const token = Api._getToken();
+    if (user && token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   // Monitor scroll for header background
   useEffect(() => {
@@ -246,7 +255,7 @@ const LandingPage = () => {
             
             {mobileMenuOpen && (
               <div className="mobile-cta-group">
-                <Link to="/login" className="btn-nav-login">
+                <Link to={isLoggedIn ? "/dashboard" : "/login"} className="btn-nav-login">
                   <Icons.Lock style={{ width: '16px', height: '16px' }} />
                   <span>تسجيل الدخول</span>
                 </Link>
@@ -257,7 +266,7 @@ const LandingPage = () => {
 
           {/* Header Action Buttons */}
           <div className="header-cta-group">
-            <Link to="/login" className="btn-nav-login">
+            <Link to={isLoggedIn ? "/dashboard" : "/login"} className="btn-nav-login">
               <Icons.Lock style={{ width: '16px', height: '16px' }} />
               <span>تسجيل الدخول</span>
             </Link>

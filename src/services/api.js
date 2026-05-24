@@ -1,8 +1,11 @@
 /**
  * POS API Client — Centralized HTTP layer with JWT auth
  */
-// Base server URL (without /api/v1 prefix)
-export const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const envUrl = import.meta.env.VITE_API_URL;
+// Base server URL (without /api/v1 prefix) - dynamically resolves in production
+export const SERVER_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+  ? window.location.origin
+  : (envUrl || 'http://localhost:8080');
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
@@ -335,15 +338,81 @@ const Api = {
     return res.data;
   },
 
+  _isTokenValid(token) {
+    if (!token) return false;
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return false;
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+      if (!payload.exp) return false;
+      const now = Math.floor(Date.now() / 1000);
+      return payload.exp > (now + 15); // 15-second grace buffer
+    } catch (e) {
+      return false;
+    }
+  },
+
   async _tryRefresh() {
+    // 1. Check if the current token is already valid
+    const currentAccessToken = this._getToken();
+    if (this._isTokenValid(currentAccessToken)) {
+      return true;
+    }
+
+    // 2. Prevent concurrent refresh in the same tab
     if (this._refreshPromise) {
       return this._refreshPromise;
     }
 
     this._refreshPromise = (async () => {
+      const lockKey = 'pos_refresh_lock';
+      const lockVal = localStorage.getItem(lockKey);
+      const nowMs = Date.now();
+
+      if (lockVal) {
+        const lockTime = parseInt(lockVal, 10);
+        // If the lock was set less than 5 seconds ago, another tab is actively refreshing
+        if (nowMs - lockTime < 5000) {
+          console.log('[Auth] Token refresh is in progress in another tab. Waiting...');
+          const refreshedInOtherTab = await new Promise((resolve) => {
+            let attempts = 0;
+            const interval = setInterval(() => {
+              attempts++;
+              const activeToken = this._getToken();
+              if (this._isTokenValid(activeToken)) {
+                clearInterval(interval);
+                resolve(true);
+              } else if (attempts >= 10) { // Timeout after 5 seconds
+                clearInterval(interval);
+                resolve(false);
+              }
+            }, 500);
+          });
+
+          if (refreshedInOtherTab) {
+            console.log('[Auth] Token successfully refreshed in another tab.');
+            return true;
+          }
+          console.warn('[Auth] Wait timeout or failed refresh in other tab. Proceeding with our own refresh.');
+        }
+      }
+
+      // Acquire lock and do refresh
+      localStorage.setItem(lockKey, Date.now().toString());
       try {
         const refreshToken = this._getRefreshToken();
-        if (!refreshToken) return false;
+        if (!refreshToken) {
+          localStorage.removeItem(lockKey);
+          return false;
+        }
 
         const res = await fetch(`${API_BASE}/auth/refresh`, {
           method: 'POST',
@@ -354,17 +423,21 @@ const Api = {
         if (res.ok) {
           const data = await res.json();
           this._setTokens(data.data.accessToken, data.data.refreshToken);
+          localStorage.removeItem(lockKey);
           return true;
         }
 
         // 4xx client errors (excluding network timeout 408 / rate limit 429) mean the refresh token is invalid/revoked
         if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+          localStorage.removeItem(lockKey);
           return 'REFUSED';
         }
 
+        localStorage.removeItem(lockKey);
         return false;
       } catch (err) {
         console.error('Refresh token API call failed due to network/server issue:', err);
+        localStorage.removeItem(lockKey);
         return false;
       } finally {
         this._refreshPromise = null;
@@ -1902,20 +1975,26 @@ const Api = {
 };
 
 
+// Boot refresh: proactively refresh token on load.
+// Store as Api._bootRefreshPromise so ProtectedRoute can await it.
 if (Api._getRefreshToken()) {
-  // Proactively refresh token once on load to ensure the session is fresh,
-  // then start the background refresh interval scheduler.
-  Api._tryRefresh().then((refreshed) => {
+  Api._bootRefreshPromise = Api._tryRefresh().then((refreshed) => {
     if (refreshed === 'REFUSED') {
       console.warn('[Boot] Refresh token invalid or expired. Logging out.');
-      Api.logout();
+      Api._clearTokens();
+      return 'REFUSED';
     } else {
       Api.startTokenRefreshInterval();
+      return refreshed;
     }
-  }).catch(() => {
+  }).catch((err) => {
+    console.warn('[Boot] Network error during boot refresh:', err);
     // On network failure on boot, still start the interval to retry later
     Api.startTokenRefreshInterval();
+    return 'NETWORK_ERROR';
   });
+} else {
+  Api._bootRefreshPromise = Promise.resolve(false);
 }
 
 export default Api;
