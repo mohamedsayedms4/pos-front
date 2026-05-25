@@ -1592,13 +1592,28 @@ const Api = {
   },
 
   // ─── Attendance ───
-  async checkInEmployee(userId) {
-    const res = await this._request(`/attendance/${userId}/check-in`, { method: 'POST' });
+  /** يجلب صورة QR Code الحالية للحضور (تتغير كل 60 ثانية) */
+  async getAttendanceQr() {
+    const baseUrl = window.location.origin;
+    const res = await this._request('/attendance/qr?baseUrl=' + encodeURIComponent(baseUrl));
+    return res.data; // { qrImage, token, expiresInSeconds, refreshAfterSeconds }
+  },
+
+  /** تسجيل حضور بـ QR Token + GPS */
+  async checkInEmployee(userId, qrToken, latitude = null, longitude = null) {
+    const res = await this._request(`/attendance/${userId}/check-in`, {
+      method: 'POST',
+      body: JSON.stringify({ qrToken, latitude, longitude })
+    });
     return res.data;
   },
 
-  async checkOutEmployee(userId) {
-    const res = await this._request(`/attendance/${userId}/check-out`, { method: 'PUT' });
+  /** تسجيل انصراف بـ QR Token + GPS */
+  async checkOutEmployee(userId, qrToken, latitude = null, longitude = null) {
+    const res = await this._request(`/attendance/${userId}/check-out`, {
+      method: 'PUT',
+      body: JSON.stringify({ qrToken, latitude, longitude })
+    });
     return res.data;
   },
 
@@ -1610,6 +1625,49 @@ const Api = {
   async markEmployeeAbsent(userId, date) {
     const res = await this._request(`/attendance/${userId}/mark-absent?date=${date}`, { method: 'POST' });
     return res.data;
+  },
+
+  // ─── Attendance Security Settings ───
+  async getAttendanceAllowedIps() {
+    const res = await this._request('/tenant/settings/attendance/allowed-ips');
+    return res.data || [];
+  },
+
+  async setAttendanceAllowedIps(ips) {
+    const res = await this._request('/tenant/settings/attendance/allowed-ips', {
+      method: 'PUT',
+      body: JSON.stringify(ips)
+    });
+    return res;
+  },
+
+  async addAttendanceAllowedIp(ip) {
+    const res = await this._request('/tenant/settings/attendance/allowed-ips/add', {
+      method: 'POST',
+      body: JSON.stringify({ ip })
+    });
+    return res;
+  },
+
+  async removeAttendanceAllowedIp(ip) {
+    const res = await this._request('/tenant/settings/attendance/allowed-ips/remove', {
+      method: 'DELETE',
+      body: JSON.stringify({ ip })
+    });
+    return res;
+  },
+
+  async getAttendanceGeofenceStatus() {
+    const res = await this._request('/tenant/settings/attendance/geofence');
+    return res.data; // { geoFenceEnabled: bool }
+  },
+
+  async setAttendanceGeofenceEnabled(enabled) {
+    const res = await this._request('/tenant/settings/attendance/geofence', {
+      method: 'PUT',
+      body: JSON.stringify({ enabled })
+    });
+    return res;
   },
 
   // ─── Payroll ───
@@ -1633,6 +1691,26 @@ const Api = {
   async getBranches() {
     const res = await this._request('/branches');
     return res.data;
+  },
+
+  async createBranch(data) {
+    const res = await this._request('/branches', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateBranch(id, data) {
+    const res = await this._request(`/branches/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteBranch(id) {
+    await this._request(`/branches/${id}`, { method: 'DELETE' });
   },
 
   async getWarehousesByBranch(branchId) {

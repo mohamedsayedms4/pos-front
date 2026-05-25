@@ -37,6 +37,8 @@ import EmployeeDetails from './pages/EmployeeDetails.jsx'
 import ShiftsManagement from './pages/ShiftsManagement.jsx'
 import PayrollDashboard from './pages/PayrollDashboard.jsx'
 import AttendanceDashboard from './pages/AttendanceDashboard.jsx'
+import AttendanceSettings from './pages/AttendanceSettings.jsx'
+import EmployeeQrScan from './pages/EmployeeQrScan.jsx'
 import EcommerceStore from './pages/EcommerceStore.jsx'
 import OnlineOrders from './pages/OnlineOrders.jsx'
 import StoreProductDetail from './pages/StoreProductDetail.jsx'
@@ -240,10 +242,14 @@ function App() {
                     <Route path="/tickets" element={<Tickets />} />
 
                     {/* Generic */}
+                    <Route path="/attendance/scan" element={<EmployeeQrScan />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/leave-types" element={<LeaveTypes />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route element={<ProtectedRoute permission="SETTINGS_MANAGE" />}>
+                      <Route path="/settings/attendance" element={<AttendanceSettings />} />
+                    </Route>
                   </Route>
                 </Route>
                 <Route path="*" element={<Error404 />} />
