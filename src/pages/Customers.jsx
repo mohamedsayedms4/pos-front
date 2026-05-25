@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import Api from '../services/api';
+import CommunicationApi from '../services/CommunicationApi';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
@@ -144,6 +145,40 @@ const Customers = () => {
     }
   };
 
+  const handleSendDebtMessage = (customer) => {
+    if (!customer.balance || Number(customer.balance) <= 0) {
+      toast('العميل ليس عليه مديونية لإرسال تذكير', 'info');
+      return;
+    }
+    confirm(`هل أنت متأكد من إرسال رسالة تذكير بالمديونية (${Number(customer.balance).toFixed(2)}) للعميل ${customer.name}؟`, async () => {
+      try {
+        const textContent = `عميلنا العزيز ${customer.name}،\n\nنود تذكيركم بلطف بمراجعة كشف حسابكم الأخير وتأكيد الرصيد المتبقي وقدره ${Number(customer.balance).toFixed(2)}.\n\nنسعد دائماً بخدمتكم وتلبية طلباتكم.\nشكراً لتعاونكم المستمر معنا.`;
+        
+        const textHtml = textContent.split('\n').filter(line => line.trim() !== '').map(line => `<p style="font-size: 16px; margin: 0 0 10px 0;">${line}</p>`).join('');
+        const finalContent = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); direction: rtl; text-align: right;">
+  <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
+    <h2 style="color: #ffffff; margin: 0; font-size: 24px;">تذكير بكشف الحساب 📄</h2>
+  </div>
+  <div style="padding: 24px; background-color: #ffffff; color: #374151; line-height: 1.6;">
+    ${textHtml}
+  </div>
+</div>`;
+
+        await CommunicationApi.createCampaign({
+           title: 'تذكير ودي بكشف الحساب 📝',
+           content: finalContent,
+           channel: 'EMAIL',
+           targetAudience: 'SPECIFIC',
+           specificRecipientIds: String(customer.id),
+           specificRecipientType: 'CUSTOMER'
+        });
+        toast('تم إرسال رسالة التذكير بنجاح!', 'success');
+      } catch (err) {
+        toast(err.message || 'فشل إرسال الرسالة', 'error');
+      }
+    });
+  };
+
   const handleViewHistory = async (customer, page = 0, tab = 'pos') => {
     setSelectedHistoryCustomer(customer);
     setHistoryTab(tab);
@@ -284,7 +319,10 @@ const Customers = () => {
                           <div className="table-actions" style={{ justifyContent: 'center' }}>
                             <button className="btn btn-icon btn-ghost" onClick={() => handleViewHistory(c)} title="سجل التعاملات">👁️</button>
                             {Number(c.balance) > 0 && (
-                              <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-green)' }} onClick={() => handleViewDebt(c.id)} title="تحصيل دفع">💰</button>
+                              <>
+                                <button className="btn btn-icon btn-ghost" style={{ color: '#f59e0b' }} onClick={() => handleSendDebtMessage(c)} title="إرسال رسالة تذكير">📩</button>
+                                <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-green)' }} onClick={() => handleViewDebt(c.id)} title="تحصيل دفع">💰</button>
+                              </>
                             )}
                             <button className="btn btn-icon btn-ghost" onClick={() => openEditModal(c)} title="تعديل">✏️</button>
                             <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => handleDelete(c.id)} title="حذف">🗑</button>

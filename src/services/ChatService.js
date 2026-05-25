@@ -132,6 +132,21 @@ class ChatService {
     const res = await Api._request('/chat/unread-counts');
     return res.data;
   }
+
+  async getChatContacts() {
+    const res = await Api._request('/chat/contacts');
+    return res.data; // List<UserDto>
+  }
+
+  async getInterBranchSetting() {
+    const res = await Api._request('/chat/settings/inter-branch');
+    return res.data; // boolean
+  }
+
+  async setInterBranchSetting(enabled) {
+    const res = await Api._request(`/chat/settings/inter-branch?enabled=${enabled}`, { method: 'POST' });
+    return res;
+  }
 }
 
 

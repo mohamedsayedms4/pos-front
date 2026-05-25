@@ -93,10 +93,9 @@ const Messages = () => {
     }
 
     try {
-      // Fetch all employees (size=100 for now)
-      const res = await Api.getUsers(0, 100);
-      const list = res.items || res.content || res;
-      // Filter out self
+      // Fetch allowed contacts for chat
+      const list = await ChatService.getChatContacts();
+      // Filter out self just in case (backend should already do this)
       const others = list.filter(u => u.id !== currentUser.id);
       
       // 2. Update state and cache

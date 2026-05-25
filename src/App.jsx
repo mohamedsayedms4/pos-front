@@ -92,6 +92,7 @@ import { ThemeProvider } from './components/common/ThemeContext'
 import { BranchProvider } from './context/BranchContext.jsx'
 
 import Messages from './pages/Messages.jsx'
+import Campaigns from './pages/Campaigns.jsx'
 
 function App() {
   return (
@@ -251,6 +252,7 @@ function App() {
                     </Route>
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/messages" element={<Messages />} />
+                    <Route path="/campaigns" element={<Campaigns />} />
                     <Route path="/leave-types" element={<LeaveTypes />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route element={<ProtectedRoute permission="SETTINGS_MANAGE" />}>

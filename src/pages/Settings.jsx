@@ -4,6 +4,8 @@ import { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import HeroSectionManager from '../components/settings/HeroSectionManager';
+import ChatService from '../services/ChatService';
+import CommunicationApi from '../services/CommunicationApi';
 
 const Settings = () => {
     const { toast } = useGlobalUI();
@@ -14,6 +16,14 @@ const Settings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [interBranchChatEnabled, setInterBranchChatEnabled] = useState(true);
+    
+    // SMTP Config
+    const [smtpConfig, setSmtpConfig] = useState({
+        host: '', port: 587, username: '', password: '', 
+        authEnabled: true, tlsEnabled: true, fromEmail: '', fromName: ''
+    });
+    const [savingSmtp, setSavingSmtp] = useState(false);
 
     useEffect(() => {
         loadInfo();
@@ -24,6 +34,20 @@ const Settings = () => {
         try {
             const res = await StoreApi.getStoreInfoAdmin();
             if (res.success) setInfo(res.data);
+            
+            try {
+                const chatSetting = await ChatService.getInterBranchSetting();
+                setInterBranchChatEnabled(chatSetting);
+            } catch(e) {
+                console.warn('Could not load chat settings');
+            }
+
+            try {
+                const smtpData = await CommunicationApi.getSmtpConfig();
+                if (smtpData) setSmtpConfig(smtpData);
+            } catch (e) {
+                console.warn('Could not load SMTP config');
+            }
         } catch (e) {
             toast('خطأ في تحميل الإعدادات', 'error');
         } finally {
@@ -36,6 +60,12 @@ const Settings = () => {
         setSaving(true);
         try {
             const res = await StoreApi.updateStoreInfoAdmin(info);
+            try {
+                await ChatService.setInterBranchSetting(interBranchChatEnabled);
+            } catch(e) {
+                console.warn('Could not save chat settings');
+            }
+            
             if (res.success) {
                 toast('تم حفظ الإعدادات بنجاح ✅', 'success');
                 setInfo(res.data);
@@ -65,6 +95,19 @@ const Settings = () => {
             toast('خطأ في رفع اللوجو', 'error');
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleSaveSmtp = async (e) => {
+        e.preventDefault();
+        setSavingSmtp(true);
+        try {
+            await CommunicationApi.saveSmtpConfig(smtpConfig);
+            toast('تم حفظ إعدادات خادم البريد بنجاح', 'success');
+        } catch (e) {
+            toast('خطأ أثناء حفظ إعدادات البريد', 'error');
+        } finally {
+            setSavingSmtp(false);
         }
     };
 
@@ -226,10 +269,94 @@ const Settings = () => {
                                 </small>
                             </div>
 
+                            {/* Chat Settings */}
+                            <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '1.2rem' }}>💬</span>
+                                    <strong>إعدادات المحادثات (Chat)</strong>
+                                </label>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="interBranchChatToggle"
+                                        checked={interBranchChatEnabled}
+                                        onChange={e => setInterBranchChatEnabled(e.target.checked)}
+                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                    />
+                                    <label htmlFor="interBranchChatToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
+                                        السماح للموظفين بالمحادثة بين الأفرع المختلفة (Inter-branch Chat)
+                                    </label>
+                                </div>
+                                <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
+                                    عند إيقاف هذا الخيار، سيتمكن الموظفون فقط من مراسلة زملائهم في نفس الفرع. (المدراء مستثنون دائماً من هذا القيد).
+                                </small>
+                            </div>
+
                             {/* About Us */}
                             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                                 <label>نبذة عن المتجر (تظهر في تذييل الموقع)</label>
                                 <textarea className="form-control" rows={3} value={info.aboutUs || ''} onChange={e => setInfo({...info, aboutUs: e.target.value})} />
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {/* SMTP Settings Card */}
+            <div className="card" style={{ marginBottom: '20px' }}>
+                <div className="products-header-premium">
+                    <div className="row-premium title-row">
+                        <h3 style={{ margin: 0 }}>📧 إعدادات خادم البريد (SMTP)</h3>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button 
+                                type="submit" 
+                                form="smtpForm"
+                                className="btn btn-primary"
+                                disabled={savingSmtp}
+                            >
+                                {savingSmtp ? 'جاري الحفظ...' : 'حفظ إعدادات البريد'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="card-body">
+                    <form id="smtpForm" onSubmit={handleSaveSmtp}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                            <div className="form-group">
+                                <label>الخادم (Host)</label>
+                                <input type="text" className="form-control" value={smtpConfig.host || ''} onChange={e => setSmtpConfig({...smtpConfig, host: e.target.value})} placeholder="smtp.gmail.com" required />
+                            </div>
+                            <div className="form-group">
+                                <label>المنفذ (Port)</label>
+                                <input type="number" className="form-control" value={smtpConfig.port || ''} onChange={e => setSmtpConfig({...smtpConfig, port: e.target.value})} placeholder="587" required />
+                            </div>
+                            <div className="form-group">
+                                <label>اسم المستخدم (Email)</label>
+                                <input type="text" className="form-control" value={smtpConfig.username || ''} onChange={e => setSmtpConfig({...smtpConfig, username: e.target.value})} placeholder="example@gmail.com" required />
+                            </div>
+                            <div className="form-group">
+                                <label>كلمة المرور (App Password)</label>
+                                <input type="password" className="form-control" value={smtpConfig.password || ''} onChange={e => setSmtpConfig({...smtpConfig, password: e.target.value})} placeholder="اترك فارغاً إن لم ترغب بتغييره" />
+                            </div>
+                            <div className="form-group">
+                                <label>إيميل المرسل (From Email)</label>
+                                <input type="email" className="form-control" value={smtpConfig.fromEmail || ''} onChange={e => setSmtpConfig({...smtpConfig, fromEmail: e.target.value})} placeholder="info@mystore.com" />
+                            </div>
+                            <div className="form-group">
+                                <label>اسم المرسل (From Name)</label>
+                                <input type="text" className="form-control" value={smtpConfig.fromName || ''} onChange={e => setSmtpConfig({...smtpConfig, fromName: e.target.value})} placeholder="اسم المتجر" />
+                            </div>
+                            <div className="form-group" style={{ gridColumn: '1 / -1', display: 'flex', gap: '20px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <input type="checkbox" checked={smtpConfig.authEnabled} onChange={e => setSmtpConfig({...smtpConfig, authEnabled: e.target.checked})} />
+                                    تفعيل المصادقة (Auth Enabled)
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <input type="checkbox" checked={smtpConfig.tlsEnabled} onChange={e => setSmtpConfig({...smtpConfig, tlsEnabled: e.target.checked})} />
+                                    تفعيل التشفير (TLS Enabled)
+                                </label>
                             </div>
                         </div>
                     </form>

@@ -501,6 +501,12 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className="nav-icon">💬</span>
               <span>الرسائل</span>
             </NavLink>
+            {isAdmin && (
+              <NavLink to="/campaigns" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📣</span>
+                <span>الحملات الترويجية</span>
+              </NavLink>
+            )}
           </>
         )}
 
