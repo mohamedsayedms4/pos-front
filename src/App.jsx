@@ -40,6 +40,7 @@ import AttendanceDashboard from './pages/AttendanceDashboard.jsx'
 import AttendanceSettings from './pages/AttendanceSettings.jsx'
 import EmployeeQrScan from './pages/EmployeeQrScan.jsx'
 import ViolationMap from './pages/ViolationMap.jsx'
+import AttendanceViolationsLog from './pages/AttendanceViolationsLog.jsx'
 import EcommerceStore from './pages/EcommerceStore.jsx'
 import OnlineOrders from './pages/OnlineOrders.jsx'
 import StoreProductDetail from './pages/StoreProductDetail.jsx'
@@ -246,6 +247,7 @@ function App() {
                     <Route path="/attendance/scan" element={<EmployeeQrScan />} />
                     <Route element={<ProtectedRoute permission="ATTENDANCE_GEO_ALERT" />}>
                       <Route path="/attendance/violation-map" element={<ViolationMap />} />
+                      <Route path="/attendance/violations-log" element={<AttendanceViolationsLog />} />
                     </Route>
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/messages" element={<Messages />} />

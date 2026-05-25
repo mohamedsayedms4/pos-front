@@ -11,10 +11,16 @@ const Sidebar = ({ isOpen, onClose }) => {
   const isProductsPageActive = location.pathname.startsWith('/products');
   const [productsMenuOpen, setProductsMenuOpen] = useState(isProductsPageActive);
 
+  const isAttendancePageActive = location.pathname.startsWith('/attendance') || location.pathname.startsWith('/settings/attendance');
+  const [attendanceMenuOpen, setAttendanceMenuOpen] = useState(isAttendancePageActive);
+
   // Sync menu open state when location changes
   useEffect(() => {
     if (location.pathname.startsWith('/products')) {
       setProductsMenuOpen(true);
+    }
+    if (location.pathname.startsWith('/attendance') || location.pathname.startsWith('/settings/attendance')) {
+      setAttendanceMenuOpen(true);
     }
   }, [location.pathname]);
 
@@ -368,10 +374,104 @@ const Sidebar = ({ isOpen, onClose }) => {
               </NavLink>
             )}
             {Api.can('ATTENDANCE_READ') && (
-              <NavLink to="/attendance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">📅</span>
-                <span>الحضور والانصراف اليومي</span>
-              </NavLink>
+              <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div
+                  className={`nav-item ${isAttendancePageActive ? 'active' : ''}`}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', paddingRight: '16px' }}
+                  onClick={() => setAttendanceMenuOpen(!attendanceMenuOpen)}
+                >
+                  <NavLink
+                    to="/attendance"
+                    end
+                    className="nav-item-link"
+                    style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, color: 'inherit', textDecoration: 'none', padding: '11px 0' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAttendanceMenuOpen(true);
+                      onClose();
+                    }}
+                  >
+                    <span className="nav-icon">📅</span>
+                    <span>الحضور والانصراف</span>
+                  </NavLink>
+                  <span
+                    style={{
+                      fontSize: '0.8rem',
+                      transition: 'transform 0.2s',
+                      transform: attendanceMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                      padding: '4px 10px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: 'var(--text-muted)'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAttendanceMenuOpen(!attendanceMenuOpen);
+                    }}
+                  >
+                    ◀
+                  </span>
+                </div>
+
+                {attendanceMenuOpen && (
+                  <div
+                    className="nav-sub-items"
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      paddingRight: '15px'
+                    }}
+                  >
+                    <NavLink
+                      to="/attendance"
+                      end
+                      className={`nav-item sub-item ${location.pathname === '/attendance' ? 'active' : ''}`}
+                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                      onClick={onClose}
+                    >
+                      <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                      <span>الحضور اليومي</span>
+                    </NavLink>
+                    
+                    <NavLink
+                      to="/attendance/scan"
+                      className={`nav-item sub-item ${location.pathname === '/attendance/scan' ? 'active' : ''}`}
+                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                      onClick={onClose}
+                    >
+                      <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                      <span>شاشة مسح الموظف</span>
+                    </NavLink>
+
+                    {Api.can('ATTENDANCE_GEO_ALERT') && (
+                      <NavLink
+                        to="/attendance/violations-log"
+                        className={`nav-item sub-item ${location.pathname === '/attendance/violations-log' ? 'active' : ''}`}
+                        style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                        onClick={onClose}
+                      >
+                        <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                        <span>سجل المخالفات</span>
+                      </NavLink>
+                    )}
+
+                    {isAdmin && (
+                      <NavLink
+                        to="/settings/attendance"
+                        className={`nav-item sub-item ${location.pathname === '/settings/attendance' ? 'active' : ''}`}
+                        style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                        onClick={onClose}
+                      >
+                        <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                        <span>إعدادات الأمان</span>
+                      </NavLink>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
             {Api.can('LEAVE_READ') && (
               <NavLink to="/leave-requests" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>

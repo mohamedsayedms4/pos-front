@@ -230,19 +230,29 @@ const AttendanceSettings = () => {
     <div className="page-section anim-fade-in" style={{ direction: 'rtl', maxWidth: '900px' }}>
 
       {/* رأس الصفحة */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
-        <div style={{
-          width: '52px', height: '52px', borderRadius: '14px',
-          background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.5rem', boxShadow: '0 8px 24px rgba(244,63,94,0.35)'
-        }}>🔒</div>
-        <div>
-          <h1 className="page-title" style={{ margin: 0, fontSize: '1.6rem' }}>إعدادات أمان الحضور</h1>
-          <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-dim)' }}>
-            إدارة IP Whitelist والنطاق الجغرافي لكل فرع
-          </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{
+            width: '52px', height: '52px', borderRadius: '14px',
+            background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.5rem', boxShadow: '0 8px 24px rgba(244,63,94,0.35)'
+          }}>🔒</div>
+          <div>
+            <h1 className="page-title" style={{ margin: 0, fontSize: '1.6rem' }}>إعدادات أمان الحضور</h1>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-dim)' }}>
+              إدارة IP Whitelist والنطاق الجغرافي لكل فرع
+            </p>
+          </div>
         </div>
+
+        <button 
+          className="btn btn-ghost"
+          onClick={() => window.location.href = '/attendance/violations-log'}
+          style={{ height: '44px', padding: '0 20px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', color: '#ef4444' }}
+        >
+          🚨 عرض سجل المخالفات
+        </button>
       </div>
 
       {/* ═══ قسم الـ IP Whitelist ═══════════════════════════════════════════ */}
