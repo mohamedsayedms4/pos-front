@@ -68,10 +68,11 @@ const EmployeeQrScan = () => {
         } catch (err) {
             setStatus('error');
             const msg = err.message || 'حدث خطأ غير متوقع';
-            if (msg.includes('موقع')) {
+            // التحقق من نوع الخطأ بناءً على محتوى الرسالة
+            if (msg.includes('IP')) {
+                setMessage('🌐 غير مسموح بتسجيل الحضور من هذه الشبكة (تأكد أنك متصل بواي فاي الفرع). ' + msg);
+            } else if (msg.includes('النطاق الجغرافي') || msg.includes('الإحداثيات')) {
                 setMessage('📍 ' + msg);
-            } else if (msg.includes('IP')) {
-                setMessage('🌐 غير مسموح بتسجيل الحضور من هذه الشبكة (تأكد أنك متصل بواي فاي الفرع)');
             } else if (msg.includes('QR')) {
                 setMessage('الرمز منتهي الصلاحية. يرجى مسح الـ QR الجديد من شاشة الفرع.');
             } else {
