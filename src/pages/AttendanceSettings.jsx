@@ -1,7 +1,45 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
+import { MapContainer, TileLayer, Marker, useMapEvents, Circle, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// إصلاح أيقونة Leaflet الافتراضية في React
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// مكون مساعد لتحديث الخريطة ورسم النطاق
+function LocationPicker({ lat, lng, radius, onChange }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (lat && lng) {
+      map.setView([lat, lng], 16);
+    }
+  }, [lat, lng, map]);
+
+  useMapEvents({
+    click(e) {
+      onChange(e.latlng.lat, e.latlng.lng);
+    },
+  });
+
+  return lat && lng ? (
+    <>
+      <Marker position={[lat, lng]} />
+      <Circle center={[lat, lng]} radius={radius || 200} pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.2 }} />
+    </>
+  ) : null;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    AttendanceSettings — إعدادات أمان نظام الحضور
@@ -476,6 +514,30 @@ const AttendanceSettings = () => {
                             onChange={e => setBranchGeo(p => ({ ...p, geoRadiusMeters: e.target.value }))}
                           />
                         </div>
+                      </div>
+
+                      {/* خريطة اختيار الموقع */}
+                      <div style={{ 
+                        height: '250px', width: '100%', marginBottom: '14px', 
+                        borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)',
+                        direction: 'ltr' 
+                      }}>
+                        <MapContainer 
+                          center={branchGeo.geoLat ? [branchGeo.geoLat, branchGeo.geoLng] : [30.0444, 31.2357]} 
+                          zoom={branchGeo.geoLat ? 16 : 6} 
+                          style={{ height: '100%', width: '100%' }}
+                        >
+                          <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                          />
+                          <LocationPicker 
+                            lat={parseFloat(branchGeo.geoLat)} 
+                            lng={parseFloat(branchGeo.geoLng)} 
+                            radius={parseFloat(branchGeo.geoRadiusMeters)} 
+                            onChange={(lat, lng) => setBranchGeo(p => ({ ...p, geoLat: lat.toFixed(6), geoLng: lng.toFixed(6) }))}
+                          />
+                        </MapContainer>
                       </div>
 
                       {/* خيار نصف القطر السريع */}

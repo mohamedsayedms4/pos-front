@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../services/useNotifications';
 import Loader from '../components/common/Loader';
 
@@ -11,6 +12,16 @@ const typeIcon = {
 
 const Notifications = () => {
   const { notifications, unreadCount, connected, loading, markRead, markAllRead, refresh } = useNotifications();
+  const navigate = useNavigate();
+
+  const handleNotificationClick = (n) => {
+    if (!n.read) {
+      markRead(n.id);
+    }
+    if (n.actionUrl) {
+      navigate(n.actionUrl);
+    }
+  };
 
   return (
     <div className="page-section">
@@ -72,7 +83,7 @@ const Notifications = () => {
                     background: n.read ? 'transparent' : 'rgba(59,130,246,0.05)',
                     border: `1px solid ${n.read ? 'var(--border-subtle)' : 'rgba(59,130,246,0.15)'}`,
                   }}
-                  onClick={() => markRead(n.id)}
+                  onClick={() => handleNotificationClick(n)}
                 >
                   <div style={{ fontSize: '1.2rem', marginTop: '2px', flexShrink: 0 }}>
                     {typeIcon[n.type] || '🔵'}
