@@ -94,6 +94,29 @@ import { BranchProvider } from './context/BranchContext.jsx'
 import Messages from './pages/Messages.jsx'
 import Campaigns from './pages/Campaigns.jsx'
 
+/**
+ * Main application component setting up global contexts, router, and route definitions.
+ * <p>
+ * Providers are stacked hierarchically to manage themes, dialog overlays, active branches, and dashboards:
+ * <ul>
+ *   <li>{@code ThemeProvider}: Manages the dark/light mode toggle across the application.</li>
+ *   <li>{@code GlobalUIProvider}: Handles global snackbars, confirmation dialogs, and loaders.</li>
+ *   <li>{@code BranchProvider}: Stores the active selected store branch context.</li>
+ *   <li>{@code TileProvider}: Controls dashboard layout tiles customizer.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Routes are split into three main access categories:
+ * <ol>
+ *   <li><b>Public Landing & Registration</b>: Guest registration for tenants and SaaS landing page.</li>
+ *   <li><b>Public Storefront</b>: Customer e-commerce catalog pages wrapping with {@code StoreProvider} and {@code StoreAuthProvider}.</li>
+ *   <li><b>Protected ERP Modules</b>: Restricts access to authenticated users and validates active permissions (e.g., `PRODUCT_READ`, `SALE_READ`) via the {@code ProtectedRoute} wrapper.</li>
+ * </ol>
+ * </p>
+ *
+ * @component
+ * @returns {React.ReactElement} The rendered global application context tree and routes.
+ */
 function App() {
   return (
     <ThemeProvider>

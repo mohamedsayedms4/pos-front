@@ -13,8 +13,14 @@ class CommunicationApi {
         });
     }
 
-    async getCampaigns() {
-        const res = await Api._request('/communication/campaigns');
+    async getCampaigns(page = 0, size = 10, search = '') {
+        const params = new URLSearchParams({ page, size, search });
+        const res = await Api._request(`/communication/campaigns?${params}`);
+        return res;
+    }
+
+    async getCampaignStats() {
+        const res = await Api._request('/communication/campaigns/stats');
         return res;
     }
 
