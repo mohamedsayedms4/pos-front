@@ -153,17 +153,35 @@ const POS = () => {
 
 
 
-  const loadCustomers = async () => {
+  const searchCustomersBackend = async (searchQuery) => {
     try {
-      const cData = await Api.getCustomers(0, 100, '', selectedBranchId);
+      const cData = await Api.getCustomers(0, 50, searchQuery, selectedBranchId);
       const items = cData.items || cData.content || [];
       setCustomers(items);
     } catch (e) {
-      console.warn("Falling back to local customers...");
-      const localCustomers = await db.customers.toArray();
+      console.warn("Error searching customers, searching locally...", e);
+      const localCustomers = await db.customers
+        .filter(c =>
+          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.phone && c.phone.includes(searchQuery))
+        )
+        .limit(50)
+        .toArray();
       setCustomers(localCustomers);
     }
   };
+
+  const loadCustomers = async () => {
+    await searchCustomersBackend('');
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      searchCustomersBackend(customerSearchQuery);
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [customerSearchQuery, selectedBranchId]);
 
   const loadBrowsePage = useCallback(async (page, search, append = false, branchId = selectedBranchId, categoryId = selectedCategoryId) => {
     if (!branchId && !search && !categoryId) {

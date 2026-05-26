@@ -22,6 +22,7 @@ import Roles from './pages/Roles.jsx'
 import StockReceipts from './pages/StockReceipts.jsx'
 import POS from './pages/POS.jsx'
 import Customers from './pages/Customers.jsx'
+import CustomerDetails from './pages/CustomerDetails.jsx'
 import Sales from './pages/Sales.jsx'
 import SaleDetails from './pages/SaleDetails.jsx'
 import Returns from './pages/Returns.jsx'
@@ -197,6 +198,7 @@ function App() {
                     {/* Customers */}
                     <Route element={<ProtectedRoute permission="CUSTOMER_READ" />}>
                       <Route path="/customers" element={<Customers />} />
+                      <Route path="/customers/:id" element={<CustomerDetails />} />
                     </Route>
 
                     {/* Treasury & Finance */}

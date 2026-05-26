@@ -22,7 +22,7 @@ const TermsOfUseCorp = () => {
     Api.getGlobalConfig()
       .then((cfg) => {
         if (cfg) {
-          if (cfg.logoUrl) setLogoUrl(cfg.logoUrl);
+          if (cfg.logoUrl) setLogoUrl(Api.getImageUrl(cfg.logoUrl));
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
         }
       })
@@ -37,7 +37,16 @@ const TermsOfUseCorp = () => {
       <header className={`landing-header ${scrolled ? 'header-scrolled' : ''}`}>
         <div className="container header-container">
           <Link to="/" className="logo-section">
-            <img src={logoUrl} alt={softwareName} className="brand-logo-img" />
+            <img 
+              src={logoUrl} 
+              alt={softwareName} 
+              className="brand-logo-img" 
+              onError={() => {
+                if (logoUrl !== logo2) {
+                  setLogoUrl(logo2);
+                }
+              }}
+            />
             <span className="brand-logo-text">{softwareName}</span>
           </Link>
           <div className="header-cta-group">
@@ -164,7 +173,15 @@ const TermsOfUseCorp = () => {
         <div className="container footer-grid">
           <div className="footer-brand-info">
             <div className="footer-brand-title">
-              <img src={logoUrl} alt={softwareName} />
+              <img 
+                src={logoUrl} 
+                alt={softwareName} 
+                onError={() => {
+                  if (logoUrl !== logo2) {
+                    setLogoUrl(logo2);
+                  }
+                }}
+              />
               <span>{softwareName}</span>
             </div>
             <p>النظام السحابي المتكامل المعتمد لإدارة المبيعات، الفواتير الإلكترونية، المخازن، الحسابات العامة، شؤون الموظفين، والمتجر الإلكتروني في شاشة موحدة.</p>

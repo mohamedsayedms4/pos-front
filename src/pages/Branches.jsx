@@ -21,7 +21,7 @@ const Branches = () => {
     address: '',
     phone: '',
     type: 'RETAIL',
-    enabled: true,
+    active: true,
     treasuryLinkType: 'MANUAL'
   });
 
@@ -50,7 +50,7 @@ const Branches = () => {
         address: branch.address || '',
         phone: branch.phone || '',
         type: branch.type || 'RETAIL',
-        enabled: branch.enabled ?? true,
+        active: branch.active ?? true,
         treasuryLinkType: branch.treasuryLinkType || 'MANUAL'
       });
     } else {
@@ -60,7 +60,7 @@ const Branches = () => {
         address: '',
         phone: '',
         type: 'RETAIL',
-        enabled: true,
+        active: true,
         treasuryLinkType: 'MANUAL'
       });
     }
@@ -177,8 +177,8 @@ const Branches = () => {
                       <td>{b.address || '—'}</td>
                       <td>{b.phone || '—'}</td>
                       <td>
-                        <span className={`badge ${b.enabled ? 'badge-success' : 'badge-danger'}`}>
-                          {b.enabled ? 'نشط' : 'معطل'}
+                        <span className={`badge ${b.active ? 'badge-success' : 'badge-danger'}`}>
+                          {b.active ? 'نشط' : 'معطل'}
                         </span>
                       </td>
                       <td>
@@ -244,7 +244,7 @@ const Branches = () => {
                   <div className="form-group">
                     <label>نشط</label>
                     <label className="toggle-switch">
-                      <input type="checkbox" checked={formData.enabled} onChange={e => setFormData({...formData, enabled: e.target.checked})} />
+                      <input type="checkbox" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} />
                       <span className="toggle-slider"></span>
                     </label>
                   </div>

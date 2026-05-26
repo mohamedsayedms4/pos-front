@@ -26,7 +26,7 @@ const FooterInfoBar = () => {
             facebookUrl: data.facebookUrl || 'https://facebook.com',
             linkedInUrl: data.linkedInUrl || 'https://linkedin.com',
             youtubeUrl: data.youtubeUrl || 'https://youtube.com',
-            logoUrl: data.logoUrl || ''
+            logoUrl: data.logoUrl ? Api.getImageUrl(data.logoUrl) : ''
           });
         }
       } catch (err) {
@@ -53,7 +53,16 @@ const FooterInfoBar = () => {
         {/* Right side: Brand and Icon */}
         <div className="footer-brand">
           <div className="brand-logo" style={{ background: 'transparent' }}>
-            <img src={config.logoUrl || logo2} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }} />
+            <img 
+              src={config.logoUrl || logo2} 
+              alt="Logo" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }} 
+              onError={() => {
+                if (config.logoUrl && config.logoUrl !== logo2) {
+                  setConfig(prev => ({ ...prev, logoUrl: '' }));
+                }
+              }}
+            />
           </div>
           <span className="brand-text">{config.softwareName}</span>
         </div>

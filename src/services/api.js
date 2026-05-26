@@ -1340,6 +1340,16 @@ const Api = {
     return res.data;
   },
 
+  async getCustomer(id, branchId = null) {
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/customers/${id}${branchQuery}`);
+    return res.data;
+  },
+
+  async getCustomerDto(id, branchId = null) {
+    return this.getCustomer(id, branchId);
+  },
+
   async createCustomer(data) {
     const res = await this._request('/customers', {
       method: 'POST',
@@ -1366,8 +1376,9 @@ const Api = {
     return res.data;
   },
 
-  async getCustomerInvoices(id, page = 0, size = 10) {
-    const res = await this._request(`/customers/${id}/invoices?page=${page}&size=${size}`);
+  async getCustomerInvoices(id, page = 0, size = 10, branchId = null) {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/customers/${id}/invoices?page=${page}&size=${size}${branchQuery}`);
     return res.data;
   },
 
@@ -1382,6 +1393,47 @@ const Api = {
       body: JSON.stringify(data)
     });
     return res.data;
+  },
+
+  async exportCustomersExcel(query = '', branchId = null) {
+    const branchParam = branchId ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${SERVER_URL}/api/v1/customers/export/excel?query=${encodeURIComponent(query)}${branchParam}`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل في تصدير العملاء إلى Excel');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers_export_${new Date().getTime()}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importCustomersExcel(file, branchId = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const branchQuery = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/customers/import${branchQuery}`, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    return res;
+  },
+
+  async downloadCustomersImportTemplate() {
+    const res = await fetch(`${SERVER_URL}/api/v1/customers/import/template`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل تحميل قالب الاستيراد من السيرفر');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'customers_import_template.xlsx';
+    a.click();
+    window.URL.revokeObjectURL(url);
   },
 
   // ─── Sales ───
@@ -2051,6 +2103,13 @@ const Api = {
       body: JSON.stringify({ reply, status })
     });
     return res.data;
+  },
+
+  getImageUrl(url) {
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+    if (url.startsWith('/')) return `${SERVER_URL}${url}`;
+    return `${API_BASE}/products/images/${url.split('/').pop()}`;
   }
 };
 

@@ -34,8 +34,9 @@ const Login = () => {
       .then((cfg) => {
         if (cfg) {
           if (cfg.logoUrl) {
-            setLogoUrl(cfg.logoUrl);
-            if (link) link.href = cfg.logoUrl;
+            const fullUrl = Api.getImageUrl(cfg.logoUrl);
+            setLogoUrl(fullUrl);
+            if (link) link.href = fullUrl;
           }
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
         }
@@ -174,7 +175,16 @@ const Login = () => {
         <div className="login-logo">
           <Link to="/" style={{ display: 'inline-block' }}>
             {logoUrl ? (
-              <img src={logoUrl} alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '16px' }} />
+              <img 
+                src={logoUrl} 
+                alt="Logo" 
+                style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '16px' }} 
+                onError={() => {
+                  if (logoUrl !== logo2) {
+                    setLogoUrl(logo2);
+                  }
+                }}
+              />
             ) : (
               <div className="logo-icon">◆</div>
             )}

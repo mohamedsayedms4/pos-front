@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import CommunicationApi from '../services/CommunicationApi';
 import { useGlobalUI } from '../components/common/GlobalUI';
@@ -8,6 +9,7 @@ import ModalContainer from '../components/common/ModalContainer';
 import StatTile from '../components/common/StatTile';
 
 const Customers = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState([]);
@@ -214,6 +216,40 @@ const Customers = () => {
     setShowInvoiceDetails(true);
   };
 
+  const handleExportExcel = async () => {
+    try {
+      await Api.exportCustomersExcel(query, selectedBranchId);
+      toast('تم تصدير العملاء بنجاح', 'success');
+    } catch (err) {
+      toast(err.message || 'حدث خطأ أثناء التصدير', 'error');
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await Api.downloadCustomersImportTemplate();
+      toast('تم تحميل قالب الاستيراد بنجاح', 'success');
+    } catch (err) {
+      toast(err.message || 'حدث خطأ أثناء تحميل القالب', 'error');
+    }
+  };
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = null;
+    setLoading(true);
+    try {
+      const res = await Api.importCustomersExcel(file, selectedBranchId);
+      toast(res.data || 'تم الاستيراد بنجاح', 'success');
+      loadCustomers(0, pageSize, query);
+    } catch (err) {
+      toast(err.message || 'حدث خطأ أثناء الاستيراد', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="page-section">
@@ -267,10 +303,16 @@ const Customers = () => {
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 )}
+                <button className="btn btn-secondary" onClick={handleExportExcel} title="تصدير إلى إكسيل">📥 تصدير</button>
                 {Api.can('CUSTOMER_WRITE') !== false && (
-                  <button className="btn btn-primary" onClick={openAddModal}>
-                    <span>+</span> عميل جديد
-                  </button>
+                  <>
+                    <input type="file" id="customerExcelInput" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
+                    <button className="btn btn-secondary" onClick={handleDownloadTemplate} title="تحميل قالب الاستيراد">📄 قالب الاستيراد</button>
+                    <button className="btn btn-secondary" onClick={() => document.getElementById('customerExcelInput').click()} title="استيراد من إكسيل">📤 استيراد</button>
+                    <button className="btn btn-primary" onClick={openAddModal}>
+                      <span>+</span> عميل جديد
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -317,7 +359,7 @@ const Customers = () => {
                         </td>
                         <td style={{ textAlign: 'center' }}>
                           <div className="table-actions" style={{ justifyContent: 'center' }}>
-                            <button className="btn btn-icon btn-ghost" onClick={() => handleViewHistory(c)} title="سجل التعاملات">👁️</button>
+                            <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/customers/${c.id}`)} title="عرض التفاصيل">👁️</button>
                             {Number(c.balance) > 0 && (
                               <>
                                 <button className="btn btn-icon btn-ghost" style={{ color: '#f59e0b' }} onClick={() => handleSendDebtMessage(c)} title="إرسال رسالة تذكير">📩</button>

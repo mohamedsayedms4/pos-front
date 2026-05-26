@@ -30,15 +30,17 @@ const Sidebar = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  // Load logo from global config
+  // Sync page icon with logoUrl
   useEffect(() => {
     const link = document.querySelector("link[rel~='icon']");
     if (link) link.href = logoUrl || logo2;
+  }, [logoUrl]);
 
+  // Load logo from global config
+  useEffect(() => {
     Api.getGlobalConfig().then(cfg => {
       if (cfg && cfg.logoUrl) {
-        setLogoUrl(cfg.logoUrl);
-        if (link) link.href = cfg.logoUrl;
+        setLogoUrl(Api.getImageUrl(cfg.logoUrl));
       }
     }).catch(() => {});
   }, []);
@@ -53,7 +55,16 @@ const Sidebar = ({ isOpen, onClose }) => {
       <div className="sidebar-header">
         <button className="sidebar-close-btn" onClick={onClose}>✕</button>
         <NavLink to="/dashboard" className="logo-mark" style={{ margin: '0 auto', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }} onClick={onClose}>
-          <img src={logoUrl} alt="Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+          <img 
+            src={logoUrl} 
+            alt="Logo" 
+            style={{ width: '32px', height: '32px', objectFit: 'contain' }} 
+            onError={() => {
+              if (logoUrl !== logo2) {
+                setLogoUrl(logo2);
+              }
+            }}
+          />
         </NavLink>
       </div>
 

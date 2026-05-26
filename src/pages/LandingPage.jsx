@@ -146,17 +146,19 @@ const LandingPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch Global Configuration (Dynamic logo & app name)
+  // Sync page icon with logoUrl
   useEffect(() => {
     const link = document.querySelector("link[rel~='icon']");
-    if (link) link.href = logo2;
+    if (link) link.href = logoUrl || logo2;
+  }, [logoUrl]);
 
+  // Fetch Global Configuration (Dynamic logo & app name)
+  useEffect(() => {
     Api.getGlobalConfig()
       .then((cfg) => {
         if (cfg) {
           if (cfg.logoUrl) {
-            setLogoUrl(cfg.logoUrl);
-            if (link) link.href = cfg.logoUrl;
+            setLogoUrl(Api.getImageUrl(cfg.logoUrl));
           }
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
         }
@@ -237,7 +239,16 @@ const LandingPage = () => {
         <div className="container header-container">
           {/* Logo Brand area */}
           <div className="logo-section">
-            <img src={logoUrl} alt={softwareName} className="brand-logo-img" />
+            <img 
+              src={logoUrl} 
+              alt={softwareName} 
+              className="brand-logo-img" 
+              onError={() => {
+                if (logoUrl !== logo2) {
+                  setLogoUrl(logo2);
+                }
+              }}
+            />
             <span className="brand-logo-text">{softwareName}</span>
           </div>
 
@@ -249,7 +260,16 @@ const LandingPage = () => {
           <nav className={`desktop-nav ${mobileMenuOpen ? 'mobile-nav-active' : ''}`}>
             <div className="mobile-menu-header">
               <div className="logo-section">
-                <img src={logoUrl} alt={softwareName} className="brand-logo-img" />
+                <img 
+                  src={logoUrl} 
+                  alt={softwareName} 
+                  className="brand-logo-img" 
+                  onError={() => {
+                    if (logoUrl !== logo2) {
+                      setLogoUrl(logo2);
+                    }
+                  }}
+                />
                 <span className="brand-logo-text">{softwareName}</span>
               </div>
               <button className="close-mobile-menu" onClick={() => setMobileMenuOpen(false)}>
@@ -758,7 +778,15 @@ const LandingPage = () => {
         <div className="container footer-grid">
           <div className="footer-brand-info">
             <div className="footer-brand-title">
-              <img src={logoUrl} alt={softwareName} />
+              <img 
+                src={logoUrl} 
+                alt={softwareName} 
+                onError={() => {
+                  if (logoUrl !== logo2) {
+                    setLogoUrl(logo2);
+                  }
+                }}
+              />
               <span>{softwareName}</span>
             </div>
             <p>النظام السحابي المتكامل المعتمد لإدارة المبيعات، الفواتير الإلكترونية، المخازن، الحسابات العامة، شؤون الموظفين، والمتجر الإلكتروني في شاشة موحدة.</p>
