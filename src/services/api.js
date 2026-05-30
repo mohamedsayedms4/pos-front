@@ -4,7 +4,7 @@
 const envUrl = import.meta.env.VITE_API_URL;
 // Base server URL (without /api/v1 prefix) - dynamically resolves in production
 export const SERVER_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
-  ? 'https://posapi.digitalrace.net'
+  ? 'https://posapi.seggelerp.com'
   : (envUrl || 'http://localhost:8080');
 
 
@@ -834,9 +834,8 @@ const Api = {
     await this._request(`/categories/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Suppliers ───
   async getSuppliers(page = 0, size = 10, search = '', type = '', branchId = null) {
-    const searchQuery = search ? `&search=${encodeURIComponent(search)}` : '';
+    const searchQuery = search ? `&query=${encodeURIComponent(search)}&search=${encodeURIComponent(search)}` : '';
     const typeQuery = type ? `&type=${type}` : '';
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/suppliers?page=${page}&size=${size}${searchQuery}${typeQuery}${branchQuery}`);
@@ -984,9 +983,10 @@ const Api = {
   },
 
   // ─── Purchases ───
-  async getPurchases(page = 0, size = 10, query = '', branchId = null) {
+  async getPurchases(page = 0, size = 10, query = '', branchId = null, sort = 'id,desc') {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
-    const res = await this._request(`/purchases?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchQuery}`);
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const res = await this._request(`/purchases?page=${page}&size=${size}&query=${encodeURIComponent(query)}${sortQuery}${branchQuery}`);
     return res.data;
   },
 

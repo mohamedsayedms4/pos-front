@@ -114,7 +114,7 @@ const Dashboard = () => {
   }, [globalBranchId]);
 
   const getBaseDomain = () => {
-    if (window.location.hostname === 'localhost') return 'digitalrace.net';
+    if (window.location.hostname === 'localhost') return 'seggelerp.com';
     const parts = window.location.hostname.split('.');
     if (parts.length >= 3 && parts[0] !== 'www') {
       return parts.slice(1).join('.') + (window.location.port ? ':' + window.location.port : '');

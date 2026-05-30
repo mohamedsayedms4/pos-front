@@ -7,7 +7,7 @@ import logo2 from '../../assets/img/logo2.png';
 const FooterInfoBar = () => {
   const { getSelectedBranch, branches } = useBranch();
   const [config, setConfig] = useState({
-    softwareName: 'نظام بسيط ERP',
+    softwareName: 'نظام سجل',
     supportPhone: '+201281018810',
     facebookUrl: 'https://facebook.com',
     linkedInUrl: 'https://linkedin.com',
@@ -21,7 +21,7 @@ const FooterInfoBar = () => {
         const data = await Api.getGlobalConfig();
         if (data) {
           setConfig({
-            softwareName: data.softwareName || 'نظام بسيط ERP',
+            softwareName: data.softwareName || 'نظام سجل',
             supportPhone: data.supportPhone || '+201281018810',
             facebookUrl: data.facebookUrl || 'https://facebook.com',
             linkedInUrl: data.linkedInUrl || 'https://linkedin.com',

@@ -36,6 +36,7 @@ const Purchases = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const pageSize = 10;
+  const [sort, setSort] = useState('id,desc');
   
   // Analytics State
   const [analytics, setAnalytics] = useState(null);
@@ -64,6 +65,14 @@ const Purchases = () => {
     invoiceDate: new Date().toISOString().split('T')[0],
     paidAmount: 0
   });
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+
+  const handleSelectSupplier = (supplier) => {
+    setInvoiceForm(prev => ({ ...prev, supplierId: supplier.id }));
+    setSupplierSearch(supplier.name);
+    setShowSupplierDropdown(false);
+  };
   const [invoiceItems, setInvoiceItems] = useState([]);
   const [availableBranches, setAvailableBranches] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -84,6 +93,28 @@ const Purchases = () => {
   // Payment State
   const [paymentAmount, setPaymentAmount] = useState('');
 
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+
+  // Debounced supplier search
+  useEffect(() => {
+    if (modalType !== 'form' || invoiceForm.supplierId) return;
+
+    const timer = setTimeout(async () => {
+      setLoadingSuppliers(true);
+      try {
+        const res = await Api.getSuppliers(0, 5, supplierSearch, '', formSelectedBranchId);
+        const supsArray = res.content || res.items || (Array.isArray(res) ? res : []);
+        setSuppliers(supsArray);
+      } catch (err) {
+        console.error('Failed to search suppliers', err);
+      } finally {
+        setLoadingSuppliers(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [supplierSearch, formSelectedBranchId, invoiceForm.supplierId, modalType]);
+
   // ─── Data Loading ─────────────────────────────────────────────────────────
   useEffect(() => {
     const user = Api._getUser();
@@ -103,10 +134,10 @@ const Purchases = () => {
     }
   }, [location.search, globalBranchId, contextBranches]);
 
-  const loadData = async (page = 0, size = 10, query = debouncedSearch, branchId = selectedBranchId) => {
+  const loadData = async (page = 0, size = 10, query = debouncedSearch, sortParam = sort, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const res = await Api.getPurchases(page, size, query, branchId);
+      const res = await Api.getPurchases(page, size, query, branchId, sortParam);
       // Support both PaginatedResponse and direct content
       const itemsArray = res.items || res.content || (Array.isArray(res) ? res : []);
       setData(itemsArray);
@@ -133,11 +164,11 @@ const Purchases = () => {
   };
 
   useEffect(() => {
-    loadData(currentPage, pageSize, debouncedSearch, selectedBranchId);
+    loadData(currentPage, pageSize, debouncedSearch, sort, selectedBranchId);
     if (currentPage === 0 && !debouncedSearch) {
       loadAnalytics(selectedBranchId);
     }
-  }, [currentPage, debouncedSearch, selectedBranchId]);
+  }, [currentPage, debouncedSearch, sort, selectedBranchId]);
 
   useEffect(() => {
     if (supplierName) {
@@ -153,15 +184,10 @@ const Purchases = () => {
       const initialBranchId = selectedBranchId || user?.branchId || '';
       setFormSelectedBranchId(initialBranchId);
 
-      const [sups, prods] = await Promise.all([
-        Api.getSuppliers(0, 1000, '', '', initialBranchId), 
-        Api.getProductsPaged(0, 1000, '', '', initialBranchId)
-      ]);
-      
-      const supsArray = Array.isArray(sups) ? sups : (sups.items || sups.content || sups);
+      const prods = await Api.getProductsPaged(0, 1000, '', '', initialBranchId);
       const prodsArray = Array.isArray(prods) ? prods : (prods.items || prods.content || prods);
 
-      setSuppliers(supsArray);
+      setSuppliers([]); // Start empty, useEffect will populate with size 5
       setProducts(prodsArray);
 
       if (initialBranchId) {
@@ -177,6 +203,8 @@ const Purchases = () => {
       setInvoiceItems([]);
       setItemForm({ productId: '', unitId: '', quantity: 1, unitPrice: 0 });
       setAvailableUnits([]);
+      setSupplierSearch('');
+      setShowSupplierDropdown(false);
       setModalType('form');
     } catch (err) {
       toast('فشل في جلب البيانات الأساسية', 'error');
@@ -192,13 +220,14 @@ const Purchases = () => {
         if (whs.length > 0) setSelectedWarehouseId(whs[0].id);
         else setSelectedWarehouseId('');
 
-        // Reload suppliers and products for the new branch
-        const [sups, prods] = await Promise.all([
-          Api.getSuppliers(0, 1000, '', '', branchId), 
-          Api.getProductsPaged(0, 1000, '', '', branchId)
-        ]);
-        setSuppliers(Array.isArray(sups) ? sups : (sups.items || sups.content || sups));
+        // Reload products for the new branch
+        const prods = await Api.getProductsPaged(0, 1000, '', '', branchId);
         setProducts(Array.isArray(prods) ? prods : (prods.items || prods.content || prods));
+        
+        // Clearing search and ID triggers the useEffect to fetch 5 suppliers for the new branch
+        setSuppliers([]);
+        setSupplierSearch('');
+        setInvoiceForm(prev => ({ ...prev, supplierId: '' }));
 
       } catch {
         setWarehouses([]);
@@ -378,10 +407,29 @@ const Purchases = () => {
 
   const invoiceTotal = invoiceItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const items = data;
+  const filteredSuppliers = suppliers || [];
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <>
+      <style>{`
+        /* Responsive CSS Overrides for Purchases Page */
+        @media (max-width: 1024px) {
+          .toolbar {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+            display: flex !important;
+          }
+          .toolbar select, 
+          .toolbar .search-input,
+          .toolbar .search-input input {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 40px !important;
+          }
+        }
+      `}</style>
       <div className="page-section" style={{ direction: 'rtl' }}>
         {/* Analytics Dashboard */}
         {!loadingAnalytics && analytics && (
@@ -395,36 +443,41 @@ const Purchases = () => {
                 </div>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
                   <div style={{ width: '180px', height: '180px' }}>
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                      <PieChart>
-                        <Pie
-                          data={['PAID', 'PARTIAL', 'UNPAID'].map(status => {
-                            const stat = analytics.statusStats.find(s => s.status === status) || { count: 0, totalAmount: 0 };
-                            return {
-                              name: status === 'PAID' ? 'مدفوع' : status === 'PARTIAL' ? 'جزئي' : 'غير مدفوع',
-                              value: Number(stat.totalAmount) || 0,
-                              count: stat.count,
-                              color: status === 'PAID' ? '#10b981' : status === 'PARTIAL' ? '#f59e0b' : '#f43f5e'
-                            };
-                          }).filter(d => d.value > 0)}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {['PAID', 'PARTIAL', 'UNPAID'].map((status, index) => {
-                            const color = status === 'PAID' ? '#10b981' : status === 'PARTIAL' ? '#f59e0b' : '#f43f5e';
-                            return <Cell key={`cell-${index}`} fill={color} stroke="none" />;
-                          })}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', color: '#fff' }}
-                          formatter={(value) => [`${value.toLocaleString()} ج.م`, 'الإجمالي']}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    {(() => {
+                      const pieData = ['PAID', 'PARTIAL', 'UNPAID'].map(status => {
+                        const stat = analytics.statusStats.find(s => s.status === status) || { count: 0, totalAmount: 0 };
+                        return {
+                          name: status === 'PAID' ? 'مدفوع' : status === 'PARTIAL' ? 'جزئي' : 'غير مدفوع',
+                          value: Number(stat.totalAmount) || 0,
+                          count: stat.count,
+                          color: status === 'PAID' ? '#10b981' : status === 'PARTIAL' ? '#f59e0b' : '#f43f5e'
+                        };
+                      }).filter(d => d.value > 0);
+
+                      return (
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                          <PieChart>
+                            <Pie
+                              data={pieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={80}
+                              paddingAngle={5}
+                              dataKey="value"
+                            >
+                              {pieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', color: '#fff' }}
+                              formatter={(value) => [`${value.toLocaleString()} ج.م`, 'الإجمالي']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      );
+                    })()}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minWidth: '150px' }}>
                     {['PAID', 'PARTIAL', 'UNPAID'].map(status => {
@@ -543,6 +596,22 @@ const Purchases = () => {
                   }}
                 />
               </div>
+
+              <select 
+                className="form-control" 
+                value={sort} 
+                onChange={(e) => {
+                  setSort(e.target.value);
+                  setCurrentPage(0);
+                }}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+              >
+                <option value="id,desc">الأحدث أولاً</option>
+                <option value="id,asc">الأقدم أولاً</option>
+                <option value="totalAmount,desc">الأعلى سعراً</option>
+                <option value="totalAmount,asc">الأقل سعراً</option>
+              </select>
+
               <button className="btn btn-primary" onClick={openForm}>
                 <span>+</span> إضافة فاتورة
               </button>
@@ -680,17 +749,95 @@ const Purchases = () => {
 
                   {/* Header fields */}
                   <div className="form-row">
-                    <div className="form-group">
+                    <div className="form-group" style={{ position: 'relative' }}>
                       <label>المورد *</label>
-                      <select
-                        className="form-control"
-                        value={invoiceForm.supplierId}
-                        onChange={(e) => setInvoiceForm({ ...invoiceForm, supplierId: e.target.value })}
-                        required
-                      >
-                        <option value="">-- اختر المورد --</option>
-                        {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
+                      <div className="searchable-select-wrapper" style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="ابحث عن مورد بالاسم أو الهاتف..."
+                          value={supplierSearch}
+                          onFocus={() => setShowSupplierDropdown(true)}
+                          onBlur={() => setTimeout(() => setShowSupplierDropdown(false), 200)}
+                          onChange={(e) => {
+                            setSupplierSearch(e.target.value);
+                            setInvoiceForm(prev => ({ ...prev, supplierId: '' }));
+                          }}
+                          required={!invoiceForm.supplierId}
+                          style={{ paddingLeft: invoiceForm.supplierId ? '30px' : '12px' }}
+                        />
+                        {invoiceForm.supplierId && (
+                          <span 
+                            style={{ 
+                              position: 'absolute', 
+                              left: '12px', 
+                              top: '50%', 
+                              transform: 'translateY(-50%)', 
+                              cursor: 'pointer', 
+                              color: 'var(--text-muted, #888)',
+                              fontSize: '0.9rem',
+                              fontWeight: 'bold',
+                              zIndex: 5
+                            }}
+                            onClick={() => {
+                              setSupplierSearch('');
+                              setInvoiceForm(prev => ({ ...prev, supplierId: '' }));
+                              setShowSupplierDropdown(true);
+                            }}
+                          >
+                            ✕
+                          </span>
+                        )}
+                        {showSupplierDropdown && (
+                          <div 
+                            style={{ 
+                              position: 'absolute', 
+                              top: '100%', 
+                              left: 0, 
+                              right: 0, 
+                              background: 'var(--bg-elevated, #1a1a1a)', 
+                              border: '1px solid var(--border-color, #333)', 
+                              borderRadius: '8px', 
+                              maxHeight: '200px', 
+                              overflowY: 'auto', 
+                              zIndex: 1000, 
+                              marginTop: '4px',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                            }}
+                          >
+                            {loadingSuppliers ? (
+                              <div style={{ padding: '10px', color: 'var(--text-muted, #888)', textAlign: 'center' }}>جاري البحث...</div>
+                            ) : filteredSuppliers.length === 0 ? (
+                              <div style={{ padding: '10px', color: 'var(--text-muted, #888)', textAlign: 'center' }}>لا توجد نتائج</div>
+                            ) : (
+                              filteredSuppliers.map(s => (
+                                <div
+                                  key={s.id}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleSelectSupplier(s);
+                                  }}
+                                  style={{
+                                    padding: '10px 15px',
+                                    cursor: 'pointer',
+                                    borderBottom: '1px solid var(--border-subtle, #2a2a2a)',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    backgroundColor: invoiceForm.supplierId === s.id ? 'var(--bg-hover, rgba(255,255,255,0.05))' : 'transparent',
+                                    color: 'var(--text-main, #fff)'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.05))'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = invoiceForm.supplierId === s.id ? 'var(--bg-hover, rgba(255,255,255,0.05))' : 'transparent'}
+                                >
+                                  <span style={{ fontWeight: 600 }}>{s.name}</span>
+                                  {s.phone && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted, #888)' }}>{s.phone}</span>}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="form-group">
                       <label>تاريخ الفاتورة *</label>

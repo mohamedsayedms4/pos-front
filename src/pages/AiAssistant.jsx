@@ -7,7 +7,7 @@ const AiAssistant = () => {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'أهلاً بك! أنا **مساعد بسيط الذكي** 🤖، مستشارك الذكي المدمج بنظام **بسيط ERP** المدعوم بـ **DeepSeek**.\n\nيمكنني مساعدتك في:\n- 📊 كتابة خطط لزيادة مبيعاتك ونمو منشأتك.\n- 📝 صياغة أوصاف جذابة لمنتجاتك وخدماتك.\n- 💸 تقديم نصائح محاسبية دقيقة لتقليل الهوالك والمصروفات.\n- ✉️ صياغة مراسلات للموردين أو ردود على تذاكر الدعم الفني.',
+      content: 'أهلاً بك! أنا **مساعد سجل الذكي** 🤖، مستشارك الذكي المدمج بنظام **سجل** المدعوم بـ **DeepSeek**.\n\nيمكنني مساعدتك في:\n- 📊 كتابة خطط لزيادة مبيعاتك ونمو منشأتك.\n- 📝 صياغة أوصاف جذابة لمنتجاتك وخدماتك.\n- 💸 تقديم نصائح محاسبية دقيقة لتقليل الهوالك والمصروفات.\n- ✉️ صياغة مراسلات للموردين أو ردود على تذاكر الدعم الفني.',
       time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -77,7 +77,7 @@ const AiAssistant = () => {
       // Build API request payload
       const systemPrompt = {
         role: 'system',
-        content: 'أنت "مساعد بسيط الذكي"، مستشار أعمال خبير ومحاسب محترف مدمج في نظام إدارة المؤسسات "بسيط ERP". مهمتك الإجابة بلطف واحترافية وبلهجة ودية باللغة العربية، ومساعدة التجار في إدارة مخازنهم، تسعير المنتجات، زيادة المبيعات، صياغة مراسلات للموردين، وتقديم النصائح المحاسبية لنجاح منشأتهم.'
+        content: 'أنت "مساعد سجل الذكي"، مستشار أعمال خبير ومحاسب محترف مدمج في نظام إدارة المؤسسات "سجل". مهمتك الإجابة بلطف واحترافية وبلهجة ودية باللغة العربية، ومساعدة التجار في إدارة مخازنهم، تسعير المنتجات، زيادة المبيعات، صياغة مراسلات للموردين، وتقديم النصائح المحاسبية لنجاح منشأتهم.'
       };
 
       const chatHistory = messages.map(m => ({
@@ -152,7 +152,7 @@ const AiAssistant = () => {
         <div className="ai-brand">
           <span className="ai-icon">🤖</span>
           <div>
-            <h2>مساعد بسيط الذكي</h2>
+            <h2>مساعد سجل الذكي</h2>
             <p>مساعد أعمالك الذكي المدعوم بـ DeepSeek AI</p>
           </div>
         </div>
@@ -217,7 +217,7 @@ const AiAssistant = () => {
               </div>
               <div className="bubble-body">
                 <div className="bubble-meta">
-                  <span className="sender-name">{msg.role === 'user' ? 'أنت' : 'مساعد بسيط'}</span>
+                  <span className="sender-name">{msg.role === 'user' ? 'أنت' : 'مساعد سجل'}</span>
                   <span className="message-time">{msg.time}</span>
                 </div>
                 <div className="bubble-text">
@@ -232,7 +232,7 @@ const AiAssistant = () => {
               <div className="bubble-avatar">🤖</div>
               <div className="bubble-body">
                 <div className="bubble-meta">
-                  <span className="sender-name">مساعد بسيط</span>
+                  <span className="sender-name">مساعد سجل</span>
                 </div>
                 <div className="ai-typing-indicator">
                   <span></span>
@@ -274,7 +274,7 @@ const AiAssistant = () => {
             className="ai-chat-input"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={apiKey ? "اسأل مساعد بسيط الذكي أي شيء عن منشأتك وأعمالك..." : "الرجاء إدخال مفتاح الـ API الخاص بـ DeepSeek بالأعلى لتفعيل الشات..."}
+            placeholder={apiKey ? "اسأل مساعد سجل الذكي أي شيء عن منشأتك وأعمالك..." : "الرجاء إدخال مفتاح الـ API الخاص بـ DeepSeek بالأعلى لتفعيل الشات..."}
             disabled={loading}
           />
           <button type="submit" className="btn-ai-send" disabled={loading || !input.trim()}>

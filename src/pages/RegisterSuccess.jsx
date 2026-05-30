@@ -36,7 +36,7 @@ const RegisterSuccess = () => {
   const [countdown, setCountdown] = useState(7);
   const [copied, setCopied] = useState(false);
   const [logoUrl, setLogoUrl] = useState(logo2);
-  const [softwareName, setSoftwareName] = useState('بسيط ERP');
+  const [softwareName, setSoftwareName] = useState('سجل');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -159,7 +159,7 @@ const RegisterSuccess = () => {
             </div>
 
             <h1 className="success-heading">تهانينا! تم إنشاء حسابك بنجاح</h1>
-            <p className="success-lead">لقد أعددنا لك نظام بسيط ERP وأصبح جاهزاً للعمل الآن لمساعدة عملك على التوسع 🚀</p>
+            <p className="success-lead">لقد أعددنا لك نظام سجل وأصبح جاهزاً للعمل الآن لمساعدة عملك على التوسع 🚀</p>
 
             {/* Details Panel */}
             <div className="details-panel-box">
@@ -260,7 +260,7 @@ const RegisterSuccess = () => {
 
           <div className="footer-links-col">
             <h4>تواصل معنا</h4>
-            <p>الدعم الفني: support@digitalrace.net</p>
+            <p>الدعم الفني: support@seggelerp.com</p>
             <p>
               واتساب:{' '}
               <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>

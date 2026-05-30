@@ -505,14 +505,7 @@ const Suppliers = () => {
                             </div>
                           </td>
                           <td>{s.phone || '—'}</td>
-                          <td>
-                            {s.branch ? (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '20px', background: 'var(--bg-hover)', border: '1px solid var(--border-color)', fontSize: '0.8rem', fontWeight: 600 }}>
-                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-emerald)', display: 'inline-block' }}></span>
-                                {s.branch.name}
-                              </span>
-                            ) : <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>—</span>}
-                          </td>
+                          <td>{s.email || '—'}</td>
                           <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{s.taxNumber || '—'}</code></td>
                           <td className={balanceClass} style={{ fontWeight: 700 }}>{balance.toFixed(2)}</td>
                           <td>
@@ -593,26 +586,7 @@ const Suppliers = () => {
                     <label>الرقم الضريبي</label>
                     <input className="form-control" name="taxNumber" value={formData.taxNumber} onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })} />
                   </div>
-                  <div className="form-group">
-                    <label>الفروع المرتبطة *</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', marginTop: '5px' }}>
-                      {branches.map(branch => (
-                        <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={formData.branchIds.includes(branch.id)} 
-                            onChange={(e) => {
-                              const newIds = e.target.checked 
-                                ? [...formData.branchIds, branch.id]
-                                : formData.branchIds.filter(id => id !== branch.id);
-                              setFormData({ ...formData, branchIds: newIds });
-                            }} 
-                          />
-                          {branch.name}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+
                 </form>
               </div>
               <div className="modal-footer">

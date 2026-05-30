@@ -29,7 +29,7 @@ const Error500 = () => {
         userAgent: window.navigator.userAgent,
         platform: window.navigator.platform,
         userId: user ? `${user.id} (${user.role})` : 'Guest / Not Authenticated',
-        apiEndpoint: 'https://posapi.digitalrace.net/api/v1',
+        apiEndpoint: 'https://posapi.seggelerp.com/api/v1',
     };
 
     return (

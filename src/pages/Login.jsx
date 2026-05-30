@@ -14,7 +14,7 @@ const Login = () => {
   const [isResolving, setIsResolving] = useState(false);
   const [suggestedTenants, setSuggestedTenants] = useState([]);
   const [logoUrl, setLogoUrl] = useState(logo2);
-  const [softwareName, setSoftwareName] = useState('بسيط ERP');
+  const [softwareName, setSoftwareName] = useState('سجل');
   const navigate = useNavigate();
 
   React.useEffect(() => {

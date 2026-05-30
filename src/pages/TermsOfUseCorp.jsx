@@ -5,7 +5,7 @@ import logo2 from '../assets/img/logo2.png';
 
 const TermsOfUseCorp = () => {
   const [logoUrl, setLogoUrl] = useState(logo2);
-  const [softwareName, setSoftwareName] = useState('بسيط ERP');
+  const [softwareName, setSoftwareName] = useState('سجل');
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -150,10 +150,10 @@ const TermsOfUseCorp = () => {
                   إذا كان لديك أي استفسار أو شكوى بخصوص شروط وأحكام الاستخدام، يرجى عدم التردد في التواصل مع فريق الدعم القانوني والفني مباشرة:
                 </p>
                 <div className="contact-card-grid">
-                  <a href="mailto:support@digitalrace.net" className="contact-card">
+                  <a href="mailto:support@seggelerp.com" className="contact-card">
                     <span className="icon">✉</span>
                     <span className="title">الدعم الفني والبريد</span>
-                    <span className="value">support@digitalrace.net</span>
+                    <span className="value">support@seggelerp.com</span>
                   </a>
                   <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" className="contact-card">
                     <span className="icon" style={{ color: '#25D366' }}>💬</span>
@@ -202,7 +202,7 @@ const TermsOfUseCorp = () => {
 
           <div className="footer-links-col">
             <h4>تواصل معنا</h4>
-            <p>الدعم الفني: support@digitalrace.net</p>
+            <p>الدعم الفني: support@seggelerp.com</p>
             <p>
               واتساب:{' '}
               <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>

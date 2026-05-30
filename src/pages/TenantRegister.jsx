@@ -172,7 +172,7 @@ const TenantRegister = () => {
         <div className="marketing-content">
           <div className="marketing-badge">
             <Icons.RocketLaunch className="badge-icon" />
-            <span>بسيط ERP المتكامل</span>
+            <span>سجل المتكامل</span>
           </div>
           <h1>كل ما تحتاجه لإدارة أعمالك في برنامج واحد!</h1>
           <ul className="feature-list">

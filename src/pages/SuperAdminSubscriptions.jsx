@@ -958,7 +958,7 @@ const SuperAdminSubscriptions = () => {
                 <input
                   type="text"
                   className="sa-sub-form-input"
-                  placeholder="مثال: نظام بسيط ERP"
+                  placeholder="مثال: نظام سجل"
                   value={settings.softwareName}
                   onChange={(e) => setSettings({ ...settings, softwareName: e.target.value })}
                   required
