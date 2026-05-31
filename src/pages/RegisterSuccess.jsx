@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Api from '../services/api';
-import logo2 from '../assets/img/logo2.png';
+import logoLandingLight from '../assets/img/logo-landing-light.png';
 
 const Icons = {
   Lock: (props) => (
@@ -35,7 +35,7 @@ const RegisterSuccess = () => {
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(7);
   const [copied, setCopied] = useState(false);
-  const [logoUrl, setLogoUrl] = useState(logo2);
+  const [logoUrl, setLogoUrl] = useState(logoLandingLight);
   const [softwareName, setSoftwareName] = useState('سجل');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -109,8 +109,8 @@ const RegisterSuccess = () => {
               alt={softwareName} 
               className="brand-logo-img" 
               onError={() => {
-                if (logoUrl !== logo2) {
-                  setLogoUrl(logo2);
+                if (logoUrl !== logoLandingLight) {
+                  setLogoUrl(logoLandingLight);
                 }
               }}
             />
@@ -235,8 +235,8 @@ const RegisterSuccess = () => {
                 src={logoUrl} 
                 alt={softwareName} 
                 onError={() => {
-                  if (logoUrl !== logo2) {
-                    setLogoUrl(logo2);
+                  if (logoUrl !== logoLandingLight) {
+                    setLogoUrl(logoLandingLight);
                   }
                 }}
               />

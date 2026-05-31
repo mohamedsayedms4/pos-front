@@ -230,11 +230,11 @@ const MainLayout = () => {
     <div className="app-layout">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Topbar 
+          onMenuToggle={toggleSidebar} 
+          prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 
+        />
         <div style={{ flex: '1 0 auto' }}>
-          <Topbar 
-            onMenuToggle={toggleSidebar} 
-            prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 
-          />
           <div className="page-content">
             <Outlet />
           </div>

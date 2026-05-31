@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../services/api';
-import logo2 from '../assets/img/logo2.png';
+import logoLandingLight from '../assets/img/logo-landing-light.png';
 
 const TermsOfUseCorp = () => {
-  const [logoUrl, setLogoUrl] = useState(logo2);
+  const [logoUrl, setLogoUrl] = useState(logoLandingLight);
   const [softwareName, setSoftwareName] = useState('سجل');
   const [scrolled, setScrolled] = useState(false);
 
@@ -42,8 +42,8 @@ const TermsOfUseCorp = () => {
               alt={softwareName} 
               className="brand-logo-img" 
               onError={() => {
-                if (logoUrl !== logo2) {
-                  setLogoUrl(logo2);
+                if (logoUrl !== logoLandingLight) {
+                  setLogoUrl(logoLandingLight);
                 }
               }}
             />
@@ -177,8 +177,8 @@ const TermsOfUseCorp = () => {
                 src={logoUrl} 
                 alt={softwareName} 
                 onError={() => {
-                  if (logoUrl !== logo2) {
-                    setLogoUrl(logo2);
+                  if (logoUrl !== logoLandingLight) {
+                    setLogoUrl(logoLandingLight);
                   }
                 }}
               />

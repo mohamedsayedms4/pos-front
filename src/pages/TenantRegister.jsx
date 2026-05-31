@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Api, { SERVER_URL } from '../services/api';
-import logo2 from '../assets/img/logo2.png';
+import logoLoginDark from '../assets/img/logo-login-dark.png';
 
 // Simple SVG Icons to replace MUI
 const Icons = {
@@ -71,7 +71,7 @@ const TenantRegister = () => {
         <div className="register-card">
           <div className="register-header">
             <Link to="/" style={{ display: 'inline-block' }}>
-              <img src={logo2} alt="Logo" className="register-logo" />
+              <img src={logoLoginDark} alt="Logo" className="register-logo" />
             </Link>
             <h2>إنشاء حساب جديد</h2>
             <p>ابدأ رحلتك في إدارة أعمالك باحترافية</p>

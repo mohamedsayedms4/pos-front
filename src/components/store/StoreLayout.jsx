@@ -9,7 +9,7 @@ import { useStoreAuth } from '../../context/StoreAuthContext';
 import '../../styles/ecommerce.css';
 import * as fbPixel from '../../services/fbPixel';
 
-const STORE_NAME = 'مهلهل جروب';
+const STORE_NAME = 'Seggel Ecommerce';
 
 const StoreLayout = ({ children, hideHeader = false }) => {
   const {

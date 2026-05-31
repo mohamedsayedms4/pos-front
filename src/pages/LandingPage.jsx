@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../services/api';
-import logo2 from '../assets/img/logo2.png';
+import logoLandingLight from '../assets/img/logo-landing-light.png';
+import logoLandingDark from '../assets/img/logo-landing-dark.png';
+import { useTheme } from '../components/common/ThemeContext';
 import systemImg from '../assets/img/landing-page/system.png';
 
 // SVG Icons for elegant UI look to avoid external library loading issues
@@ -116,7 +118,9 @@ const Icons = {
 };
 
 const LandingPage = () => {
-  const [logoUrl, setLogoUrl] = useState(logo2);
+  const { theme } = useTheme();
+  const [config, setConfig] = useState(null);
+  const [logoError, setLogoError] = useState(false);
   const [softwareName, setSoftwareName] = useState('سجل');
   const [isYearly, setIsYearly] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -146,25 +150,36 @@ const LandingPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Sync page icon with logoUrl
-  useEffect(() => {
-    const link = document.querySelector("link[rel~='icon']");
-    if (link) link.href = logoUrl || logo2;
-  }, [logoUrl]);
-
   // Fetch Global Configuration (Dynamic logo & app name)
   useEffect(() => {
     Api.getGlobalConfig()
       .then((cfg) => {
         if (cfg) {
-          if (cfg.logoUrl) {
-            setLogoUrl(Api.getImageUrl(cfg.logoUrl));
+          setConfig(cfg);
+          const faviconToUse = cfg.logoFaviconUrl || cfg.logoUrl;
+          if (faviconToUse) {
+            const link = document.querySelector("link[rel~='icon']");
+            if (link) link.href = Api.getImageUrl(faviconToUse);
           }
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
         }
       })
       .catch((err) => console.error('Error loading global config:', err));
   }, []);
+
+  // Reset logo error flag when config or theme updates
+  useEffect(() => {
+    setLogoError(false);
+  }, [config, theme]);
+
+  const currentLogo = React.useMemo(() => {
+    const localDefault = theme === 'dark' ? logoLandingDark : logoLandingLight;
+    if (logoError || !config) return localDefault;
+    const logoToUse = theme === 'dark'
+      ? (config.logoLandingDarkUrl || config.logoUrl)
+      : (config.logoLandingLightUrl || config.logoUrl);
+    return logoToUse ? Api.getImageUrl(logoToUse) : localDefault;
+  }, [config, theme, logoError]);
 
   // Initialize scroll animations
   useEffect(() => {
@@ -240,14 +255,10 @@ const LandingPage = () => {
           {/* Logo Brand area */}
           <div className="logo-section">
             <img 
-              src={logoUrl} 
+              src={currentLogo} 
               alt={softwareName} 
               className="brand-logo-img" 
-              onError={() => {
-                if (logoUrl !== logo2) {
-                  setLogoUrl(logo2);
-                }
-              }}
+              onError={() => setLogoError(true)}
             />
             <span className="brand-logo-text">{softwareName}</span>
           </div>
@@ -261,14 +272,10 @@ const LandingPage = () => {
             <div className="mobile-menu-header">
               <div className="logo-section">
                 <img 
-                  src={logoUrl} 
+                  src={currentLogo} 
                   alt={softwareName} 
                   className="brand-logo-img" 
-                  onError={() => {
-                    if (logoUrl !== logo2) {
-                      setLogoUrl(logo2);
-                    }
-                  }}
+                  onError={() => setLogoError(true)}
                 />
                 <span className="brand-logo-text">{softwareName}</span>
               </div>
@@ -779,13 +786,9 @@ const LandingPage = () => {
           <div className="footer-brand-info">
             <div className="footer-brand-title">
               <img 
-                src={logoUrl} 
+                src={currentLogo} 
                 alt={softwareName} 
-                onError={() => {
-                  if (logoUrl !== logo2) {
-                    setLogoUrl(logo2);
-                  }
-                }}
+                onError={() => setLogoError(true)}
               />
               <span>{softwareName}</span>
             </div>

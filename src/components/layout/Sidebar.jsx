@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import Api, { API_BASE } from '../../services/api';
-import logo2 from '../../assets/img/logo2.png';
+import logoSidebarLight from '../../assets/img/logo-sidebar-light.png';
+import logoSidebarDark from '../../assets/img/logo-sidebar-dark.png';
+import { useTheme } from '../common/ThemeContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const { theme } = useTheme();
   const [user, setUser] = useState(Api._getUser() || { name: 'Admin', role: 'مدير النظام' });
-  const [logoUrl, setLogoUrl] = useState(logo2);
+  const [config, setConfig] = useState(null);
+  const [logoError, setLogoError] = useState(false);
   const location = useLocation();
 
   const isProductsPageActive = location.pathname.startsWith('/products');
@@ -30,20 +34,39 @@ const Sidebar = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  // Sync page icon with logoUrl
+  // Reset logo error when config or theme changes
   useEffect(() => {
-    const link = document.querySelector("link[rel~='icon']");
-    if (link) link.href = logoUrl || logo2;
-  }, [logoUrl]);
+    setLogoError(false);
+  }, [config, theme]);
 
   // Load logo from global config
   useEffect(() => {
     Api.getGlobalConfig().then(cfg => {
-      if (cfg && cfg.logoUrl) {
-        setLogoUrl(Api.getImageUrl(cfg.logoUrl));
+      if (cfg) {
+        setConfig(cfg);
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
+
+  const currentLogo = React.useMemo(() => {
+    const localDefault = theme === 'dark' ? logoSidebarDark : logoSidebarLight;
+    if (logoError || !config) return localDefault;
+    const logoToUse = theme === 'dark'
+      ? (config.logoSidebarDarkUrl || config.logoUrl)
+      : (config.logoSidebarLightUrl || config.logoUrl);
+    return logoToUse ? Api.getImageUrl(logoToUse) : localDefault;
+  }, [config, theme, logoError]);
+
+  // Sync page icon with favicon from configuration or fallback
+  useEffect(() => {
+    if (config) {
+      const faviconToUse = config.logoFaviconUrl || config.logoUrl;
+      if (faviconToUse) {
+        const link = document.querySelector("link[rel~='icon']");
+        if (link) link.href = Api.getImageUrl(faviconToUse);
+      }
+    }
+  }, [config]);
 
   const avatarUrl = user?.profilePicture
     ? `${API_BASE}/products/images/${user.profilePicture}`
@@ -55,15 +78,11 @@ const Sidebar = ({ isOpen, onClose }) => {
       <div className="sidebar-header">
         <button className="sidebar-close-btn" onClick={onClose}>✕</button>
         <NavLink to="/dashboard" className="logo-mark" style={{ margin: '0 auto', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }} onClick={onClose}>
-          <img 
-            src={logoUrl} 
-            alt="Logo" 
-            style={{ width: '32px', height: '32px', objectFit: 'contain' }} 
-            onError={() => {
-              if (logoUrl !== logo2) {
-                setLogoUrl(logo2);
-              }
-            }}
+          <img
+            src={currentLogo}
+            alt="Logo"
+            style={{ width: '80px', height: '32px', objectFit: 'contain' }}
+            onError={() => setLogoError(true)}
           />
         </NavLink>
       </div>
@@ -446,7 +465,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                       <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
                       <span>الحضور اليومي</span>
                     </NavLink>
-                    
+
                     <NavLink
                       to="/attendance/scan"
                       className={`nav-item sub-item ${location.pathname === '/attendance/scan' ? 'active' : ''}`}

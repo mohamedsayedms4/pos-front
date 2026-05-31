@@ -122,7 +122,7 @@ const CustomerOrder = () => {
   return (
     <div className="customer-order-page">
       <header className="customer-header">
-        <div className="brand">مهلهل جروب - شاشة الاختيار</div>
+        <div className="brand">Seggel Ecommerce - شاشة الاختيار</div>
         <div className="search-bar">
           <input 
             type="text" 

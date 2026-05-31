@@ -127,10 +127,28 @@ const SuperAdminSubscriptions = () => {
     facebookUrl: '',
     linkedInUrl: '',
     youtubeUrl: '',
-    logoUrl: ''
+    logoUrl: '',
+    logoSidebarLightUrl: '',
+    logoSidebarDarkUrl: '',
+    logoFooterLightUrl: '',
+    logoFooterDarkUrl: '',
+    logoLoginLightUrl: '',
+    logoLoginDarkUrl: '',
+    logoLandingLightUrl: '',
+    logoLandingDarkUrl: '',
+    logoFaviconUrl: ''
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [logoPreview, setLogoPreview] = useState('');
+  const [logoSidebarLightPreview, setLogoSidebarLightPreview] = useState('');
+  const [logoSidebarDarkPreview, setLogoSidebarDarkPreview] = useState('');
+  const [logoFooterLightPreview, setLogoFooterLightPreview] = useState('');
+  const [logoFooterDarkPreview, setLogoFooterDarkPreview] = useState('');
+  const [logoLoginLightPreview, setLogoLoginLightPreview] = useState('');
+  const [logoLoginDarkPreview, setLogoLoginDarkPreview] = useState('');
+  const [logoLandingLightPreview, setLogoLandingLightPreview] = useState('');
+  const [logoLandingDarkPreview, setLogoLandingDarkPreview] = useState('');
+  const [logoFaviconPreview, setLogoFaviconPreview] = useState('');
 
   // Tenants Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -187,9 +205,27 @@ const SuperAdminSubscriptions = () => {
           facebookUrl: configData.facebookUrl || '',
           linkedInUrl: configData.linkedInUrl || '',
           youtubeUrl: configData.youtubeUrl || '',
-          logoUrl: configData.logoUrl || ''
+          logoUrl: configData.logoUrl || '',
+          logoSidebarLightUrl: configData.logoSidebarLightUrl || '',
+          logoSidebarDarkUrl: configData.logoSidebarDarkUrl || '',
+          logoFooterLightUrl: configData.logoFooterLightUrl || '',
+          logoFooterDarkUrl: configData.logoFooterDarkUrl || '',
+          logoLoginLightUrl: configData.logoLoginLightUrl || '',
+          logoLoginDarkUrl: configData.logoLoginDarkUrl || '',
+          logoLandingLightUrl: configData.logoLandingLightUrl || '',
+          logoLandingDarkUrl: configData.logoLandingDarkUrl || '',
+          logoFaviconUrl: configData.logoFaviconUrl || ''
         });
         setLogoPreview(configData.logoUrl || '');
+        setLogoSidebarLightPreview(configData.logoSidebarLightUrl || '');
+        setLogoSidebarDarkPreview(configData.logoSidebarDarkUrl || '');
+        setLogoFooterLightPreview(configData.logoFooterLightUrl || '');
+        setLogoFooterDarkPreview(configData.logoFooterDarkUrl || '');
+        setLogoLoginLightPreview(configData.logoLoginLightUrl || '');
+        setLogoLoginDarkPreview(configData.logoLoginDarkUrl || '');
+        setLogoLandingLightPreview(configData.logoLandingLightUrl || '');
+        setLogoLandingDarkPreview(configData.logoLandingDarkUrl || '');
+        setLogoFaviconPreview(configData.logoFaviconUrl || '');
       }
     } catch (err) {
       toast(err.message || 'فشل في تحميل البيانات', 'error');
@@ -342,13 +378,13 @@ const SuperAdminSubscriptions = () => {
   };
 
   // Handle logo file selection
-  const handleLogoChange = (e) => {
+  const handleLogoChange = (e, fieldName, setPreview) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = () => {
-      setLogoPreview(reader.result);
-      setSettings(prev => ({ ...prev, logoUrl: reader.result }));
+      setPreview(reader.result);
+      setSettings(prev => ({ ...prev, [fieldName]: reader.result }));
     };
     reader.readAsDataURL(file);
   };
@@ -892,62 +928,222 @@ const SuperAdminSubscriptions = () => {
 
             <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
 
-              {/* Logo Upload */}
-              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '12px' }}>
-                  🖼️ شعار النظام (اللوجو):
+              {/* Logo Uploads Grid with Light / Dark Mode support */}
+              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '850', marginBottom: '4px', fontSize: '1.1rem' }}>
+                  🖼️ إدارة شعارات النظام المتعددة (الوضع الداكن / الفاتح):
                 </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                  {/* Preview */}
-                  <div style={{
-                    width: '72px', height: '72px', borderRadius: '14px',
-                    border: '2px dashed var(--sa-sub-border)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'var(--sa-sub-bg)', overflow: 'hidden', flexShrink: 0
-                  }}>
-                    {logoPreview
-                      ? <img src={logoPreview} alt="Logo Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                      : <span style={{ fontSize: '2rem', opacity: 0.3 }}>🖼️</span>
-                    }
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+                  
+                  {/* 1. Sidebar Logo Card */}
+                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.95rem' }}>📱 القائمة الجانبية (Sidebar)</strong>
+                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>32 × 32 px - Icon فقط</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {/* Light Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
+                          {logoSidebarLightPreview
+                            ? <img src={logoSidebarLightPreview} alt="Sidebar Light" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-sidebar-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-sidebar-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoSidebarLightUrl', setLogoSidebarLightPreview)} />
+                          {logoSidebarLightPreview && <button type="button" onClick={() => { setLogoSidebarLightPreview(''); setSettings(prev => ({ ...prev, logoSidebarLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                      {/* Dark Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
+                          {logoSidebarDarkPreview
+                            ? <img src={logoSidebarDarkPreview} alt="Sidebar Dark" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-sidebar-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-sidebar-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoSidebarDarkUrl', setLogoSidebarDarkPreview)} />
+                          {logoSidebarDarkPreview && <button type="button" onClick={() => { setLogoSidebarDarkPreview(''); setSettings(prev => ({ ...prev, logoSidebarDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  {/* Upload button */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label
-                      htmlFor="logo-upload-input"
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '8px',
-                        padding: '10px 20px', borderRadius: '10px', cursor: 'pointer',
-                        background: 'linear-gradient(135deg, var(--sa-sub-accent-blue), #4f46e5)',
-                        color: '#fff', fontWeight: '700', fontSize: '0.9rem',
-                        boxShadow: '0 4px 12px rgba(99,102,241,0.25)'
-                      }}
-                    >
-                      📁 رفع لوجو جديد
-                    </label>
-                    <input
-                      id="logo-upload-input"
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={handleLogoChange}
-                    />
-                    {logoPreview && (
-                      <button
-                        type="button"
-                        onClick={() => { setLogoPreview(''); setSettings(prev => ({ ...prev, logoUrl: '' })); }}
-                        style={{
-                          padding: '6px 14px', borderRadius: '8px', border: '1.5px solid #ef4444',
-                          background: 'transparent', color: '#ef4444', fontWeight: '600',
-                          cursor: 'pointer', fontSize: '0.85rem', fontFamily: 'inherit'
-                        }}
-                      >
-                        🗑️ حذف اللوجو
-                      </button>
-                    )}
-                    <span style={{ fontSize: '0.78rem', color: 'var(--sa-sub-text-secondary)' }}>
-                      PNG / JPG / SVG — يظهر في الشريط الجانبي والفوتر السفلي
-                    </span>
+
+                  {/* 2. Footer Logo Card */}
+                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.95rem' }}>👣 شريط الفوتر (Footer)</strong>
+                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>32 × 32 px - Icon فقط</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {/* Light Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
+                          {logoFooterLightPreview
+                            ? <img src={logoFooterLightPreview} alt="Footer Light" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-footer-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-footer-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoFooterLightUrl', setLogoFooterLightPreview)} />
+                          {logoFooterLightPreview && <button type="button" onClick={() => { setLogoFooterLightPreview(''); setSettings(prev => ({ ...prev, logoFooterLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                      {/* Dark Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
+                          {logoFooterDarkPreview
+                            ? <img src={logoFooterDarkPreview} alt="Footer Dark" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-footer-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-footer-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoFooterDarkUrl', setLogoFooterDarkPreview)} />
+                          {logoFooterDarkPreview && <button type="button" onClick={() => { setLogoFooterDarkPreview(''); setSettings(prev => ({ ...prev, logoFooterDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* 3. Login Page Logo Card */}
+                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.95rem' }}>🔑 تسجيل الدخول (Login Page)</strong>
+                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>64 × 64 px - أيقونة أو لوجو</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {/* Light Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
+                          {logoLoginLightPreview
+                            ? <img src={logoLoginLightPreview} alt="Login Light" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-login-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-login-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLoginLightUrl', setLogoLoginLightPreview)} />
+                          {logoLoginLightPreview && <button type="button" onClick={() => { setLogoLoginLightPreview(''); setSettings(prev => ({ ...prev, logoLoginLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                      {/* Dark Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
+                          {logoLoginDarkPreview
+                            ? <img src={logoLoginDarkPreview} alt="Login Dark" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-login-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-login-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLoginDarkUrl', setLogoLoginDarkPreview)} />
+                          {logoLoginDarkPreview && <button type="button" onClick={() => { setLogoLoginDarkPreview(''); setSettings(prev => ({ ...prev, logoLoginDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Landing Page Header Logo Card */}
+                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.95rem' }}>🌐 صفحة الهبوط (Landing Page)</strong>
+                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>44 × 44 px - أيقونة ونص</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      {/* Light Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
+                          {logoLandingLightPreview
+                            ? <img src={logoLandingLightPreview} alt="Landing Light" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-landing-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-landing-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLandingLightUrl', setLogoLandingLightPreview)} />
+                          {logoLandingLightPreview && <button type="button" onClick={() => { setLogoLandingLightPreview(''); setSettings(prev => ({ ...prev, logoLandingLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                      {/* Dark Mode */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
+                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
+                          {logoLandingDarkPreview
+                            ? <img src={logoLandingDarkPreview} alt="Landing Dark" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                          }
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <label htmlFor="logo-landing-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-landing-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLandingDarkUrl', setLogoLandingDarkPreview)} />
+                          {logoLandingDarkPreview && <button type="button" onClick={() => { setLogoLandingDarkPreview(''); setSettings(prev => ({ ...prev, logoLandingDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5. Favicon Card */}
+                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.95rem' }}>🎯 أيقونة المتصفح (Favicon)</strong>
+                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>16x16 / 32x32 px</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
+                      <div style={{ width: '60px', height: '60px', borderRadius: '8px', border: '2px dashed var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
+                        {logoFaviconPreview
+                          ? <img src={logoFaviconPreview} alt="Favicon Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🎯</span>
+                        }
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>أيقونة تبويب المتصفح</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <label htmlFor="logo-favicon-input" style={{ display: 'inline-block', padding: '6px 12px', background: '#6366f1', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-favicon-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoFaviconUrl', setLogoFaviconPreview)} />
+                          {logoFaviconPreview && <button type="button" onClick={() => { setLogoFaviconPreview(''); setSettings(prev => ({ ...prev, logoFaviconUrl: '' })); }} style={{ padding: '6px 12px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 6. Default Fallback Card */}
+                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.95rem' }}>🖼️ الشعار الاحتياطي العام (Fallback)</strong>
+                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>شعار افتراضي شامل</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
+                      <div style={{ width: '60px', height: '60px', borderRadius: '8px', border: '2px dashed var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
+                        {logoPreview
+                          ? <img src={logoPreview} alt="Default Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🖼️</span>
+                        }
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>يستخدم لتعويض أي حقل تركه فارغاً</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <label htmlFor="logo-default-input" style={{ display: 'inline-block', padding: '6px 12px', background: '#6366f1', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>رفع</label>
+                          <input id="logo-default-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoUrl', setLogoPreview)} />
+                          {logoPreview && <button type="button" onClick={() => { setLogoPreview(''); setSettings(prev => ({ ...prev, logoUrl: '' })); }} style={{ padding: '6px 12px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>حذف</button>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 

@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Api from '../../services/api';
 import { useBranch } from '../../context/BranchContext';
+import { useTheme } from '../common/ThemeContext';
 import '../../styles/pages/FooterInfoBar.css';
-import logo2 from '../../assets/img/logo2.png';
+import logoFooterLight from '../../assets/img/logo-footer-light.png';
+import logoFooterDark from '../../assets/img/logo-footer-dark.png';
 
 const FooterInfoBar = () => {
   const { getSelectedBranch, branches } = useBranch();
+  const { theme } = useTheme();
+  const [rawConfig, setRawConfig] = useState(null);
+  const [logoError, setLogoError] = useState(false);
   const [config, setConfig] = useState({
     softwareName: 'نظام سجل',
     supportPhone: '+201281018810',
@@ -20,13 +25,14 @@ const FooterInfoBar = () => {
       try {
         const data = await Api.getGlobalConfig();
         if (data) {
+          setRawConfig(data);
           setConfig({
             softwareName: data.softwareName || 'نظام سجل',
             supportPhone: data.supportPhone || '+201281018810',
             facebookUrl: data.facebookUrl || 'https://facebook.com',
             linkedInUrl: data.linkedInUrl || 'https://linkedin.com',
             youtubeUrl: data.youtubeUrl || 'https://youtube.com',
-            logoUrl: data.logoUrl ? Api.getImageUrl(data.logoUrl) : ''
+            logoUrl: ''
           });
         }
       } catch (err) {
@@ -35,6 +41,20 @@ const FooterInfoBar = () => {
     };
     fetchConfig();
   }, []);
+
+  // Reset logo error flag when rawConfig or theme updates
+  useEffect(() => {
+    setLogoError(false);
+  }, [rawConfig, theme]);
+
+  const currentLogo = React.useMemo(() => {
+    const localDefault = theme === 'dark' ? logoFooterDark : logoFooterLight;
+    if (logoError || !rawConfig) return localDefault;
+    const logoToUse = theme === 'dark'
+      ? (rawConfig.logoFooterDarkUrl || rawConfig.logoUrl)
+      : (rawConfig.logoFooterLightUrl || rawConfig.logoUrl);
+    return logoToUse ? Api.getImageUrl(logoToUse) : localDefault;
+  }, [rawConfig, theme, logoError]);
 
   const getArabicDate = () => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -54,14 +74,10 @@ const FooterInfoBar = () => {
         <div className="footer-brand">
           <div className="brand-logo" style={{ background: 'transparent' }}>
             <img 
-              src={config.logoUrl || logo2} 
+              src={currentLogo} 
               alt="Logo" 
               style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }} 
-              onError={() => {
-                if (config.logoUrl && config.logoUrl !== logo2) {
-                  setConfig(prev => ({ ...prev, logoUrl: '' }));
-                }
-              }}
+              onError={() => setLogoError(true)}
             />
           </div>
           <span className="brand-text">{config.softwareName}</span>

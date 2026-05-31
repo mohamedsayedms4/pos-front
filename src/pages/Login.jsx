@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Api, { SERVER_URL } from '../services/api';
-import logo2 from '../assets/img/logo2.png';
+import logoLoginLight from '../assets/img/logo-login-light.png';
+import logoLoginDark from '../assets/img/logo-login-dark.png';
+import logoFavicon from '../assets/img/logo-favicon.png';
+import { useTheme } from '../components/common/ThemeContext';
 
 const Login = () => {
+  const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tenantSlug, setTenantSlug] = useState(localStorage.getItem('pos_tenant_slug') || '');
@@ -13,7 +17,8 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isResolving, setIsResolving] = useState(false);
   const [suggestedTenants, setSuggestedTenants] = useState([]);
-  const [logoUrl, setLogoUrl] = useState(logo2);
+  const [config, setConfig] = useState(null);
+  const [logoError, setLogoError] = useState(false);
   const [softwareName, setSoftwareName] = useState('سجل');
   const navigate = useNavigate();
 
@@ -28,21 +33,35 @@ const Login = () => {
   React.useEffect(() => {
     // Set default favicon
     const link = document.querySelector("link[rel~='icon']");
-    if (link) link.href = logo2;
+    if (link) link.href = logoFavicon;
 
     Api.getGlobalConfig()
       .then((cfg) => {
         if (cfg) {
-          if (cfg.logoUrl) {
-            const fullUrl = Api.getImageUrl(cfg.logoUrl);
-            setLogoUrl(fullUrl);
-            if (link) link.href = fullUrl;
+          setConfig(cfg);
+          const faviconToUse = cfg.logoFaviconUrl || cfg.logoUrl;
+          if (faviconToUse && link) {
+            link.href = Api.getImageUrl(faviconToUse);
           }
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
         }
       })
       .catch((err) => console.error('Error loading global config:', err));
   }, []);
+
+  // Reset logo error when config or theme updates
+  React.useEffect(() => {
+    setLogoError(false);
+  }, [config, theme]);
+
+  const currentLogo = React.useMemo(() => {
+    const localDefault = theme === 'dark' ? logoLoginDark : logoLoginLight;
+    if (logoError || !config) return localDefault;
+    const logoToUse = theme === 'dark'
+      ? (config.logoLoginDarkUrl || config.logoUrl)
+      : (config.logoLoginLightUrl || config.logoUrl);
+    return logoToUse ? Api.getImageUrl(logoToUse) : localDefault;
+  }, [config, theme, logoError]);
 
   // 1. Detect by Subdomain on Mount
   React.useEffect(() => {
@@ -174,16 +193,12 @@ const Login = () => {
       <div className="login-card">
         <div className="login-logo">
           <Link to="/" style={{ display: 'inline-block' }}>
-            {logoUrl ? (
+            {currentLogo ? (
               <img 
-                src={logoUrl} 
+                src={currentLogo} 
                 alt="Logo" 
                 style={{ width: '64px', height: '64px', objectFit: 'contain', marginBottom: '16px' }} 
-                onError={() => {
-                  if (logoUrl !== logo2) {
-                    setLogoUrl(logo2);
-                  }
-                }}
+                onError={() => setLogoError(true)}
               />
             ) : (
               <div className="logo-icon">◆</div>

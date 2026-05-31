@@ -160,7 +160,15 @@ const Settings = () => {
                                 </div>
                                 <div>
                                     <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: 'var(--text-main)' }}>شعار المتجر (اللوجو)</h4>
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '10px' }}>يفضل استخدام صورة PNG شفافة بخلفية مفرغة</p>
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                        يفضل استخدام صورة PNG شفافة أو SVG. المقاسات المستخدمة في النظام:
+                                    </p>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                        <span>• الجانبية والفوتر: 32px × 32px</span>
+                                        <span>• صفحة تسجيل الدخول: 64px × 64px</span>
+                                        <span>• صفحة الهبوط: 44px × 44px</span>
+                                        <span>• أيقونة المتصفح: 16px × 16px</span>
+                                    </div>
                                     <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', display: 'inline-block' }}>
                                         رفع صورة جديدة
                                         <input type="file" className="hidden" onChange={handleLogoUpload} disabled={uploading} accept="image/*" />

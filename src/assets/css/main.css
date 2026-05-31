@@ -149,7 +149,7 @@ body {
   background: var(--bg-black);
   color: var(--text-white);
   line-height: 1.4;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -918,7 +918,7 @@ textarea.form-control {
   position: relative;
   min-height: 100vh;
   min-width: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -937,7 +937,7 @@ textarea.form-control {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  z-index: 150;
+  z-index: 999 !important;
   /* Above everything */
 }
 
@@ -1630,12 +1630,13 @@ body[dir="ltr"] .search-input input {
 
 /* ─── Toast Notifications — Metro ─── */
 .toast-container {
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 9999;
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 100000 !important;
   display: flex;
   flex-direction: column;
+  gap: 10px;
   pointer-events: none;
 }
 
@@ -1651,6 +1652,9 @@ body[dir="ltr"] .search-input input {
   position: relative;
   color: white;
   font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .toast.success {
