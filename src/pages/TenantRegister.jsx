@@ -43,12 +43,11 @@ const TenantRegister = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
       // 1. Register the new tenant
-      await axios.post(`${serverUrl}/api/public/tenants/register`, formData);
+      await axios.post(`${SERVER_URL}/api/public/tenants/register`, formData);
 
       // 2. Resolve tenant ID from slug
-      const resolveRes = await fetch(`${serverUrl}/api/public/tenants/resolve/${encodeURIComponent(formData.slug)}`);
+      const resolveRes = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${encodeURIComponent(formData.slug)}`);
       if (!resolveRes.ok) throw new Error('تعذر التحقق من بيانات الشركة بعد التسجيل');
       const tenantData = await resolveRes.json();
 
