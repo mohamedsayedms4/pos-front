@@ -288,6 +288,7 @@ const LandingPage = () => {
             <a href="#demo" onClick={() => setMobileMenuOpen(false)}>مجالات العمل</a>
             <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>الأسعار</a>
             <a href="#faq" onClick={() => setMobileMenuOpen(false)}>الأسئلة الشائعة</a>
+            <Link to="/blog" onClick={() => setMobileMenuOpen(false)}>المدونة</Link>
             
             <div className="mobile-cta-group">
               <Link to={isLoggedIn ? "/dashboard" : "/login"} className="btn-nav-login">
@@ -800,6 +801,7 @@ const LandingPage = () => {
             <a href="#features">البرامج والحلول</a>
             <a href="#pricing">باقات الاشتراك</a>
             <a href="#faq">الأسئلة الشائعة</a>
+            <Link to="/blog">المدونة والمقالات</Link>
           </div>
 
           <div className="footer-links-col">

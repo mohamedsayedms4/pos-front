@@ -585,6 +585,10 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className="nav-icon">💳</span>
               <span>إدارة الاشتراكات</span>
             </NavLink>
+            <NavLink to="/super-admin/articles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">📰</span>
+              <span>إدارة المقالات</span>
+            </NavLink>
           </>
         )}
       </nav>

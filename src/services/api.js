@@ -2105,6 +2105,104 @@ const Api = {
     return res.data;
   },
 
+  // ─── Articles (Public Blog) ───────────────────────────────────────────────────
+  async getPublicArticles(page = 0, size = 9, search = '', category = '') {
+    const params = new URLSearchParams({ page, size });
+    if (search) params.append('search', search);
+    if (category) params.append('category', category);
+    const res = await fetch(`${API_BASE}/public/articles?${params.toString()}`);
+    if (!res.ok) throw new Error('فشل في جلب المقالات');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async getPublicArticleBySlug(slug) {
+    const res = await fetch(`${API_BASE}/public/articles/${encodeURIComponent(slug)}`);
+    if (!res.ok) throw new Error('المقال غير موجود');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async getPublicFeaturedArticles() {
+    const res = await fetch(`${API_BASE}/public/articles/featured`);
+    if (!res.ok) throw new Error('فشل في جلب المقالات المميزة');
+    const json = await res.json();
+    return json.data;
+  },
+
+  async getPublicArticleCategories() {
+    const res = await fetch(`${API_BASE}/public/articles/categories`);
+    if (!res.ok) throw new Error('فشل في جلب التصنيفات');
+    const json = await res.json();
+    return json.data;
+  },
+
+  // ─── Articles (Super Admin Management) ────────────────────────────────────────
+  async getSuperAdminArticles(page = 0, size = 10) {
+    const res = await this._request(`/super-admin/articles?page=${page}&size=${size}`);
+    return res.data;
+  },
+
+  async createSuperAdminArticle(data) {
+    const res = await this._request('/super-admin/articles', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateSuperAdminArticle(id, data) {
+    const res = await this._request(`/super-admin/articles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async deleteSuperAdminArticle(id) {
+    await this._request(`/super-admin/articles/${id}`, { method: 'DELETE' });
+  },
+
+  async toggleSuperAdminArticlePublish(id) {
+    const res = await this._request(`/super-admin/articles/${id}/publish`, { method: 'PATCH' });
+    return res.data;
+  },
+
+  async archiveSuperAdminArticle(id) {
+    const res = await this._request(`/super-admin/articles/${id}/archive`, { method: 'PATCH' });
+    return res.data;
+  },
+
+  async uploadSuperAdminArticleImage(file, customName) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (customName) {
+      formData.append('customName', customName);
+    }
+    
+    // We cannot use _request easily with FormData because _request sets Content-Type to application/json.
+    // So we'll use a direct fetch with the token.
+    const token = this._getToken();
+    const res = await fetch(`${API_BASE}/super-admin/articles/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    if (!res.ok) {
+      let errStr = 'Upload failed';
+      try {
+        const errJson = await res.json();
+        errStr = errJson.message || errStr;
+      } catch (e) {}
+      throw new Error(errStr);
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
   getImageUrl(url) {
     if (!url) return null;
     if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;

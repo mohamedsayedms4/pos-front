@@ -74,6 +74,9 @@ import TrialBalance from './pages/TrialBalance.jsx'
 import SuperAdminSubscriptions from './pages/SuperAdminSubscriptions.jsx'
 import StoreInactive from './pages/StoreInactive.jsx'
 import Tickets from './pages/Tickets.jsx'
+import Articles from './pages/Articles.jsx'
+import ArticleDetail from './pages/ArticleDetail.jsx'
+import SuperAdminArticles from './pages/SuperAdminArticles.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -141,6 +144,8 @@ function App() {
                 <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/terms" element={<TermsOfUse />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/blog" element={<Articles />} />
+                <Route path="/blog/:slug" element={<ArticleDetail />} />
                 <Route path="/403" element={<Error403 />} />
                 <Route path="/500" element={<Error500 />} />
                 
@@ -265,6 +270,7 @@ function App() {
 
                     {/* Super Admin */}
                     <Route path="/super-admin/subscriptions" element={<SuperAdminSubscriptions />} />
+                    <Route path="/super-admin/articles" element={<SuperAdminArticles />} />
 
                     {/* Technical Support */}
                     <Route path="/tickets" element={<Tickets />} />
