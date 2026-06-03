@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Api, { SERVER_URL } from '../services/api';
 import logoLoginDark from '../assets/img/logo-login-dark.png';
+import { initPixel, trackCompleteRegistration } from '../services/fbPixel';
 
 // Simple SVG Icons to replace MUI
 const Icons = {
@@ -39,6 +40,15 @@ const TenantRegister = () => {
     setFormData({ ...formData, slug: val });
   };
 
+  // Pre-load pixel from global config (in case user lands directly on /register)
+  useEffect(() => {
+    Api.getGlobalConfig()
+      .then((cfg) => {
+        if (cfg?.facebookPixelId) initPixel(cfg.facebookPixelId);
+      })
+      .catch(() => {});
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -48,13 +58,16 @@ const TenantRegister = () => {
 
       // 2. Resolve tenant ID from slug
       const resolveRes = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${encodeURIComponent(formData.slug)}`);
-      if (!resolveRes.ok) throw new Error('تعذر التحقق من بيانات الشركة بعد التسجيل');
+      if (!resolveRes.ok) throw new Error('تعذّر التحقق من بيانات الشركة بعد التسجيل');
       const tenantData = await resolveRes.json();
 
       // 3. Auto-login — no need to ask the user to log in again
       await Api.login(formData.adminEmail, formData.password, tenantData.id);
 
-      // 4. Go straight to the dashboard
+      // 4. 📊 Facebook Pixel — حدث إتمام التسجيل بنجاح
+      trackCompleteRegistration({ businessName: formData.businessName });
+
+      // 5. Go straight to the dashboard
       navigate('/dashboard');
     } catch (err) {
       alert(err.response?.data || err.message || 'Registration failed. Please try again.');

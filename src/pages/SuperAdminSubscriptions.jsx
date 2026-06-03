@@ -127,6 +127,7 @@ const SuperAdminSubscriptions = () => {
     facebookUrl: '',
     linkedInUrl: '',
     youtubeUrl: '',
+    facebookPixelId: '',
     logoUrl: '',
     logoSidebarLightUrl: '',
     logoSidebarDarkUrl: '',
@@ -205,6 +206,7 @@ const SuperAdminSubscriptions = () => {
           facebookUrl: configData.facebookUrl || '',
           linkedInUrl: configData.linkedInUrl || '',
           youtubeUrl: configData.youtubeUrl || '',
+          facebookPixelId: configData.facebookPixelId || '',
           logoUrl: configData.logoUrl || '',
           logoSidebarLightUrl: configData.logoSidebarLightUrl || '',
           logoSidebarDarkUrl: configData.logoSidebarDarkUrl || '',
@@ -1217,6 +1219,51 @@ const SuperAdminSubscriptions = () => {
                   onChange={(e) => setSettings({ ...settings, youtubeUrl: e.target.value })}
                   style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
                 />
+              </div>
+
+              {/* ─── Facebook Pixel ID ─────────────────────────────────────── */}
+              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
+                  📊 Facebook Pixel ID (معرّف بيكسل فيسبوك للإعلانات):
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    className="sa-sub-form-input"
+                    placeholder="مثال: 1234567890123456"
+                    value={settings.facebookPixelId}
+                    onChange={(e) => setSettings({ ...settings, facebookPixelId: e.target.value.trim() })}
+                    style={{
+                      width: '100%',
+                      direction: 'ltr',
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      border: settings.facebookPixelId ? '1.5px solid #1877f2' : '1.5px solid var(--sa-sub-border)',
+                      background: 'var(--sa-sub-bg)',
+                      color: 'var(--sa-sub-text-primary)',
+                      fontFamily: 'monospace',
+                      fontSize: '1rem',
+                      letterSpacing: '1px'
+                    }}
+                  />
+                  {settings.facebookPixelId && (
+                    <span style={{
+                      position: 'absolute',
+                      left: '16px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      fontSize: '0.75rem',
+                      color: '#1877f2',
+                      fontWeight: 'bold',
+                      pointerEvents: 'none'
+                    }}>✓ Pixel ID محدد</span>
+                  )}
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--sa-sub-text-secondary)', marginTop: '6px', lineHeight: '1.5' }}>
+                  🔍 ستجد الـ Pixel ID في: <strong>Meta Business Suite → Events Manager → اختار البيكسل → Settings</strong>
+                  <br />بعد الحفظ، سيُفعَّل البيكسل تلقائياً في Landing Page وصفحة التسجيل.
+                </p>
               </div>
 
               <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-start', marginTop: '16px' }}>

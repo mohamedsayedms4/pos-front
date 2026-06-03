@@ -61,6 +61,36 @@ export function trackPageView() {
 }
 
 /**
+ * Fires when a visitor clicks a "Start for Free" / CTA register button.
+ * Used to track marketing interest (Lead generation).
+ */
+export function trackLead() {
+  fbq('track', 'Lead');
+}
+
+/**
+ * Fires when a new tenant account is successfully created.
+ * @param {object} data - Optional metadata { businessName }
+ */
+export function trackCompleteRegistration(data = {}) {
+  fbq('track', 'CompleteRegistration', {
+    status: true,
+    content_name: data.businessName || 'New Account',
+  });
+}
+
+/**
+ * Fires when an existing user successfully logs in.
+ * Custom event — useful for building "active users" retargeting audiences.
+ * @param {object} data - Optional metadata { businessName }
+ */
+export function trackCustomLogin(data = {}) {
+  fbq('trackCustom', 'Login', {
+    content_name: data.businessName || 'Existing User',
+  });
+}
+
+/**
  * Fires when a customer views a product detail page.
  * @param {object} product - PublicProductDto
  */

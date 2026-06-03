@@ -5,6 +5,7 @@ import logoLoginLight from '../assets/img/logo-login-light.png';
 import logoLoginDark from '../assets/img/logo-login-dark.png';
 import logoFavicon from '../assets/img/logo-favicon.png';
 import { useTheme } from '../components/common/ThemeContext';
+import { initPixel, trackCustomLogin } from '../services/fbPixel';
 
 const Login = () => {
   const { theme } = useTheme();
@@ -44,6 +45,9 @@ const Login = () => {
             link.href = Api.getImageUrl(faviconToUse);
           }
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
+
+          // ── Facebook Pixel: تهيئة البيكسل من الإعدادات العامة ─────────────
+          if (cfg.facebookPixelId) initPixel(cfg.facebookPixelId);
         }
       })
       .catch((err) => console.error('Error loading global config:', err));
@@ -181,6 +185,10 @@ const Login = () => {
 
       // 3. Perform Login
       await Api.login(email, password, resolvedId);
+
+      // 4. 📊 Facebook Pixel — حدث تسجيل دخول ناجح
+      trackCustomLogin({ businessName });
+
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'فشل تسجيل الدخول');

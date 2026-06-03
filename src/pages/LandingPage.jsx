@@ -5,6 +5,7 @@ import logoLandingLight from '../assets/img/logo-landing-light.png';
 import logoLandingDark from '../assets/img/logo-landing-dark.png';
 import { useTheme } from '../components/common/ThemeContext';
 import systemImg from '../assets/img/landing-page/system.png';
+import { initPixel, trackPageView, trackLead as fbTrackLead } from '../services/fbPixel';
 
 // SVG Icons for elegant UI look to avoid external library loading issues
 const Icons = {
@@ -162,6 +163,12 @@ const LandingPage = () => {
             if (link) link.href = Api.getImageUrl(faviconToUse);
           }
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
+
+          // ── Facebook Pixel: تهيئة البيكسل من الإعدادات العامة ─────────────
+          if (cfg.facebookPixelId) {
+            initPixel(cfg.facebookPixelId);
+            trackPageView();
+          }
         }
       })
       .catch((err) => console.error('Error loading global config:', err));
@@ -306,7 +313,7 @@ const LandingPage = () => {
               <span>تسجيل الدخول</span>
             </Link>
             <div className="btn-register-container">
-              <Link to="/register" className="btn-nav-register">ابدأ الاستخدام مجاناً</Link>
+              <Link to="/register" className="btn-nav-register" onClick={() => fbTrackLead()}>ابدأ الاستخدام مجاناً</Link>
             </div>
             
           </div>
@@ -416,7 +423,7 @@ const LandingPage = () => {
           </p>
 
           <div className="hero-cta-area animate-on-scroll fade-up delay-200">
-            <Link to="/register" className="btn-hero-green">
+            <Link to="/register" className="btn-hero-green" onClick={() => fbTrackLead()}>
               ابدأ الاستخدام مجاناً
             </Link>
             
@@ -777,7 +784,7 @@ const LandingPage = () => {
         <div className="container banner-inner">
           <h2>ابدأ الآن في تنظيم وإدارة أعمالك بكفاءة متناهية</h2>
           <p>انضم لآلاف الشركات الناجحة التي تعتمد على أنظمتنا السحابية الذكية لتبسيط دورتها المستندية يومياً.</p>
-          <Link to="/register" className="btn-banner-register">ابدأ استخدام النظام مجاناً الآن</Link>
+          <Link to="/register" className="btn-banner-register" onClick={() => fbTrackLead()}>ابدأ استخدام النظام مجاناً الآن</Link>
         </div>
       </section>
 
