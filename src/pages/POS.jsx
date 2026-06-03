@@ -8,6 +8,7 @@ import ThermalReceipt from '../components/common/ThermalReceipt';
 import { useBranch } from '../context/BranchContext';
 import { db, saveOfflineSale } from '../services/db';
 import SyncService from '../services/SyncService';
+import beepSound from '../assets/sound/freesound_community-store-scanner-beep-90395.mp3';
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 const PAGE_SIZE = 24;
@@ -46,6 +47,7 @@ const POS = () => {
   const { toast, confirm } = useGlobalUI();
   const searchInputRef = useRef(null);
   const stompClientRef = useRef(null);
+  const beepRef = useRef(new Audio(beepSound));
 
   const [categories, setCategories] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -273,12 +275,18 @@ const POS = () => {
           setTimeout(() => toast('تجاوزت الرصيد المتاح', 'warning'), 10);
           return prev;
         }
+        // 🔊 Beep
+        beepRef.current.currentTime = 0;
+        beepRef.current.play().catch(() => {});
         return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
       }
       if (product.stock <= 0) {
         setTimeout(() => toast('نفذ المخزون', 'warning'), 10);
         return prev;
       }
+      // 🔊 Beep
+      beepRef.current.currentTime = 0;
+      beepRef.current.play().catch(() => {});
       return [...prev, { id: product.id, name: product.name, price: product.salePrice, qty: 1, stock: product.stock, unitName: product.unitName }];
     });
     if (searchInputRef.current) searchInputRef.current.focus();
