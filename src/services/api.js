@@ -10,9 +10,14 @@ export const SERVER_URL = (typeof window !== 'undefined' && window.location.host
 
 // Use production URL when not running on Vite dev server (port 5173)
 export const API_BASE = `${SERVER_URL}/api/v1`;
-// Centralized LocalStorage Obfuscation to protect sensitive client-side data
+// Centralized LocalStorage & SessionStorage Obfuscation to protect sensitive client-side data
 const originalGetItem = localStorage.getItem.bind(localStorage);
 const originalSetItem = localStorage.setItem.bind(localStorage);
+const originalRemoveItem = localStorage.removeItem.bind(localStorage);
+
+const originalSessionGetItem = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem.bind(sessionStorage) : null;
+const originalSessionSetItem = (typeof sessionStorage !== 'undefined') ? sessionStorage.setItem.bind(sessionStorage) : null;
+const originalSessionRemoveItem = (typeof sessionStorage !== 'undefined') ? sessionStorage.removeItem.bind(sessionStorage) : null;
 
 const SEC_KEY = 'pos_secure_obfuscation_salt_2026';
 const PREFIX = 'possec_';
@@ -58,7 +63,10 @@ function deobfuscate(encoded) {
 }
 
 localStorage.getItem = function (key) {
-  const val = originalGetItem(key);
+  let val = originalGetItem(key);
+  if (!val && originalSessionGetItem) {
+    val = originalSessionGetItem(key);
+  }
   if (ENCRYPTED_KEYS.includes(key) && val) {
     return deobfuscate(val);
   }
@@ -66,10 +74,25 @@ localStorage.getItem = function (key) {
 };
 
 localStorage.setItem = function (key, val) {
+  const rememberMe = originalGetItem('pos_remember_me') !== 'false';
   if (ENCRYPTED_KEYS.includes(key) && val !== null && val !== undefined) {
-    originalSetItem(key, obfuscate(String(val)));
+    const obfuscatedVal = obfuscate(String(val));
+    if (rememberMe) {
+      originalSetItem(key, obfuscatedVal);
+      if (originalSessionRemoveItem) originalSessionRemoveItem(key);
+    } else {
+      if (originalSessionSetItem) originalSessionSetItem(key, obfuscatedVal);
+      originalRemoveItem(key);
+    }
   } else {
     originalSetItem(key, val);
+  }
+};
+
+localStorage.removeItem = function (key) {
+  originalRemoveItem(key);
+  if (originalSessionRemoveItem) {
+    originalSessionRemoveItem(key);
   }
 };
 

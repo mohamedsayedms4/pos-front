@@ -11,6 +11,7 @@ const Login = () => {
   const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(localStorage.getItem('pos_remember_me') !== 'false');
   const [tenantSlug, setTenantSlug] = useState(localStorage.getItem('pos_tenant_slug') || '');
   const [businessName, setBusinessName] = useState('');
   const [isAutoTenant, setIsAutoTenant] = useState(false);
@@ -183,7 +184,10 @@ const Login = () => {
         return;
       }
 
-      // 3. Perform Login
+      // 3. Save remember me choice
+      localStorage.setItem('pos_remember_me', rememberMe ? 'true' : 'false');
+
+      // 4. Perform Login
       await Api.login(email, password, resolvedId);
 
       // 4. 📊 Facebook Pixel — حدث تسجيل دخول ناجح
@@ -245,6 +249,19 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               dir="ltr"
             />
+          </div>
+
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', userSelect: 'none', cursor: 'pointer' }}>
+            <input
+              id="rememberMeInput"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--metro-blue)' }}
+            />
+            <label htmlFor="rememberMeInput" style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: 0, fontWeight: '600' }}>
+              تذكرني على هذا الجهاز
+            </label>
           </div>
 
           {suggestedTenants.length > 1 && (
