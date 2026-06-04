@@ -1045,7 +1045,7 @@ textarea.form-control {
   padding: 6px 14px;
   background: transparent;
   color: var(--text-muted);
-  border: 1px solid #333;
+  border: 1px solid var(--border-input);
   font-family: inherit;
   font-size: 0.75rem;
   font-weight: 600;
@@ -4405,12 +4405,25 @@ body[dir="rtl"] .metro-tilt-br:active {
     padding: 0 !important;
     justify-content: center;
     margin: 0 !important;
-    border-radius: 4px;
+    border-radius: 50% !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--metro-red) !important;
+    display: flex;
+    align-items: center;
+    transition: background-color var(--transition-fast);
+  }
+
+  .btn-logout:active {
+    background-color: rgba(232, 17, 35, 0.15) !important;
   }
 
   .btn-logout span:first-child {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .topbar-left {

@@ -156,7 +156,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
         <button className="btn-logout" onClick={handleLogout} title="تسجيل الخروج">
-          <span>⏻</span>
+          <span><i className="fa-solid fa-power-off"></i></span>
           <span className="logout-text">خروج</span>
         </button>
       </div>
