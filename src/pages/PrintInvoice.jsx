@@ -138,64 +138,75 @@ const PrintInvoice = () => {
         .print-controls {
           margin-bottom: 20px;
           display: flex;
-          gap: 15px;
+          gap: 10px;
+          flex-wrap: wrap;
+          justify-content: center;
+          width: 100%;
+          max-width: 500px;
         }
-        .print-btn {
-          background-color: #007bff;
+        .print-btn, .download-btn, .share-invoice-btn, .close-btn {
           color: white;
           border: none;
-          padding: 10px 20px;
-          font-size: 16px;
+          padding: 10px 18px;
+          font-size: 15px;
           border-radius: 8px;
           cursor: pointer;
           font-family: 'Cairo', sans-serif;
           font-weight: bold;
-          box-shadow: 0 4px 6px rgba(0,123,255,0.2);
           transition: background 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+        }
+        .print-btn {
+          background-color: #007bff;
+          box-shadow: 0 4px 6px rgba(0,123,255,0.2);
         }
         .print-btn:hover { background-color: #0056b3; }
         .download-btn {
           background-color: #28a745;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          font-size: 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-family: 'Cairo', sans-serif;
-          font-weight: bold;
           box-shadow: 0 4px 6px rgba(40,167,69,0.2);
-          transition: background 0.2s;
         }
         .download-btn:hover { background-color: #218838; }
         .share-invoice-btn {
           background-color: #17a2b8;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          font-size: 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-family: 'Cairo', sans-serif;
-          font-weight: bold;
           box-shadow: 0 4px 6px rgba(23,162,184,0.2);
-          transition: background 0.2s;
         }
         .share-invoice-btn:hover { background-color: #138496; }
         .close-btn {
           background-color: #dc3545;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          font-size: 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-family: 'Cairo', sans-serif;
-          font-weight: bold;
           box-shadow: 0 4px 6px rgba(220,53,69,0.2);
-          transition: background 0.2s;
         }
         .close-btn:hover { background-color: #a71d2a; }
+
+        @media (max-width: 600px) {
+          .print-page-wrapper {
+            padding: 12px 8px !important;
+          }
+          .print-controls {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px !important;
+            max-width: 100% !important;
+          }
+          .print-btn, .download-btn, .share-invoice-btn, .close-btn {
+            font-size: 13px !important;
+            padding: 10px 8px !important;
+            justify-content: center;
+          }
+          .share-invoice-container {
+            width: 100%;
+          }
+          .share-trigger-btn {
+            width: 100%;
+            justify-content: center !important;
+          }
+          .receipt-preview-container {
+            width: 100%;
+            overflow-x: auto;
+          }
+        }
         .receipt-preview-container {
           background: transparent;
           padding: 0;

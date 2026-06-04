@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Api from '../../services/api';
+import html2pdf from 'html2pdf.js';
 
 const ShareInvoice = ({ invoice, btnClassName = 'btn-ghost' }) => {
   const [tenantName, setTenantName] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
   const [customPhone, setCustomPhone] = useState('');
+  const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'generating'
 
   useEffect(() => {
     Api.getCurrentTenantDetails()
@@ -127,6 +129,66 @@ ${bold('الإجمالي:')} ${Number(invoice.totalAmount).toFixed(2)} ج.م`;
 
   const isShareApiSupported = typeof navigator !== 'undefined' && !!navigator.share;
 
+  const printFormat = localStorage.getItem('print_format') || '80mm';
+
+  const generatePdfBlob = () => {
+    return new Promise((resolve, reject) => {
+      const element = document.getElementById('printable-receipt');
+      if (!element) return reject(new Error('Receipt element not found'));
+
+      const opt = {
+        margin: 0,
+        filename: `invoice_${invoice.invoiceNumber || invoice.id}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: printFormat === 'A4'
+          ? { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          : { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+      };
+
+      document.fonts.ready.then(() => {
+        html2pdf().from(element).set(opt).outputPdf('blob').then(blob => {
+          resolve(blob);
+        }).catch(reject);
+      }).catch(() => {
+        html2pdf().from(element).set(opt).outputPdf('blob').then(blob => {
+          resolve(blob);
+        }).catch(reject);
+      });
+    });
+  };
+
+  const handleShareAsPdf = async () => {
+    setShareStatus('generating');
+    try {
+      const blob = await generatePdfBlob();
+      const fileName = `invoice_${invoice.invoiceNumber || invoice.id}.pdf`;
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `فاتورة رقم ${invoice.invoiceNumber || invoice.id}`,
+          text: `فاتورة من ${tenantName || 'المتجر'}`,
+          files: [file],
+        });
+      } else {
+        // Fallback: download the PDF
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('PDF share failed:', err);
+      }
+    } finally {
+      setShareStatus('idle');
+    }
+  };
+
   return (
     <div className="share-invoice-container" style={{ position: 'relative', display: 'inline-block' }}>
       <button 
@@ -157,6 +219,20 @@ ${bold('الإجمالي:')} ${Number(invoice.totalAmount).toFixed(2)} ج.م`;
             </div>
 
             <div className="share-options-list">
+              {/* PDF Share button - primary action */}
+              <button 
+                onClick={handleShareAsPdf} 
+                className={`share-opt-btn pdf-share-btn ${shareStatus === 'generating' ? 'generating' : ''}`}
+                disabled={shareStatus === 'generating'}
+              >
+                <svg viewBox="0 0 24 24" className="share-icon-svg" fill="currentColor">
+                  <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+                </svg>
+                {shareStatus === 'generating' ? 'جاري إنشاء PDF...' : '📤 مشاركة كـ PDF'}
+              </button>
+
+              <div className="share-divider-label">أو شارك نصًا عبر:</div>
+
               <button onClick={handleWhatsAppShare} className="share-opt-btn wa-btn">
                 <svg viewBox="0 0 24 24" className="share-icon-svg" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.458 5.704 1.459h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
@@ -330,6 +406,34 @@ ${bold('الإجمالي:')} ${Number(invoice.totalAmount).toFixed(2)} ج.م`;
         }
         .native-btn:hover {
           background: rgba(170, 0, 255, 0.1);
+        }
+
+        .pdf-share-btn {
+          border-left: 3px solid #e74c3c;
+          background: rgba(231, 76, 60, 0.08);
+          font-size: 0.9rem;
+          padding: 10px 12px;
+        }
+        .pdf-share-btn:hover {
+          background: rgba(231, 76, 60, 0.18);
+        }
+        .pdf-share-btn.generating {
+          opacity: 0.7;
+          cursor: wait;
+          animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.7; }
+          50% { opacity: 1; }
+        }
+
+        .share-divider-label {
+          font-size: 0.72rem;
+          color: var(--text-muted, #888);
+          text-align: center;
+          padding: 6px 0 2px;
+          border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.05));
+          margin-top: 4px;
         }
 
         @keyframes metroSlideUp {
