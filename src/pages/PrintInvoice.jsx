@@ -5,6 +5,7 @@ import Api from '../services/api';
 import ThermalReceipt from '../components/common/ThermalReceipt';
 import A4Receipt from '../components/common/A4Receipt';
 import Loader from '../components/common/Loader';
+import ShareInvoice from '../components/common/ShareInvoice';
 
 const PrintInvoice = () => {
   const { id } = useParams();
@@ -102,6 +103,7 @@ const PrintInvoice = () => {
         <button onClick={handleDownloadPdf} className="download-btn">
           📥 تنزيل الفاتورة
         </button>
+        <ShareInvoice invoice={invoice} btnClassName="share-invoice-btn" />
         <button onClick={() => window.close()} className="close-btn">
           ❌ إغلاق المعاينة
         </button>
@@ -166,6 +168,20 @@ const PrintInvoice = () => {
           transition: background 0.2s;
         }
         .download-btn:hover { background-color: #218838; }
+        .share-invoice-btn {
+          background-color: #17a2b8;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          font-size: 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-family: 'Cairo', sans-serif;
+          font-weight: bold;
+          box-shadow: 0 4px 6px rgba(23,162,184,0.2);
+          transition: background 0.2s;
+        }
+        .share-invoice-btn:hover { background-color: #138496; }
         .close-btn {
           background-color: #dc3545;
           color: white;

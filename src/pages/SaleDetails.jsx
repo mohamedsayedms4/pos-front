@@ -5,6 +5,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
 import ModalContainer from '../components/common/ModalContainer';
+import ShareInvoice from '../components/common/ShareInvoice';
 
 const SaleDetails = () => {
   const { id } = useParams();
@@ -203,6 +204,7 @@ const SaleDetails = () => {
                 👤 عرض حساب العميل
               </Link>
             )}
+            <ShareInvoice invoice={data} btnClassName="btn-ghost" />
           </div>
         </div>
       </div>
