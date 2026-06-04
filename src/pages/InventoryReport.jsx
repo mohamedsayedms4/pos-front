@@ -128,22 +128,17 @@ const InventoryReport = () => {
                                                     <small style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>إجمالي القطع</small>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '12px' }}>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                            <td style={{ verticalAlign: 'middle' }}>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                                                     {product.warehouseStocks && product.warehouseStocks.length > 0 ? product.warehouseStocks.map(ws => (
-                                                        <div key={ws.warehouseId} className="modern-stock-tag" title={`فرع: ${ws.branchName}`}>
-                                                            <div className="tag-header">
-                                                                <span className="branch-dot"></span>
-                                                                {ws.warehouseName}
-                                                            </div>
-                                                            <div className="tag-body">
-                                                                {Number(ws.quantity).toLocaleString()}
-                                                            </div>
+                                                        <div key={ws.warehouseId} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-hover)', padding: '4px 10px', borderRadius: '20px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
+                                                            <span style={{ color: 'var(--text-muted)' }}>{ws.branchName} - {ws.warehouseName}:</span>
+                                                            <strong style={{ color: 'var(--color-primary)' }}>{Number(ws.quantity).toLocaleString()}</strong>
                                                         </div>
                                                     )) : (
-                                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', padding: '5px' }}>
-                                                            غير متوفر في أي مخزن حالياً
-                                                        </div>
+                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                                                            غير متوفر
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>
@@ -178,54 +173,11 @@ const InventoryReport = () => {
             </div>
 
             <style dangerouslySetInnerHTML={{ __html: `
-                .modern-stock-tag {
-                    display: flex;
-                    flex-direction: column;
-                    min-width: 100px;
-                    border: 1px solid var(--border-color);
-                    border-radius: 10px;
-                    overflow: hidden;
-                    transition: all 0.2s ease;
-                    background: var(--bg-card);
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                }
-                .modern-stock-tag:hover {
-                    transform: translateY(-2px);
-                    border-color: var(--color-primary);
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                }
-                .tag-header {
-                    padding: 4px 10px;
-                    background: var(--bg-hover);
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    color: var(--text-muted);
-                    border-bottom: 1px solid var(--border-color);
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-                .branch-dot {
-                    width: 6px;
-                    height: 6px;
-                    border-radius: 50%;
-                    background: var(--accent-emerald);
-                }
-                .tag-body {
-                    padding: 6px 10px;
-                    font-size: 1rem;
-                    font-weight: 800;
-                    color: var(--color-primary);
-                    text-align: center;
-                }
                 .table-wrapper {
                     overflow-x: auto;
                 }
-                .data-table th {
-                    background: var(--bg-hover);
-                    text-transform: uppercase;
-                    font-size: 0.75rem;
-                    letter-spacing: 0.5px;
+                .data-table th, .data-table td {
+                    text-align: right;
                 }
             `}} />
         </div>

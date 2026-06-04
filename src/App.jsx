@@ -20,6 +20,7 @@ import SupplierDetails from './pages/SupplierDetails.jsx'
 import AuditDetails from './pages/AuditDetails.jsx'
 import Roles from './pages/Roles.jsx'
 import StockReceipts from './pages/StockReceipts.jsx'
+import StockTransfers from './pages/StockTransfers.jsx'
 import POS from './pages/POS.jsx'
 import Customers from './pages/Customers.jsx'
 import CustomerDetails from './pages/CustomerDetails.jsx'
@@ -64,6 +65,8 @@ import Branches from './pages/Branches.jsx'
 import BranchManagement from './pages/BranchManagement.jsx'
 import Warehouses from './pages/Warehouses.jsx'
 import InventoryReport from './pages/InventoryReport.jsx'
+import InventoryChecks from './pages/InventoryChecks.jsx'
+import InventoryCheckDetails from './pages/InventoryCheckDetails.jsx'
 import FacebookAdsDashboard from './pages/FacebookAdsDashboard.jsx'
 import OfflineAudit from './pages/OfflineAudit.jsx'
 import EmployeeCustody from './pages/EmployeeCustody.jsx'
@@ -84,6 +87,7 @@ import TileEditorModal from './components/common/TileEditorModal.jsx'
 
 import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
+import PrintInvoice from './pages/PrintInvoice.jsx'
 
 import MainLayout from './components/layout/MainLayout.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
@@ -154,6 +158,7 @@ function App() {
                   <Route path="/order-customer" element={<OrderCustomer />} />
                   <Route path="/order-cashier" element={<OrderCashier />} />
                   <Route path="/store-inactive" element={<StoreInactive />} />
+                  <Route path="/print-receipt/:id" element={<PrintInvoice />} />
                   <Route element={<MainLayout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
                     
@@ -181,6 +186,8 @@ function App() {
                       <Route path="/categories/:id" element={<CategoryDetails />} />
                       <Route path="/categories/:categoryId/products" element={<Products />} />
                       <Route path="/inventory/report" element={<InventoryReport />} />
+                      <Route path="/inventory-checks" element={<InventoryChecks />} />
+                      <Route path="/inventory-checks/:id" element={<InventoryCheckDetails />} />
                     </Route>
 
                     {/* Damaged Goods */}
@@ -266,6 +273,7 @@ function App() {
                     </Route>
                     <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>
                       <Route path="/warehouses" element={<Warehouses />} />
+                      <Route path="/stock-transfers" element={<StockTransfers />} />
                     </Route>
 
                     {/* Super Admin */}

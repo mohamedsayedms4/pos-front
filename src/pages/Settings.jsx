@@ -25,6 +25,30 @@ const Settings = () => {
     });
     const [savingSmtp, setSavingSmtp] = useState(false);
 
+    // Print Settings State
+    const [printFormat, setPrintFormat] = useState(() => localStorage.getItem('print_format') || '80mm');
+    const [printTemplate, setPrintTemplate] = useState(() => localStorage.getItem('print_template') || 'standard');
+    const [printAutoTrigger, setPrintAutoTrigger] = useState(() => localStorage.getItem('print_auto_trigger') === 'true');
+
+    // Sync template default when format changes
+    useEffect(() => {
+        const savedFormat = localStorage.getItem('print_format') || '80mm';
+        const savedTemplate = localStorage.getItem('print_template');
+        if (printFormat !== savedFormat || !savedTemplate) {
+            const defaultTemplate = printFormat === 'A4' ? 'classic' : 'standard';
+            setPrintTemplate(defaultTemplate);
+            localStorage.setItem('print_template', defaultTemplate);
+        }
+    }, [printFormat]);
+
+    const handleSavePrintSettings = (e) => {
+        e.preventDefault();
+        localStorage.setItem('print_format', printFormat);
+        localStorage.setItem('print_template', printTemplate);
+        localStorage.setItem('print_auto_trigger', String(printAutoTrigger));
+        toast('تم حفظ إعدادات الطباعة بنجاح على هذا الجهاز 🖨️', 'success');
+    };
+
     useEffect(() => {
         loadInfo();
     }, []);
@@ -368,6 +392,74 @@ const Settings = () => {
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            {/* Print & Templates Settings Card */}
+            <div className="card" style={{ marginBottom: '20px' }}>
+                <div className="products-header-premium">
+                    <div className="row-premium title-row">
+                        <h3 style={{ margin: 0 }}>🖨️ إعدادات الطباعة والقوالب (للجهاز الحالي)</h3>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button 
+                                type="button"
+                                onClick={handleSavePrintSettings}
+                                className="btn btn-primary"
+                            >
+                                حفظ إعدادات الطباعة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="card-body">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                        <div className="form-group">
+                            <label>تنسيق وحجم ورق الفاتورة</label>
+                            <select 
+                                className="form-control" 
+                                value={printFormat} 
+                                onChange={e => setPrintFormat(e.target.value)}
+                            >
+                                <option value="80mm">📄 فاتورة كاشير حرارية (80mm)</option>
+                                <option value="A4">📝 فاتورة مبيعات كاملة (A4)</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label>قالب تصميم الفاتورة</label>
+                            <select 
+                                className="form-control" 
+                                value={printTemplate} 
+                                onChange={e => setPrintTemplate(e.target.value)}
+                            >
+                                {printFormat === 'A4' ? (
+                                    <>
+                                        <option value="classic">🏛️ كلاسيكي (جدول ممتد تقليدي)</option>
+                                        <option value="modern">⚡ عصري / بريميوم (ملون ومقاطع أنيقة)</option>
+                                    </>
+                                ) : (
+                                    <>
+                                        <option value="standard">🧾 قياسي (التفاصيل الكاملة والباركود)</option>
+                                        <option value="compact">✂️ موفر / مبسط (توفير في طول الورق)</option>
+                                    </>
+                                )}
+                            </select>
+                        </div>
+
+                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', gridColumn: '1 / -1' }}>
+                            <input 
+                                type="checkbox" 
+                                id="printAutoTriggerToggle"
+                                checked={printAutoTrigger}
+                                onChange={e => setPrintAutoTrigger(e.target.checked)}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="printAutoTriggerToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
+                                فتح نافذة الطباعة تلقائياً عند فتح الفاتورة
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 

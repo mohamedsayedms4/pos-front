@@ -100,8 +100,8 @@ const ProfitLoss = () => {
       <div className="card mb-4">
         <div className="card-header">
           <h3>📊 فلترة التقرير المالي</h3>
-          <div className="toolbar">
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className="toolbar" style={{ flexWrap: 'wrap' }}>
+            <div className="filter-toolbar">
               <select 
                 className="form-control" 
                 value={selectedBranchId} 
@@ -135,7 +135,7 @@ const ProfitLoss = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+      <div className="chart-grid">
         {/* Main Stats Chart */}
         <div className="card">
           <div className="card-header"><h3>🔄 الهيكل المالي</h3></div>
@@ -189,42 +189,50 @@ const ProfitLoss = () => {
       <div className="card" style={{ marginTop: '20px' }}>
         <div className="card-header"><h3>📝 تفاصيل البنود</h3></div>
         <div className="card-body no-padding">
-          <table className="data-table">
-            <tbody>
-              <tr>
-                <td>إجمالي المبيعات (Sale Invoices)</td>
-                <td className="text-success" dir="ltr">+{data.totalSales.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td>إجمالي المرتجعات (Returns)</td>
-                <td className="text-danger" dir="ltr">-{data.totalReturns.toLocaleString()}</td>
-              </tr>
-              <tr style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
-                <td>صافي الإيرادات (Net Revenue)</td>
-                <td dir="ltr">{data.netRevenue.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td>تكلفة البضاعة المباعة (COGS)</td>
-                <td className="text-danger" dir="ltr">-{data.costOfGoodsSold.toLocaleString()}</td>
-              </tr>
-              <tr style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 'bold' }}>
-                <td>إجمالي الربح (Gross Profit)</td>
-                <td dir="ltr">{data.grossProfit.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td>إجمالي المصروفات (Expenses)</td>
-                <td className="text-danger" dir="ltr">-{data.totalExpenses.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td>خسائر التوالف (Damaged Goods)</td>
-                <td className="text-danger" dir="ltr">-{data.totalDamagedLoss.toLocaleString()}</td>
-              </tr>
-              <tr style={{ background: 'var(--metro-green)', color: 'white', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                <td>صافي الربح النهائي (Net Profit)</td>
-                <td dir="ltr">{data.netProfit.toLocaleString()} ج.م</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>البند (Item)</th>
+                  <th style={{ width: '150px' }}>القيمة (Value)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>إجمالي المبيعات (Sale Invoices)</td>
+                  <td className="text-success" dir="ltr" style={{ fontWeight: 'bold' }}>+{data.totalSales.toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td>إجمالي المرتجعات (Returns)</td>
+                  <td className="text-danger" dir="ltr" style={{ fontWeight: 'bold' }}>-{data.totalReturns.toLocaleString()}</td>
+                </tr>
+                <tr style={{ background: 'var(--bg-hover)' }}>
+                  <td style={{ fontWeight: 'bold' }}>صافي الإيرادات (Net Revenue)</td>
+                  <td dir="ltr" style={{ fontWeight: 'bold' }}>{data.netRevenue.toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td>تكلفة البضاعة المباعة (COGS)</td>
+                  <td className="text-danger" dir="ltr" style={{ fontWeight: 'bold' }}>-{data.costOfGoodsSold.toLocaleString()}</td>
+                </tr>
+                <tr style={{ background: 'var(--bg-hover)' }}>
+                  <td style={{ fontWeight: 'bold' }}>إجمالي الربح (Gross Profit)</td>
+                  <td dir="ltr" style={{ fontWeight: 'bold' }}>{data.grossProfit.toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td>إجمالي المصروفات (Expenses)</td>
+                  <td className="text-danger" dir="ltr" style={{ fontWeight: 'bold' }}>-{data.totalExpenses.toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td>خسائر التوالف (Damaged Goods)</td>
+                  <td className="text-danger" dir="ltr" style={{ fontWeight: 'bold' }}>-{data.totalDamagedLoss.toLocaleString()}</td>
+                </tr>
+                <tr style={{ background: 'var(--metro-green)', color: 'white' }}>
+                  <td style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>صافي الربح النهائي (Net Profit)</td>
+                  <td dir="ltr" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{data.netProfit.toLocaleString()} ج.م</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -254,6 +262,42 @@ const ProfitLoss = () => {
           </div>
         </div>
       )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .chart-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-top: 20px;
+        }
+        .filter-toolbar {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+          width: 100%;
+        }
+        @media (max-width: 768px) {
+          .chart-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .filter-toolbar {
+             flex-direction: column;
+             align-items: stretch;
+          }
+          .filter-toolbar > select, .filter-toolbar > input {
+            width: 100% !important;
+          }
+          .toolbar {
+             flex-direction: column;
+             align-items: stretch !important;
+             gap: 15px;
+          }
+          .toolbar .btn {
+             width: 100%;
+          }
+        }
+      `}} />
     </div>
   );
 };

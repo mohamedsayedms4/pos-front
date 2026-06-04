@@ -16,6 +16,7 @@ const Sales = () => {
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [returnItems, setReturnItems] = useState([]);
     const [returnNotes, setReturnNotes] = useState('');
+    const [formErrors, setFormErrors] = useState({});
 
     const location = useLocation();
     const [searchParams] = useSearchParams();
@@ -82,6 +83,7 @@ const Sales = () => {
 
     const openReturnModal = (sale) => {
         setActiveSale(sale);
+        setFormErrors({});
         // Initialize return items with 0 quantity
         setReturnItems((sale.items || []).map(i => ({
             ...i,
@@ -99,6 +101,7 @@ const Sales = () => {
         }
 
         confirm('هل أنت متأكد من اتمام عملية المرتجع؟ سيتم استرجاع الأصناف للمخزن وخصم المبلغ من الخزنة.', async () => {
+            setFormErrors({});
             try {
                 const request = {
                     invoiceId: activeSale.id,
@@ -113,7 +116,12 @@ const Sales = () => {
                 setShowReturnModal(false);
                 loadSales();
             } catch (err) {
-                toast(err.message, 'error');
+                if (err.errors) {
+                    setFormErrors(err.errors);
+                    toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
+                } else {
+                    toast(err.message, 'error');
+                }
             }
         });
     };
@@ -353,6 +361,8 @@ const Sales = () => {
                                 onChange={e => setReturnNotes(e.target.value)}
                                 placeholder="اكتب سبب المرتجع هنا..."
                             ></textarea>
+                            {formErrors.notes && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.notes}</span>}
+                            {formErrors.items && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.items}</span>}
                         </div>
                     </div>
                     <div className="modal-footer">

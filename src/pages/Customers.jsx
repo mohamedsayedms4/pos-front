@@ -17,6 +17,7 @@ const Customers = () => {
   const isAdmin = Api.isAdminOrBranchManager();
   const [showModal, setShowModal] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState({ name: '', phone: '', email: '', address: '', branchIds: [] });
+  const [formErrors, setFormErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const { toast, confirm } = useGlobalUI();
   const [query, setQuery] = useState('');
@@ -64,6 +65,7 @@ const Customers = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setFormErrors({});
     try {
       if (isEditing) {
         await Api.updateCustomer(currentCustomer.id, currentCustomer);
@@ -75,7 +77,12 @@ const Customers = () => {
       setShowModal(false);
       loadCustomers(currentPage, pageSize, query);
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.errors) {
+        setFormErrors(err.errors);
+        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
+      } else {
+        toast(err.message, 'error');
+      }
     }
   };
 
@@ -93,6 +100,7 @@ const Customers = () => {
 
   const openAddModal = () => {
     setCurrentCustomer({ name: '', phone: '', email: '', address: '', branchIds: [] });
+    setFormErrors({});
     setIsEditing(false);
     setShowModal(true);
   };
@@ -102,6 +110,7 @@ const Customers = () => {
       ...customer,
       branchIds: customer.branches ? customer.branches.map(b => b.id) : []
     });
+    setFormErrors({});
     setIsEditing(true);
     setShowModal(true);
   };
@@ -410,20 +419,24 @@ const Customers = () => {
                   <div className="form-group">
                     <label>اسم العميل *</label>
                     <input type="text" className="form-control" required value={currentCustomer.name} onChange={e => setCurrentCustomer({ ...currentCustomer, name: e.target.value })} />
+                    {formErrors.name && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.name}</span>}
                   </div>
                   <div className="form-row">
                     <div className="form-group">
                       <label>رقم الهاتف</label>
                       <input type="text" className="form-control" value={currentCustomer.phone} onChange={e => setCurrentCustomer({ ...currentCustomer, phone: e.target.value })} />
+                      {formErrors.phone && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
                     </div>
                     <div className="form-group">
                       <label>البريد الإلكتروني</label>
                       <input type="email" className="form-control" value={currentCustomer.email} onChange={e => setCurrentCustomer({ ...currentCustomer, email: e.target.value })} />
+                      {formErrors.email && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.email}</span>}
                     </div>
                   </div>
                   <div className="form-group">
                     <label>العنوان التفصيلي</label>
                     <textarea className="form-control" rows="2" value={currentCustomer.address} onChange={e => setCurrentCustomer({ ...currentCustomer, address: e.target.value })} />
+                    {formErrors.address && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.address}</span>}
                   </div>
                   <div className="form-group">
                     <label>الفروع المرتبطة *</label>
@@ -444,6 +457,7 @@ const Customers = () => {
                         </label>
                       ))}
                     </div>
+                    {formErrors.branchIds && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.branchIds}</span>}
                   </div>
                 </div>
                 <div className="modal-footer">

@@ -26,6 +26,7 @@ const FixedAssets = () => {
     name: '',
     code: '',
     description: '',
+    quantity: 1,
     purchaseDate: new Date().toISOString().split('T')[0],
     purchasePrice: '',
     currentValue: '',
@@ -119,6 +120,7 @@ const FixedAssets = () => {
       name: asset.name,
       code: asset.code,
       description: asset.description || '',
+      quantity: asset.quantity || 1,
       purchaseDate: asset.purchaseDate,
       purchasePrice: asset.purchasePrice,
       currentValue: asset.currentValue,
@@ -148,6 +150,7 @@ const FixedAssets = () => {
           name: '',
           code: '',
           description: '',
+          quantity: 1,
           purchaseDate: new Date().toISOString().split('T')[0],
           purchasePrice: '',
           currentValue: '',
@@ -219,6 +222,7 @@ const FixedAssets = () => {
                 <tr>
                   <th style={{ width: '80px' }}>الكود</th>
                   <th>اسم الأصل</th>
+                  <th style={{ width: '80px' }}>العدد</th>
                   <th style={{ width: '120px' }}>تاريخ الشراء</th>
                   <th style={{ width: '130px' }}>سعر الشراء</th>
                   <th style={{ width: '130px' }}>القيمة الحالية</th>
@@ -247,6 +251,7 @@ const FixedAssets = () => {
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{asset.description}</div>
                                 </div>
                             </td>
+                            <td style={{ fontWeight: 'bold', textAlign: 'center' }}>{asset.quantity || 1}</td>
                             <td>{new Date(asset.purchaseDate).toLocaleDateString('ar-EG')}</td>
                             <td style={{ fontWeight: 'bold' }}>{asset.purchasePrice?.toLocaleString()} ج.م</td>
                             <td style={{ color: 'var(--metro-green)', fontWeight: 'bold' }}>{asset.currentValue?.toLocaleString()} ج.م</td>
@@ -296,6 +301,11 @@ const FixedAssets = () => {
                         <div className="form-group">
                             <label>كود الأصل / السيريال</label>
                             <input type="text" className="form-control" required value={form.code} onChange={e => setForm({...form, code: e.target.value})} placeholder="ASSET-001" />
+                        </div>
+
+                        <div className="form-group">
+                            <label>العدد / الكمية</label>
+                            <input type="number" min="1" className="form-control" required value={form.quantity} onChange={e => setForm({...form, quantity: parseInt(e.target.value) || 1})} placeholder="1" />
                         </div>
 
                         <div className="form-group">

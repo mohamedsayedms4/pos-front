@@ -17,6 +17,7 @@ const Categories = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', parentId: '' });
+  const [formErrors, setFormErrors] = useState({});
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -122,6 +123,7 @@ const Categories = () => {
 
   const openForm = async (category = null) => {
     setEditCategory(category);
+    setFormErrors({});
     if (category) {
       setFormData({
         name: category.name || '',
@@ -139,10 +141,12 @@ const Categories = () => {
     setIsModalOpen(false);
     setEditCategory(null);
     setImageFile(null);
+    setFormErrors({});
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setFormErrors({});
     if (!formData.name) {
       toast('يرجى إدخال اسم الفئة', 'warning');
       return;
@@ -171,7 +175,12 @@ const Categories = () => {
       closeModal();
       loadData();
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.errors) {
+        setFormErrors(err.errors);
+        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
+      } else {
+        toast(err.message, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -496,14 +505,17 @@ const Categories = () => {
                   <div className="form-group">
                     <label>اسم الفئة *</label>
                     <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                    {formErrors.name && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.name}</span>}
                   </div>
                   <div className="form-group">
                     <label>الوصف</label>
                     <textarea className="form-control" name="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
+                    {formErrors.description && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.description}</span>}
                   </div>
                   <div className="form-group">
                     <label>صورة الفئة (اختياري)</label>
                     <input type="file" className="form-control" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
+                    {formErrors.image && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.image}</span>}
                     {editCategory?.imageUrl && !imageFile && (
                       <div style={{ marginTop: '10px' }}>
                         <img src={SERVER_URL + editCategory.imageUrl} alt={editCategory.name} style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover' }} />
@@ -520,6 +532,7 @@ const Categories = () => {
                         </option>
                       ))}
                     </select>
+                    {formErrors.parentId && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.parentId}</span>}
                   </div>
                 </form>
               </div>

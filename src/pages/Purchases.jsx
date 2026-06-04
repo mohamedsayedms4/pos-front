@@ -89,6 +89,7 @@ const Purchases = () => {
   const [availableUnits, setAvailableUnits] = useState([]); // units of selected product
   const [loadingUnits, setLoadingUnits] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   // Payment State
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -179,6 +180,7 @@ const Purchases = () => {
 
   // ─── Form Open ────────────────────────────────────────────────────────────
   const openForm = async () => {
+    setFormErrors({});
     try {
       const user = Api._getUser();
       const initialBranchId = selectedBranchId || user?.branchId || '';
@@ -240,6 +242,7 @@ const Purchases = () => {
   };
 
   const openPayment = (purchase) => {
+    setFormErrors({});
     setActivePurchase(purchase);
     setPaymentAmount(purchase.remainingAmount);
     setModalType('payment');
@@ -251,6 +254,7 @@ const Purchases = () => {
   };
 
   const closeModal = () => {
+    setFormErrors({});
     setModalType(null);
     setActivePurchase(null);
   };
@@ -357,6 +361,7 @@ const Purchases = () => {
     }
 
     setSaving(true);
+    setFormErrors({});
     const payload = {
       supplierId: parseInt(invoiceForm.supplierId),
       branchId: parseInt(formSelectedBranchId),
@@ -377,7 +382,12 @@ const Purchases = () => {
       closeModal();
       loadData();
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.errors) {
+        setFormErrors(err.errors);
+        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
+      } else {
+        toast(err.message, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -393,13 +403,19 @@ const Purchases = () => {
       return;
     }
     setSaving(true);
+    setFormErrors({});
     try {
       await Api.payPurchaseInvoice(activePurchase.id, amount);
       toast('تم تسجيل الدفعة بنجاح', 'success');
       closeModal();
       loadData();
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.errors) {
+        setFormErrors(err.errors);
+        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
+      } else {
+        toast(err.message, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -732,6 +748,7 @@ const Purchases = () => {
                         <option value="">-- اختر الفرع --</option>
                         {availableBranches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                       </select>
+                      {formErrors.branchId && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.branchId}</span>}
                     </div>
                     <div className="form-group">
                       <label>المخزن (المستلم) *</label>
@@ -744,6 +761,7 @@ const Purchases = () => {
                         <option value="">-- اختر المخزن --</option>
                         {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                       </select>
+                      {formErrors.warehouseId && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.warehouseId}</span>}
                     </div>
                   </div>
 
@@ -838,6 +856,7 @@ const Purchases = () => {
                           </div>
                         )}
                       </div>
+                      {formErrors.supplierId && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.supplierId}</span>}
                     </div>
                     <div className="form-group">
                       <label>تاريخ الفاتورة *</label>
@@ -848,6 +867,7 @@ const Purchases = () => {
                         onChange={(e) => setInvoiceForm({ ...invoiceForm, invoiceDate: e.target.value })}
                         required
                       />
+                      {formErrors.invoiceDate && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.invoiceDate}</span>}
                     </div>
                     <div className="form-group">
                       <label>المبلغ المدفوع الآن</label>
@@ -859,6 +879,7 @@ const Purchases = () => {
                         value={invoiceForm.paidAmount}
                         onChange={(e) => setInvoiceForm({ ...invoiceForm, paidAmount: e.target.value })}
                       />
+                      {formErrors.paidAmount && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.paidAmount}</span>}
                     </div>
                   </div>
 
@@ -1010,6 +1031,7 @@ const Purchases = () => {
                         </tfoot>
                       </table>
                     </div>
+                    {formErrors.items && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block', textAlign: 'center' }}>{formErrors.items}</span>}
                   </div>
                 </form>
               </div>
@@ -1049,6 +1071,7 @@ const Purchases = () => {
                       onChange={(e) => setPaymentAmount(e.target.value)}
                       required
                     />
+                    {formErrors.amount && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.amount}</span>}
                   </div>
                 </form>
               </div>

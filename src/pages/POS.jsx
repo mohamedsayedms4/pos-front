@@ -356,10 +356,11 @@ const POS = () => {
         const invoiceData = resp.data || resp;
         setLastInvoice(invoiceData);
 
-        toast('تمت العملية بنجاح', 'success');
+        toast('تم الدفع بنجاح', 'success');
 
+        localStorage.setItem('print_preview_invoice', JSON.stringify(invoiceData));
         setTimeout(() => {
-          window.print();
+          window.open(`/print-receipt/${invoiceData.id}`, '_blank');
           setTimeout(() => setLastInvoice(null), 5000);
         }, 500);
 
@@ -391,10 +392,11 @@ const POS = () => {
             };
             
             setLastInvoice(fakeInvoice);
-            toast('تم حفظ الفاتورة محلياً (أوفلاين)', 'info');
+            toast('تم الدفع وتخزين الفاتورة محلياً (أوفلاين)', 'info');
             
+            localStorage.setItem('print_preview_invoice', JSON.stringify(fakeInvoice));
             setTimeout(() => {
-              window.print();
+              window.open(`/print-receipt/${fakeInvoice.id}`, '_blank');
               setTimeout(() => setLastInvoice(null), 5000);
             }, 500);
 
@@ -415,7 +417,8 @@ const POS = () => {
   if (loading) return <Loader message="جاري تجهيز الكاشير..." />;
 
   return (
-    <div className="pos-premium-container">
+    <>
+      <div className="pos-premium-container">
       {checkoutLoading && <div className="loader-overlay"><Loader message="جاري إتمام الدفع..." /></div>}
 
       {/* LEFT: PRODUCTS BROWSER */}
@@ -620,12 +623,6 @@ const POS = () => {
         </div>
       </div>
 
-      {lastInvoice && (
-        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
-          <ThermalReceipt invoice={lastInvoice} />
-        </div>
-      )}
-
       <style>{`
         /* Premium POS Layout */
         .pos-premium-container {
@@ -638,6 +635,25 @@ const POS = () => {
           font-family: 'Cairo', 'Inter', sans-serif;
           overflow: hidden;
           box-sizing: border-box;
+        }
+
+        .print-only-wrapper {
+          position: absolute;
+          top: -9999px;
+          left: -9999px;
+          opacity: 0;
+        }
+
+        @media print {
+          .print-only-wrapper {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            z-index: 999999 !important;
+            display: block !important;
+          }
         }
 
         /* Loaders */
@@ -1437,6 +1453,7 @@ const POS = () => {
         }
       `}</style>
     </div>
+    </>
   );
 };
 

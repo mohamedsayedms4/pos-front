@@ -601,6 +601,151 @@ const Dashboard = () => {
             grid-template-columns: 1fr;
           }
         }
+        
+        /* POS Quick Start Banner */
+        .pos-shortcut-banner {
+          display: flex;
+          justify-content: space-between;
+          align-items: stretch;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          margin-bottom: 30px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+          direction: rtl;
+        }
+
+        [data-theme='dark'] .pos-shortcut-banner {
+          background: #1e293b;
+          border-color: #334155;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .pos-banner-right {
+          flex: 1;
+          padding: 30px 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          text-align: right;
+          justify-content: center;
+          z-index: 2;
+        }
+
+        .pos-banner-title-small {
+          font-family: 'Cairo', sans-serif;
+          font-size: 1.4rem;
+          font-weight: 700;
+          color: #475569;
+          margin: 0;
+        }
+
+        [data-theme='dark'] .pos-banner-title-small {
+          color: #94a3b8;
+        }
+
+        .pos-banner-title-large {
+          font-family: 'Cairo', sans-serif;
+          font-size: 2.2rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0;
+          line-height: 1.2;
+        }
+
+        [data-theme='dark'] .pos-banner-title-large {
+          color: #f8fafc;
+        }
+
+        .pos-banner-desc {
+          font-family: 'Cairo', sans-serif;
+          font-size: 0.95rem;
+          color: #64748b;
+          margin: 12px 0 0 0;
+          max-width: 600px;
+          line-height: 1.6;
+        }
+
+        [data-theme='dark'] .pos-banner-desc {
+          color: #94a3b8;
+        }
+
+        .pos-banner-left {
+          width: 30%;
+          min-width: 220px;
+          background: #eef2ff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          border-right: 1px solid #e2e8f0;
+          z-index: 2;
+        }
+
+        [data-theme='dark'] .pos-banner-left {
+          background: #0f172a;
+          border-right: 1px solid #334155;
+        }
+
+        .pos-banner-btn {
+          background: #2563eb;
+          color: #ffffff;
+          border: none;
+          padding: 14px 32px;
+          font-family: 'Cairo', sans-serif;
+          font-size: 1.1rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease-in-out;
+          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+          border-radius: 6px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+        }
+
+        .pos-banner-btn:hover {
+          background: #1d4ed8;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+        }
+
+        .pos-banner-btn:active {
+          transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+          .pos-shortcut-banner {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .pos-banner-left {
+            width: 100%;
+            border-right: none;
+            border-top: 1px solid #e2e8f0;
+            padding: 30px 20px;
+          }
+          [data-theme='dark'] .pos-banner-left {
+            border-top: 1px solid #334155;
+          }
+          .pos-banner-right {
+            padding: 24px 20px;
+            text-align: center;
+            align-items: center;
+          }
+          .pos-banner-title-large {
+            font-size: 1.8rem;
+          }
+          .pos-banner-title-small {
+            font-size: 1.2rem;
+          }
+          .pos-banner-desc {
+            text-align: center;
+          }
+        }
       `}} />
 
       {/* Subscription Banner */}
@@ -676,6 +821,20 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* POS Quick Start Banner */}
+      <div className="pos-shortcut-banner">
+        <div className="pos-banner-right">
+          <div className="pos-banner-title-small">شاشة الكاشير</div>
+          <h2 className="pos-banner-title-large">مخصصة للبيع السريع</h2>
+          <p className="pos-banner-desc">اكتشف حلول نقاط البيع المصممة خصيصاً لنجاحك. ابدأ البيع الآن مع نظام يفهم طبيعة عملك.</p>
+        </div>
+        <div className="pos-banner-left">
+          <button className="pos-banner-btn" onClick={() => navigate('/pos')}>
+            ابدأ البيع
+          </button>
+        </div>
+      </div>
 
       {/* Tab Navigation */}
       <div className="dashboard-tabs-container">

@@ -28,6 +28,7 @@ const AddProduct = () => {
   });
 
   const [categories, setCategories] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
   const [images, setImages] = useState(null);
   const [existingImages, setExistingImages] = useState([]);
   const [loading, setLoading] = useState(isEditMode);
@@ -95,6 +96,7 @@ const AddProduct = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setFormErrors({});
     if (!formData.name || !formData.purchasePrice || !formData.salePrice) {
       toast('يرجى ملء الحقول المطلوبة', 'warning');
       return;
@@ -120,7 +122,12 @@ const AddProduct = () => {
       }
       navigate('/products');
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.errors) {
+        setFormErrors(err.errors);
+        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
+      } else {
+        toast(err.message, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -279,6 +286,7 @@ const AddProduct = () => {
                 required 
                 placeholder="أدخل اسم المنتج بالكامل"
               />
+              {formErrors.name && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.name}</span>}
             </div>
 
             {/* Description */}
@@ -292,6 +300,7 @@ const AddProduct = () => {
                 rows="3"
                 placeholder="أدخل وصفًا تفصيليًا للمنتج (اختياري)"
               ></textarea>
+              {formErrors.description && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.description}</span>}
             </div>
 
             {/* Prices Grid */}
@@ -308,6 +317,7 @@ const AddProduct = () => {
                   required 
                   placeholder="0.00"
                 />
+                {formErrors.purchasePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.purchasePrice}</span>}
               </div>
               <div className="form-group">
                 <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر البيع *</label>
@@ -321,6 +331,7 @@ const AddProduct = () => {
                   required 
                   placeholder="0.00"
                 />
+                {formErrors.salePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.salePrice}</span>}
               </div>
             </div>
 
@@ -338,6 +349,7 @@ const AddProduct = () => {
                   placeholder="0"
                   disabled={isEditMode} // Usually stock is modified through stock transactions, keeping consistent with Products.jsx
                 />
+                {formErrors.stock && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.stock}</span>}
                 {isEditMode && <small style={{ color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>تعديل المخزون يتم من خلال شاشة التوزيع أو الفواتير</small>}
               </div>
               <div className="form-group">
@@ -349,6 +361,7 @@ const AddProduct = () => {
                   onChange={(e) => setFormData({ ...formData, productCode: e.target.value })} 
                   placeholder="اتركه فارغًا للتوليد التلقائي"
                 />
+                {formErrors.productCode && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.productCode}</span>}
               </div>
             </div>
 
@@ -365,6 +378,7 @@ const AddProduct = () => {
                   <option value="">بدون فئة</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+                {formErrors.categoryId && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.categoryId}</span>}
               </div>
               <div className="form-group">
                 <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>الوحدة الأساسية (قطاعي) *</label>
@@ -376,6 +390,7 @@ const AddProduct = () => {
                   required 
                   placeholder="كيس، قطعة، كيلو..." 
                 />
+                {formErrors.unitName && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.unitName}</span>}
               </div>
             </div>
 

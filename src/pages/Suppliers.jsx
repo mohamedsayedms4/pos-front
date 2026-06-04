@@ -62,6 +62,7 @@ const Suppliers = () => {
   const [paymentDesc, setPaymentDesc] = useState('دفعة نقدية');
 
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   const handleExportExcel = async () => {
     setExportingExcel(true);
@@ -140,6 +141,7 @@ const Suppliers = () => {
 
   const openForm = async (supplier = null) => {
     setActiveSupplier(supplier);
+    setFormErrors({});
     if (supplier) {
       setFormData({
         name: supplier.name || '',
@@ -165,10 +167,12 @@ const Suppliers = () => {
   const closeModal = () => {
     setModalType(null);
     setActiveSupplier(null);
+    setFormErrors({});
   };
 
   const handleSaveForm = async (e) => {
     e.preventDefault();
+    setFormErrors({});
     if (!formData.name) {
       toast('يرجى إدخال اسم المورد', 'warning');
       return;
@@ -185,7 +189,12 @@ const Suppliers = () => {
       closeModal();
       loadData();
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.errors) {
+        setFormErrors(err.errors);
+        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
+      } else {
+        toast(err.message, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -567,24 +576,29 @@ const Suppliers = () => {
                   <div className="form-group">
                     <label>اسم المورد *</label>
                     <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                    {formErrors.name && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.name}</span>}
                   </div>
                   <div className="form-row">
                     <div className="form-group">
                       <label>الهاتف</label>
                       <input className="form-control" name="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                      {formErrors.phone && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
                     </div>
                     <div className="form-group">
                       <label>البريد الإلكتروني</label>
                       <input className="form-control" name="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                      {formErrors.email && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.email}</span>}
                     </div>
                   </div>
                   <div className="form-group">
                     <label>العنوان</label>
                     <input className="form-control" name="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+                    {formErrors.address && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.address}</span>}
                   </div>
                   <div className="form-group">
                     <label>الرقم الضريبي</label>
                     <input className="form-control" name="taxNumber" value={formData.taxNumber} onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })} />
+                    {formErrors.taxNumber && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.taxNumber}</span>}
                   </div>
 
                 </form>

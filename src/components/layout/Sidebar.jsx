@@ -308,6 +308,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
+        {/* نقل البضاعة */}
+        {Api.can('WAREHOUSE_READ') && (
+          <NavLink to="/stock-transfers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">🔀</span>
+            <span>نقل البضاعة</span>
+          </NavLink>
+        )}
+
         {/* تفاعل العملاء */}
         {Api.can('PRODUCT_READ') && (
           <NavLink to="/products/interactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
@@ -554,6 +562,12 @@ const Sidebar = ({ isOpen, onClose }) => {
               <NavLink to="/audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">▣</span>
                 <span>سجل المراجعة</span>
+              </NavLink>
+            )}
+            {Api.can('PRODUCT_READ') && (
+              <NavLink to="/inventory-checks" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📝</span>
+                <span>عمليات الجرد والتسوية</span>
               </NavLink>
             )}
             {Api.can('PRODUCT_READ') && (

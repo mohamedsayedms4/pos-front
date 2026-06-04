@@ -1,5 +1,5 @@
 /**
- * POS API Client — Centralized HTTP layer with JWT auth
+ * POS API Client â€” Centralized HTTP layer with JWT auth
  */
 const envUrl = import.meta.env.VITE_API_URL;
 // Base server URL (without /api/v1 prefix) - dynamically resolves in production
@@ -173,7 +173,7 @@ const Api = {
     return this.isAdmin() || this.isBranchManager();
   },
 
-  // ─── Leaves Management ───────────────────────────────────────────────────────
+  // ——————————————————————————————————————————————————————————————————————————
   async getLeaveTypes() {
     const res = await this._request('/leaves/types');
     return res.data;
@@ -231,9 +231,9 @@ const Api = {
     const res = await this._request(`/leaves/balances/${userId}/${year}`);
     return res.data;
   },
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ——————————————————————————————————————————————————————————————————————————
 
-  // ─── Stock Receipts ──────────────────────────────────────────────────────────
+  // ——————————————————————————————————————————————————————————————————————————
   async getStockReceipts(page = 0, size = 10, query = '', branchId = null) {
     const params = new URLSearchParams({ page, size, query });
     if (branchId) params.append('branchId', branchId);
@@ -253,12 +253,53 @@ const Api = {
       method: 'POST'
     });
   },
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ——————————————————————————————————————————————————————————————————————————
+
+  // ——————————————————————————————————————————————————————————————————————————
+  async getStockTransfers(branchId = null) {
+    const params = new URLSearchParams();
+    if (branchId) params.append('branchId', branchId);
+    const res = await this._request(`/stock-transfers?${params.toString()}`);
+    return res.data;
+  },
+
+  async createStockTransfer(dto) {
+    const res = await this._request('/stock-transfers', {
+      method: 'POST',
+      body: JSON.stringify(dto)
+    });
+    return res.data;
+  },
+
+  async approveStockTransfer(id, approvedBy) {
+    const res = await this._request(`/stock-transfers/${id}/approve?approvedBy=${encodeURIComponent(approvedBy)}`, {
+      method: 'PUT'
+    });
+    return res.data;
+  },
+
+  async receiveStockTransfer(id) {
+    const res = await this._request(`/stock-transfers/${id}/receive`, {
+      method: 'PUT'
+    });
+    return res.data;
+  },
+
+  async cancelStockTransfer(id) {
+    const res = await this._request(`/stock-transfers/${id}/cancel`, {
+      method: 'PUT'
+    });
+    return res.data;
+  },
+  // ——————————————————————————————————————————————————————————————————————————
 
   async _request(path, options = {}) {
-    const url = path.startsWith('/v2')
-      ? `${SERVER_URL}/api${path}`
-      : `${API_BASE}${path}`;
+    // If path starts with http(s), use it as-is (absolute URL)
+    const url = path.startsWith('http')
+      ? path
+      : path.startsWith('/v2')
+        ? `${SERVER_URL}/api${path}`
+        : `${API_BASE}${path}`;
     const headers = options.headers || {};
 
     if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
@@ -300,7 +341,7 @@ const Api = {
       }
 
       if (response.status === 403) {
-        throw new Error('ليس لديك صلاحية لهذا الإجراء');
+        throw new Error('ليس لديك صلاحية لهذا الإجراء!');
       }
 
       if (!response.ok) {
@@ -316,7 +357,11 @@ const Api = {
           }
         }
 
-        throw new Error(err.message || err.error || `Request failed: ${response.status}`);
+        const errorObj = new Error(err.message || err.error || `Request failed: ${response.status}`);
+        errorObj.status = response.status;
+        errorObj.errors = err.errors;
+        errorObj.errorCode = err.errorCode || err.code;
+        throw errorObj;
       }
 
       if (response.status === 204) return null;
@@ -470,7 +515,7 @@ const Api = {
     }
   },
 
-  // ─── Auth ───
+  // â”€â”€â”€ Auth â”€â”€â”€
   async login(email, password, tenantId = null) {
     if (tenantId) {
       this._setTenantId(tenantId);
@@ -508,7 +553,7 @@ const Api = {
     window.location.href = '/login';
   },
 
-  // ─── Products ───
+  // â”€â”€â”€ Products â”€â”€â”€
   async getProducts(page = 0, size = 1000, branchId = null) {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/products?page=${page}&size=${size}${branchQuery}`);
@@ -527,7 +572,7 @@ const Api = {
       endpoint = `/v2/products?page=${page}&size=${size}${searchQuery}${sortQuery}${branchQuery}`;
     }
 
-    console.log(`%c[🚀 API CALL] Requesting Products Endpoint: ${endpoint} | Selected Branch: ${branchId || 'All Branches'}`, 'color: #00ff00; font-weight: bold; font-size: 14px;');
+    console.log(`%c[ðŸš€ API CALL] Requesting Products Endpoint: ${endpoint} | Selected Branch: ${branchId || 'All Branches'}`, 'color: #00ff00; font-weight: bold; font-size: 14px;');
 
     const res = await this._request(endpoint);
     const raw = res.data;
@@ -553,7 +598,7 @@ const Api = {
     const res = await fetch(`${SERVER_URL}/api/v2/products/export/excel?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ù„Ù‰ Excel');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -579,7 +624,7 @@ const Api = {
     const res = await fetch(`${SERVER_URL}/api/v2/products/import/template`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل تحميل قالب الاستيراد من السيرفر');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -616,7 +661,7 @@ const Api = {
     const res = await fetch(`${SERVER_URL}/api/v2/products/export/pdf?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ù„Ù‰ PDF');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -630,7 +675,7 @@ const Api = {
     const res = await fetch(`${API_BASE}/categories/export/excel`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ù„Ù‰ Excel');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -644,7 +689,7 @@ const Api = {
     const res = await fetch(`${API_BASE}/categories/export/pdf`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ù„Ù‰ PDF');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -658,7 +703,7 @@ const Api = {
     const res = await fetch(`${API_BASE}/categories/export/comprehensive/excel`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير التقرير الشامل إلى Excel');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø§Ù„Ø´Ø§Ù…Ù„ Ø¥Ù„Ù‰ Excel');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -672,7 +717,7 @@ const Api = {
     const res = await fetch(`${API_BASE}/categories/export/comprehensive/pdf`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير التقرير الشامل إلى PDF');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø§Ù„Ø´Ø§Ù…Ù„ Ø¥Ù„Ù‰ PDF');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -716,7 +761,7 @@ const Api = {
     const res = await fetch(`${SERVER_URL}/api/v2/products/${id}/barcode/label`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error("فشل تحميل صورة الباركود من السيرفر");
+    if (!res.ok) throw new Error("ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ ØµÙˆØ±Ø© Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±");
     const blob = await res.blob();
     return window.URL.createObjectURL(blob);
   },
@@ -763,7 +808,7 @@ const Api = {
     await this._request(`/v2/products/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Printer Config ───
+  // â”€â”€â”€ Printer Config â”€â”€â”€
   async getPrinterConfig() {
     const res = await this._request('/printer-config');
     return res.data;
@@ -786,7 +831,7 @@ const Api = {
       },
       body: JSON.stringify(config)
     });
-    if (!res.ok) throw new Error("فشل اختبار الطباعة");
+    if (!res.ok) throw new Error("ÙØ´Ù„ Ø§Ø®ØªØ¨Ø§Ø± Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©");
     const blob = await res.blob();
     return window.URL.createObjectURL(blob);
   },
@@ -803,7 +848,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Categories ───
+  // â”€â”€â”€ Categories â”€â”€â”€
   async getCategories(rootsOnly = false) {
     const res = await this._request(`/categories?rootsOnly=${rootsOnly}`);
     return res.data;
@@ -875,7 +920,7 @@ const Api = {
     const res = await fetch(`${API_BASE}/suppliers/export/excel?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى Excel');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ù„Ù‰ Excel');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -892,7 +937,7 @@ const Api = {
     const res = await fetch(`${API_BASE}/suppliers/export/pdf?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ù„Ù‰ PDF');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -936,14 +981,14 @@ const Api = {
 
     const response = await fetch(url, { headers });
     if (!response.ok) {
-      throw new Error('فشل تصدير الملف');
+      throw new Error('ÙØ´Ù„ ØªØµØ¯ÙŠØ± Ø§Ù„Ù…Ù„Ù');
     }
 
     const blob = await response.blob();
     const downloadUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = `كشف_حساب_${supplierName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.download = `ÙƒØ´Ù_Ø­Ø³Ø§Ø¨_${supplierName}_${new Date().toISOString().split('T')[0]}.xlsx`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(downloadUrl);
@@ -961,14 +1006,14 @@ const Api = {
 
     const response = await fetch(url, { headers });
     if (!response.ok) {
-      throw new Error('فشل تصدير التقرير');
+      throw new Error('ÙØ´Ù„ ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ±');
     }
 
     const blob = await response.blob();
     const downloadUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = `تقرير_شامل_${supplierName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.download = `ØªÙ‚Ø±ÙŠØ±_Ø´Ø§Ù…Ù„_${supplierName}_${new Date().toISOString().split('T')[0]}.xlsx`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(downloadUrl);
@@ -982,7 +1027,7 @@ const Api = {
     });
   },
 
-  // ─── Purchases ───
+  // â”€â”€â”€ Purchases â”€â”€â”€
   async getPurchases(page = 0, size = 10, query = '', branchId = null, sort = 'id,desc') {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
@@ -1071,7 +1116,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Users ───
+  // â”€â”€â”€ Users â”€â”€â”€
   async getUsers(page = 0, size = 10, query = '', branchId = '') {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/admin/users?page=${page}&size=${size}&query=${query}${branchQuery}`);
@@ -1154,7 +1199,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Job Titles ───
+  // â”€â”€â”€ Job Titles â”€â”€â”€
   async getJobTitles() {
     const res = await this._request('/job-titles');
     return res.data;
@@ -1180,7 +1225,7 @@ const Api = {
     await this._request(`/job-titles/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Role Management ───
+  // â”€â”€â”€ Role Management â”€â”€â”€
   async getRolesFull() {
     const res = await this._request('/admin/roles');
     return res.data;
@@ -1206,7 +1251,7 @@ const Api = {
     await this._request(`/admin/roles/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Product Units ───
+  // â”€â”€â”€ Product Units â”€â”€â”€
   async getProductUnits(productId) {
     const res = await this._request(`/products/${productId}/units`);
     return res.data;
@@ -1232,7 +1277,7 @@ const Api = {
     await this._request(`/products/${productId}/units/${unitId}`, { method: 'DELETE' });
   },
 
-  // ─── Audit Logs ───
+  // â”€â”€â”€ Audit Logs â”€â”€â”€
   async getAuditLogs(page = 0, size = 20) {
     const res = await this._request(`/audit?page=${page}&size=${size}`);
     return res.data;
@@ -1243,7 +1288,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Notifications ───
+  // â”€â”€â”€ Notifications â”€â”€â”€
   async getNotifications() {
     const res = await this._request('/notifications');
     return res.data;
@@ -1253,7 +1298,7 @@ const Api = {
     await this._request(`/notifications/${id}/read`, { method: 'POST' });
   },
 
-  // ─── Debt Management ───
+  // â”€â”€â”€ Debt Management â”€â”€â”€
   async getDebts(page = 0, size = 10, type = '', status = '', entityType = '', query = '', branchId = null) {
     const params = new URLSearchParams({ page, size, type, status, entityType, query });
     if (branchId) params.append('branchId', branchId);
@@ -1302,7 +1347,7 @@ const Api = {
     return res;
   },
 
-  // ─── Unified Debt & Installments ───
+  // â”€â”€â”€ Unified Debt & Installments â”€â”€â”€
   async generateInstallmentPlan(invoiceId, months, downPayment, startDate, isSale = false) {
     const source = isSale ? 'SALE' : 'PURCHASE';
     // First, find the debt record for this invoice
@@ -1333,7 +1378,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Customers ───
+  // â”€â”€â”€ Customers â”€â”€â”€
   async getCustomers(page = 0, size = 10, query = '', branchId = null) {
     const branchParam = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/customers?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchParam}`);
@@ -1400,7 +1445,7 @@ const Api = {
     const res = await fetch(`${SERVER_URL}/api/v1/customers/export/excel?query=${encodeURIComponent(query)}${branchParam}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل في تصدير العملاء إلى Excel');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø¥Ù„Ù‰ Excel');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1426,7 +1471,7 @@ const Api = {
     const res = await fetch(`${SERVER_URL}/api/v1/customers/import/template`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('فشل تحميل قالب الاستيراد من السيرفر');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1436,7 +1481,7 @@ const Api = {
     window.URL.revokeObjectURL(url);
   },
 
-  // ─── Sales ───
+  // â”€â”€â”€ Sales â”€â”€â”€
   async getSales(page = 0, size = 10, query = '', branchId = '') {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/sales?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchQuery}`);
@@ -1477,7 +1522,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Treasury ───
+  // â”€â”€â”€ Treasury â”€â”€â”€
   async getMainTreasury(branchId = '') {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/treasury/main?_=1${branchQuery}`);
@@ -1490,7 +1535,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Damaged Goods ───
+  // â”€â”€â”€ Damaged Goods â”€â”€â”€
   async getDamagedProducts(page = 0, size = 10, search = '', branchId = '') {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/damaged?page=${page}&size=${size}&search=${encodeURIComponent(search)}${branchQuery}`);
@@ -1505,7 +1550,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Expenses ───
+  // â”€â”€â”€ Expenses â”€â”€â”€
   async getExpenses(page = 0, size = 10, category = '', start = '', end = '', branchId = '') {
     const params = new URLSearchParams({ page, size, category, start, end });
     if (branchId) params.append('branchId', branchId);
@@ -1526,7 +1571,7 @@ const Api = {
     await this._request(`/expenses/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Profit & Loss ───
+  // â”€â”€â”€ Profit & Loss â”€â”€â”€
   async getProfitLossReport(start = '', end = '', branchId = '') {
     const params = new URLSearchParams({ start, end });
     if (branchId) params.append('branchId', branchId);
@@ -1534,7 +1579,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Partners ───
+  // â”€â”€â”€ Partners â”€â”€â”€
   async getPartners() {
     const res = await this._request('/partners');
     return res.data;
@@ -1564,7 +1609,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Barcode Scanner (Server-Side) ───
+  // â”€â”€â”€ Barcode Scanner (Server-Side) â”€â”€â”€
   async scanBarcodeFromImage(imageBlob) {
     const formData = new FormData();
     formData.append('image', imageBlob, 'scan.jpg');
@@ -1576,7 +1621,7 @@ const Api = {
     return res;
   },
 
-  // ─── Shifts ───
+  // â”€â”€â”€ Shifts â”€â”€â”€
   async getShifts() {
     const res = await this._request('/shifts');
     return res.data;
@@ -1602,7 +1647,7 @@ const Api = {
     await this._request(`/shifts/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Employee Bonuses ───
+  // â”€â”€â”€ Employee Bonuses â”€â”€â”€
   async getEmployeeBonuses(userId) {
     const res = await this._request(`/employees/${userId}/bonuses`);
     return res.data;
@@ -1625,7 +1670,7 @@ const Api = {
     await this._request(`/employees/bonuses/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Employee Deductions ───
+  // â”€â”€â”€ Employee Deductions â”€â”€â”€
   async getEmployeeDeductions(userId) {
     const res = await this._request(`/employees/${userId}/deductions`);
     return res.data;
@@ -1643,15 +1688,15 @@ const Api = {
     await this._request(`/employees/deductions/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Attendance ───
-  /** يجلب صورة QR Code الحالية للحضور (تتغير كل 60 ثانية) */
+  // â”€â”€â”€ Attendance â”€â”€â”€
+  /** ÙŠØ¬Ù„Ø¨ ØµÙˆØ±Ø© QR Code Ø§Ù„Ø­Ø§Ù„ÙŠØ© Ù„Ù„Ø­Ø¶ÙˆØ± (ØªØªØºÙŠØ± ÙƒÙ„ 60 Ø«Ø§Ù†ÙŠØ©) */
   async getAttendanceQr() {
     const baseUrl = window.location.origin;
     const res = await this._request('/attendance/qr?baseUrl=' + encodeURIComponent(baseUrl));
     return res.data; // { qrImage, token, expiresInSeconds, refreshAfterSeconds }
   },
 
-  /** تسجيل حضور بـ QR Token + GPS */
+  /** ØªØ³Ø¬ÙŠÙ„ Ø­Ø¶ÙˆØ± Ø¨Ù€ QR Token + GPS */
   async checkInEmployee(userId, qrToken, latitude = null, longitude = null) {
     const res = await this._request(`/attendance/${userId}/check-in`, {
       method: 'POST',
@@ -1660,7 +1705,7 @@ const Api = {
     return res.data;
   },
 
-  /** تسجيل انصراف بـ QR Token + GPS */
+  /** ØªØ³Ø¬ÙŠÙ„ Ø§Ù†ØµØ±Ø§Ù Ø¨Ù€ QR Token + GPS */
   async checkOutEmployee(userId, qrToken, latitude = null, longitude = null) {
     const res = await this._request(`/attendance/${userId}/check-out`, {
       method: 'PUT',
@@ -1679,7 +1724,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Attendance Security Settings ───
+  // â”€â”€â”€ Attendance Security Settings â”€â”€â”€
   async getAttendanceAllowedIps() {
     const res = await this._request('/tenant/settings/attendance/allowed-ips');
     return res.data || [];
@@ -1722,7 +1767,7 @@ const Api = {
     return res;
   },
 
-  // ─── Payroll ───
+  // â”€â”€â”€ Payroll â”€â”€â”€
   async generateEmployeePayroll(userId, month, year) {
     const res = await this._request(`/payroll/generate/${userId}?month=${month}&year=${year}`, { method: 'POST' });
     return res.data;
@@ -1739,7 +1784,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Branches & Warehouses ───
+  // â”€â”€â”€ Branches & Warehouses â”€â”€â”€
   async getBranches() {
     const res = await this._request('/branches');
     return res.data;
@@ -1828,7 +1873,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Treasury ───
+  // â”€â”€â”€ Treasury â”€â”€â”€
   async getTreasuryOverview() {
     const res = await this._request('/treasury/overview');
     return res.data;
@@ -1858,7 +1903,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Checks ───
+  // â”€â”€â”€ Checks â”€â”€â”€
   async getChecks(page = 0, size = 10) {
     const res = await this._request(`/checks?page=${page}&size=${size}`);
     return res.data;
@@ -1886,7 +1931,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Customer Offers (Targeted Discounts) ───
+  // â”€â”€â”€ Customer Offers (Targeted Discounts) â”€â”€â”€
   async createCustomerOffer(data) {
     const res = await this._request('/offers', {
       method: 'POST',
@@ -1910,7 +1955,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Fixed Assets ───
+  // â”€â”€â”€ Fixed Assets â”€â”€â”€
   async getFixedAssets(branchId = null, warehouseId = null) {
     let path = '/fixed-assets';
     if (warehouseId) path = `/fixed-assets/warehouse/${warehouseId}`;
@@ -1945,7 +1990,7 @@ const Api = {
     await this._request(`/fixed-assets/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Employee Custody (العهد الشخصية) ───
+  // â”€â”€â”€ Employee Custody (Ø§Ù„Ø¹Ù‡Ø¯ Ø§Ù„Ø´Ø®ØµÙŠØ©) â”€â”€â”€
   async getCustody(page = 0, size = 10, query = '') {
     const res = await this._request(`/custody?page=${page}&size=${size}&query=${encodeURIComponent(query)}`);
     return res.data;
@@ -1971,7 +2016,7 @@ const Api = {
     await this._request(`/custody/${id}`, { method: 'DELETE' });
   },
 
-  // ─── Accounting (American Journal) ──────────────────────────────────────────
+  // â”€â”€â”€ Accounting (American Journal) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async getTrialBalance() {
     const res = await this._request('/accounting/trial-balance');
     return res.data;
@@ -1987,7 +2032,7 @@ const Api = {
     return res.data;
   },
 
-  // ─── Super Admin — Subscription Management ─────────────────────────────────
+  // â”€â”€â”€ Super Admin â€” Subscription Management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   isSuperAdmin() {
     const user = this._getUser();
     if (!user) return false;
@@ -2061,7 +2106,7 @@ const Api = {
 
   async getGlobalConfig() {
     const res = await fetch(`${SERVER_URL}/api/public/system-config`);
-    if (!res.ok) throw new Error('فشل في جلب إعدادات النظام');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ Ø¬Ù„Ø¨ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…');
     const data = await res.json();
     return data.data;
   },
@@ -2073,7 +2118,7 @@ const Api = {
     });
   },
 
-  // ─── Technical Support Tickets ─────────────────────────────────────────────
+  // â”€â”€â”€ Technical Support Tickets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async submitSupportTicket({ type, description, attachment }) {
     const formData = new FormData();
     formData.append('type', type);
@@ -2105,39 +2150,39 @@ const Api = {
     return res.data;
   },
 
-  // ─── Articles (Public Blog) ───────────────────────────────────────────────────
+  // â”€â”€â”€ Articles (Public Blog) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async getPublicArticles(page = 0, size = 9, search = '', category = '') {
     const params = new URLSearchParams({ page, size });
     if (search) params.append('search', search);
     if (category) params.append('category', category);
     const res = await fetch(`${API_BASE}/public/articles?${params.toString()}`);
-    if (!res.ok) throw new Error('فشل في جلب المقالات');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù‚Ø§Ù„Ø§Øª');
     const json = await res.json();
     return json.data;
   },
 
   async getPublicArticleBySlug(slug) {
     const res = await fetch(`${API_BASE}/public/articles/${encodeURIComponent(slug)}`);
-    if (!res.ok) throw new Error('المقال غير موجود');
+    if (!res.ok) throw new Error('Ø§Ù„Ù…Ù‚Ø§Ù„ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯');
     const json = await res.json();
     return json.data;
   },
 
   async getPublicFeaturedArticles() {
     const res = await fetch(`${API_BASE}/public/articles/featured`);
-    if (!res.ok) throw new Error('فشل في جلب المقالات المميزة');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù‚Ø§Ù„Ø§Øª Ø§Ù„Ù…Ù…ÙŠØ²Ø©');
     const json = await res.json();
     return json.data;
   },
 
   async getPublicArticleCategories() {
     const res = await fetch(`${API_BASE}/public/articles/categories`);
-    if (!res.ok) throw new Error('فشل في جلب التصنيفات');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª');
     const json = await res.json();
     return json.data;
   },
 
-  // ─── Articles (Super Admin Management) ────────────────────────────────────────
+  // â”€â”€â”€ Articles (Super Admin Management) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async getSuperAdminArticles(page = 0, size = 10) {
     const res = await this._request(`/super-admin/articles?page=${page}&size=${size}`);
     return res.data;
