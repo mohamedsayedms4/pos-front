@@ -55,35 +55,14 @@ const ShareInvoice = ({ invoice, btnClassName = 'btn-ghost' }) => {
       const fileName = `invoice_${invoice.invoiceNumber || invoice.id}.pdf`;
       const file = new File([blob], fileName, { type: 'application/pdf' });
 
-      // Detect if device is mobile and NOT a desktop simulating mobile
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      // Hardware-level check for desktop graphics cards (DevTools emulation cannot fake this easily)
-      const isDesktopGPU = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-          if (!gl) return false;
-          const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-          if (!debugInfo) return false;
-          const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
-          return /Intel|NVIDIA|AMD|GeForce|Radeon|ANGLE|Microsoft/i.test(renderer);
-        } catch (e) {
-          return false;
-        }
-      };
-
-      // Real mobile device typically does not have a fine pointer device and does NOT use desktop GPU (like Intel/NVIDIA/AMD)
-      const isRealMobile = isMobile && !window.matchMedia('(any-pointer: fine)').matches && !isDesktopGPU();
-
-      if (isRealMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `فاتورة رقم ${invoice.invoiceNumber || invoice.id}`,
           text: `فاتورة من ${tenantName || 'المتجر'}`,
           files: [file],
         });
       } else {
-        // Fallback for desktop/emulated-desktop: download the PDF directly
+        // Fallback for desktop/unsupported browsers: download the PDF directly
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
