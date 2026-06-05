@@ -136,7 +136,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                   paddingRight: '15px'
                 }}
               >
-                {/* 
                 <NavLink
                   to="/settings"
                   end
@@ -147,6 +146,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
                   <span>المتجر والهوية</span>
                 </NavLink>
+                {/*
                 <NavLink
                   to="/settings/smtp"
                   className={`nav-item sub-item ${location.pathname === '/settings/smtp' ? 'active' : ''}`}
