@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 import Api from '../services/api';
 import ThermalReceipt from '../components/common/ThermalReceipt';
@@ -9,6 +9,10 @@ import ShareInvoice from '../components/common/ShareInvoice';
 
 const PrintInvoice = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const isAutoPrintUrl = queryParams.get('auto') === 'true';
+
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,7 +20,7 @@ const PrintInvoice = () => {
   // Read print settings from localStorage
   const printFormat = localStorage.getItem('print_format') || '80mm';
   const printTemplate = localStorage.getItem('print_template') || (printFormat === 'A4' ? 'classic' : 'standard');
-  const printAutoTrigger = localStorage.getItem('print_auto_trigger') === 'true';
+  const printAutoTrigger = localStorage.getItem('print_auto_trigger') === 'true' || isAutoPrintUrl;
 
   useEffect(() => {
     const loadInvoice = async () => {
@@ -41,6 +45,17 @@ const PrintInvoice = () => {
       return () => clearTimeout(timer);
     }
   }, [loading, invoice, printAutoTrigger]);
+
+  // Handle auto close if triggered by auto URL
+  useEffect(() => {
+    if (isAutoPrintUrl) {
+      const handleAfterPrint = () => {
+        window.close();
+      };
+      window.addEventListener('afterprint', handleAfterPrint);
+      return () => window.removeEventListener('afterprint', handleAfterPrint);
+    }
+  }, [isAutoPrintUrl]);
 
   const handleDownloadPdf = () => {
     const element = document.getElementById('printable-receipt');

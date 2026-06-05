@@ -75,9 +75,12 @@ const MainLayout = () => {
   const resetIdleTimer = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     const savedTime = localStorage.getItem('pos_idle_time');
-    if (savedTime === '0') return; // idle screen disabled
     
-    const idleTimeoutMs = savedTime ? parseInt(savedTime, 10) : 30000; // default 30 seconds
+    // Default to '0' (disabled) if not set in localStorage
+    const effectiveTime = savedTime !== null ? savedTime : '0';
+    if (effectiveTime === '0') return; // idle screen disabled
+    
+    const idleTimeoutMs = parseInt(effectiveTime, 10);
     idleTimer.current = setTimeout(() => {
       setIsIdle(true);
     }, idleTimeoutMs);
@@ -158,9 +161,9 @@ const MainLayout = () => {
               const savedTime = localStorage.getItem('pos_idle_time');
               const currentMin = savedTime !== null
                 ? Math.round((parseInt(savedTime, 10)) / 60000 * 10) / 10
-                : 0.5; // default 0.5 min
+                : 0; // default 0 min (disabled)
 
-              setTempIdleTime(savedTime === '0' ? '0' : currentMin.toString());
+              setTempIdleTime(savedTime === '0' || savedTime === null ? '0' : currentMin.toString());
               setTempIdlePin('');
               setIsIdleConfigOpen(true);
               lastF9Time = 0;

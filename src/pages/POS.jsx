@@ -68,6 +68,14 @@ const POS = () => {
   const [showCloseSession, setShowCloseSession] = useState(false);
   const [showCashMovement, setShowCashMovement] = useState(false);
 
+  const [printPreview, setPrintPreview] = useState(
+    localStorage.getItem('pos_print_preview') !== 'false'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('pos_print_preview', printPreview);
+  }, [printPreview]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
@@ -353,13 +361,15 @@ const POS = () => {
     setPaidAmount(cart.length > 0 ? total : 0);
   }, [total, cart.length]);
 
-  const handleCheckout = async () => {
+  const handleCheckoutRef = useRef();
+
+  const handleCheckout = async (forceDirectPrint = false) => {
     if (!selectedBranchId) {
       toast('يرجى اختيار الفرع أولاً', 'warning');
       return;
     }
 
-    confirm('تأكيد إتمام الطلب وطباعة الفاتورة؟', async () => {
+    const executeCheckout = async () => {
       setCheckoutLoading(true);
       const saleData = {
         customerId: selectedCustomerId || null,
@@ -380,7 +390,8 @@ const POS = () => {
 
         localStorage.setItem('print_preview_invoice', JSON.stringify(invoiceData));
         setTimeout(() => {
-          window.open(`/print-receipt/${invoiceData.id}`, '_blank');
+          const autoParam = (forceDirectPrint || !printPreview) ? '?auto=true' : '';
+          window.open(`/print-receipt/${invoiceData.id}${autoParam}`, '_blank');
           setTimeout(() => setLastInvoice(null), 5000);
         }, 500);
 
@@ -416,7 +427,8 @@ const POS = () => {
             
             localStorage.setItem('print_preview_invoice', JSON.stringify(fakeInvoice));
             setTimeout(() => {
-              window.open(`/print-receipt/${fakeInvoice.id}`, '_blank');
+              const autoParam = (forceDirectPrint || !printPreview) ? '?auto=true' : '';
+              window.open(`/print-receipt/${fakeInvoice.id}${autoParam}`, '_blank');
               setTimeout(() => setLastInvoice(null), 5000);
             }, 500);
 
@@ -431,8 +443,34 @@ const POS = () => {
       } finally {
         setCheckoutLoading(false);
       }
-    });
+    };
+
+    if (forceDirectPrint === true) {
+      executeCheckout();
+    } else {
+      confirm('تأكيد إتمام الطلب وطباعة الفاتورة؟', executeCheckout);
+    }
   };
+
+  handleCheckoutRef.current = handleCheckout;
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        // Prevent printing if cart is empty or loading
+        if (cart.length > 0 && !checkoutLoading) {
+          if (handleCheckoutRef.current) {
+            handleCheckoutRef.current(true);
+          }
+        } else if (cart.length === 0) {
+          toast('السلة فارغة!', 'warning');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cart.length, checkoutLoading, toast]);
 
   if (loading) return <Loader message="جاري تجهيز الكاشير..." />;
 
@@ -641,12 +679,26 @@ const POS = () => {
             <span className={`change-amount ${change < 0 ? 'negative' : ''}`}>{change.toFixed(2)}</span>
           </div>
           
+          <div className="print-options" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <input 
+              type="checkbox" 
+              id="printPreviewToggle" 
+              checked={printPreview} 
+              onChange={e => setPrintPreview(e.target.checked)} 
+              style={{ cursor: 'pointer', accentColor: 'var(--metro-blue)' }}
+            />
+            <label htmlFor="printPreviewToggle" style={{ fontSize: '0.85rem', color: 'var(--text-dim)', cursor: 'pointer' }}>
+              معاينة الفاتورة قبل الطباعة
+            </label>
+          </div>
+          
           <button 
             className="checkout-btn" 
-            onClick={handleCheckout} 
+            onClick={() => handleCheckout(false)} 
             disabled={checkoutLoading || cart.length === 0}
+            title="إتمام الدفع (Ctrl+B للطباعة الفورية)"
           >
-            💳 إتمام الدفع والطباعة
+            💳 إتمام الدفع {printPreview ? 'والمعاينة' : 'والطباعة المباشرة'}
           </button>
         </div>
       </div>
