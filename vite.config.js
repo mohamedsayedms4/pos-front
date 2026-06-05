@@ -8,10 +8,7 @@ export default defineConfig({
   server: {
     port: 5173,
   },
-  define: {
-    // sockjs-client references Node's 'global' — polyfill it for browser builds
-    global: 'globalThis',
-  },
+
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {

@@ -3,7 +3,7 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
-import { translatePermission } from '../utils/permissionTranslations';
+import { translatePermission, translateRole } from '../utils/permissionTranslations';
 
 const Roles = () => {
   const { toast, confirm } = useGlobalUI();
@@ -141,7 +141,7 @@ const Roles = () => {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span className={`badge ${r.name.includes('ADMIN') ? 'badge-primary' : 'badge-info'}`} style={{ fontSize: '0.9rem', padding: '6px 12px' }}>
-                              {r.name.replace('ROLE_', '')}
+                              {translateRole(r.name)}
                             </span>
                           </div>
                         </td>

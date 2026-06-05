@@ -60,7 +60,19 @@ export const permissionTranslations = {
   'USER_READ': 'عرض المستخدمين والموظفين',
   'USER_WRITE': 'إضافة وتعديل المستخدمين والموظفين',
   'WAREHOUSE_READ': 'عرض المستودعات والمخازن',
-  'WAREHOUSE_WRITE': 'إضافة وتعديل المستودعات والمخازن'
+  'WAREHOUSE_WRITE': 'إضافة وتعديل المستودعات والمخازن',
+  'INVENTORY_CREATE': 'إنشاء جرد المخزون',
+  'INVENTORY_APPROVE': 'اعتماد جرد المخزون',
+  'INVENTORY_CANCEL': 'إلغاء جرد المخزون',
+  'ROLE_ADMIN': 'مدير النظام',
+  'ROLE_BRANCH_MANAGER': 'مدير فرع',
+  'ROLE_SUPER_ADMIN': 'المدير العام',
+  'ROLE_CASHIER': 'كاشير',
+  'ROLE_USER': 'مستخدم'
+};
+
+export const translateRole = (role) => {
+  return permissionTranslations[role] || role.replace('ROLE_', '');
 };
 
 export const translatePermission = (perm) => {

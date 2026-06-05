@@ -12,6 +12,11 @@
           }
         });
       }
+      
+      // Polyfill for sockjs-client which references Node's 'global'
+      if (typeof window.global === 'undefined') {
+        window.global = window;
+      }
     </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/src/assets/img/logo-favicon.png" />

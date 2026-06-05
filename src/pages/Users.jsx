@@ -4,7 +4,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 import StatTile from '../components/common/StatTile';
-import { translatePermission } from '../utils/permissionTranslations';
+import { translatePermission, translateRole } from '../utils/permissionTranslations';
 
 const Users = () => {
   const { toast, confirm } = useGlobalUI();
@@ -296,7 +296,7 @@ const Users = () => {
                         <td>{u.email}</td>
                         <td>
                           {(u.roles || []).map(r => (
-                            <span key={r} className="badge badge-info" style={{ margin: '1px' }}>{r.replace('ROLE_', '')}</span>
+                            <span key={r} className="badge badge-info" style={{ margin: '1px' }}>{translateRole(r)}</span>
                           ))}
                         </td>
                         <td>
@@ -406,7 +406,7 @@ const Users = () => {
                             const newRoles = e.target.checked ? [...userForm.roles, r] : userForm.roles.filter(role => role !== r);
                             setUserForm({ ...userForm, roles: newRoles });
                           }} style={{ accentColor: 'var(--accent-primary)' }} />
-                          {r.replace('ROLE_', '')}
+                          {translateRole(r)}
                         </label>
                       ))}
                     </div>
@@ -450,7 +450,7 @@ const Users = () => {
                             const newRoles = e.target.checked ? [...accessForm.roles, r] : accessForm.roles.filter(role => role !== r);
                             setAccessForm({ ...accessForm, roles: newRoles });
                           }} style={{ accentColor: 'var(--accent-primary)' }} />
-                          {r.replace('ROLE_', '')}
+                          {translateRole(r)}
                         </label>
                       ))}
                     </div>
