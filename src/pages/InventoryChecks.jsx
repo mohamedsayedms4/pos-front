@@ -117,9 +117,11 @@ const InventoryChecks = () => {
                                 onChange={(e) => setQuery(e.target.value)}
                             />
                         </div>
-                        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                            + بدء جرد جديد
-                        </button>
+                        {Api.can('INVENTORY_CREATE') && (
+                            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                                + بدء جرد جديد
+                            </button>
+                        )}
                     </div>
                 </div>
 

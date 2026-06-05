@@ -447,20 +447,24 @@ const Suppliers = () => {
               </select>
 
               <div className="toolbar-actions" style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleExportExcel}
-                  disabled={exportingExcel || items.length === 0}
-                >
-                  {exportingExcel ? '⏳' : '📊'} إكسيل
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleExportPdf}
-                  disabled={exportingPdf || items.length === 0}
-                >
-                  {exportingPdf ? '⏳' : '📄'} PDF
-                </button>
+                {Api.can('SUPPLIER_READ') && (
+                  <>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleExportExcel}
+                      disabled={exportingExcel || items.length === 0}
+                    >
+                      {exportingExcel ? '⏳' : '📊'} إكسيل
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleExportPdf}
+                      disabled={exportingPdf || items.length === 0}
+                    >
+                      {exportingPdf ? '⏳' : '📄'} PDF
+                    </button>
+                  </>
+                )}
 
                 {Api.can('SUPPLIER_WRITE') && (
                   <button className="btn btn-primary" onClick={() => openForm(null)}>

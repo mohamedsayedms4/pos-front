@@ -312,7 +312,7 @@ const Customers = () => {
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 )}
-                <button className="btn btn-secondary" onClick={handleExportExcel} title="تصدير إلى إكسيل">📥 تصدير</button>
+                {Api.can('CUSTOMER_READ') && <button className="btn btn-secondary" onClick={handleExportExcel} title="تصدير إلى إكسيل">📥 تصدير</button>}
                 {Api.can('CUSTOMER_WRITE') !== false && (
                   <>
                     <input type="file" id="customerExcelInput" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
@@ -369,14 +369,14 @@ const Customers = () => {
                         <td style={{ textAlign: 'center' }}>
                           <div className="table-actions" style={{ justifyContent: 'center' }}>
                             <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/customers/${c.id}`)} title="عرض التفاصيل">👁️</button>
-                            {Number(c.balance) > 0 && (
+                            {Number(c.balance) > 0 && Api.can('TREASURY_WRITE') && (
                               <>
                                 <button className="btn btn-icon btn-ghost" style={{ color: '#f59e0b' }} onClick={() => handleSendDebtMessage(c)} title="إرسال رسالة تذكير">📩</button>
                                 <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-green)' }} onClick={() => handleViewDebt(c.id)} title="تحصيل دفع">💰</button>
                               </>
                             )}
-                            <button className="btn btn-icon btn-ghost" onClick={() => openEditModal(c)} title="تعديل">✏️</button>
-                            <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => handleDelete(c.id)} title="حذف">🗑</button>
+                            {Api.can('CUSTOMER_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => openEditModal(c)} title="تعديل">✏️</button>}
+                            {Api.can('CUSTOMER_DELETE') && <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => handleDelete(c.id)} title="حذف">🗑</button>}
                           </div>
                         </td>
                       </tr>

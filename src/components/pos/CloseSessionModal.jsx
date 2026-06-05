@@ -153,7 +153,7 @@ const styles = `
     max-width: 420px;
     padding: 30px;
     box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-    color: var(--text-white, #fff);
+    color: var(--text-main);
     animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
   }
@@ -189,10 +189,10 @@ const styles = `
     font-size: 1.6rem;
     font-weight: 800;
     text-align: center;
-    color: var(--text-white, #fff);
+    color: var(--text-main);
   }
   .session-modal-desc {
-    color: var(--text-muted, #aaa);
+    color: var(--text-secondary, #666);
     text-align: center;
     margin-bottom: 24px;
     font-size: 0.95rem;
@@ -204,7 +204,7 @@ const styles = `
   .session-form-group label {
     display: block;
     margin-bottom: 8px;
-    color: var(--text-light, #ddd);
+    color: var(--text-main);
     font-size: 0.95rem;
     font-weight: 600;
   }
@@ -213,7 +213,7 @@ const styles = `
     border-radius: 10px;
     background: var(--bg-input, #2d2d2d);
     border: 1px solid var(--border-input, #444);
-    color: #fff;
+    color: var(--text-main);
     font-size: 1.2rem;
     font-weight: 700;
     transition: all 0.2s;
@@ -252,7 +252,7 @@ const styles = `
   }
   .session-btn-neutral {
     background: var(--bg-tile, #333);
-    color: var(--text-white, #fff);
+    color: var(--text-main);
     border: 1px solid var(--border-subtle, #444);
   }
   .session-btn-neutral:hover {
@@ -303,7 +303,7 @@ const styles = `
   }
   .variance-negative { background: rgba(239, 68, 68, 0.2); color: #f87171; }
   .variance-positive { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-  .variance-neutral { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  .variance-neutral { background: rgba(255, 255, 255, 0.1); color: var(--text-main); }
 `;
 
 export default CloseSessionModal;

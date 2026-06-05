@@ -76,7 +76,7 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
           max-width: 420px;
           padding: 30px;
           box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-          color: var(--text-white, #fff);
+          color: var(--text-main);
           animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative;
         }
@@ -90,10 +90,10 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
           margin-top: 0;
           margin-bottom: 10px;
           text-align: center;
-          color: var(--text-white, #fff);
+          color: var(--text-main);
         }
         .session-modal-desc {
-          color: var(--text-muted, #aaa);
+          color: var(--text-secondary, #666);
           text-align: center;
           margin-bottom: 24px;
           font-size: 0.95rem;
@@ -105,7 +105,7 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
         .session-form-group label {
           display: block;
           margin-bottom: 8px;
-          color: var(--text-light, #ddd);
+          color: var(--text-main);
           font-size: 0.95rem;
           font-weight: 600;
         }
@@ -115,7 +115,7 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
           border-radius: 10px;
           background: var(--bg-input, #2d2d2d);
           border: 1px solid var(--border-input, #444);
-          color: #fff;
+          color: var(--text-main);
           font-size: 1.2rem;
           font-weight: 700;
           transition: all 0.2s;

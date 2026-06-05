@@ -166,9 +166,11 @@ const Warehouses = () => {
       <div className="card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>📦 إدارة المخازن</h3>
+        {Api.can('WAREHOUSE_WRITE') && (
           <button className="btn btn-primary" onClick={() => openForm()}>
             <span>+</span> إضافة مخزن جديد
           </button>
+        )}
         </div>
         <div className="card-body no-padding">
           <div className="table-wrapper">
@@ -206,8 +208,8 @@ const Warehouses = () => {
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn btn-icon btn-ghost" title="إدارة المخزون" onClick={() => openStockModal(w)}>📦</button>
-                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(w)}>✏️</button>
+                          {Api.can('STOCK_WRITE') && <button className="btn btn-icon btn-ghost" title="إدارة المخزون" onClick={() => openStockModal(w)}>📦</button>}
+                          {Api.can('WAREHOUSE_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(w)}>✏️</button>}
                         </div>
                       </td>
                     </tr>

@@ -139,9 +139,11 @@ const Branches = () => {
       <div className="card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>🏢 إدارة الفروع</h3>
+        {Api.can('BRANCH_WRITE') && (
           <button className="btn btn-primary" onClick={() => openForm()}>
             <span>+</span> إضافة فرع جديد
           </button>
+        )}
         </div>
         <div className="card-body no-padding">
           <div className="table-wrapper">
@@ -183,9 +185,9 @@ const Branches = () => {
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn btn-icon btn-ghost" title="إدارة الفرع" onClick={() => navigate(`/branches/${b.id}/manage`)}>⚙️</button>
-                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(b)}>✏️</button>
-                          <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(b.id, b.name)}>🗑️</button>
+                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="إدارة الفرع" onClick={() => navigate(`/branches/${b.id}/manage`)}>⚙️</button>}
+                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(b)}>✏️</button>}
+                          {Api.can('BRANCH_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(b.id, b.name)}>🗑️</button>}
                         </div>
                       </td>
                     </tr>

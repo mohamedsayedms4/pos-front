@@ -428,7 +428,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* ────────────────── الحسابات والتقارير المتقدمة ────────────────── */}
-        {(Api.can('TREASURY_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ')) && (
+        {(Api.can('TREASURY_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ') || Api.can('PROFIT_LOSS_READ') || isAdmin || Api.can('CUSTOMER_READ')) && (
           <>
             <div className="nav-section-title">الحسابات والتقارير</div>
             {Api.can('TREASURY_READ') && (
@@ -451,43 +451,49 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>الأصول الثابتة</span>
               </NavLink>
             )}
-            {Api.can('TREASURY_READ') && (
-              <>
-                <NavLink to="/profit-loss" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">📈</span>
-                  <span>الأرباح والخسائر</span>
-                </NavLink>
-                {/*
-                <NavLink to="/trial-balance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">⚖️</span>
-                  <span>ميزان المراجعة (GL)</span>
-                </NavLink>
-                <NavLink to="/financial-accounts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">🏦</span>
-                  <span>إدارة البنوك والحسابات</span>
-                </NavLink>
-                <NavLink to="/financial-analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">📊</span>
-                  <span>التحليل المالي الموحد</span>
-                </NavLink>
-                <NavLink to="/partners" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">🤝</span>
-                  <span>الشركاء</span>
-                </NavLink>
-                */}
-                <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">📊</span>
-                  <span>إدارة الآجل والأقساط</span>
-                </NavLink>
-                <NavLink to="/facebook-ads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">🔵</span>
-                  <span>تقارير إعلانات فيسبوك</span>
-                </NavLink>
-                <NavLink to="/installments-calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                  <span className="nav-icon">📅</span>
-                  <span>تقويم الأقساط</span>
-                </NavLink>
-              </>
+            {Api.can('PROFIT_LOSS_READ') && (
+              <NavLink to="/profit-loss" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📈</span>
+                <span>الأرباح والخسائر</span>
+              </NavLink>
+            )}
+            {/*
+            <NavLink to="/trial-balance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">⚖️</span>
+              <span>ميزان المراجعة (GL)</span>
+            </NavLink>
+            <NavLink to="/financial-accounts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🏦</span>
+              <span>إدارة البنوك والحسابات</span>
+            </NavLink>
+            <NavLink to="/financial-analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">📊</span>
+              <span>التحليل المالي الموحد</span>
+            </NavLink>
+            <NavLink to="/partners" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🤝</span>
+              <span>الشركاء</span>
+            </NavLink>
+            */}
+            {Api.can('CUSTOMER_READ') && (
+              <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📊</span>
+                <span>إدارة الآجل والأقساط</span>
+              </NavLink>
+            )}
+            {/*
+            {isAdmin && (
+              <NavLink to="/facebook-ads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🔵</span>
+                <span>تقارير إعلانات فيسبوك</span>
+              </NavLink>
+            )}
+            */}
+            {Api.can('CUSTOMER_READ') && (
+              <NavLink to="/installments-calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📅</span>
+                <span>تقويم الأقساط</span>
+              </NavLink>
             )}
             {/*
             {Api.can('PAYROLL_READ') && (

@@ -158,9 +158,11 @@ const Expenses = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
+            {Api.can('EXPENSE_CREATE') && (
               <button className="btn btn-primary" onClick={() => setShowModal(true)}>
                 <span>+</span> إضافة مصروف
               </button>
+            )}
             </div>
           </div>
         </div>
@@ -215,7 +217,7 @@ const Expenses = () => {
                                 </div>
                             </td>
                             <td>
-                                <button className="btn btn-sm btn-ghost-danger" onClick={() => handleDelete(exp.id)} style={{ padding: '5px 15px' }}>حذف</button>
+                                {Api.can('EXPENSE_DELETE') && <button className="btn btn-sm btn-ghost-danger" onClick={() => handleDelete(exp.id)} style={{ padding: '5px 15px' }}>حذف</button>}
                             </td>
                         </tr>
                     );

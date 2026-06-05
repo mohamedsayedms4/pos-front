@@ -111,9 +111,11 @@ const Roles = () => {
         <div className="card">
           <div className="card-header">
             <h3>🔑 إدارة الأدوار والصلاحيات</h3>
-            <button className="btn btn-primary" onClick={() => openForm()}>
-              <span>+</span> إضافة دور جديد
-            </button>
+            {Api.can('ROLE_WRITE') && (
+              <button className="btn btn-primary" onClick={() => openForm()}>
+                <span>+</span> إضافة دور جديد
+              </button>
+            )}
           </div>
           <div className="card-body no-padding">
             <div className="table-wrapper">
@@ -158,15 +160,17 @@ const Roles = () => {
                         </td>
                         <td>
                           <div className="table-actions">
-                            <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(r)}>✏️</button>
-                            <button 
-                                className="btn btn-icon btn-ghost" 
-                                title="حذف" 
-                                onClick={() => handleDelete(r)}
-                                disabled={r.name === 'ROLE_ADMIN'}
-                            >
-                                🗑️
-                            </button>
+                            {Api.can('ROLE_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(r)}>✏️</button>}
+                            {Api.can('ROLE_DELETE') && (
+                              <button 
+                                  className="btn btn-icon btn-ghost" 
+                                  title="حذف" 
+                                  onClick={() => handleDelete(r)}
+                                  disabled={r.name === 'ROLE_ADMIN'}
+                              >
+                                  🗑️
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -160,9 +160,10 @@ const InventoryCheckDetails = () => {
     if (!check) return null;
 
     const isApprover = Api.can('INVENTORY_APPROVE');
+    const canCreate = Api.can('INVENTORY_CREATE');
     const isDraft = check.status === 'DRAFT';
     const isPending = check.status === 'PENDING_APPROVAL';
-    const isEditable = isDraft || (isPending && isApprover);
+    const isEditable = (isDraft && canCreate) || (isPending && isApprover);
     const isTargetAsset = check.target === 'FIXED_ASSET';
     const displayedItems = items.filter(i => {
         const name = isTargetAsset ? i.fixedAssetName : i.productName;
@@ -223,7 +224,7 @@ const InventoryCheckDetails = () => {
                                 </button>
                             )}
 
-                            {isDraft && (
+                            {isDraft && canCreate && (
                                 <button 
                                     className="btn btn-primary" 
                                     onClick={() => setShowSubmitConfirm(true)} 
