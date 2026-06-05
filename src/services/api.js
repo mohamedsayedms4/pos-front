@@ -430,10 +430,10 @@ const Api = {
     }
   },
 
-  async _tryRefresh() {
+  async _tryRefresh(force = false) {
     // 1. Check if the current token is already valid
     const currentAccessToken = this._getToken();
-    if (this._isTokenValid(currentAccessToken)) {
+    if (!force && this._isTokenValid(currentAccessToken)) {
       return true;
     }
 
@@ -504,11 +504,11 @@ const Api = {
         }
 
         localStorage.removeItem(lockKey);
-        return false;
+        return 'NETWORK_ERROR';
       } catch (err) {
         console.error('Refresh token API call failed due to network/server issue:', err);
         localStorage.removeItem(lockKey);
-        return false;
+        return 'NETWORK_ERROR';
       } finally {
         this._refreshPromise = null;
       }
@@ -523,7 +523,7 @@ const Api = {
     }
     this._refreshIntervalId = setInterval(async () => {
       console.log('[Interval] Proactive token refresh ticking...');
-      const refreshed = await this._tryRefresh();
+      const refreshed = await this._tryRefresh(true);
       if (refreshed === 'REFUSED') {
         console.warn('[Interval] Token explicitly refused. Logging out.');
         this.logout();
