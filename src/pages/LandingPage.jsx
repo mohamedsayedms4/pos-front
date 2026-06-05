@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import logoLandingLight from '../assets/img/logo-landing-light.png';
 import logoLandingDark from '../assets/img/logo-landing-dark.png';
@@ -129,14 +129,16 @@ const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const user = Api._getUser();
     const token = Api._getToken();
     if (user && token) {
       setIsLoggedIn(true);
+      navigate('/dashboard');
     }
-  }, []);
+  }, [navigate]);
 
   // Monitor scroll for header background
   useEffect(() => {

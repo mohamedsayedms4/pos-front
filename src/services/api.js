@@ -2276,6 +2276,49 @@ const Api = {
     if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
     if (url.startsWith('/')) return `${SERVER_URL}${url}`;
     return `${API_BASE}/products/images/${url.split('/').pop()}`;
+  },
+  // --- Cashier Sessions ---
+  async openSession(data) {
+    const res = await this._request('/sessions/open', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res; // Assuming response wraps in data or just returns obj
+  },
+
+  async closeSession(data) {
+    const res = await this._request('/sessions/close', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res;
+  },
+
+  async getCurrentSession() {
+    const res = await this._request('/sessions/current');
+    return res;
+  },
+
+  async getSessions(params = {}) {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, value);
+      }
+    });
+    return await this._request(`/sessions?${queryParams.toString()}`);
+  },
+
+  async getSessionSummary(sessionId) {
+    return await this._request(`/sessions/${sessionId}/summary`);
+  },
+
+  async addCashMovement(data) {
+    const res = await this._request('/sessions/cash-movement', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res;
   }
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import StoreApi from '../services/storeApi';
 import { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
@@ -8,6 +9,7 @@ import ChatService from '../services/ChatService';
 import CommunicationApi from '../services/CommunicationApi';
 
 const Settings = () => {
+    const location = useLocation();
     const { toast } = useGlobalUI();
     const [info, setInfo] = useState({
         aboutUs: '', currency: 'جنيه', logoUrl: '', facebookPixelId: '',
@@ -139,22 +141,26 @@ const Settings = () => {
 
     const logoPreview = StoreApi.getImageUrl(info.logoUrl);
 
+    const isIdentity = location.pathname === '/settings';
+    const isSmtp = location.pathname === '/settings/smtp';
+    const isPrint = location.pathname === '/settings/print';
+    const isBanner = location.pathname === '/settings/banner';
+
     return (
         <div className="page-section" style={{ direction: 'rtl' }}>
+            {isIdentity && (
             <div className="card" style={{ marginBottom: '20px' }}>
-                <div className="products-header-premium">
-                    <div className="row-premium title-row">
-                        <h3 style={{ margin: 0 }}>⚙️ إعدادات المتجر والهوية</h3>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button 
-                                type="submit" 
-                                form="settingsForm"
-                                className="btn btn-primary"
-                                disabled={saving}
-                            >
-                                {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-                            </button>
-                        </div>
+                <div className="card-header">
+                    <h3>⚙️ إعدادات المتجر والهوية</h3>
+                    <div className="toolbar" style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            type="submit" 
+                            form="settingsForm"
+                            className="btn btn-primary"
+                            disabled={saving}
+                        >
+                            {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                        </button>
                     </div>
                 </div>
                 
@@ -334,22 +340,22 @@ const Settings = () => {
                     </form>
                 </div>
             </div>
+            )}
 
             {/* SMTP Settings Card */}
+            {isSmtp && (
             <div className="card" style={{ marginBottom: '20px' }}>
-                <div className="products-header-premium">
-                    <div className="row-premium title-row">
-                        <h3 style={{ margin: 0 }}>📧 إعدادات خادم البريد (SMTP)</h3>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button 
-                                type="submit" 
-                                form="smtpForm"
-                                className="btn btn-primary"
-                                disabled={savingSmtp}
-                            >
-                                {savingSmtp ? 'جاري الحفظ...' : 'حفظ إعدادات البريد'}
-                            </button>
-                        </div>
+                <div className="card-header">
+                    <h3>📧 إعدادات خادم البريد (SMTP)</h3>
+                    <div className="toolbar" style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            type="submit" 
+                            form="smtpForm"
+                            className="btn btn-primary"
+                            disabled={savingSmtp}
+                        >
+                            {savingSmtp ? 'جاري الحفظ...' : 'حفظ إعدادات البريد'}
+                        </button>
                     </div>
                 </div>
                 
@@ -394,21 +400,21 @@ const Settings = () => {
                     </form>
                 </div>
             </div>
+            )}
 
             {/* Print & Templates Settings Card */}
+            {isPrint && (
             <div className="card" style={{ marginBottom: '20px' }}>
-                <div className="products-header-premium">
-                    <div className="row-premium title-row">
-                        <h3 style={{ margin: 0 }}>🖨️ إعدادات الطباعة والقوالب (للجهاز الحالي)</h3>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button 
-                                type="button"
-                                onClick={handleSavePrintSettings}
-                                className="btn btn-primary"
-                            >
-                                حفظ إعدادات الطباعة
-                            </button>
-                        </div>
+                <div className="card-header">
+                    <h3>🖨️ إعدادات الطباعة والقوالب (للجهاز الحالي)</h3>
+                    <div className="toolbar" style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            type="button"
+                            onClick={handleSavePrintSettings}
+                            className="btn btn-primary"
+                        >
+                            حفظ إعدادات الطباعة
+                        </button>
                     </div>
                 </div>
                 
@@ -462,17 +468,18 @@ const Settings = () => {
                     </div>
                 </div>
             </div>
+            )}
 
+            {isBanner && (
             <div className="card">
-                <div className="products-header-premium">
-                    <div className="row-premium title-row">
-                        <h3 style={{ margin: 0 }}>🖼️ الـ Banner الإعلاني (Hero Sections)</h3>
-                    </div>
+                <div className="card-header">
+                    <h3>🖼️ الـ Banner الإعلاني (Hero Sections)</h3>
                 </div>
                 <div className="card-body">
                     <HeroSectionManager />
                 </div>
             </div>
+            )}
         </div>
     );
 };

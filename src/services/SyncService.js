@@ -1,10 +1,10 @@
 import Api from './api';
-import { 
-  db, 
-  syncProductsToLocal, 
-  syncCustomersToLocal, 
-  syncBranchesToLocal, 
-  syncWarehousesToLocal 
+import {
+  db,
+  syncProductsToLocal,
+  syncCustomersToLocal,
+  syncBranchesToLocal,
+  syncWarehousesToLocal
 } from './db';
 
 const SyncService = {
@@ -16,24 +16,24 @@ const SyncService = {
       console.warn('Cannot sync: browser is offline.');
       return;
     }
-    
+
     console.log('🔄 Starting full sync from server...');
     try {
-      // 1. Sync Products
-      const productsRaw = await Api.getProducts(0, 5000); 
-      const products = this._extractData(productsRaw);
-      if (products.length > 0) {
-        await syncProductsToLocal(products);
-        console.log(`✅ Synced ${products.length} products.`);
-      }
+      // Products sync is disabled to allow server-side pagination to handle fetching
+      // const productsRaw = await Api.getProducts(0, 5000); 
+      // const products = this._extractData(productsRaw);
+      // if (products.length > 0) {
+      //   await syncProductsToLocal(products);
+      //   console.log(`✅ Synced ${products.length} products.`);
+      // }
 
       // 2. Sync Customers
-      const customersRaw = await Api.getCustomers(0, 1000, '', branchId);
-      const customers = this._extractData(customersRaw);
-      if (customers.length > 0) {
-        await syncCustomersToLocal(customers);
-        console.log(`✅ Synced ${customers.length} customers.`);
-      }
+      // const customersRaw = await Api.getCustomers(0, 1000, '', branchId);
+      // const customers = this._extractData(customersRaw);
+      // if (customers.length > 0) {
+      //   await syncCustomersToLocal(customers);
+      //   console.log(`✅ Synced ${customers.length} customers.`);
+      // }
 
       // 3. Sync Branches
       const branchesRaw = await Api.getBranches();
@@ -50,7 +50,7 @@ const SyncService = {
         await syncWarehousesToLocal(warehouses);
         console.log(`✅ Synced ${warehouses.length} warehouses.`);
       }
-      
+
       await db.settings.put({ key: 'last_full_sync', value: new Date().toISOString() });
       console.log('🚀 Full sync completed successfully.');
       return true;
@@ -84,7 +84,7 @@ const SyncService = {
     if (pendingSales.length === 0) return;
 
     console.log(`📤 Syncing ${pendingSales.length} offline sales...`);
-    
+
     for (const sale of pendingSales) {
       try {
         await Api.createSale(sale.data);
@@ -92,7 +92,7 @@ const SyncService = {
         console.log(`✅ Sale #${sale.id} synced successfully.`);
       } catch (err) {
         console.error(`❌ Failed to sync sale #${sale.id}:`, err);
-        break; 
+        break;
       }
     }
   },

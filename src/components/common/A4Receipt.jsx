@@ -1,22 +1,23 @@
 import React, { useEffect, useState, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
-import Api from '../../services/api';
+import StoreApi from '../../services/storeApi';
 import { useBranch } from '../../context/BranchContext';
 
 const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
-  const [tenantName, setTenantName] = useState('');
+  const [storeConfig, setStoreConfig] = useState(null);
   const barcodeRef = useRef(null);
   const branchContext = useBranch ? useBranch() : null;
   const activeBranch = branchContext?.getSelectedBranch ? branchContext.getSelectedBranch() : null;
 
   useEffect(() => {
-    Api.getCurrentTenantDetails()
+    StoreApi.getStoreInfoPublic()
       .then(res => {
-        if (res && res.name) {
-          setTenantName(res.name);
+        const configData = res?.data || res;
+        if (configData) {
+          setStoreConfig(configData);
         }
       })
-      .catch(err => console.warn('Error fetching tenant details:', err));
+      .catch(err => console.warn('Error fetching store config:', err));
   }, []);
 
   useEffect(() => {
@@ -41,7 +42,8 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
 
   if (!invoice) return null;
 
-  const displayStoreName = tenantName || invoice.tenantName || "مجموعة المهلل";
+  const displayStoreName = storeConfig?.name || invoice.tenantName || invoice.branchName || "المتجر";
+  const logoUrl = storeConfig?.logoUrl ? StoreApi.getImageUrl(storeConfig.logoUrl) : null;
   const displayBranchName = activeBranch?.name || invoice.branchName || "الفرع الرئيسي";
 
   const formatDate = (dateStr) => {
@@ -105,10 +107,13 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
     <div className="invoice-classic-wrapper">
       {/* Header */}
       <div className="classic-header">
-        <div className="company-details">
-          <h2>{displayStoreName}</h2>
-          <p>{displayBranchName}</p>
-          <p>تاريخ الفاتورة: {dateFormatted}</p>
+        <div className="company-details" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {logoUrl && <img src={logoUrl} alt="Store Logo" style={{ maxHeight: '50px', maxWidth: '100px', objectFit: 'contain' }} />}
+          <div>
+            <h2>{displayStoreName}</h2>
+            <p>{displayBranchName}</p>
+            <p>تاريخ الفاتورة: {dateFormatted}</p>
+          </div>
         </div>
         <div className="invoice-title-block">
           <h1>فاتورة مبيعات</h1>
@@ -216,10 +221,16 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
     <div className="invoice-modern-wrapper">
       {/* Dynamic Header */}
       <div className="modern-header">
-        <div className="modern-header-logo-side">
-          <div className="modern-logo-container">
-            <span className="logo-letter">{displayStoreName.charAt(0)}</span>
-          </div>
+        <div className="modern-header-logo-side" style={{ display: 'flex', alignItems: 'center' }}>
+          {logoUrl ? (
+            <div className="modern-logo-container" style={{ background: 'transparent', boxShadow: 'none' }}>
+              <img src={logoUrl} alt="Store Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+            </div>
+          ) : (
+            <div className="modern-logo-container">
+              <span className="logo-letter">{displayStoreName.charAt(0)}</span>
+            </div>
+          )}
           <div className="modern-company-info">
             <h2>{displayStoreName}</h2>
             <p className="branch-tag">📍 {displayBranchName}</p>

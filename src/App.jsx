@@ -26,6 +26,7 @@ import Customers from './pages/Customers.jsx'
 import CustomerDetails from './pages/CustomerDetails.jsx'
 import Sales from './pages/Sales.jsx'
 import SaleDetails from './pages/SaleDetails.jsx'
+import SessionsLog from './pages/SessionsLog.jsx'
 import Returns from './pages/Returns.jsx'
 import Treasury from './pages/Treasury.jsx'
 import TreasuryManagement from './pages/TreasuryManagement.jsx'
@@ -165,6 +166,7 @@ function App() {
                     {/* Sales & POS */}
                     <Route element={<ProtectedRoute permission="SALE_READ" />}>
                       <Route path="/pos" element={<POS />} />
+                      <Route path="/sessions" element={<SessionsLog />} />
                       <Route path="/sales" element={<Sales />} />
                       <Route path="/sales/view/:id" element={<SaleDetails />} />
                       <Route path="/sales/analytics" element={<SalesAnalytics />} />
@@ -294,6 +296,9 @@ function App() {
                     <Route path="/campaigns" element={<Campaigns />} />
                     <Route path="/leave-types" element={<LeaveTypes />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/settings/smtp" element={<Settings />} />
+                    <Route path="/settings/print" element={<Settings />} />
+                    <Route path="/settings/banner" element={<Settings />} />
                     <Route element={<ProtectedRoute permission="SETTINGS_MANAGE" />}>
                       <Route path="/settings/attendance" element={<AttendanceSettings />} />
                     </Route>

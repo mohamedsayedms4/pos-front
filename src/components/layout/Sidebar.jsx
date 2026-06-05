@@ -18,6 +18,9 @@ const Sidebar = ({ isOpen, onClose }) => {
   const isAttendancePageActive = location.pathname.startsWith('/attendance') || location.pathname.startsWith('/settings/attendance');
   const [attendanceMenuOpen, setAttendanceMenuOpen] = useState(isAttendancePageActive);
 
+  const isSettingsPageActive = location.pathname.startsWith('/settings') && !location.pathname.startsWith('/settings/attendance');
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(isSettingsPageActive);
+
   // Sync menu open state when location changes
   useEffect(() => {
     if (location.pathname.startsWith('/products')) {
@@ -25,6 +28,9 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
     if (location.pathname.startsWith('/attendance') || location.pathname.startsWith('/settings/attendance')) {
       setAttendanceMenuOpen(true);
+    }
+    if (location.pathname.startsWith('/settings') && !location.pathname.startsWith('/settings/attendance')) {
+      setSettingsMenuOpen(true);
     }
   }, [location.pathname]);
 
@@ -92,10 +98,88 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* 1. إعدادات المتجر */}
         {isAdmin && (
-          <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-            <span className="nav-icon">⚙️</span>
-            <span>إعدادات المتجر</span>
-          </NavLink>
+          <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div
+              className={`nav-item ${isSettingsPageActive ? 'active' : ''}`}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', paddingRight: '16px' }}
+              onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, color: 'inherit', padding: '11px 0' }}
+              >
+                <span className="nav-icon">⚙️</span>
+                <span>إعدادات المتجر</span>
+              </div>
+              <span
+                style={{
+                  fontSize: '0.8rem',
+                  transition: 'transform 0.2s',
+                  transform: settingsMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                  padding: '4px 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-muted)'
+                }}
+              >
+                ◀
+              </span>
+            </div>
+
+            {settingsMenuOpen && (
+              <div
+                className="nav-sub-items"
+                style={{
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  paddingRight: '15px'
+                }}
+              >
+                {/* 
+                <NavLink
+                  to="/settings"
+                  end
+                  className={`nav-item sub-item ${location.pathname === '/settings' ? 'active' : ''}`}
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  onClick={onClose}
+                >
+                  <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                  <span>المتجر والهوية</span>
+                </NavLink>
+                <NavLink
+                  to="/settings/smtp"
+                  className={`nav-item sub-item ${location.pathname === '/settings/smtp' ? 'active' : ''}`}
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  onClick={onClose}
+                >
+                  <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                  <span>خادم البريد SMTP</span>
+                </NavLink>
+                */}
+                <NavLink
+                  to="/settings/print"
+                  className={`nav-item sub-item ${location.pathname === '/settings/print' ? 'active' : ''}`}
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  onClick={onClose}
+                >
+                  <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                  <span>الطباعة والقوالب</span>
+                </NavLink>
+                {/*
+                <NavLink
+                  to="/settings/banner"
+                  className={`nav-item sub-item ${location.pathname === '/settings/banner' ? 'active' : ''}`}
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  onClick={onClose}
+                >
+                  <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
+                  <span>الـ Banner الإعلاني</span>
+                </NavLink>
+                */}
+              </div>
+            )}
+          </div>
         )}
 
         {/* 2. إدارة الفروع */}
@@ -273,13 +357,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
-        {/* 13. سجل الشيكات */}
+        {/* 13. سجل الشيكات
         {Api.can('TREASURY_READ') && (
           <NavLink to="/checks" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">📑</span>
             <span>سجل الشيكات</span>
           </NavLink>
         )}
+        */}
 
         {/* ────────────────── بقية العمليات والطلبات ────────────────── */}
         <div className="nav-section-title">المبيعات المباشرة والتشغيل</div>
@@ -292,13 +377,22 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
-        {/* الطلبات الإلكترونية */}
+        {/* سجل الورديات */}
+        {Api.can('SALE_READ') && (
+          <NavLink to="/sessions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon">📅</span>
+            <span>سجل الورديات</span>
+          </NavLink>
+        )}
+
+        {/* الطلبات الإلكترونية
         {Api.can('SALE_READ') && (
           <NavLink to="/online-orders" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🌐</span>
             <span>الطلبات الإلكترونية</span>
           </NavLink>
         )}
+        */}
 
         {/* استلام المخزون */}
         {Api.can('STOCK_READ') && (
@@ -316,13 +410,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
-        {/* تفاعل العملاء */}
+        {/* تفاعل العملاء
         {Api.can('PRODUCT_READ') && (
           <NavLink to="/products/interactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">📊</span>
             <span>تفاعل العملاء</span>
           </NavLink>
         )}
+        */}
 
         {/* التوالف والهوالك */}
         {Api.can('DAMAGED_GOODS_MANAGE') && (
@@ -362,6 +457,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon">📈</span>
                   <span>الأرباح والخسائر</span>
                 </NavLink>
+                {/*
                 <NavLink to="/trial-balance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                   <span className="nav-icon">⚖️</span>
                   <span>ميزان المراجعة (GL)</span>
@@ -378,6 +474,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon">🤝</span>
                   <span>الشركاء</span>
                 </NavLink>
+                */}
                 <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                   <span className="nav-icon">📊</span>
                   <span>إدارة الآجل والأقساط</span>
@@ -392,16 +489,19 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </NavLink>
               </>
             )}
+            {/*
             {Api.can('PAYROLL_READ') && (
               <NavLink to="/payroll" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon">💸</span>
                 <span>مسير الرواتب</span>
               </NavLink>
             )}
+            */}
           </>
         )}
 
         {/* ────────────────── الموظفين والموارد البشرية ────────────────── */}
+        {/*
         {(Api.can('EMPLOYEE_READ') || Api.can('ATTENDANCE_READ') || Api.can('LEAVE_READ') || Api.can('SHIFT_MANAGE')) && (
           <>
             <div className="nav-section-title">الموظفين والموارد البشرية</div>
@@ -547,6 +647,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             )}
           </>
         )}
+        */}
 
         {/* ────────────────── سجلات المراقبة والتحكم ────────────────── */}
         {(Api.can('ROLE_READ') || Api.can('AUDIT_READ')) && (

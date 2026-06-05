@@ -1,22 +1,23 @@
 import React, { useEffect, useState, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
-import Api from '../../services/api';
+import StoreApi from '../../services/storeApi';
 import { useBranch } from '../../context/BranchContext';
 
 const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPreview = false }) => {
-  const [tenantName, setTenantName] = useState('');
+  const [storeConfig, setStoreConfig] = useState(null);
   const barcodeRef = useRef(null);
   const branchContext = useBranch ? useBranch() : null;
   const activeBranch = branchContext?.getSelectedBranch ? branchContext.getSelectedBranch() : null;
 
   useEffect(() => {
-    Api.getCurrentTenantDetails()
+    StoreApi.getStoreInfoPublic()
       .then(res => {
-        if (res && res.name) {
-          setTenantName(res.name);
+        const configData = res?.data || res;
+        if (configData) {
+          setStoreConfig(configData);
         }
       })
-      .catch(err => console.warn('Error fetching tenant details:', err));
+      .catch(err => console.warn('Error fetching store config:', err));
   }, []);
 
   useEffect(() => {
@@ -41,7 +42,8 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
 
   if (!invoice) return null;
 
-  const displayStoreName = tenantName || invoice.tenantName || settings.storeName || "مجموعة المهلل";
+  const displayStoreName = storeConfig?.name || invoice.tenantName || settings.storeName || invoice.branchName || "المتجر";
+  const logoUrl = storeConfig?.logoUrl ? StoreApi.getImageUrl(storeConfig.logoUrl) : null;
   const displayBranchName = activeBranch?.name || invoice.branchName || settings.branchName || "الفرع الرئيسي";
 
   const formatDate = (dateStr) => {
@@ -102,9 +104,18 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
 
   return (
     <div className={`receipt-container ${isPreview ? 'preview-mode' : ''} ${template === 'compact' ? 'compact-mode' : ''}`} id="printable-receipt" dir="rtl">
-      <div className="receipt-header">
-        <h1 className="store-name-title">{displayStoreName}</h1>
-        <p className="branch-subtitle">{displayBranchName}</p>
+      <div className="receipt-header-container" style={{ marginBottom: '5px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ textAlign: 'right', flex: 1 }}>
+            <h1 className="store-name-title" style={{ textAlign: 'right' }}>{displayStoreName}</h1>
+            <p className="branch-subtitle" style={{ textAlign: 'right', margin: '4px 0 0 0' }}>{displayBranchName}</p>
+          </div>
+          {logoUrl && (
+            <div style={{ textAlign: 'left', flexShrink: 0, paddingRight: '10px' }}>
+              <img src={logoUrl} alt="Store Logo" style={{ height: '40px', width: 'auto', maxWidth: '80px', objectFit: 'contain', display: 'block' }} />
+            </div>
+          )}
+        </div>
         <div className="solid-divider"></div>
       </div>
 
@@ -189,6 +200,7 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
         .receipt-container p {
           font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif !important;
           letter-spacing: normal !important;
+          color: #000 !important;
         }
         .preview-mode {
           box-shadow: 0 0 20px rgba(0,0,0,0.5);
@@ -197,8 +209,8 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
           border-radius: 4px;
         }
         .receipt-header { text-align: center; margin-bottom: 5px; }
-        .store-name-title { font-size: 18pt; font-weight: 800; margin: 0; display: block; }
-        .branch-subtitle { font-size: 11pt; margin: 2px 0 8px 0; font-weight: 500; }
+        .store-name-title { font-size: 18pt; font-weight: 800; margin: 0; display: block; color: #000 !important; }
+        .branch-subtitle { font-size: 11pt; margin: 2px 0 8px 0; font-weight: 500; color: #000 !important; }
         
         .solid-divider { border-bottom: 1.5pt solid #000; margin: 4px 0; }
         .dashed-divider { border-bottom: 1pt dashed #ccc; margin: 8px 0; }

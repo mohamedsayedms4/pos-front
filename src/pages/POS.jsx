@@ -9,6 +9,9 @@ import { useBranch } from '../context/BranchContext';
 import { db, saveOfflineSale } from '../services/db';
 import SyncService from '../services/SyncService';
 import beepSound from '../assets/sound/freesound_community-store-scanner-beep-90395.mp3';
+import OpenSessionModal from '../components/pos/OpenSessionModal';
+import CloseSessionModal from '../components/pos/CloseSessionModal';
+import CashMovementModal from '../components/pos/CashMovementModal';
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 const PAGE_SIZE = 24;
@@ -60,6 +63,11 @@ const POS = () => {
   const [pendingSalesCount, setPendingSalesCount] = useState(0);
   const observerTarget = useRef(null);
 
+  const [activeSession, setActiveSession] = useState(null);
+  const [showOpenSession, setShowOpenSession] = useState(false);
+  const [showCloseSession, setShowCloseSession] = useState(false);
+  const [showCashMovement, setShowCashMovement] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
@@ -103,6 +111,18 @@ const POS = () => {
       // If no branch is selected yet, and we have branches, auto-select the first one
       if (!globalBranchId && (!user || !user.branchId) && initialBranches.length > 0) {
         setSelectedBranchId(initialBranches[0].id);
+      }
+
+      // Check current session
+      try {
+        const sessionRes = await Api.getCurrentSession();
+        if (sessionRes && sessionRes.id) {
+          setActiveSession(sessionRes);
+        } else {
+          setShowOpenSession(true);
+        }
+      } catch (err) {
+        console.warn('Could not load session', err);
       }
     };
 
@@ -418,6 +438,10 @@ const POS = () => {
 
   return (
     <>
+      {showOpenSession && <OpenSessionModal onOpenSuccess={() => { setShowOpenSession(false); Api.getCurrentSession().then(setActiveSession).catch(()=>{}); }} />}
+      {showCloseSession && <CloseSessionModal onCloseSuccess={() => { setShowCloseSession(false); setActiveSession(null); setShowOpenSession(true); }} onCancel={() => setShowCloseSession(false)} />}
+      {showCashMovement && <CashMovementModal onClose={() => setShowCashMovement(false)} />}
+
       <div className="pos-premium-container">
       {checkoutLoading && <div className="loader-overlay"><Loader message="جاري إتمام الدفع..." /></div>}
 
@@ -487,6 +511,10 @@ const POS = () => {
       <div className="pos-cart-pane">
         <div className="cart-header">
           <h3>🛒 الطلب الحالي</h3>
+          <div style={{display:'flex', gap:'5px', flexWrap:'wrap', alignItems:'center'}}>
+            <button onClick={() => setShowCashMovement(true)} style={{padding:'4px 10px', fontSize:'0.75rem', background:'var(--metro-blue)', color:'white', borderRadius:'6px', border:'none', cursor:'pointer'}}>حركة نقدية</button>
+            <button onClick={() => setShowCloseSession(true)} style={{padding:'4px 10px', fontSize:'0.75rem', background:'#ef4444', color:'white', borderRadius:'6px', border:'none', cursor:'pointer'}}>تقفيل الوردية</button>
+          </div>
           <span className="items-count">{cart.length} أصناف</span>
         </div>
 
