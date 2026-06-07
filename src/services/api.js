@@ -142,16 +142,47 @@ const Api = {
     localStorage.setItem('pos_user', JSON.stringify(user));
   },
 
-  async uploadDesktopApp(version, releaseNotes, file) {
-    const formData = new FormData();
-    formData.append('version', version);
-    if (releaseNotes) formData.append('releaseNotes', releaseNotes);
-    formData.append('file', file);
-    const res = await this._request('/desktop-app/upload', {
-      method: 'POST',
-      body: formData
+  uploadDesktopApp(version, releaseNotes, file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('version', version);
+      if (releaseNotes) formData.append('releaseNotes', releaseNotes);
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/desktop-app/upload`);
+      const token = this._getToken();
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      const tenantId = this._getTenantId();
+      if (tenantId) xhr.setRequestHeader('X-Tenant-ID', tenantId);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          onProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText).data);
+          } catch (e) {
+            resolve(xhr.responseText);
+          }
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err.message || 'فشل الرفع'));
+          } catch (e) {
+            reject(new Error('فشل الرفع: ' + xhr.status));
+          }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('حدث خطأ في الاتصال بالخادم أثناء الرفع.'));
+      xhr.send(formData);
     });
-    return res.data;
   },
 
   async getLatestDesktopApp() {

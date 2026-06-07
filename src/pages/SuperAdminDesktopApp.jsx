@@ -9,19 +9,25 @@ const SuperAdminDesktopApp = () => {
     const [appNotes, setAppNotes] = useState('');
     const [appFile, setAppFile] = useState(null);
     const [uploadingApp, setUploadingApp] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const handleUploadApp = async (e) => {
         e.preventDefault();
         if (!appVersion || !appFile) return;
         try {
             setUploadingApp(true);
-            await Api.uploadDesktopApp(appVersion, appNotes, appFile);
+            setUploadProgress(0);
+            await Api.uploadDesktopApp(appVersion, appNotes, appFile, (progress) => {
+                setUploadProgress(progress);
+            });
             showToast('تم رفع نسخة البرنامج بنجاح', 'success');
             setAppVersion('');
             setAppNotes('');
             setAppFile(null);
+            setUploadProgress(0);
         } catch (error) {
             showToast(error.message, 'error');
+            setUploadProgress(0);
         } finally {
             setUploadingApp(false);
         }
@@ -73,15 +79,20 @@ const SuperAdminDesktopApp = () => {
                                 style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                             />
                         </div>
-                        <div>
+                        <div style={{ position: 'relative' }}>
                             <button 
                                 type="submit" 
                                 disabled={uploadingApp || !appFile || !appVersion}
-                                style={{ width: '100%', padding: '12px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '10px' }}
+                                style={{ width: '100%', padding: '12px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', cursor: uploadingApp ? 'not-allowed' : 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '10px' }}
                             >
-                                {uploadingApp ? 'جاري الرفع...' : 'رفع الإصدار'}
+                                {uploadingApp ? `جاري الرفع... ${uploadProgress}%` : 'رفع الإصدار'}
                                 <i className="fas fa-upload"></i>
                             </button>
+                            {uploadingApp && (
+                                <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '4px', marginTop: '8px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', background: '#10b981', width: `${uploadProgress}%`, transition: 'width 0.3s' }}></div>
+                                </div>
+                            )}
                         </div>
                     </form>
                 </div>
