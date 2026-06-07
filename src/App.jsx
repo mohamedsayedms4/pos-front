@@ -56,6 +56,7 @@ import FixedAssets from './pages/FixedAssets.jsx'
 import DeletedProducts from './pages/DeletedProducts.jsx'
 import LeaveTypes from './pages/LeaveTypes.jsx'
 import LeaveRequests from './pages/LeaveRequests.jsx'
+import DownloadDesktopApp from './pages/DownloadDesktopApp.jsx'
 import Settings from './pages/Settings.jsx'
 import Expenses from './pages/Expenses.jsx'
 import FinancialAccounts from './pages/FinancialAccounts.jsx'
@@ -69,7 +70,6 @@ import InventoryReport from './pages/InventoryReport.jsx'
 import InventoryChecks from './pages/InventoryChecks.jsx'
 import InventoryCheckDetails from './pages/InventoryCheckDetails.jsx'
 import FacebookAdsDashboard from './pages/FacebookAdsDashboard.jsx'
-import OfflineAudit from './pages/OfflineAudit.jsx'
 import EmployeeCustody from './pages/EmployeeCustody.jsx'
 import TenantRegister from './pages/TenantRegister.jsx'
 import LandingPage from './pages/LandingPage.jsx'
@@ -81,6 +81,7 @@ import Tickets from './pages/Tickets.jsx'
 import Articles from './pages/Articles.jsx'
 import ArticleDetail from './pages/ArticleDetail.jsx'
 import SuperAdminArticles from './pages/SuperAdminArticles.jsx'
+import SuperAdminDesktopApp from './pages/SuperAdminDesktopApp.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -267,7 +268,6 @@ function App() {
                     <Route element={<ProtectedRoute permission="AUDIT_READ" />}>
                       <Route path="/audit" element={<Audit />} />
                       <Route path="/audit/:id" element={<AuditDetails />} />
-                      <Route path="/offline-audit" element={<OfflineAudit />} />
                     </Route>
                     <Route element={<ProtectedRoute permission="BRANCH_READ" />}>
                       <Route path="/branches" element={<Branches />} />
@@ -281,6 +281,7 @@ function App() {
                     {/* Super Admin */}
                     <Route path="/super-admin/subscriptions" element={<SuperAdminSubscriptions />} />
                     <Route path="/super-admin/articles" element={<SuperAdminArticles />} />
+                    <Route path="/super-admin/desktop-app" element={<SuperAdminDesktopApp />} />
 
                     {/* Technical Support */}
                     <Route path="/tickets" element={<Tickets />} />
@@ -295,6 +296,7 @@ function App() {
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/campaigns" element={<Campaigns />} />
                     <Route path="/leave-types" element={<LeaveTypes />} />
+                    <Route path="/download-desktop-app" element={<DownloadDesktopApp />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/settings/smtp" element={<Settings />} />
                     <Route path="/settings/print" element={<Settings />} />

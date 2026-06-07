@@ -50,9 +50,9 @@ const Error500 = () => {
                     {/* Bilingual Error Messages */}
                     <h1 className="err-title-ar">حدث خطأ غير متوقع في النظام!</h1>
                     <h2 className="err-title-en">Internal Server Error - Unexpected Exception</h2>
-                    
+
                     <p className="err-desc-ar">
-                        لقد واجه خادمنا صعوبة غير متوقعة أثناء معالجة هذا الطلب. 
+                        لقد واجه خادمنا صعوبة غير متوقعة أثناء معالجة هذا الطلب.
                         تم تسجيل تقرير الخطأ تلقائياً للتحليل. يرجى المحاولة مرة أخرى لاحقاً أو العودة للرئيسية.
                     </p>
 
@@ -68,7 +68,7 @@ const Error500 = () => {
 
                     {/* Collapsible Tech Console */}
                     <div className="err-console-wrapper">
-                        <button 
+                        <button
                             className={`err-console-trigger ${showConsole ? 'open' : ''}`}
                             onClick={() => setShowConsole(!showConsole)}
                         >

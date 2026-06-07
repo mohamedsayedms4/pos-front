@@ -26,6 +26,7 @@ const SessionsLog = () => {
       setSessions(res.content);
       setTotalPages(res.totalPages);
     } catch (err) {
+      console.error('Network failed', err);
       toast('حدث خطأ أثناء جلب سجل الورديات', 'error');
     } finally {
       setLoading(false);

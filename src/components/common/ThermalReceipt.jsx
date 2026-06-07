@@ -17,7 +17,14 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
           setStoreConfig(configData);
         }
       })
-      .catch(err => console.warn('Error fetching store config:', err));
+      .catch(err => {
+        console.warn('Error fetching store config from network, falling back to local:', err);
+        db.settings.get('store_config').then(localConfig => {
+          if (localConfig && localConfig.value) {
+            setStoreConfig(localConfig.value);
+          }
+        }).catch(() => {});
+      });
   }, []);
 
   useEffect(() => {
@@ -43,13 +50,17 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
   if (!invoice) return null;
 
   const displayStoreName = storeConfig?.name || invoice.tenantName || settings.storeName || invoice.branchName || "المتجر";
-  const logoUrl = storeConfig?.logoUrl ? StoreApi.getImageUrl(storeConfig.logoUrl) : null;
+  const logoUrl = storeConfig?.offlineLogoBase64 || (storeConfig?.logoUrl ? StoreApi.getImageUrl(storeConfig.logoUrl) : null);
   const displayBranchName = activeBranch?.name || invoice.branchName || settings.branchName || "الفرع الرئيسي";
 
   const formatDate = (dateStr) => {
     if (!dateStr) return new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(',', '');
     try {
-      const d = new Date(dateStr);
+      let safeDateStr = dateStr;
+      if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.match(/[+-]\d{2}:?\d{2}$/)) {
+        safeDateStr = dateStr.replace(' ', 'T') + 'Z';
+      }
+      const d = new Date(safeDateStr);
       return d.toLocaleString('en-GB', {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit', second: '2-digit'

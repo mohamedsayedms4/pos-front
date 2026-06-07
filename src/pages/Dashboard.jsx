@@ -40,6 +40,8 @@ const Dashboard = () => {
 
   const { toast } = useGlobalUI ? useGlobalUI() : { toast: console.log };
   const [showModal, setShowModal] = useState(false);
+  const [latestApp, setLatestApp] = useState(null);
+  const [showDesktopBanner, setShowDesktopBanner] = useState(!localStorage.getItem('pos_hide_desktop_banner'));
   const [selectedPackage, setSelectedPackage] = useState(PACKAGES[0]);
   const [paymentMethod, setPaymentMethod] = useState('VODAFONE_CASH');
   const [senderDetail, setSenderDetail] = useState('');
@@ -66,11 +68,30 @@ const Dashboard = () => {
       })
       .catch(err => console.error('Error fetching tenant details:', err));
       
+    Api.getLatestDesktopApp().then(setLatestApp).catch(() => {});
+
     loadRequests();
+  }, []);
+
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   useEffect(() => {
     const loadCounts = async () => {
+      if (!isOnline) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const [
@@ -749,7 +770,7 @@ const Dashboard = () => {
       `}} />
 
       {/* Subscription Banner */}
-      {tenantInfo && (
+      {tenantInfo && isOnline && (
         <div className="subscription-banner-card">
           <div className="sub-banner-right">
             <div className="sub-banner-greeting">
@@ -773,7 +794,7 @@ const Dashboard = () => {
               </span>
             </div>
             <div className="sub-banner-dates">
-              <span>تاريخ الإشتراك: <strong className="date-highlight">{formatDateArabic(user?.createdAt)}</strong></span>
+              <span>تاريخ الإشتراك: <strong className="date-highlight">{formatDateArabic(tenantInfo?.subscriptionStartDate || user?.createdAt)}</strong></span>
               <span className="date-separator">|</span>
               <span>تاريخ الإنتهاء: <strong className="date-highlight">{formatDateArabic(tenantInfo?.subscriptionExpiry)}</strong></span>
             </div>
@@ -823,7 +844,7 @@ const Dashboard = () => {
       )}
 
       {/* POS Quick Start Banner */}
-      <div className="pos-shortcut-banner">
+      <div className="pos-shortcut-banner" style={{ marginBottom: '20px' }}>
         <div className="pos-banner-right">
           <div className="pos-banner-title-small">شاشة الكاشير</div>
           <h2 className="pos-banner-title-large">مخصصة للبيع السريع</h2>
@@ -836,8 +857,39 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="dashboard-tabs-container">
+      {/* Desktop App Banner */}
+      {latestApp && showDesktopBanner && (
+        <div className="pos-shortcut-banner" style={{ position: 'relative', marginBottom: '20px' }}>
+          <button 
+            onClick={() => {
+              setShowDesktopBanner(false);
+              localStorage.setItem('pos_hide_desktop_banner', 'true');
+            }} 
+            style={{ position: 'absolute', top: '15px', left: '15px', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', zIndex: 10 }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#dc2626'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#ef4444'}
+            title="إخفاء"
+          >
+            <i className="fas fa-times"></i>
+          </button>
+          <div className="pos-banner-right" style={{ paddingRight: '20px' }}>
+            <div className="pos-banner-title-small">تطبيق سطح المكتب</div>
+            <h2 className="pos-banner-title-large">نظام الكاشير (أوفلاين)</h2>
+            <p className="pos-banner-desc">استمتع بتجربة أسرع للبيع بدون إنترنت من خلال تطبيق الديسكتوب الخاص بنا.</p>
+            <p className="pos-banner-desc" style={{ fontSize: '0.85rem', color: '#10b981', marginTop: '4px' }}>✨ متوفر الآن للتحميل: إصدار {latestApp.version}</p>
+          </div>
+          <div className="pos-banner-left" style={{ paddingLeft: '40px' }}>
+            <a href={latestApp.downloadUrl} className="pos-banner-btn" style={{ background: '#10b981', textDecoration: 'none', textAlign: 'center' }} download>
+              تحميل للديسكتوب <i className="fas fa-download" style={{ marginRight: '8px' }}></i>
+            </a>
+          </div>
+        </div>
+      )}
+
+      {isOnline && (
+        <>
+          {/* Tab Navigation */}
+          <div className="dashboard-tabs-container">
         <div className="dashboard-tabs">
           <div className={`tab-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} style={{cursor: 'pointer'}}>
             <span className="tab-icon">🖥️</span>
@@ -1009,6 +1061,8 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+      )}
+        </>
       )}
 
       {/* Manual Subscription Form Modal */}

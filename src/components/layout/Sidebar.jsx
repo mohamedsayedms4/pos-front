@@ -40,6 +40,19 @@ const Sidebar = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Reset logo error when config or theme changes
   useEffect(() => {
     setLogoError(false);
@@ -94,10 +107,10 @@ const Sidebar = ({ isOpen, onClose }) => {
       </div>
 
       <nav className="sidebar-nav">
-        <div className="nav-section-title">العمليات الأساسية</div>
+        {isOnline && <div className="nav-section-title">العمليات الأساسية</div>}
 
         {/* 1. إعدادات المتجر */}
-        {isAdmin && (
+        {isAdmin && isOnline && (
           <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
             <div
               className={`nav-item ${isSettingsPageActive ? 'active' : ''}`}
@@ -183,7 +196,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 2. إدارة الفروع */}
-        {Api.can('BRANCH_READ') && (
+        {Api.can('BRANCH_READ') && isOnline && (
           <NavLink to="/branches" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🏢</span>
             <span>إدارة الفروع</span>
@@ -191,7 +204,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 3. إدارة المخازن */}
-        {Api.can('WAREHOUSE_READ') && (
+        {Api.can('WAREHOUSE_READ') && isOnline && (
           <NavLink to="/warehouses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">📦</span>
             <span>إدارة المخازن</span>
@@ -199,7 +212,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 4. المستخدمين */}
-        {Api.can('USER_READ') && (
+        {Api.can('USER_READ') && isOnline && (
           <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">👤</span>
             <span>المستخدمين</span>
@@ -207,7 +220,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 5. الفئات */}
-        {Api.can('PRODUCT_READ') && (
+        {Api.can('PRODUCT_READ') && isOnline && (
           <NavLink to="/categories" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">▤</span>
             <span>الفئات</span>
@@ -215,7 +228,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 6. المنتجات */}
-        {Api.can('PRODUCT_READ') && (
+        {Api.can('PRODUCT_READ') && isOnline && (
           <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
             <div
               className={`nav-item ${isProductsPageActive ? 'active' : ''}`}
@@ -310,7 +323,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 7. العملاء */}
-        {Api.can('CUSTOMER_READ') && (
+        {Api.can('CUSTOMER_READ') && isOnline && (
           <NavLink to="/customers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">👥</span>
             <span>العملاء</span>
@@ -318,7 +331,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 8. الموردين */}
-        {Api.can('SUPPLIER_READ') && (
+        {Api.can('SUPPLIER_READ') && isOnline && (
           <NavLink to="/suppliers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">▧</span>
             <span>الموردين</span>
@@ -326,7 +339,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 9. المشتريات */}
-        {Api.can('PURCHASE_READ') && (
+        {Api.can('PURCHASE_READ') && isOnline && (
           <NavLink to="/purchases" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🛒</span>
             <span>المشتريات</span>
@@ -334,7 +347,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 10. فواتير المبيعات */}
-        {Api.can('SALE_READ') && (
+        {Api.can('SALE_READ') && isOnline && (
           <NavLink to="/sales" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🧾</span>
             <span>فواتير المبيعات</span>
@@ -342,7 +355,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 11. مرتجع المبيعات */}
-        {Api.can('SALE_READ') && (
+        {Api.can('SALE_READ') && isOnline && (
           <NavLink to="/returns" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🔄</span>
             <span>مرتجع المبيعات</span>
@@ -350,7 +363,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* 12. المصروفات */}
-        {Api.can('EXPENSE_READ') && (
+        {Api.can('EXPENSE_READ') && isOnline && (
           <NavLink to="/expenses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">💸</span>
             <span>المصروفات</span>
@@ -367,7 +380,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         */}
 
         {/* ────────────────── بقية العمليات والطلبات ────────────────── */}
-        <div className="nav-section-title">المبيعات المباشرة والتشغيل</div>
+        <div className="nav-section-title">{isOnline ? 'المبيعات المباشرة والتشغيل' : 'نظام الكاشير (أوفلاين)'}</div>
 
         {/* نقطة البيع (POS) */}
         {Api.can('SALE_WRITE') && (
@@ -395,7 +408,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         */}
 
         {/* استلام المخزون */}
-        {Api.can('STOCK_READ') && (
+        {Api.can('STOCK_READ') && isOnline && (
           <NavLink to="/stock-receipts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">📦</span>
             <span>استلام المخزون</span>
@@ -403,7 +416,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* نقل البضاعة */}
-        {Api.can('WAREHOUSE_READ') && (
+        {Api.can('WAREHOUSE_READ') && isOnline && (
           <NavLink to="/stock-transfers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🔀</span>
             <span>نقل البضاعة</span>
@@ -420,7 +433,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         */}
 
         {/* التوالف والهوالك */}
-        {Api.can('DAMAGED_GOODS_MANAGE') && (
+        {Api.can('DAMAGED_GOODS_MANAGE') && isOnline && (
           <NavLink to="/damaged" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🗑️</span>
             <span>التوالف والهوالك</span>
@@ -428,7 +441,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* ────────────────── الحسابات والتقارير المتقدمة ────────────────── */}
-        {(Api.can('TREASURY_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ') || Api.can('PROFIT_LOSS_READ') || isAdmin || Api.can('CUSTOMER_READ')) && (
+        {(Api.can('TREASURY_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ') || Api.can('PROFIT_LOSS_READ') || isAdmin || Api.can('CUSTOMER_READ')) && isOnline && (
           <>
             <div className="nav-section-title">الحسابات والتقارير</div>
             {Api.can('TREASURY_READ') && (
@@ -655,8 +668,14 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
         */}
 
+        <div className="nav-divider"></div>
+        <NavLink to="/download-desktop-app" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+          <span className="nav-icon">💻</span>
+          <span>تنزيل البرنامج</span>
+        </NavLink>
+
         {/* ────────────────── سجلات المراقبة والتحكم ────────────────── */}
-        {(Api.can('ROLE_READ') || Api.can('AUDIT_READ')) && (
+        {(Api.can('ROLE_READ') || Api.can('AUDIT_READ')) && isOnline && (
           <>
             <div className="nav-section-title">المراقبة وسجلات النظام</div>
             {Api.can('ROLE_READ') && (
@@ -683,23 +702,21 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>الجرد التفصيلي</span>
               </NavLink>
             )}
-            {Api.can('AUDIT_READ') && (
-              <NavLink to="/offline-audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">🔍</span>
-                <span>فحص البيانات المحلية</span>
-              </NavLink>
-            )}
           </>
         )}
         {/* ────────────────── الدعم الفني ────────────────── */}
-        <div className="nav-section-title">الدعم الفني</div>
-        <NavLink to="/tickets" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-          <span className="nav-icon">🛠️</span>
-          <span>تذاكر الدعم الفني</span>
-        </NavLink>
+        {isOnline && (
+          <>
+            <div className="nav-section-title">الدعم الفني</div>
+            <NavLink to="/tickets" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">🛠️</span>
+              <span>تذاكر الدعم الفني</span>
+            </NavLink>
+          </>
+        )}
 
         {/* ────────────────── Super Admin ────────────────── */}
-        {Api.isSuperAdmin && Api.isSuperAdmin() && (
+        {Api.isSuperAdmin && Api.isSuperAdmin() && isOnline && (
           <>
             <div className="nav-section-title">🔑 Super Admin</div>
             <NavLink to="/super-admin/subscriptions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
@@ -709,6 +726,10 @@ const Sidebar = ({ isOpen, onClose }) => {
             <NavLink to="/super-admin/articles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">📰</span>
               <span>إدارة المقالات</span>
+            </NavLink>
+            <NavLink to="/super-admin/desktop-app" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon">💻</span>
+              <span>برنامج الديسكتوب</span>
             </NavLink>
           </>
         )}

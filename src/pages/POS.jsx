@@ -6,8 +6,6 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import ThermalReceipt from '../components/common/ThermalReceipt';
 import { useBranch } from '../context/BranchContext';
-import { db, saveOfflineSale } from '../services/db';
-import SyncService from '../services/SyncService';
 import beepSound from '../assets/sound/freesound_community-store-scanner-beep-90395.mp3';
 import OpenSessionModal from '../components/pos/OpenSessionModal';
 import CloseSessionModal from '../components/pos/CloseSessionModal';
@@ -60,7 +58,6 @@ const POS = () => {
   const [browseTotalPages, setBrowseTotalPages] = useState(1);
   const [browseLoading, setBrowseLoading] = useState(false);
   const [browseSearch, setBrowseSearch] = useState('');
-  const [pendingSalesCount, setPendingSalesCount] = useState(0);
   const observerTarget = useRef(null);
 
   const [activeSession, setActiveSession] = useState(null);
@@ -111,9 +108,6 @@ const POS = () => {
       if (contextBranches && contextBranches.length > 0) {
         initialBranches = contextBranches;
         setBranches(contextBranches);
-      } else {
-        initialBranches = await db.branches.toArray();
-        if (initialBranches.length > 0) setBranches(initialBranches);
       }
 
       // If no branch is selected yet, and we have branches, auto-select the first one
@@ -135,49 +129,18 @@ const POS = () => {
     };
 
     initData();
-    
-    // Init Sync Service
-    SyncService.initAutoSync();
-    if (navigator.onLine) {
-      SyncService.pullDataFromServer(globalBranchId).then(async (success) => {
-        if (success) {
-          // Re-load branches from DB to get newly synced ones
-          const freshBranches = await db.branches.toArray();
-          if (freshBranches.length > 0) {
-            setBranches(freshBranches);
-            // If no branch is selected, select the first one
-            setSelectedBranchId(prev => {
-              if (!prev) {
-                return freshBranches[0].id;
-              }
-              return prev;
-            });
-          }
-          // Re-load customers
-          loadCustomers();
-        }
-      });
-    }
-    
-    // Check pending count
-    const updatePendingCount = async () => {
-      const count = await db.offlineSales.where('status').equals('pending').count();
-      setPendingSalesCount(count);
-    };
-    updatePendingCount();
-    const interval = setInterval(updatePendingCount, 5000);
-
     loadCategories();
     loadCustomers().finally(() => setLoading(false));
-    return () => clearInterval(interval);
   }, [globalBranchId, contextBranches]);
 
   const loadCategories = async () => {
     try {
       const data = await Api.getCategories();
-      setCategories(data || []);
+      const items = data?.content || data || [];
+      setCategories(items);
     } catch (e) {
-      console.warn("Failed to load categories:", e);
+      console.warn("Failed to load categories", e);
+      setCategories([]);
     }
   };
 
@@ -189,15 +152,8 @@ const POS = () => {
       const items = cData.items || cData.content || [];
       setCustomers(items);
     } catch (e) {
-      console.warn("Error searching customers, searching locally...", e);
-      const localCustomers = await db.customers
-        .filter(c =>
-          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (c.phone && c.phone.includes(searchQuery))
-        )
-        .limit(50)
-        .toArray();
-      setCustomers(localCustomers);
+      console.warn("Error searching customers...", e);
+      setCustomers([]);
     }
   };
 
@@ -219,42 +175,20 @@ const POS = () => {
       return;
     }
     setBrowseLoading(true);
-    
-    const fetchLocal = async () => {
-      const lowerSearch = search?.toLowerCase() || '';
-      let localItems = [];
-      if (lowerSearch) {
-        localItems = await db.products
-          .filter(p => 
-            p.name.toLowerCase().includes(lowerSearch) || 
-            (p.barcode && p.barcode.includes(search))
-          )
-          .offset(page * PAGE_SIZE)
-          .limit(PAGE_SIZE)
-          .toArray();
-      } else {
-        localItems = await db.products.offset(page * PAGE_SIZE).limit(PAGE_SIZE).toArray();
-      }
-      setBrowseProducts(prev => append ? [...prev, ...localItems] : localItems);
-      setBrowseTotalPages(1);
-      setBrowsePage(page);
-    };
 
     try {
       const data = await Api.getProductsPaged(page, PAGE_SIZE, search, 'id,desc', branchId, categoryId);
-      setBrowseProducts(prev => append ? [...prev, ...data.items] : data.items);
-      setBrowseTotalPages(data.totalPages);
+      const items = data.items || data.content || [];
+      setBrowseProducts(prev => append ? [...prev, ...items] : items);
+      setBrowseTotalPages(data.totalPages || 1);
       setBrowsePage(page);
     } catch (e) {
-      console.warn("Network error, loading products from local DB...");
-      await fetchLocal();
-      if (navigator.onLine) {
-        toast('السيرفر غير متاح حالياً.. يتم العرض من الذاكرة المحلية', 'info');
-      }
+      console.warn("Network error");
+      if (!append) setBrowseProducts([]);
     } finally {
       setBrowseLoading(false);
     }
-  }, [toast, selectedBranchId, selectedCategoryId]);
+  }, [selectedBranchId, selectedCategoryId]);
 
   // Handle branch or category change -> load products
   useEffect(() => {
@@ -405,41 +339,8 @@ const POS = () => {
         setCart([]); setDiscount(0); setPaidAmount(0);
         loadBrowsePage(0, browseSearch, false, selectedBranchId, selectedCategoryId);
       } catch (e) {
-        if (e.message === 'OFFLINE' || e.message.includes('الاتصال')) {
-          // Save Offline
-          try {
-            const offlineId = await saveOfflineSale(saleData);
-            
-            // Create a fake invoice object for printing
-            const fakeInvoice = {
-              id: `OFF-${offlineId}-${Date.now()}`,
-              customerName: customers.find(c => c.id == selectedCustomerId)?.name || 'عميل نقدي',
-              totalAmount: total,
-              paidAmount: paidAmount,
-              discount: discount,
-              items: cart.map(i => ({ productName: i.name, quantity: i.qty, unitPrice: i.price, totalPrice: i.qty * i.price })),
-              createdAt: new Date().toISOString(),
-              branchName: branches.find(b => b.id == selectedBranchId)?.name || ''
-            };
-            
-            setLastInvoice(fakeInvoice);
-            toast('تم الدفع وتخزين الفاتورة محلياً (أوفلاين)', 'info');
-            
-            localStorage.setItem('print_preview_invoice', JSON.stringify(fakeInvoice));
-            setTimeout(() => {
-              const autoParam = (forceDirectPrint || !printPreview) ? '?auto=true' : '';
-              window.open(`/print-receipt/${fakeInvoice.id}${autoParam}`, '_blank');
-              setTimeout(() => setLastInvoice(null), 5000);
-            }, 500);
-
-            setCart([]); setDiscount(0); setPaidAmount(0);
-          } catch (err) {
-            toast('فشل الحفظ المحلي أيضاً!', 'error');
-          }
-        } else {
-          console.error("Checkout Error:", e);
-          toast(e.message || 'فشلت عملية الدفع', 'error');
-        }
+        console.error("Checkout Error:", e);
+        toast(e.message || 'فشلت عملية الدفع', 'error');
       } finally {
         setCheckoutLoading(false);
       }
@@ -498,8 +399,7 @@ const POS = () => {
             />
           </div>
           <div className={`sync-indicator ${connected ? 'active' : ''}`}>
-            {connected ? '🟢 متصل' : '🔴 أوفلاين'}
-            {pendingSalesCount > 0 && <span className="pending-badge">({pendingSalesCount} معلقة)</span>}
+            {connected ? '🟢 متصل' : '🔴 غير متصل'}
           </div>
         </div>
 
@@ -534,7 +434,7 @@ const POS = () => {
                   </div>
                   <div className="pos-item-details">
                     <div className="pos-item-name" title={p.name}>{p.name}</div>
-                    <div className="pos-item-price">{p.salePrice.toFixed(2)} ج.م</div>
+                    <div className="pos-item-price">{(Number(p.salePrice) || 0).toFixed(2)} ج.م</div>
                   </div>
                 </div>
               );
@@ -635,7 +535,7 @@ const POS = () => {
               <div key={item.id} className="cart-item">
                 <div className="item-info">
                   <div className="item-title">{item.name}</div>
-                  <div className="item-price">{item.price.toFixed(2)} ج.م</div>
+                  <div className="item-price">{(Number(item.price) || 0).toFixed(2)} ج.م</div>
                 </div>
                 <div className="item-actions">
                   <div className="qty-spinner">
@@ -643,7 +543,7 @@ const POS = () => {
                     <input type="number" value={item.qty} onChange={e => updateQty(item.id, parseFloat(e.target.value) || 0)} />
                     <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
                   </div>
-                  <div className="item-total">{(item.price * item.qty).toFixed(2)}</div>
+                  <div className="item-total">{(Number(item.price * item.qty) || 0).toFixed(2)}</div>
                   <button className="remove-btn" onClick={() => removeFromCart(item.id)}>✕</button>
                 </div>
               </div>
@@ -654,7 +554,7 @@ const POS = () => {
         <div className="cart-summary-box">
           <div className="summary-row">
             <span>الإجمالي الفرعي</span>
-            <span>{subtotal.toFixed(2)} ج.م</span>
+            <span>{(Number(subtotal) || 0).toFixed(2)} ج.م</span>
           </div>
           <div className="summary-row highlight">
             <span>الخصم</span>
@@ -664,7 +564,7 @@ const POS = () => {
           </div>
           <div className="summary-total">
             <span>المطلوب</span>
-            <span className="amount">{total.toFixed(2)} <small>ج.م</small></span>
+            <span className="amount">{(Number(total) || 0).toFixed(2)} <small>ج.م</small></span>
           </div>
         </div>
 
@@ -676,7 +576,7 @@ const POS = () => {
           </div>
           <div className="change-row">
             <span>الباقي للعميل</span>
-            <span className={`change-amount ${change < 0 ? 'negative' : ''}`}>{change.toFixed(2)}</span>
+            <span className={`change-amount ${change < 0 ? 'negative' : ''}`}>{(Number(change) || 0).toFixed(2)}</span>
           </div>
           
           <div className="print-options" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>

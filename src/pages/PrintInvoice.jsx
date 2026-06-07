@@ -25,6 +25,22 @@ const PrintInvoice = () => {
   useEffect(() => {
     const loadInvoice = async () => {
       try {
+        if (id && id.startsWith('OFF-')) {
+          // Fallback to localStorage for fake preview invoices during checkout
+          const storedStr = localStorage.getItem('print_preview_invoice');
+          if (storedStr) {
+             const parsed = JSON.parse(storedStr);
+             if (parsed && parsed.id === id) {
+                 setInvoice(parsed);
+                 setLoading(false);
+                 return;
+             }
+          }
+          setError('لم يتم العثور على الفاتورة المؤقتة.');
+          setLoading(false);
+          return;
+        }
+        
         const res = await Api.getSaleById(id);
         setInvoice(res);
       } catch (err) {

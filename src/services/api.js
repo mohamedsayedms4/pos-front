@@ -5,7 +5,7 @@ const envUrl = import.meta.env.VITE_API_URL;
 // Base server URL (without /api/v1 prefix) - dynamically resolves in production
 export const SERVER_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
   ? 'https://posapi.digitalrace.net'
-  : (envUrl || 'http://localhost:8080');
+  : (envUrl || 'https://posapi.digitalrace.net');
 
 
 // Use production URL when not running on Vite dev server (port 5173)
@@ -128,6 +128,7 @@ const Api = {
     localStorage.removeItem('pos_refresh_token');
     localStorage.removeItem('pos_user');
     localStorage.removeItem('pos_tenant_id');
+    localStorage.removeItem('pos_hide_desktop_banner');
     this.stopTokenRefreshInterval();
   },
 
@@ -139,6 +140,32 @@ const Api = {
 
   _setUser(user) {
     localStorage.setItem('pos_user', JSON.stringify(user));
+  },
+
+  async uploadDesktopApp(version, releaseNotes, file) {
+    const formData = new FormData();
+    formData.append('version', version);
+    if (releaseNotes) formData.append('releaseNotes', releaseNotes);
+    formData.append('file', file);
+    const res = await this._request('/desktop-app/upload', {
+      method: 'POST',
+      body: formData
+    });
+    return res.data;
+  },
+
+  async getLatestDesktopApp() {
+    const res = await fetch(`${SERVER_URL}/api/public/desktop-app/latest`);
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error('فشل جلب أحدث إصدار لبرنامج الديسكتوب');
+    }
+    const json = await res.json();
+    const data = json.data;
+    if (data && data.downloadUrl && !data.downloadUrl.startsWith('http')) {
+      data.downloadUrl = `${SERVER_URL}${data.downloadUrl}`;
+    }
+    return data;
   },
 
   async getTenantDetails(slug) {
@@ -369,7 +396,7 @@ const Api = {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        
+
         // Handle inactive store or expired subscription (402)
         if (response.status === 402 || err.errorCode === 'SHOP_DISABLED' || err.errorCode === 'SUBSCRIPTION_EXPIRED') {
           const currentPath = window.location.pathname;
@@ -580,14 +607,14 @@ const Api = {
   async getProducts(page = 0, size = 1000, branchId = null) {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/products?page=${page}&size=${size}${branchQuery}`);
-    return res.data.items || res.data.content || res.data || [];
+    return res?.data?.items || res?.data?.content || res?.content || res?.items || res?.data || res || [];
   },
 
   async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc', branchId = null, categoryId = null) {
     const searchQuery = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
     const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `&branchId=${branchId}` : '';
-    
+
     let endpoint;
     if (categoryId && categoryId !== 'null' && categoryId !== 'undefined' && categoryId !== '' && !search) {
       endpoint = `/v2/products/category/${categoryId}?page=${page}&size=${size}${sortQuery}${branchQuery}`;
@@ -1507,7 +1534,8 @@ const Api = {
   // â”€â”€â”€ Sales â”€â”€â”€
   async getSales(page = 0, size = 10, query = '', branchId = '') {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
-    const res = await this._request(`/sales?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchQuery}`);
+    const searchQuery = query ? `&query=${encodeURIComponent(query)}&search=${encodeURIComponent(query)}` : '';
+    const res = await this._request(`/sales?page=${page}&size=${size}${searchQuery}${branchQuery}`);
     return res.data;
   },
 
@@ -2247,7 +2275,7 @@ const Api = {
     if (customName) {
       formData.append('customName', customName);
     }
-    
+
     // We cannot use _request easily with FormData because _request sets Content-Type to application/json.
     // So we'll use a direct fetch with the token.
     const token = this._getToken();
@@ -2258,13 +2286,13 @@ const Api = {
       },
       body: formData
     });
-    
+
     if (!res.ok) {
       let errStr = 'Upload failed';
       try {
         const errJson = await res.json();
         errStr = errJson.message || errStr;
-      } catch (e) {}
+      } catch (e) { }
       throw new Error(errStr);
     }
     const json = await res.json();

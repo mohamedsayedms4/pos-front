@@ -190,7 +190,7 @@ const Login = () => {
       // 4. Perform Login
       await Api.login(email, password, resolvedId);
 
-      // 4. 📊 Facebook Pixel — حدث تسجيل دخول ناجح
+      // 5. 📊 Facebook Pixel — حدث تسجيل دخول ناجح
       trackCustomLogin({ businessName });
 
       navigate('/dashboard');
