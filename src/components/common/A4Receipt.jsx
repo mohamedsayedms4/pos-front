@@ -18,12 +18,7 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
         }
       })
       .catch(err => {
-        console.warn('Error fetching store config from network, falling back to local:', err);
-        db.settings.get('store_config').then(localConfig => {
-          if (localConfig && localConfig.value) {
-            setStoreConfig(localConfig.value);
-          }
-        }).catch(() => {});
+        console.warn('Error fetching store config from network', err);
       });
   }, []);
 
