@@ -586,7 +586,7 @@ const Api = {
         console.warn('[Interval] Token explicitly refused. Logging out.');
         this.logout();
       }
-    }, 180000); // 3 minutes in ms (proactive buffer for 5-minute access token)
+    }, 21600000); // 6 hours in ms (proactive buffer for 7-day access token)
   },
 
   stopTokenRefreshInterval() {
@@ -833,6 +833,20 @@ const Api = {
     return res.data;
   },
 
+  async addProductToBranch(productId, data) {
+    return await this._request(`/v2/products/${productId}/branches`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateBranchInventory(productId, branchId, data) {
+    return await this._request(`/v2/products/${productId}/branches/${branchId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
   async getProductBarcode(id) {
     const res = await this._request(`/v2/products/${id}/barcode`);
     return res.data;
@@ -849,6 +863,18 @@ const Api = {
 
   async getProductQrCode(id) {
     const res = await this._request(`/v2/products/${id}/qrcode`);
+    return res.data;
+  },
+
+  async addProductToOnlineStore(id, purchasePrice, salePrice) {
+    // Use the correct v1 endpoint without duplicating the version prefix
+    const res = await this._request(`/products/${id}/add-to-online`, {
+      method: 'POST',
+      body: JSON.stringify({ purchasePrice, salePrice }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     return res.data;
   },
 
@@ -2136,6 +2162,13 @@ const Api = {
       method: 'PATCH',
       body: JSON.stringify({ active })
     });
+  },
+
+  async impersonateTenant(tenantId) {
+    const res = await this._request(`/super-admin/tenants/${tenantId}/impersonate`, {
+      method: 'POST'
+    });
+    return res.data;
   },
 
   async extendTenantSubscription(tenantId, { months, days }) {

@@ -157,10 +157,15 @@ const HeroSectionManager = () => {
                                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>لا توجد صورة</div>
                                     )}
                                 </div>
-                                <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-                                    رفع صورة
-                                    <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*" />
-                                </label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                    <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-block', width: 'fit-content' }}>
+                                        رفع صورة
+                                        <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*" />
+                                    </label>
+                                    <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                                        💡 المقاس الموصى به: <strong>1280 × 440 بكسل</strong> (أو نسبة عرض إلى ارتفاع تقارب 3:1).
+                                    </small>
+                                </div>
                             </div>
                         </div>
 

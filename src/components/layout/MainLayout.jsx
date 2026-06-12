@@ -229,10 +229,69 @@ const MainLayout = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const [impersonationBackup, setImpersonationBackup] = useState(null);
+
+  useEffect(() => {
+    const backup = localStorage.getItem('super_admin_backup');
+    if (backup) {
+      try {
+        setImpersonationBackup(JSON.parse(backup));
+      } catch (e) {
+        console.error('Invalid super_admin_backup');
+      }
+    }
+  }, []);
+
+  const handleReturnToSuperAdmin = () => {
+    if (impersonationBackup) {
+      if (impersonationBackup.access) localStorage.setItem('pos_access_token', impersonationBackup.access);
+      if (impersonationBackup.refresh) localStorage.setItem('pos_refresh_token', impersonationBackup.refresh);
+      if (impersonationBackup.tenantId) localStorage.setItem('pos_tenant_id', impersonationBackup.tenantId);
+      if (impersonationBackup.user) localStorage.setItem('pos_user', impersonationBackup.user);
+      
+      localStorage.removeItem('super_admin_backup');
+      window.location.href = '/super-admin/subscriptions';
+    }
+  };
+
   return (
     <div className="app-layout">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {impersonationBackup && (
+          <div style={{
+            background: 'var(--sa-sub-accent-blue, #4f46e5)',
+            color: 'white',
+            padding: '10px 20px',
+            textAlign: 'center',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '15px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+            zIndex: 1000,
+            position: 'relative'
+          }}>
+            <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+              ⚠️ أنت الآن تتصفح كمدير للمتجر. أي تعديلات ستحفظ في هذا المتجر.
+            </span>
+            <button 
+              onClick={handleReturnToSuperAdmin}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid white',
+                color: 'white',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                transition: 'all 0.2s'
+              }}
+            >
+              العودة للسوبر أدمن
+            </button>
+          </div>
+        )}
         <Topbar 
           onMenuToggle={toggleSidebar} 
           prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 

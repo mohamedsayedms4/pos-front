@@ -416,6 +416,21 @@ const Products = () => {
     }
   };
 
+  const handlePrintBarcode = async (product) => {
+    toast('جاري تحضير ملصق الباركود للطباعة...', 'success');
+    try {
+      const imageUrl = await Api.getProductBarcodeLabel(product.id);
+      const config = await Api.getPrinterConfig();
+      const width = config.labelWidthMm || 40;
+      const height = config.labelHeightMm || 30;
+
+      const dataUrl = await _blobUrlToDataUrl(imageUrl);
+      _openPrintWindow(dataUrl, width, height);
+    } catch (err) {
+      toast('فشل تحضير الباركود أو الطباعة: ' + err.message, 'error');
+    }
+  };
+
   const renderPageNumbers = () => {
     const pages = [];
     const maxVisible = 5;
@@ -714,6 +729,18 @@ const Products = () => {
                         </td>
                         <td>
                           <div className="table-actions">
+                            <button 
+                              className="btn btn-icon btn-ghost" 
+                              onClick={() => handlePrintBarcode(p)} 
+                              title="طباعة باركود"
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="2" y="5" width="3" height="14" /><rect x="7" y="5" width="1" height="14" />
+                                <rect x="10" y="5" width="3" height="14" /><rect x="15" y="5" width="2" height="14" />
+                                <rect x="19" y="5" width="3" height="14" />
+                              </svg>
+                            </button>
                             <button className="btn btn-icon btn-ghost" onClick={() => handleDownloadSinglePdf(p)} title="تنزيل كـ PDF">📄</button>
                             <button className="btn btn-icon btn-ghost" onClick={() => openStockModal(p)} title="توزيع المخزون">🏭</button>
                             {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/products/edit/${p.id}`)} title="تعديل">✏️</button>}

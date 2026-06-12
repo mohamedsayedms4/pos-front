@@ -118,37 +118,43 @@ const StoreLayout = ({ children, hideHeader = false }) => {
       {/* ─── NEW TOP BAR (Dubai Phone Style) ─── */}
       <div className="ec-topbar-premium">
         <div className="ec-topbar-inner">
-          <div className="ec-topbar-right">
-            <div className="ec-topbar-ticker desktop-only">
-              <span>• ضمان حتى عامين من الوكيل  • توصيل سريع وأمن  • سعر واحد للكاش والتقسيط  • نقاط مشتريات مجانية</span>
+          <div className="ec-topbar-right" style={{ flex: 1, overflow: 'hidden' }}>
+            <div className="ec-topbar-ticker desktop-only" style={{ whiteSpace: 'nowrap' }}>
+              <span>سعر واحد للكاش و التقسيط • سعر واحد للكاش و التقسيط • سعر واحد للكاش و التقسيط • ضمان حتي عامين من الوكيل • ضمان حتي عامين من الوكيل • توصيل سريع وأمن مع ارامكس • توصيل سريع وأمن مع ارامكس • نقاط مشتريات مجانية • نقاط مشتريات مجانية</span>
             </div>
-            <span className="ec-sep desktop-only">|</span>
-            <a href="#" className="ec-topbar-link">أماكن الفروع</a>
-            <span className="ec-sep">|</span>
-            <a href={`https://wa.me/${storeInfo?.whatsappNumber}`} className="ec-topbar-link" target="_blank" rel="noopener noreferrer">
-              <i className="fab fa-whatsapp" style={{ color: '#25D366', marginLeft: '5px' }}></i>
-              دعم الواتساب
-            </a>
-            <span className="ec-sep">|</span>
-            <span className="ec-topbar-text"><i className="fas fa-phone-alt" style={{ marginLeft: '5px', fontSize: '0.7rem' }}></i> {storeInfo?.phone1 || '15254'}</span>
           </div>
-          <div className="ec-topbar-left">
-            <div className="ec-lang-selector">
-              <span>العربية</span>
-              <img src="https://flagcdn.com/w20/eg.png" alt="Egypt" style={{ width: '18px', height: '12px' }} />
-              <i className="fas fa-chevron-down" style={{ fontSize: '0.7rem', marginRight: '5px' }}></i>
+          <div className="ec-topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <span className="ec-topbar-text" style={{ fontWeight: 'bold' }}>
+              <i className="fas fa-phone-alt" style={{ marginLeft: '5px', color: '#1e3a8a', transform: 'scaleX(-1)' }}></i> 
+              <span style={{ direction: 'ltr', display: 'inline-block' }}>{storeInfo?.phone1 || '15254'}</span>
+            </span>
+            <span className="ec-sep"></span>
+            
+            <a href={`https://wa.me/${storeInfo?.whatsappNumber}`} className="ec-topbar-link" style={{ fontWeight: 'bold' }} target="_blank" rel="noopener noreferrer">
+              <i className="fab fa-whatsapp" style={{ color: '#25D366', marginLeft: '5px', fontSize: '1.1rem' }}></i>
+              دعم من خلال الواتساب
+            </a>
+            <span className="ec-sep"></span>
+            
+            <a href="#" className="ec-topbar-link" style={{ fontWeight: 'bold' }}>أماكن الفروع</a>
+            <span className="ec-sep">|</span>
+
+            <div className="ec-lang-selector" style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+              <img src="https://flagcdn.com/w20/eg.png" alt="Egypt" style={{ width: '20px', height: '14px', borderRadius: '2px' }} />
+              <span style={{ fontSize: '0.9rem' }}>العربية</span>
+              <i className="fas fa-chevron-down" style={{ fontSize: '0.7rem' }}></i>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ─── MAIN HEADER ─── */}
+      {/* ─── MAIN HEADER (Dubai Phone Style) ─── */}
       {!hideHeader && (
-        <header className="ec-header">
-          <div className="ec-header-inner">
-            {/* Logo (Right side) */}
-            <div className="ec-header-right">
-              <Link to="/store" className="ec-logo-premium">
+        <header className="ec-header-dubai">
+          <div className="ec-header-dubai-inner">
+            {/* Logo (Right) */}
+            <div className="ec-header-logo-dubai">
+              <Link to="/store">
                 {storeInfo?.logoUrl ? (
                   <img src={StoreApi.getImageUrl(storeInfo.logoUrl)} alt={storeInfo.name} />
                 ) : (
@@ -158,28 +164,18 @@ const StoreLayout = ({ children, hideHeader = false }) => {
             </div>
 
             {/* Search (Center) */}
-            <form ref={searchRef} className="ec-search-container-premium" style={{ position: 'relative' }} onSubmit={handleSearch}>
-              <div className="ec-search-input-wrapper">
+            <form ref={searchRef} className="ec-search-container-dubai" onSubmit={handleSearch}>
+              <div className="ec-search-input-wrapper-dubai">
                 <input
                   type="text"
-                  className="ec-search-input"
-                  placeholder="بحث عن المنتجات ..."
+                  className="ec-search-input-dubai"
+                  placeholder="بحث المنتجات ...."
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }}
                   onFocus={() => { if(search.trim().length >= 2) setShowSuggestions(true); }}
                 />
-                {search && (
-                  <button
-                    type="button"
-                    className="ec-search-clear-btn"
-                    onClick={() => { setSearch(''); navigate('/store'); }}
-                    title="مسح البحث"
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                )}
-                <button type="submit" className="ec-search-submit-btn">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <button type="submit" className="ec-search-submit-btn-dubai">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a0aec0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
@@ -188,7 +184,7 @@ const StoreLayout = ({ children, hideHeader = false }) => {
 
               {/* Autocomplete Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="ec-search-suggestions-dropdown">
+                <div className="ec-search-suggestions-dropdown" style={{ top: '50px' }}>
                   {suggestions.map(p => (
                     <div 
                       key={p.id} 
@@ -222,37 +218,60 @@ const StoreLayout = ({ children, hideHeader = false }) => {
               )}
             </form>
 
-            {/* Actions (Left side) */}
-            <div className="ec-header-left">
-              <button className="ec-cart-btn-premium" onClick={() => navigate('/store/wishlist')} style={{ background: 'transparent', border: '1px solid #e2e8f0', color: location.pathname === '/store/wishlist' ? '#2b3481' : '#64748b', padding: '6px 15px', borderRadius: '50px' }}>
-                <span style={{ fontSize: '1rem' }}>{location.pathname === '/store/wishlist' ? <i className="fas fa-heart"></i> : <i className="far fa-heart"></i>}</span>
-                <span style={{ fontWeight: 700, marginLeft: '5px' }}>المفضلة ({wishlist?.length || 0})</span>
-              </button>
-              <button className="ec-cart-btn-premium" onClick={() => setCartOpen(true)}>
-                <span className="ec-btn-icon"><i className="fas fa-shopping-cart"></i></span>
-                <span>عربة التسوق ({cartCount})</span>
-              </button>
-              {storeCustomer ? (
-                <div className="ec-nav-dropdown-container" style={{ position: 'relative' }}>
-                  <button className="ec-account-btn" onClick={() => navigate('/store/account')} style={{ gap: '5px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', color: 'var(--ec-primary)', position: 'relative' }}>
-                    <span className="ec-btn-icon"><i className="fas fa-user-circle"></i></span>
-                    <span>{storeCustomer.name.split(' ')[0]}</span>
-                    {offersCount > 0 && (
-                      <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#f59e0b', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', border: '2px solid #fff' }}>
-                        {offersCount}
-                      </span>
-                    )}
-                  </button>
+            {/* Actions (Left) */}
+            <div className="ec-header-actions-dubai">
+              {/* Login Button (Renders to the right, closer to search bar in RTL) */}
+              <button className="ec-action-btn-dubai" onClick={() => navigate(storeCustomer ? '/store/account' : '#')} onClickCapture={(e) => { if(!storeCustomer) { e.preventDefault(); setLoginModalOpen(true); } }}>
+                <span className="ec-btn-icon-dubai"><i className="fas fa-user"></i></span>
+                <div className="ec-action-text-dubai">
+                  {storeCustomer ? (
+                    <>حسابي<br/><strong>{storeCustomer.name.split(' ')[0]}</strong></>
+                  ) : (
+                    <>تسجيل<br/>الدخول</>
+                  )}
                 </div>
-              ) : (
-                <button className="ec-account-btn" onClick={() => setLoginModalOpen(true)}>
-                  <span className="ec-btn-icon"><i className="fas fa-sign-in-alt"></i></span>
-                  <span>تسجيل الدخول</span>
-                </button>
-              )}
+                {storeCustomer && offersCount > 0 && <span className="ec-badge-dubai">{offersCount}</span>}
+              </button>
+
+              {/* Cart Button (Renders to the left, closer to screen edge in RTL) */}
+              <button className="ec-action-btn-dubai" onClick={() => setCartOpen(true)}>
+                <span className="ec-btn-icon-dubai"><i className="fas fa-shopping-cart"></i></span>
+                <div className="ec-action-text-dubai">
+                  عربة التسوق <strong>({cartCount})</strong>
+                </div>
+              </button>
             </div>
           </div>
-
+          {/* CATEGORY NAVBAR */}
+          <div className="ec-navbar-dubai">
+            <div className="ec-navbar-inner-dubai">
+               <ul className="ec-nav-links-dubai">
+                  {categories && categories.length > 0 ? (
+                    categories.filter(cat => !cat.parentId).slice(0, 8).map(cat => {
+                      const hasChildren = categories.some(child => child.parentId === cat.id);
+                      return (
+                        <li key={cat.id}>
+                           <Link to={`/store/category/${cat.id}`}>
+                             {cat.name} 
+                             {hasChildren && <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i>}
+                           </Link>
+                        </li>
+                      );
+                    })
+                  ) : (
+                    <>
+                      <li><Link to="/store">موبايلات و تابلت <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
+                      <li><Link to="/store">لاب توب و طابعات <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
+                      <li><Link to="/store">شاشات و اجهزة عرض <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
+                      <li><Link to="/store">العاب <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
+                      <li><Link to="/store">اكسسوارات <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
+                      <li><Link to="/store">منتجات المنزل <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
+                      <li><Link to="/store">الماركات <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
+                    </>
+                  )}
+               </ul>
+            </div>
+          </div>
         </header>
       )}
 

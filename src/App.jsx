@@ -276,6 +276,7 @@ function App() {
                     <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>
                       <Route path="/warehouses" element={<Warehouses />} />
                       <Route path="/stock-transfers" element={<StockTransfers />} />
+                      <Route path="/stock-transfers/new" element={<StockTransfers />} />
                     </Route>
 
                     {/* Super Admin */}

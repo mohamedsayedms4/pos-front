@@ -10,9 +10,25 @@ const AddProduct = () => {
   const isEditMode = !!id;
   const navigate = useNavigate();
   const { toast } = useGlobalUI();
-  const { selectedBranchId } = useBranch();
+  const { selectedBranchId, getSelectedBranch, branches } = useBranch();
+  const [productBranchId, setProductBranchId] = useState('');
+
+  useEffect(() => {
+    if (selectedBranchId && !productBranchId) {
+      setProductBranchId(selectedBranchId.toString());
+    }
+  }, [selectedBranchId]);
+
+  const selectedBranch = branches?.find(b => b.id === parseInt(productBranchId));
+  const isOnlineBranch = isEditMode
+    ? (getSelectedBranch()?.type === 'ONLINE')
+    : (selectedBranch?.type === 'ONLINE');
+
   const fileInputRef = React.useRef(null);
   const [importingExcel, setImportingExcel] = useState(false);
+  const [showOnlineModal, setShowOnlineModal] = useState(false);
+  const [onlinePricing, setOnlinePricing] = useState({ purchasePrice: '', salePrice: '' });
+  const [addingOnline, setAddingOnline] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -24,7 +40,8 @@ const AddProduct = () => {
     categoryId: '',
     unitName: 'القطعة',
     showInStore: true,
-    units: [] // Packaging units
+    units: [], // Packaging units
+    onlineInventory: null
   });
 
   const [categories, setCategories] = useState([]);
@@ -82,7 +99,8 @@ const AddProduct = () => {
             categoryId: product.categoryId || '',
             unitName: product.unitName || 'القطعة',
             showInStore: product.showInStore !== false,
-            units: product.units || []
+            units: product.units || [],
+            onlineInventory: product.onlineInventory || null
           });
           setExistingImages(product.imageUrls || []);
         })
@@ -97,16 +115,25 @@ const AddProduct = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     setFormErrors({});
-    if (!formData.name || !formData.purchasePrice || !formData.salePrice) {
-      toast('يرجى ملء الحقول المطلوبة', 'warning');
+    if (!formData.name) {
+      toast('يرجى إدخال اسم المنتج', 'warning');
       return;
     }
 
     setSaving(true);
+    
+    // Default empty prices to 0 (purchase) and 0.01 (sale) to satisfy backend validations
+    const purchaseVal = formData.purchasePrice !== '' && formData.purchasePrice !== null && formData.purchasePrice !== undefined
+      ? parseFloat(formData.purchasePrice)
+      : 0;
+    const saleVal = formData.salePrice !== '' && formData.salePrice !== null && formData.salePrice !== undefined
+      ? parseFloat(formData.salePrice)
+      : 0.01;
+
     const apiData = {
       ...formData,
-      purchasePrice: parseFloat(formData.purchasePrice),
-      salePrice: parseFloat(formData.salePrice),
+      purchasePrice: purchaseVal,
+      salePrice: saleVal,
       stock: parseFloat(formData.stock) || 0,
       showInStore: formData.showInStore,
       categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
@@ -117,7 +144,7 @@ const AddProduct = () => {
         await Api.updateProduct(id, apiData, images);
         toast('تم تحديث المنتج بنجاح', 'success');
       } else {
-        await Api.createProduct(apiData, images, selectedBranchId);
+        await Api.createProduct(apiData, images, productBranchId);
         toast('تم إضافة المنتج بنجاح', 'success');
       }
       navigate('/products');
@@ -240,6 +267,18 @@ const AddProduct = () => {
         }
       `}</style>
       <div className="page-section">
+      {/* Smart Banner for eCommerce */}
+      {isEditMode && !isOnlineBranch && !formData.onlineInventory && (
+        <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '15px 20px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #ffeeba', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <strong>هذا المنتج غير معروض في المتجر الإلكتروني.</strong> يمكنك إضافته مباشرة لمتجرك الإلكتروني أونلاين وتحديد أسعار خاصة بالبيع للعملاء أونلاين.
+          </div>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowOnlineModal(true)} style={{ whiteSpace: 'nowrap' }}>
+            🌐 إضافة إلى المتجر الإلكتروني
+          </button>
+        </div>
+      )}
+
       {/* Page Title & Back Button */}
       <div className="toolbar" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.6rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
@@ -275,6 +314,29 @@ const AddProduct = () => {
         </div>
         <div className="card-body" style={{ padding: '25px' }}>
           <form onSubmit={handleSave} id="productForm">
+            {/* Branch Selection (Only in Add Mode) */}
+            {!isEditMode && branches && branches.length > 0 && (
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>الفرع المستهدف *</label>
+                <select
+                  className="form-control"
+                  value={productBranchId}
+                  onChange={(e) => setProductBranchId(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>-- اختر الفرع --</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.type === 'ONLINE' ? '🌐 ' : '🏢 '} {b.name}
+                    </option>
+                  ))}
+                </select>
+                <small style={{ color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  سيتم إضافة هذا المنتج وتعيين أسعاره ومخزونه الأولي في الفرع المحدد.
+                </small>
+              </div>
+            )}
+
             {/* Name */}
             <div className="form-group" style={{ marginBottom: '20px' }}>
               <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>اسم المنتج *</label>
@@ -306,7 +368,7 @@ const AddProduct = () => {
             {/* Prices Grid */}
             <div className="grid grid-2 gap-15" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
               <div className="form-group">
-                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر الشراء *</label>
+                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر الشراء (اختياري)</label>
                 <input 
                   className="form-control" 
                   type="number" 
@@ -314,13 +376,12 @@ const AddProduct = () => {
                   name="purchasePrice" 
                   value={formData.purchasePrice} 
                   onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })} 
-                  required 
                   placeholder="0.00"
                 />
                 {formErrors.purchasePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.purchasePrice}</span>}
               </div>
               <div className="form-group">
-                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر البيع *</label>
+                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر البيع (اختياري)</label>
                 <input 
                   className="form-control" 
                   type="number" 
@@ -328,7 +389,6 @@ const AddProduct = () => {
                   name="salePrice" 
                   value={formData.salePrice} 
                   onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })} 
-                  required 
                   placeholder="0.00"
                 />
                 {formErrors.salePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.salePrice}</span>}
@@ -404,7 +464,7 @@ const AddProduct = () => {
                 style={{ width: '20px', height: '20px', cursor: 'pointer' }} 
               />
               <label htmlFor="showInStore" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: formData.showInStore ? 'var(--metro-blue)' : 'var(--text-muted)' }}>
-                🌐 عرض المنتج في المتجر الإلكتروني للعملاء (أونلاين)
+                {isOnlineBranch ? '🌐 عرض المنتج في المتجر الإلكتروني للعملاء (أونلاين)' : '✓ تفعيل عرض المنتج للعملاء (نشط)'}
               </label>
             </div>
 
@@ -529,7 +589,70 @@ const AddProduct = () => {
           </form>
         </div>
       </div>
-    </div>
+      </div>
+
+      {showOnlineModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--bg-card)', padding: '25px', borderRadius: '12px', width: '90%', maxWidth: '500px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+            <h3 style={{ marginTop: 0, marginBottom: '15px', color: 'var(--text-primary)' }}>🌐 إضافة للمتجر الإلكتروني</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
+              لقد اشتريت هذا المنتج من قبل ولديه مخزون متوفر في فروع أخرى. اختر طريقة الإضافة للمتجر الإلكتروني:
+            </p>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 600 }}>سعر البيع أونلاين</label>
+              <input type="number" step="0.01" className="form-control" value={onlinePricing.salePrice} onChange={e => setOnlinePricing({...onlinePricing, salePrice: e.target.value})} placeholder={formData.salePrice || "0.00"} />
+            </div>
+            
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 600 }}>سعر الشراء (للحسابات أونلاين)</label>
+              <input type="number" step="0.01" className="form-control" value={onlinePricing.purchasePrice} onChange={e => setOnlinePricing({...onlinePricing, purchasePrice: e.target.value})} placeholder={formData.purchasePrice || "0.00"} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                disabled={addingOnline}
+                onClick={async () => {
+                  setAddingOnline(true);
+                  try {
+                    await Api.addProductToOnlineStore(id, parseFloat(onlinePricing.purchasePrice) || 0, parseFloat(onlinePricing.salePrice) || 0.01);
+                    toast('تم الإضافة للمتجر الإلكتروني بنجاح', 'success');
+                    setShowOnlineModal(false);
+                    setFormData({...formData, onlineInventory: {}});
+                  } catch (err) {
+                    toast(err.message, 'error');
+                  } finally {
+                    setAddingOnline(false);
+                  }
+                }}
+              >
+                {addingOnline ? 'جاري الإضافة...' : '➕ إضافة مباشرة (بمخزون 0)'}
+              </button>
+              
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => {
+                  navigate(`/stock-transfers/new?productId=${id}`);
+                }}
+              >
+                🚚 طلب نقل مخزون (تعبئة تلقائية)
+              </button>
+
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                onClick={() => setShowOnlineModal(false)}
+                style={{ marginTop: '10px' }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

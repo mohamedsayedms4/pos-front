@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useGlobalUI } from '../components/common/GlobalUI';
@@ -57,6 +58,8 @@ const StockTransfers = () => {
   const isAdmin = Api.isAdminOrBranchManager();
   const currentUser = Api._getUser();
   const currentUserBranchId = currentUser?.branchId;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // ─── State ───────────────────────────────────────────────────────────────────
   const [transfers, setTransfers] = useState([]);
@@ -110,6 +113,49 @@ const StockTransfers = () => {
       .catch(() => {});
     Api.getBranches?.().then(setBranches).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (location.state?.prefill) {
+      const { transferType, fromBranchId, toBranchId, productId, productName, quantity, unitName } = location.state.prefill;
+      setForm({
+        transferType: transferType || 'BRANCH_TO_BRANCH',
+        fromWarehouseId: '',
+        toWarehouseId: '',
+        fromBranchId: fromBranchId || '',
+        toBranchId: toBranchId || '',
+        transferNumber: generateTransferNumber(),
+        notes: `طلب نقل تلقائي للمنتج: ${productName} لتوفير مخزون للمتجر الإلكتروني`,
+        items: [{
+          productId: Number(productId),
+          productName: productName,
+          quantity: Number(quantity) || 1,
+          unitName: unitName || 'قطعة'
+        }]
+      });
+      setCreateModalOpen(true);
+      // Clear location state to prevent modal popping up again on navigation/refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
+  // New effect: handle query param productId for direct URL access
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const productId = params.get('productId');
+    if (productId && !createModalOpen) {
+      // Optionally fetch product details for name, but we set placeholders
+      setForm(prev => ({
+        ...prev,
+        items: [{
+          productId: Number(productId),
+          productName: '',
+          quantity: 1,
+          unitName: ''
+        }]
+      }));
+      setCreateModalOpen(true);
+    }
+  }, [location.search, createModalOpen]);
 
   // Debounced product search
   useEffect(() => {

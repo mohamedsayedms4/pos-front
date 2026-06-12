@@ -74,7 +74,14 @@ const EcommerceStore = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [heroSections, setHeroSections] = useState([]);
-  const [activeHeroIdx, setActiveHeroIdx] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(1);
+  const [disableTransition, setDisableTransition] = useState(false);
+
+  // Interactive Slider State
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const hasDraggedRef = useRef(false);
 
   const currency = storeInfo?.currency || 'جنيه';
 
@@ -124,20 +131,88 @@ const EcommerceStore = () => {
     StoreApi.getCategories().then(setCategories).catch(() => { });
     StoreApi.getHeroSections()
       .then(data => {
-        if (Array.isArray(data)) setHeroSections(data);
+        if (Array.isArray(data)) {
+          setHeroSections(data);
+          setCurrentIndex(1);
+        }
         else setHeroSections([]);
       })
       .catch(() => setHeroSections([]));
   }, []);
 
   useEffect(() => {
-    if (heroSections.length > 1) {
-      const interval = setInterval(() => {
-        setActiveHeroIdx(prev => (prev + 1) % heroSections.length);
-      }, 5000);
-      return () => clearInterval(interval);
+    if (disableTransition) {
+      const timer = setTimeout(() => {
+        setDisableTransition(false);
+      }, 20);
+      return () => clearTimeout(timer);
     }
-  }, [heroSections]);
+  }, [disableTransition]);
+
+  const nextSlide = useCallback(() => {
+    if (heroSections.length <= 1) return;
+    setDisableTransition(false);
+    setCurrentIndex(prev => prev + 1);
+  }, [heroSections.length]);
+
+  const prevSlide = useCallback(() => {
+    if (heroSections.length <= 1) return;
+    setDisableTransition(false);
+    setCurrentIndex(prev => prev - 1);
+  }, [heroSections.length]);
+
+  // Autoplay effect
+  useEffect(() => {
+    if (heroSections.length <= 1 || isDragging) return;
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroSections.length, nextSlide, currentIndex, isDragging]);
+
+  const handleDragStart = (e) => {
+    setIsDragging(true);
+    setDisableTransition(false);
+    hasDraggedRef.current = false;
+    const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+    setStartX(clientX);
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+    const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+    const diff = clientX - startX;
+    setDragOffset(diff);
+    if (Math.abs(diff) > 15) {
+      hasDraggedRef.current = true;
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const threshold = 100;
+    if (dragOffset < -threshold) {
+      nextSlide();
+    } else if (dragOffset > threshold) {
+      prevSlide();
+    }
+    setDragOffset(0);
+    setTimeout(() => {
+      hasDraggedRef.current = false;
+    }, 50);
+  };
+
+  const handleTransitionEnd = () => {
+    const N = heroSections.length;
+    if (currentIndex === 0) {
+      setDisableTransition(true);
+      setCurrentIndex(N);
+    } else if (currentIndex === N + 1) {
+      setDisableTransition(true);
+      setCurrentIndex(1);
+    }
+  };
 
   const loadProducts = useCallback(async (p, append = false) => {
     if (!selectedCat && !debouncedSearch) return; // Don't load main grid if showing sections
@@ -182,68 +257,120 @@ const EcommerceStore = () => {
 
       {!selectedCat && !debouncedSearch && (
         <>
-          {heroSections && heroSections.length > 0 && (
-            <section className="ec-hero-modern">
-              <div className="ec-hero-slider">
-                {heroSections.map((hero, idx) => {
-                  const SlideContent = (
-                    <div
-                      className={`ec-hero-slide ${idx === activeHeroIdx ? 'active' : ''}`}
-                      style={{ backgroundImage: `url(${StoreApi.getImageUrl(hero.imageUrl)})` }}
-                    >
-                      <div className="ec-hero-overlay">
-                        <div className="ec-hero-content">
-                          <h1>{hero.title}</h1>
-                          <p>{hero.subtitle}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
+          {heroSections && heroSections.length > 0 && (() => {
+            const hasMultiple = heroSections.length > 1;
+            const slides = hasMultiple
+              ? [heroSections[heroSections.length - 1], ...heroSections, heroSections[0]]
+              : heroSections;
+            const activeDotIdx = hasMultiple ? (currentIndex - 1 + heroSections.length) % heroSections.length : 0;
 
-                  return hero.linkUrl ? (
-                    <Link key={hero.id} to={hero.linkUrl} style={{ display: 'block', height: '100%' }}>
-                      {SlideContent}
-                    </Link>
-                  ) : (
-                    <div key={hero.id} style={{ height: '100%' }}>
-                      {SlideContent}
+            return (
+              <section className="ec-hero-dubai">
+                <div 
+                  className="ec-hero-slider-dubai"
+                  onMouseDown={hasMultiple ? handleDragStart : undefined}
+                  onMouseMove={hasMultiple ? handleDragMove : undefined}
+                  onMouseUp={hasMultiple ? handleDragEnd : undefined}
+                  onMouseLeave={hasMultiple ? handleDragEnd : undefined}
+                  onTouchStart={hasMultiple ? handleDragStart : undefined}
+                  onTouchMove={hasMultiple ? handleDragMove : undefined}
+                  onTouchEnd={hasMultiple ? handleDragEnd : undefined}
+                  style={{ cursor: hasMultiple ? (isDragging ? 'grabbing' : 'grab') : 'default', direction: 'ltr' }}
+                >
+                  <div 
+                    className="ec-hero-slider-track-dubai"
+                    onTransitionEnd={hasMultiple ? handleTransitionEnd : undefined}
+                    style={{
+                      transform: `translateX(calc(-${(hasMultiple ? currentIndex : 0) * 100}% + ${dragOffset}px))`,
+                      transition: (isDragging || disableTransition) ? 'none' : 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
+                      direction: 'ltr'
+                    }}
+                  >
+                    {slides.map((hero, idx) => {
+                      const SlideContent = (
+                        <div
+                          className="ec-hero-slide-dubai"
+                          style={{ backgroundImage: `url(${StoreApi.getImageUrl(hero.imageUrl)})` }}
+                        >
+                          <div className="ec-hero-overlay-dubai" style={{ direction: 'rtl' }}>
+                            <div className="ec-hero-content-dubai">
+                              {hero.title && <h1>{hero.title}</h1>}
+                              {hero.subtitle && <p>{hero.subtitle}</p>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+
+                      const key = `${hero.id}-${idx}`;
+
+                      return hero.linkUrl ? (
+                        <Link 
+                          key={key} 
+                          to={hero.linkUrl} 
+                          style={{ display: 'block', height: '100%' }}
+                          draggable="false"
+                          onClick={(e) => {
+                            if (hasDraggedRef.current) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          {SlideContent}
+                        </Link>
+                      ) : (
+                        <div key={key} style={{ height: '100%' }}>
+                          {SlideContent}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination Dots */}
+                  {hasMultiple && (
+                    <div className="ec-slider-dots-dubai">
+                      {heroSections.map((_, idx) => (
+                        <button
+                          key={idx}
+                          className={`ec-slider-dot ${idx === activeDotIdx ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); setDisableTransition(false); setCurrentIndex(idx + 1); }}
+                          aria-label={`Go to slide ${idx + 1}`}
+                        />
+                      ))}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* Category Icons Section */}
+          {categories && categories.length > 0 && (
+            <section className="ec-cat-icons-section" style={{ padding: '0 28px', marginTop: '20px' }}>
+              <div className="ec-category-section-title" style={{ textAlign: 'right', marginBottom: '15px' }}>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#000', margin: 0 }}>تسوق بالفئة</h2>
+              </div>
+              <div className="ec-cat-icons-wrapper">
+                <div className="ec-cat-icons-scroll" ref={catScrollRef}>
+                  {categories.filter(cat => !cat.parentId).map(cat => (
+                    <button 
+                      key={cat.id} 
+                      className="ec-cat-icon-item"
+                      onClick={() => setSelectedCat(cat.id)}
+                    >
+                      <div className="ec-cat-icon-circle-premium">
+                        {cat.imageUrl ? (
+                          <img src={`${SERVER_URL}${cat.imageUrl}`} alt={cat.name} />
+                        ) : (
+                          <span className="ec-cat-fallback">📁</span>
+                        )}
+                      </div>
+                      <span className="ec-cat-name-premium">{cat.name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </section>
           )}
-
-          <section className="ec-cat-icons-section">
-            <h2 className="ec-section-title-premium">تسوق بالفئة</h2>
-            <div className="ec-cat-icons-wrapper">
-              <button className="ec-cat-arrow prev" onClick={() => scrollCategories('right')}>
-                <span className="ec-arrow-icon"><i className="fas fa-chevron-right"></i></span>
-              </button>
-
-              <div className="ec-cat-icons-scroll" ref={catScrollRef}>
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    className={`ec-cat-icon-item ${selectedCat === cat.id ? 'active' : ''}`}
-                    onClick={() => setSelectedCat(cat.id)}
-                  >
-                    <div className="ec-cat-icon-circle-premium">
-                      {cat.imageUrl ? (
-                        <img src={`${SERVER_URL}${cat.imageUrl}`} alt={cat.name} />
-                      ) : (
-                        <span className="ec-cat-fallback"><i className="fas fa-folder"></i></span>
-                      )}
-                    </div>
-                    <span className="ec-cat-name-premium">{cat.name}</span>
-                  </button>
-                ))}
-              </div>
-              <button className="ec-cat-arrow next" onClick={() => scrollCategories('left')}>
-                <span className="ec-arrow-icon"><i className="fas fa-chevron-left"></i></span>
-              </button>
-            </div>
-          </section>
         </>
       )}
 

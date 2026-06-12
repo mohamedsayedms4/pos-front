@@ -286,6 +286,33 @@ const SuperAdminSubscriptions = () => {
   const expiredCount = useMemo(() => tenants.filter(t => getTenantStatus(t) === 'expired').length, [tenants]);
   const pendingRequestsCount = useMemo(() => requests.filter(r => r.status === 'PENDING').length, [requests]);
 
+  // Impersonate tenant
+  const handleImpersonate = async (tenant) => {
+    try {
+      const data = await Api.impersonateTenant(tenant.id);
+      // Backup current tokens directly using the original localStorage keys, 
+      // but Api uses obfuscation, so let's rely on Api getters:
+      const backup = {
+        access: Api._getToken(),
+        refresh: Api._getRefreshToken(),
+        tenantId: Api._getTenantId(),
+        user: Api._getUser()
+      };
+      localStorage.setItem('super_admin_backup', JSON.stringify(backup));
+      
+      Api._setTokens(data.accessToken, data.refreshToken);
+      Api._setUser(data.user);
+      Api._setTenantId(tenant.id);
+      
+      toast(`تم تسجيل الدخول بنجاح كمدير لمتجر "${tenant.name}"`, 'success');
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
+    } catch (err) {
+      toast(err.message || 'فشل في الدخول كمدير', 'error');
+    }
+  };
+
   // Toggle status
   const handleToggleStatus = (tenant) => {
     const newStatus = !tenant.active;
@@ -675,6 +702,14 @@ const SuperAdminSubscriptions = () => {
                              </td>
                              <td>
                                <div className="sa-sub-actions">
+                                 <button
+                                   className="sa-sub-action-btn"
+                                   style={{ background: 'var(--sa-sub-accent-blue)', color: '#fff', fontSize: '1rem' }}
+                                   title="دخول كمدير"
+                                   onClick={() => handleImpersonate(tenant)}
+                                 >
+                                   🔑
+                                 </button>
                                  <button
                                    className="sa-sub-action-btn sa-sub-btn-extend"
                                    title="تمديد الاشتراك"

@@ -6,18 +6,25 @@ import Loader from '../components/common/Loader';
 import { useBranch } from '../context/BranchContext';
 import html2pdf from 'html2pdf.js';
 import SingleProductPdf from '../components/pdf/SingleProductPdf';
+import ReactDOM from 'react-dom';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useGlobalUI();
-  const { selectedBranchId } = useBranch();
+  const { selectedBranchId, branches } = useBranch();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mainImage, setMainImage] = useState(null);
   const pdfRef = React.useRef(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  // ─── Online Store States ───────────────────────────────────────────────────
+  const [showAddToStoreModal, setShowAddToStoreModal] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [storePrices, setStorePrices] = useState({ purchasePrice: '', salePrice: '' });
+  const [addingToStore, setAddingToStore] = useState(false);
 
   // ─── Unit management ───────────────────────────────────────────────────────
   const [units, setUnits] = useState([]);
@@ -33,6 +40,16 @@ const ProductDetails = () => {
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockForm, setStockForm] = useState({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
   const [savingStock, setSavingStock] = useState(false);
+
+  // --- Edit Branch Price States ---
+  const [showEditBranchPriceModal, setShowEditBranchPriceModal] = useState(false);
+  const [editingBranchInventory, setEditingBranchInventory] = useState(null);
+  const [branchPriceForm, setBranchPriceForm] = useState({
+    purchasePrice: '',
+    salePrice: '',
+    showInStore: true
+  });
+  const [savingBranchPrice, setSavingBranchPrice] = useState(false);
 
   const loadUnits = async () => {
     try {
@@ -140,6 +157,42 @@ const ProductDetails = () => {
       toast(err.message, 'error');
     } finally {
       setSavingStock(false);
+    }
+  };
+
+  const openEditBranchPriceModal = (bi) => {
+    setEditingBranchInventory(bi);
+    setBranchPriceForm({
+      purchasePrice: bi.purchasePrice ?? '',
+      salePrice: bi.salePrice ?? '',
+      showInStore: bi.showInStore !== false
+    });
+    setShowEditBranchPriceModal(true);
+  };
+
+  const handleUpdateBranchPrice = async (e) => {
+    e.preventDefault();
+    if (branchPriceForm.purchasePrice === '' || branchPriceForm.salePrice === '') {
+      toast('سعر الشراء وسعر البيع مطلوبان', 'warning');
+      return;
+    }
+    setSavingBranchPrice(true);
+    try {
+      await Api.updateBranchInventory(id, editingBranchInventory.branchId, {
+        purchasePrice: parseFloat(branchPriceForm.purchasePrice),
+        salePrice: parseFloat(branchPriceForm.salePrice),
+        showInStore: branchPriceForm.showInStore
+      });
+      toast('تم تحديث أسعار الفرع بنجاح', 'success');
+      setShowEditBranchPriceModal(false);
+      
+      // Reload product details to show updated prices
+      const prod = await Api.getProduct(id);
+      setProduct(prod);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setSavingBranchPrice(false);
     }
   };
 
@@ -321,11 +374,81 @@ const ProductDetails = () => {
   const badgeColor = totalStock > 0 ? 'var(--accent-emerald)' : 'var(--metro-red)';
   const badgeText = totalStock > 0 ? 'متوفر بالمخزن' : 'نفذت الكمية';
 
+  // Online Store Detection and Logic
+  const onlineBranch = (branches || []).find(b => b.type === 'ONLINE');
+  const onlineInventory = product.onlineInventory;
+  const isLinkedToOnline = !!onlineInventory;
+
+  const otherBranchesWithStock = branchList.filter(bi => Number(bi.branchId) !== Number(onlineBranch?.id) && Number(bi.stock) > 0);
+  const totalOtherStock = otherBranchesWithStock.reduce((sum, bi) => sum + Number(bi.stock || 0), 0);
+  const hasStockElsewhere = totalOtherStock > 0;
+
+  const handleAddToStoreClick = () => {
+    // Pre-fill prices from default/active branch if available
+    const defaultPurchasePrice = currentPurchasePrice || product.purchasePrice || '';
+    const defaultSalePrice = currentSalePrice || product.salePrice || '';
+    setStorePrices({
+      purchasePrice: defaultPurchasePrice,
+      salePrice: defaultSalePrice
+    });
+
+    if (hasStockElsewhere) {
+      setShowWarningModal(true);
+    } else {
+      setShowAddToStoreModal(true);
+    }
+  };
+
+  const handleSaveToStore = async (e) => {
+    e.preventDefault();
+    if (!storePrices.purchasePrice || !storePrices.salePrice) {
+      toast('يرجى تحديد أسعار الشراء والبيع للمتجر', 'warning');
+      return;
+    }
+    setAddingToStore(true);
+    try {
+      await Api.addProductToBranch(id, {
+        branchId: onlineBranch.id,
+        stock: 0,
+        purchasePrice: parseFloat(storePrices.purchasePrice),
+        salePrice: parseFloat(storePrices.salePrice),
+        showInStore: true
+      });
+      toast('تم إضافة المنتج للمتجر الإلكتروني بنجاح', 'success');
+      setShowAddToStoreModal(false);
+      
+      // Reload product details
+      const prod = await Api.getProduct(id);
+      setProduct(prod);
+    } catch (err) {
+      toast(err.message || 'فشل إضافة المنتج للمتجر', 'error');
+    } finally {
+      setAddingToStore(false);
+    }
+  };
+
   return (
     <div className="page-section">
       <div className="toolbar" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button className="btn btn-ghost" onClick={() => navigate('/products')}>← عودة للمنتجات</button>
         <div style={{ flex: 1 }}></div>
+        {onlineBranch && !isLinkedToOnline && (
+          <button
+            className="btn"
+            style={{
+              background: 'var(--accent-emerald)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: 'none',
+              boxShadow: '0 4px 10px rgba(16,185,129,0.2)'
+            }}
+            onClick={handleAddToStoreClick}
+          >
+            🌐 إضافة إلى المتجر الإلكتروني
+          </button>
+        )}
         <button className="btn" style={{ background: 'var(--metro-blue)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(59,130,246,0.2)' }} onClick={() => printCode('barcode')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <rect x="2" y="5" width="3" height="14" /><rect x="7" y="5" width="1" height="14" />
@@ -349,6 +472,41 @@ const ProductDetails = () => {
           {generatingPdf ? 'جاري التحضير...' : 'تنزيل PDF'}
         </button>
       </div>
+
+      {onlineBranch && !isLinkedToOnline && (
+        <div
+          className="card"
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px dashed var(--accent-emerald)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '20px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '15px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <span style={{ fontSize: '2.5rem' }}>🌐</span>
+            <div style={{ direction: 'rtl', textAlign: 'right' }}>
+              <h4 style={{ margin: '0 0 5px 0', color: 'var(--text-primary)', fontSize: '1.1rem' }}>هذا المنتج غير معروض في المتجر الإلكتروني</h4>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                يمكنك إضافته مباشرة لمتجرك الإلكتروني أونلاين وتحديد أسعار خاصة بالبيع للعملاء أونلاين.
+              </p>
+            </div>
+          </div>
+          <button
+            className="btn btn-primary"
+            style={{ background: 'var(--accent-emerald)', border: 'none', padding: '10px 20px', fontSize: '0.95rem', boxShadow: '0 4px 10px rgba(16,185,129,0.2)' }}
+            onClick={handleAddToStoreClick}
+          >
+            إضافة إلى المتجر الإلكتروني
+          </button>
+        </div>
+      )}
 
       <div className="product-details-grid">
         {/* Gallery */}
@@ -465,6 +623,7 @@ const ProductDetails = () => {
                     <th>الكمية المباعة</th>
                     <th>الربح الفعلي</th>
                     <th>المتجر الإلكتروني</th>
+                    {Api.can('PRODUCT_WRITE') && <th>الإجراءات</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -489,6 +648,17 @@ const ProductDetails = () => {
                             {bi.showInStore ? '🌐 معروض أونلاين' : '🔒 مخفي'}
                           </span>
                         </td>
+                        {Api.can('PRODUCT_WRITE') && (
+                          <td>
+                            <button 
+                              className="btn btn-icon btn-ghost" 
+                              title="تعديل السعر" 
+                              onClick={() => openEditBranchPriceModal(bi)}
+                            >
+                              ✏️
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -668,7 +838,7 @@ const ProductDetails = () => {
       </div>
 
       {/* Stock Management Modal */}
-      {showStockModal && (
+      {showStockModal && ReactDOM.createPortal(
         <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div className="modal" style={{ width: '100%', maxWidth: '500px' }}>
             <div className="modal-header">
@@ -715,7 +885,8 @@ const ProductDetails = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Hidden PDF Renderer */}
       {product && (
@@ -724,6 +895,187 @@ const ProductDetails = () => {
             <SingleProductPdf product={product} />
           </div>
         </div>
+      )}
+
+      {/* Warning Modal for Stock in Other Branches */}
+      {showWarningModal && ReactDOM.createPortal(
+        <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal" style={{ width: '100%', maxWidth: '550px' }}>
+            <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)' }}>
+              <h3>⚠️ تنبيه: مخزون متوفر في فروع أخرى</h3>
+              <button className="modal-close" onClick={() => setShowWarningModal(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right', padding: '20px' }}>
+              <p style={{ fontSize: '1rem', lineHeight: 1.6, marginBottom: '15px', color: 'var(--text-primary)' }}>
+                لقد اشتريت هذا المنتج من قبل ولديه مخزون متوفر في فروع أخرى (إجمالي المخزون المتاح: <strong>{totalOtherStock}</strong> {product.unitName || 'قطعة'}).
+              </p>
+              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
+                <ul style={{ margin: 0, paddingRight: '20px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  {otherBranchesWithStock.map(bi => (
+                    <li key={bi.branchId} style={{ marginBottom: '5px' }}>
+                      فرع <strong>{bi.branchName}</strong>: {bi.stock} {product.unitName || 'قطعة'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                هل تفضل إضافة المنتج مباشرة إلى المتجر الإلكتروني (بمخزون 0) أم ترغب في طلب نقل مخزون من أحد الفروع إلى المتجر الإلكتروني؟
+              </p>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start', direction: 'rtl' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setShowWarningModal(false);
+                  setShowAddToStoreModal(true);
+                }}
+              >
+                🌐 إضافة مباشرة (بمخزون 0)
+              </button>
+              <button
+                className="btn"
+                style={{ background: 'var(--accent-purple, #8b5cf6)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+                onClick={() => {
+                  setShowWarningModal(false);
+                  navigate('/stock-transfers', {
+                    state: {
+                      prefill: {
+                        transferType: 'BRANCH_TO_BRANCH',
+                        fromBranchId: otherBranchesWithStock[0]?.branchId || '',
+                        toBranchId: onlineBranch.id,
+                        productId: product.id,
+                        productName: product.name,
+                        quantity: totalOtherStock,
+                        unitName: product.unitName || 'قطعة'
+                      }
+                    }
+                  });
+                }}
+              >
+                🚚 طلب نقل مخزون
+              </button>
+              <button className="btn btn-ghost" onClick={() => setShowWarningModal(false)}>إلغاء</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Add to Store Prices Modal */}
+      {showAddToStoreModal && ReactDOM.createPortal(
+        <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal" style={{ width: '100%', maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h3>🌐 إضافة المنتج للمتجر الإلكتروني</h3>
+              <button className="modal-close" onClick={() => setShowAddToStoreModal(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right' }}>
+              <form id="addToStoreForm" onSubmit={handleSaveToStore}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label className="form-label">الفرع المستهدف</label>
+                  <input className="form-control" value={onlineBranch?.name || 'المتجر الإلكتروني'} disabled />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">سعر الشراء للمتجر الإلكتروني (ج.م) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="form-control"
+                    value={storePrices.purchasePrice}
+                    onChange={e => setStorePrices({ ...storePrices, purchasePrice: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">سعر البيع للمتجر الإلكتروني (ج.م) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="form-control"
+                    value={storePrices.salePrice}
+                    onChange={e => setStorePrices({ ...storePrices, salePrice: e.target.value })}
+                    required
+                  />
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '10px' }}>
+                  * سيتم إدراج هذا المنتج في المتجر الإلكتروني بمخزون مبدئي (0). يمكنك تعديل المخزون لاحقاً أو طلب نقل مخزون.
+                </p>
+              </form>
+            </div>
+            <div className="modal-footer" style={{ direction: 'rtl', display: 'flex', gap: '10px', justifyContent: 'flex-start' }}>
+              <button type="submit" form="addToStoreForm" className="btn btn-primary" disabled={addingToStore}>
+                {addingToStore ? 'جاري الإضافة...' : 'تأكيد الإضافة'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowAddToStoreModal(false)}>إلغاء</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Edit Branch Price Modal */}
+      {showEditBranchPriceModal && editingBranchInventory && ReactDOM.createPortal(
+        <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal" style={{ width: '100%', maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h3>✏️ تعديل سعر ومواصفات الفرع</h3>
+              <button className="modal-close" onClick={() => setShowEditBranchPriceModal(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right' }}>
+              <form id="branchPriceForm" onSubmit={handleUpdateBranchPrice}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label className="form-label">الفرع</label>
+                  <input className="form-control" value={editingBranchInventory.branchName || ''} disabled />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">سعر الشراء (ج.م) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="form-control"
+                    value={branchPriceForm.purchasePrice}
+                    onChange={e => setBranchPriceForm({ ...branchPriceForm, purchasePrice: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">سعر البيع (ج.م) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="form-control"
+                    value={branchPriceForm.salePrice}
+                    onChange={e => setBranchPriceForm({ ...branchPriceForm, salePrice: e.target.value })}
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px', marginBottom: '15px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="branchShowInStore" 
+                    checked={branchPriceForm.showInStore} 
+                    onChange={e => setBranchPriceForm({ ...branchPriceForm, showInStore: e.target.checked })} 
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', margin: 0 }}
+                  />
+                  <label htmlFor="branchShowInStore" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, display: 'inline-block', color: 'var(--text-primary)' }}>
+                    عرض المنتج في هذا الفرع/المتجر
+                  </label>
+                </div>
+              </form>
+            </div>
+            <div className="modal-footer" style={{ direction: 'rtl', display: 'flex', gap: '10px', justifyContent: 'flex-start' }}>
+              <button type="submit" form="branchPriceForm" className="btn btn-primary" disabled={savingBranchPrice}>
+                {savingBranchPrice ? 'جاري الحفظ...' : 'تأكيد الحفظ'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowEditBranchPriceModal(false)}>إلغاء</button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

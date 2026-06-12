@@ -33,7 +33,11 @@ export const StoreProvider = ({ children }) => {
     }).catch(() => { });
 
     StoreApi.getCategories().then(res => {
-      if (res.success) setCategories(res.data);
+      if (Array.isArray(res)) {
+        setCategories(res);
+      } else if (res && res.success) {
+        setCategories(res.data);
+      }
     }).catch(() => { });
   }, []);
 

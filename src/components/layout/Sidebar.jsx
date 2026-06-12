@@ -179,7 +179,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
                   <span>الطباعة والقوالب</span>
                 </NavLink>
-                {/*
                 <NavLink
                   to="/settings/banner"
                   className={`nav-item sub-item ${location.pathname === '/settings/banner' ? 'active' : ''}`}
@@ -189,7 +188,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
                   <span>الـ Banner الإعلاني</span>
                 </NavLink>
-                */}
               </div>
             )}
           </div>
@@ -397,16 +395,6 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span>سجل الورديات</span>
           </NavLink>
         )}
-
-        {/* الطلبات الإلكترونية
-        {Api.can('SALE_READ') && (
-          <NavLink to="/online-orders" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-            <span className="nav-icon">🌐</span>
-            <span>الطلبات الإلكترونية</span>
-          </NavLink>
-        )}
-        */}
-
         {/* استلام المخزون */}
         {Api.can('STOCK_READ') && isOnline && (
           <NavLink to="/stock-receipts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
@@ -423,21 +411,59 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
         )}
 
-        {/* تفاعل العملاء
-        {Api.can('PRODUCT_READ') && (
-          <NavLink to="/products/interactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-            <span className="nav-icon">📊</span>
-            <span>تفاعل العملاء</span>
-          </NavLink>
-        )}
-        */}
-
         {/* التوالف والهوالك */}
         {Api.can('DAMAGED_GOODS_MANAGE') && isOnline && (
           <NavLink to="/damaged" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <span className="nav-icon">🗑️</span>
             <span>التوالف والهوالك</span>
           </NavLink>
+        )}
+
+        {/* ────────────────── المتجر الإلكتروني ────────────────── */}
+        {isOnline && (
+          <>
+            <div className="nav-section-title">المتجر الإلكتروني</div>
+            
+            <a 
+              href="/store" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="nav-item"
+              style={{ textDecoration: 'none' }}
+              onClick={onClose}
+            >
+              <span className="nav-icon">🌐</span>
+              <span>زيارة المتجر الإلكتروني</span>
+            </a>
+
+            {Api.can('SALE_READ') && (
+              <NavLink to="/online-orders" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🛒</span>
+                <span>الطلبات الإلكترونية</span>
+              </NavLink>
+            )}
+
+            {Api.can('PRODUCT_READ') && (
+              <NavLink to="/products/interactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">📊</span>
+                <span>تفاعل العملاء أونلاين</span>
+              </NavLink>
+            )}
+
+            {Api.can('PRODUCT_READ') && (
+              <NavLink to="/products/offers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🏷️</span>
+                <span>عروض وخصومات العملاء</span>
+              </NavLink>
+            )}
+
+            {isAdmin && (
+              <NavLink to="/settings/banner" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+                <span className="nav-icon">🖼️</span>
+                <span>الـ Banner الإعلاني</span>
+              </NavLink>
+            )}
+          </>
         )}
 
         {/* ────────────────── الحسابات والتقارير المتقدمة ────────────────── */}
