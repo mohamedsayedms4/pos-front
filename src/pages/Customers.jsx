@@ -49,7 +49,7 @@ const Customers = () => {
     setLoading(true);
     try {
       const [res, branchesData] = await Promise.all([
-        Api.getCustomers(page, size, searchQuery, branchId),
+        Api.getCustomersSummary(page, size, searchQuery, branchId),
         branches.length === 0 ? Api.getBranches().catch(() => []) : Promise.resolve(branches)
       ]);
       setCustomers(res.items || res.content || []);
@@ -105,14 +105,22 @@ const Customers = () => {
     setShowModal(true);
   };
 
-  const openEditModal = (customer) => {
-    setCurrentCustomer({
-      ...customer,
-      branchIds: customer.branches ? customer.branches.map(b => b.id) : []
-    });
-    setFormErrors({});
-    setIsEditing(true);
-    setShowModal(true);
+  const openEditModal = async (customer) => {
+    setLoading(true);
+    try {
+      const fullCustomer = await Api.getCustomer(customer.id);
+      setCurrentCustomer({
+        ...fullCustomer,
+        branchIds: fullCustomer.branches ? fullCustomer.branches.map(b => b.id) : []
+      });
+      setFormErrors({});
+      setIsEditing(true);
+      setShowModal(true);
+    } catch (err) {
+      toast(err.message || 'فشل في جلب بيانات العميل', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewDebt = async (customerId) => {

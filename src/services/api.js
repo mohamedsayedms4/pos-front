@@ -938,7 +938,7 @@ const Api = {
       },
       body: JSON.stringify(config)
     });
-    if (!res.ok) throw new Error("ÙØ´Ù„ Ø§Ø®ØªØ¨Ø§Ø± Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©");
+    if (!res.ok) throw new Error("Ù Ø´Ù„ Ø§Ø®ØªØ¨Ø§Ø± Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©");
     const blob = await res.blob();
     return window.URL.createObjectURL(blob);
   },
@@ -991,6 +991,14 @@ const Api = {
     const typeQuery = type ? `&type=${type}` : '';
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/suppliers?page=${page}&size=${size}${searchQuery}${typeQuery}${branchQuery}`);
+    return res.data;
+  },
+
+  async getSuppliersSummary(page = 0, size = 10, search = '', sort = '', branchId = null) {
+    const searchQuery = search ? `&query=${encodeURIComponent(search)}&search=${encodeURIComponent(search)}` : '';
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/suppliers/summary?page=${page}&size=${size}${searchQuery}${sortQuery}${branchQuery}`);
     return res.data;
   },
 
@@ -1139,6 +1147,13 @@ const Api = {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
     const res = await this._request(`/purchases?page=${page}&size=${size}&query=${encodeURIComponent(query)}${sortQuery}${branchQuery}`);
+    return res.data;
+  },
+
+  async getPurchasesSummary(page = 0, size = 10, query = '', branchId = null, sort = 'id,desc') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const sortQuery = sort ? `&sort=${sort}` : '';
+    const res = await this._request(`/purchases/summary?page=${page}&size=${size}&query=${encodeURIComponent(query)}${sortQuery}${branchQuery}`);
     return res.data;
   },
 
@@ -1492,6 +1507,12 @@ const Api = {
     return res.data;
   },
 
+  async getCustomersSummary(page = 0, size = 10, query = '', branchId = null) {
+    const branchParam = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/customers/summary?page=${page}&size=${size}&query=${encodeURIComponent(query)}${branchParam}`);
+    return res.data;
+  },
+
   async getCustomer(id, branchId = null) {
     const branchQuery = branchId ? `?branchId=${branchId}` : '';
     const res = await this._request(`/customers/${id}${branchQuery}`);
@@ -1593,6 +1614,13 @@ const Api = {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const searchQuery = query ? `&query=${encodeURIComponent(query)}&search=${encodeURIComponent(query)}` : '';
     const res = await this._request(`/sales?page=${page}&size=${size}${searchQuery}${branchQuery}`);
+    return res.data;
+  },
+
+  async getSalesInvoicesSummary(page = 0, size = 10, query = '', branchId = '') {
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const searchQuery = query ? `&query=${encodeURIComponent(query)}&search=${encodeURIComponent(query)}` : '';
+    const res = await this._request(`/sales/summary?page=${page}&size=${size}${searchQuery}${branchQuery}`);
     return res.data;
   },
 
@@ -1892,9 +1920,14 @@ const Api = {
     return res.data;
   },
 
-  // â”€â”€â”€ Branches & Warehouses â”€â”€â”€
+  // ——— Branches & Warehouses ———
   async getBranches() {
     const res = await this._request('/branches');
+    return res.data;
+  },
+
+  async getBranchesSummary() {
+    const res = await this._request('/branches/summary');
     return res.data;
   },
 
@@ -2411,6 +2444,54 @@ const Api = {
       body: JSON.stringify(data)
     });
     return res;
+  },
+
+  // ─── Counts & Statistics ───
+  async getBranchesCount() {
+    const res = await this._request('/branches/count');
+    return res.data;
+  },
+
+  async getSalesCount(branchId = null) {
+    const params = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/sales/count${params}`);
+    return res.data;
+  },
+
+  async getPurchasesCount(branchId = null) {
+    const params = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/purchases/count${params}`);
+    return res.data;
+  },
+
+  async getCustomersCount(branchId = null) {
+    const params = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/customers/count${params}`);
+    return res.data;
+  },
+
+  async getSuppliersCount(branchId = null) {
+    const params = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/suppliers/count${params}`);
+    return res.data;
+  },
+
+  async getProductsCount(branchId = null) {
+    const params = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/v2/products/count${params}`);
+    return res.data;
+  },
+
+  async getExpensesCount(branchId = null) {
+    const params = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/expenses/count${params}`);
+    return res.data;
+  },
+
+  async getDebtsCount(branchId = null) {
+    const params = branchId ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/debts/count${params}`);
+    return res.data;
   }
 };
 

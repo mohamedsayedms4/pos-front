@@ -28,7 +28,7 @@ const Branches = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await Api.getBranches();
+      const res = await Api.getBranchesSummary();
       setData(res || []);
     } catch (err) {
       toast(err.message, 'error');

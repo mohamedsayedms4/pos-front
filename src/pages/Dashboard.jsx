@@ -95,34 +95,34 @@ const Dashboard = () => {
       setLoading(true);
       try {
         const [
-          branchesData,
-          salesData,
-          purchasesData,
-          customersData,
-          suppliersData,
-          productsData,
-          expensesData,
-          debtsData
+          branchCount,
+          saleCount,
+          purchaseCount,
+          customerCount,
+          supplierCount,
+          productCount,
+          expenseCount,
+          debtCount
         ] = await Promise.all([
-          Api.getBranches().catch(() => []),
-          Api.getSales(0, 1, '', globalBranchId).catch(() => ({})),
-          Api.getPurchases(0, 1, '', globalBranchId).catch(() => ({})),
-          Api.getCustomers(0, 1, '', globalBranchId).catch(() => ({})),
-          Api.getSuppliers(0, 1, '', '', globalBranchId).catch(() => ({})),
-          Api.getProductsPaged(0, 1, '', 'id,desc', globalBranchId).catch(() => ({})),
-          Api.getExpenses(0, 1, '', '', '', globalBranchId).catch(() => ({})),
-          Api.getDebts(0, 1, '', '', '', '', globalBranchId).catch(() => ({}))
+          Api.getBranchesCount().catch(() => 0),
+          Api.getSalesCount(globalBranchId).catch(() => 0),
+          Api.getPurchasesCount(globalBranchId).catch(() => 0),
+          Api.getCustomersCount(globalBranchId).catch(() => 0),
+          Api.getSuppliersCount(globalBranchId).catch(() => 0),
+          Api.getProductsCount(globalBranchId).catch(() => 0),
+          Api.getExpensesCount(globalBranchId).catch(() => 0),
+          Api.getDebtsCount(globalBranchId).catch(() => 0)
         ]);
 
         setCounts({
-          branches: Array.isArray(branchesData) ? branchesData.length : 0,
-          sales: salesData?.totalElements || salesData?.totalItems || salesData?.content?.length || 0,
-          purchases: purchasesData?.totalElements || purchasesData?.totalItems || purchasesData?.content?.length || 0,
-          customers: customersData?.totalElements || customersData?.totalItems || customersData?.content?.length || 0,
-          suppliers: suppliersData?.totalElements || suppliersData?.totalItems || suppliersData?.content?.length || 0,
-          products: productsData?.totalElements || productsData?.totalItems || productsData?.items?.length || 0,
-          expenses: expensesData?.totalElements || expensesData?.totalItems || expensesData?.content?.length || 0,
-          receipts: debtsData?.totalElements || debtsData?.totalItems || debtsData?.content?.length || 0
+          branches: branchCount || 0,
+          sales: saleCount || 0,
+          purchases: purchaseCount || 0,
+          customers: customerCount || 0,
+          suppliers: supplierCount || 0,
+          products: productCount || 0,
+          expenses: expenseCount || 0,
+          receipts: debtCount || 0
         });
       } catch (err) {
         console.error('Error loading dashboard counts:', err);

@@ -92,7 +92,7 @@ const Suppliers = () => {
     setLoading(true);
     try {
       const [res, statsData] = await Promise.all([
-        Api.getSuppliers(page, size, query, sortParam, branchId),
+        Api.getSuppliersSummary(page, size, query, sortParam, branchId),
         Api.getDailySupplierStats(7, branchId).catch(() => [])
       ]);
       setData(res.content || res.items || []);
@@ -143,18 +143,27 @@ const Suppliers = () => {
     setActiveSupplier(supplier);
     setFormErrors({});
     if (supplier) {
-      setFormData({
-        name: supplier.name || '',
-        phone: supplier.phone || '',
-        email: supplier.email || '',
-        address: supplier.address || '',
-        taxNumber: supplier.taxNumber || '',
-        branchIds: supplier.branches ? supplier.branches.map(b => b.id) : []
-      });
+      setLoading(true);
+      try {
+        const fullSupplier = await Api.getSupplier(supplier.id);
+        setFormData({
+          name: fullSupplier.name || '',
+          phone: fullSupplier.phone || '',
+          email: fullSupplier.email || '',
+          address: fullSupplier.address || '',
+          taxNumber: fullSupplier.taxNumber || '',
+          branchIds: fullSupplier.branches ? fullSupplier.branches.map(b => b.id) : []
+        });
+        setModalType('form');
+      } catch (err) {
+        toast(err.message || 'فشل في جلب بيانات المورد', 'error');
+      } finally {
+        setLoading(false);
+      }
     } else {
       setFormData({ name: '', phone: '', email: '', address: '', taxNumber: '', branchIds: [] });
+      setModalType('form');
     }
-    setModalType('form');
   };
 
   const openPayment = (supplier) => {

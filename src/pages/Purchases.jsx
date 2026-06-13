@@ -138,7 +138,7 @@ const Purchases = () => {
   const loadData = async (page = 0, size = 10, query = debouncedSearch, sortParam = sort, branchId = selectedBranchId) => {
     setLoading(true);
     try {
-      const res = await Api.getPurchases(page, size, query, branchId, sortParam);
+      const res = await Api.getPurchasesSummary(page, size, query, branchId, sortParam);
       // Support both PaginatedResponse and direct content
       const itemsArray = res.items || res.content || (Array.isArray(res) ? res : []);
       setData(itemsArray);
@@ -248,9 +248,17 @@ const Purchases = () => {
     setModalType('payment');
   };
 
-  const openDetails = (purchase) => {
-    setActivePurchase(purchase);
-    setModalType('details');
+  const openDetails = async (purchase) => {
+    setLoading(true);
+    try {
+      const fullPurchase = await Api.getPurchaseById(purchase.id);
+      setActivePurchase(fullPurchase);
+      setModalType('details');
+    } catch (err) {
+      toast(err.message || 'فشل في جلب تفاصيل الفاتورة', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const closeModal = () => {

@@ -64,7 +64,7 @@ const Sales = () => {
     const loadSales = async (page = 0, size = 10, query = debouncedSearch, branchId = selectedBranchId) => {
         setLoading(true);
         try {
-            const res = await Api.getSales(page, size, query, branchId);
+            const res = await Api.getSalesInvoicesSummary(page, size, query, branchId);
             setSales(res.items || res.content || []);
             setTotalPages(res.totalPages || 0);
             setTotalElements(res.totalItems || res.totalElements || 0);
@@ -76,21 +76,37 @@ const Sales = () => {
         }
     };
 
-    const openDetails = (sale) => {
-        setActiveSale(sale);
-        setShowDetails(true);
+    const openDetails = async (sale) => {
+        setLoading(true);
+        try {
+            const fullSale = await Api.getSaleById(sale.id);
+            setActiveSale(fullSale);
+            setShowDetails(true);
+        } catch (err) {
+            toast(err.message, 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const openReturnModal = (sale) => {
-        setActiveSale(sale);
-        setFormErrors({});
-        // Initialize return items with 0 quantity
-        setReturnItems((sale.items || []).map(i => ({
-            ...i,
-            returnQty: 0
-        })));
-        setReturnNotes('');
-        setShowReturnModal(true);
+    const openReturnModal = async (sale) => {
+        setLoading(true);
+        try {
+            const fullSale = await Api.getSaleById(sale.id);
+            setActiveSale(fullSale);
+            setFormErrors({});
+            // Initialize return items with 0 quantity
+            setReturnItems((fullSale.items || []).map(i => ({
+                ...i,
+                returnQty: 0
+            })));
+            setReturnNotes('');
+            setShowReturnModal(true);
+        } catch (err) {
+            toast(err.message, 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleReturn = async () => {
