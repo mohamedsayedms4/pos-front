@@ -89,16 +89,44 @@ const AddProduct = () => {
       setLoading(true);
       Api.getProduct(id)
         .then(product => {
+          // Extract pricing/stock from branchInventories for the current branch
+          // or from onlineInventory, since ProductDto doesn't have these at the top level
+          let branchPurchasePrice = '';
+          let branchSalePrice = '';
+          let branchStock = '0';
+          let branchShowInStore = true;
+
+          if (product.onlineInventory) {
+            branchPurchasePrice = product.onlineInventory.purchasePrice ?? '';
+            branchSalePrice = product.onlineInventory.salePrice ?? '';
+            branchStock = product.onlineInventory.stock ?? '0';
+            branchShowInStore = product.onlineInventory.showInStore !== false;
+          }
+          
+          if (product.branchInventories && product.branchInventories.length > 0) {
+            // Try to find the inventory matching the currently selected branch
+            const currentBranchInv = selectedBranchId 
+              ? product.branchInventories.find(bi => bi.branchId === selectedBranchId || bi.branchId === parseInt(selectedBranchId))
+              : null;
+            const inv = currentBranchInv || product.branchInventories[0];
+            if (inv) {
+              branchPurchasePrice = inv.purchasePrice ?? '';
+              branchSalePrice = inv.salePrice ?? '';
+              branchStock = inv.stock ?? '0';
+              branchShowInStore = inv.showInStore !== false;
+            }
+          }
+
           setFormData({
             name: product.name || '',
             description: product.description || '',
-            purchasePrice: product.purchasePrice || '',
-            salePrice: product.salePrice || '',
-            stock: product.stock || '0',
+            purchasePrice: branchPurchasePrice,
+            salePrice: branchSalePrice,
+            stock: branchStock,
             productCode: product.productCode || '',
             categoryId: product.categoryId || '',
             unitName: product.unitName || 'القطعة',
-            showInStore: product.showInStore !== false,
+            showInStore: branchShowInStore,
             units: product.units || [],
             onlineInventory: product.onlineInventory || null
           });
