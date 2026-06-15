@@ -175,8 +175,123 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
             <tr key={item.id || idx}>
               <td>{idx + 1}</td>
               <td>
-                <div className="item-name">{item.productName || item.name}</div>
+                <div className="item-name">{item.productName || item.name || item.barcode || 'بدون اسم'}</div>
                 {item.barcode && <div className="item-barcode-text">كود: {item.barcode}</div>}
+              </td>
+              <td className="text-center">{item.quantity} {item.unitName || ''}</td>
+              <td className="text-center">{Number(item.unitPrice).toFixed(2)}</td>
+              <td className="text-left">{(item.unitPrice * item.quantity).toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Summary Footer */}
+      <div className="classic-summary-section">
+        <div className="summary-block-classic">
+          <table className="summary-table-classic">
+            <tbody>
+              <tr>
+                <td>عدد القطع الإجمالي:</td>
+                <td>{itemCount}</td>
+              </tr>
+              <tr>
+                <td>الخصم المباشر:</td>
+                <td>{Number(invoice.discount || 0).toFixed(2)}</td>
+              </tr>
+              <tr className="grand-total-row">
+                <td>الإجمالي المستحق:</td>
+                <td>{Number(invoice.totalAmount).toFixed(2)}</td>
+              </tr>
+              {invoice.paidAmount !== undefined && (
+                <>
+                  <tr>
+                    <td>المبلغ المدفوع:</td>
+                    <td>{Number(invoice.paidAmount).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>المبلغ المتبقي:</td>
+                    <td>{Number(invoice.remainingAmount || 0).toFixed(2)}</td>
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Barcode Only Template
+  const renderBarcodeOnly = () => (
+    <div className="invoice-classic-wrapper barcode-only-mode">
+      {/* Header */}
+      <div className="classic-header">
+        <div className="company-details" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {logoUrl && <img src={logoUrl} alt="Store Logo" style={{ maxHeight: '50px', maxWidth: '100px', objectFit: 'contain' }} />}
+          <div>
+            <h2>{displayStoreName}</h2>
+            <p>{displayBranchName}</p>
+            <p>تاريخ الفاتورة: {dateFormatted}</p>
+          </div>
+        </div>
+        <div className="invoice-title-block">
+          <h1>فاتورة مبيعات</h1>
+          <div className="badge-classic">{invoice.status === 'PAID' ? 'مدفوعة بالكامل' : invoice.status === 'PARTIAL' ? 'مدفوعة جزئياً' : 'آجل'}</div>
+        </div>
+      </div>
+
+      <hr className="divider-classic" />
+
+      {/* Meta grid */}
+      <div className="classic-meta-grid">
+        <div className="meta-card">
+          <h4>بيانات الفاتورة</h4>
+          <table className="meta-table">
+            <tbody>
+              <tr>
+                <td>رقم الفاتورة:</td>
+                <td><strong>{transId}</strong></td>
+              </tr>
+              <tr>
+                <td>الكاشير مسؤول:</td>
+                <td>{cashierName}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="meta-card">
+          <h4>العميل</h4>
+          <table className="meta-table">
+            <tbody>
+              <tr>
+                <td>اسم العميل:</td>
+                <td>{customerName}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Table */}
+      <table className="classic-invoice-table">
+        <thead>
+          <tr>
+            <th style={{ width: '8%' }}>#</th>
+            <th style={{ width: '45%' }}>الباركود</th>
+            <th style={{ width: '12%' }} className="text-center">الكمية</th>
+            <th style={{ width: '15%' }} className="text-center">سعر الوحدة</th>
+            <th style={{ width: '20%' }} className="text-left">القيمة الاجمالية</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, idx) => (
+            <tr key={item.id || idx}>
+              <td>{idx + 1}</td>
+              <td>
+                <div className="item-barcode-only" style={{ fontSize: '1.2rem', fontWeight: 'bold', fontFamily: 'monospace', color: '#000' }}>
+                   {item.barcode || 'لا يوجد باركود'}
+                </div>
               </td>
               <td className="text-center">{item.quantity} {item.unitName || ''}</td>
               <td className="text-center">{Number(item.unitPrice).toFixed(2)}</td>
@@ -297,7 +412,7 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
             <tr key={item.id || idx} className="modern-item-row">
               <td className="td-idx">{String(idx + 1).padStart(2, '0')}</td>
               <td>
-                <div className="item-name-modern">{item.productName || item.name}</div>
+                <div className="item-name-modern">{item.productName || item.name || item.barcode || 'بدون اسم'}</div>
                 {item.barcode && <span className="item-barcode-badge">كود: {item.barcode}</span>}
               </td>
               <td className="text-center text-qty-modern">{item.quantity} {item.unitName || ''}</td>
@@ -345,7 +460,7 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
     <div className={`a4-invoice-container ${template === 'modern' ? 'modern-theme' : 'classic-theme'} ${isPreview ? 'preview-mode' : ''}`} id="printable-receipt" dir="rtl">
       
       {/* Load core template */}
-      {template === 'modern' ? renderModern() : renderClassic()}
+      {template === 'modern' ? renderModern() : template === 'barcode_only' ? renderBarcodeOnly() : renderClassic()}
 
       {/* Shared Footer Barcode & Powered-By */}
       <div className="a4-shared-footer">

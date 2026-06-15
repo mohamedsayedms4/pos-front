@@ -138,14 +138,18 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
           {items.map((item, idx) => (
             <React.Fragment key={item.id || idx}>
               <tr className="item-row">
-                <td className="text-right item-name-cell">{item.productName || item.name}</td>
+                <td className="text-right item-name-cell" style={template === 'barcode_only' ? { fontFamily: 'monospace', fontSize: '11pt' } : {}}>
+                  {template === 'barcode_only' ? (item.barcode || 'لا يوجد باركود') : (item.productName || item.name || item.barcode || 'بدون اسم')}
+                </td>
                 <td className="text-center">{item.quantity}</td>
                 <td className="text-center">{Number(item.unitPrice).toFixed(2)}</td>
                 <td className="text-left">{(item.unitPrice * item.quantity).toFixed(2)}</td>
               </tr>
-              <tr>
-                <td colSpan="4" className="text-right product-id">{item.barcode || item.productBarcode || 'PRB-000000000'}</td>
-              </tr>
+              {template !== 'barcode_only' && (
+                <tr>
+                  <td colSpan="4" className="text-right product-id">{item.barcode || item.productBarcode || 'PRB-000000000'}</td>
+                </tr>
+              )}
               {idx < items.length - 1 && <tr className="dashed-separator"><td colSpan="4"></td></tr>}
             </React.Fragment>
           ))}

@@ -435,10 +435,8 @@ const AddProduct = () => {
                   value={formData.stock} 
                   onChange={(e) => setFormData({ ...formData, stock: e.target.value })} 
                   placeholder="0"
-                  disabled={isEditMode} // Usually stock is modified through stock transactions, keeping consistent with Products.jsx
                 />
                 {formErrors.stock && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.stock}</span>}
-                {isEditMode && <small style={{ color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>تعديل المخزون يتم من خلال شاشة التوزيع أو الفواتير</small>}
               </div>
               <div className="form-group">
                 <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>كود المنتج (الباركود)</label>

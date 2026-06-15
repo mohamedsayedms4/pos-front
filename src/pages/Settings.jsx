@@ -443,11 +443,13 @@ const Settings = () => {
                                     <>
                                         <option value="classic">🏛️ كلاسيكي (جدول ممتد تقليدي)</option>
                                         <option value="modern">⚡ عصري / بريميوم (ملون ومقاطع أنيقة)</option>
+                                        <option value="barcode_only">🏷️ باركود فقط (بدون اسم)</option>
                                     </>
                                 ) : (
                                     <>
                                         <option value="standard">🧾 قياسي (التفاصيل الكاملة والباركود)</option>
                                         <option value="compact">✂️ موفر / مبسط (توفير في طول الورق)</option>
+                                        <option value="barcode_only">🏷️ باركود فقط (بدون اسم)</option>
                                     </>
                                 )}
                             </select>
