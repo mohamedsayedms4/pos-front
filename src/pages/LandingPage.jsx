@@ -5,6 +5,18 @@ import logoLandingLight from '../assets/img/logo-landing-light.png';
 import logoLandingDark from '../assets/img/logo-landing-dark.png';
 import { useTheme } from '../components/common/ThemeContext';
 import systemImg from '../assets/img/landing-page/system.png';
+
+import '../styles/pages/SeggleLanding.css';
+import imgDashboard from '../assets/img/seggle/dashboard.png';
+import imgPos from '../assets/img/seggle/pos.png';
+import imgSales from '../assets/img/seggle/sales.png';
+import imgReports from '../assets/img/seggle/reports.png';
+
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+gsap.registerPlugin(ScrollTrigger);
+
+
 import { initPixel, trackPageView, trackLead as fbTrackLead } from '../services/fbPixel';
 
 // SVG Icons for elegant UI look to avoid external library loading issues
@@ -125,11 +137,236 @@ const LandingPage = () => {
   const [softwareName, setSoftwareName] = useState('سجل');
   const [isYearly, setIsYearly] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('pos');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+
+  
+  useEffect(() => {
+    let ctx = gsap.context(() => {
+        const isDesktop = window.matchMedia("(min-width: 769px)").matches;
+        
+        let showcaseTrigger = null;
+
+        if (isDesktop) {
+            gsap.fromTo(".mockup-frame", 
+                { rotateX: 10, scale: 0.95, y: 20 },
+                { 
+                    scrollTrigger: {
+                        trigger: ".hero-section.light-mode",
+                        start: "top top",
+                        end: "bottom center",
+                        scrub: 1
+                    },
+                    rotateX: 0,
+                    scale: 1,
+                    y: -20,
+                    boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
+                    ease: "none"
+                }
+            );
+
+            gsap.utils.toArray('.section-header h2, .section-header p, .feature-card, .bento-item').forEach(el => {
+                gsap.from(el, {
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 85%"
+                    },
+                    y: 40,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power3.out"
+                });
+            });
+
+            // --- Sticky Scroll Tabs Logic ---
+            window.isClickScrolling = false;
+            window.currentActiveTab = 'dashboard';
+
+            showcaseTrigger = ScrollTrigger.create({
+                trigger: ".system-showcase",
+                start: "top top", 
+                end: "+=2500",    
+                pin: true,
+                onUpdate: (self) => {
+                    if (window.isClickScrolling) return;
+
+                    const progress = self.progress;
+                    let activeIndex = 0;
+                    
+                    if (progress > 0.25 && progress <= 0.5) activeIndex = 1;
+                    else if (progress > 0.5 && progress <= 0.75) activeIndex = 2;
+                    else if (progress > 0.75) activeIndex = 3;
+                    
+                    const tabs = ['dashboard', 'pos', 'sales', 'reports'];
+                    const newTab = tabs[activeIndex];
+                    
+                    if (window.currentActiveTab !== newTab) {
+                        window.currentActiveTab = newTab;
+                        setActiveTab(newTab);
+                    }
+                }
+            });
+
+            // Click Handlers for Tabs
+            const tabNames = ['dashboard', 'pos', 'sales', 'reports'];
+            tabNames.forEach((tab, index) => {
+                const btn = document.getElementById(`btn-tab-${tab}`);
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        if (!showcaseTrigger) return;
+                        
+                        const start = showcaseTrigger.start;
+                        const end = showcaseTrigger.end;
+                        const totalScroll = end - start;
+                        
+                        const targetProgress = 0.12 + index * 0.25;
+                        const targetScroll = start + totalScroll * targetProgress;
+                        
+                        window.isClickScrolling = true;
+                        window.currentActiveTab = tab;
+                        setActiveTab(tab);
+                        
+                        window.scrollTo({
+                            top: targetScroll,
+                            behavior: 'smooth'
+                        });
+                        
+                        setTimeout(() => {
+                            window.isClickScrolling = false;
+                        }, 800);
+                    });
+                }
+            });
+
+            setTimeout(() => {
+                ScrollTrigger.sort();
+                ScrollTrigger.refresh();
+            }, 100);
+        } else {
+             // Mobile click handlers without scrolling pin
+             const tabNames = ['dashboard', 'pos', 'sales', 'reports'];
+             tabNames.forEach((tab) => {
+                 const btn = document.getElementById(`btn-tab-${tab}`);
+                 if (btn) {
+                     btn.addEventListener('click', () => {
+                         setActiveTab(tab);
+                     });
+                 }
+             });
+        }
+
+        // --- Ring Cursor & 3D Tilt Logic ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorRing = document.querySelector('.cursor-ring');
+        
+        let mouseX = 0, mouseY = 0;
+        let ringX = 0, ringY = 0;
+
+        const handleMouseMove = (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            if (cursorDot) {
+                cursorDot.style.left = mouseX + 'px';
+                cursorDot.style.top = mouseY + 'px';
+            }
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+
+        let animFrame;
+        const render = () => {
+            ringX += (mouseX - ringX) * 0.15;
+            ringY += (mouseY - ringY) * 0.15;
+            
+            if (cursorRing) {
+                cursorRing.style.left = ringX + 'px';
+                cursorRing.style.top = ringY + 'px';
+            }
+            
+            animFrame = window.requestAnimationFrame(render);
+        };
+        animFrame = window.requestAnimationFrame(render);
+
+        // Hover states
+        const hoverElements = document.querySelectorAll('a, button, .feature-card, .pricing-card, .tab-btn');
+        const addHover = () => cursorRing && cursorRing.classList.add('hovering');
+        const rmHover = () => cursorRing && cursorRing.classList.remove('hovering');
+        
+        hoverElements.forEach(el => {
+            el.addEventListener('mouseenter', addHover);
+            el.addEventListener('mouseleave', rmHover);
+        });
+
+        // Image Parallax
+        const handleParallax = (e) => {
+            const images = document.querySelectorAll(".tab-img");
+            if (!images.length) return;
+            const mx = e.clientX / window.innerWidth - 0.5;
+            const my = e.clientY / window.innerHeight - 0.5;
+            images.forEach(img => {
+                const rotateX = my * -10; 
+                const rotateY = mx * 10;
+                img.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+                img.style.transition = "transform 0.1s ease-out";
+            });
+        };
+        document.addEventListener("mousemove", handleParallax);
+
+        // Extreme WOW Features (Glow Tracker, Tilt)
+        const cards = document.querySelectorAll('.feature-card, .pricing-card, .bento-item');
+        cards.forEach(card => {
+            const handleCardMove = e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+                
+                const intensity = card.classList.contains('pricing-card') ? 5 : 10;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = ((y - centerY) / centerY) * -intensity; 
+                const rotateY = ((x - centerX) / centerX) * intensity;
+                
+                card.style.transform = `perspective(1500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                card.style.transition = "none";
+            };
+            const handleCardLeave = () => {
+                card.style.transform = `perspective(1500px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                card.style.transition = "transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)";
+            };
+            card.addEventListener('mousemove', handleCardMove);
+            card.addEventListener('mouseleave', handleCardLeave);
+        });
+
+        // Magnetic Buttons
+        const magButtons = document.querySelectorAll('.btn-primary, .btn-success');
+        magButtons.forEach(btn => {
+            const handleMagMove = e => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                
+                btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+                btn.style.transition = "transform 0.1s ease-out";
+            };
+            const handleMagLeave = () => {
+                btn.style.transform = `translate(0px, 0px)`;
+                btn.style.transition = "transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)";
+            };
+            btn.addEventListener('mousemove', handleMagMove);
+            btn.addEventListener('mouseleave', handleMagLeave);
+        });
+        
+    });
+
+    return () => ctx.revert();
+  }, []);
 
   useEffect(() => {
     const user = Api._getUser();
@@ -326,7 +563,7 @@ const LandingPage = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
+            {/* Hero Section */}
       <section className="hero-section">
         {/* Stock Chart Background SVG */}
         <div className="hero-stock-bg">
@@ -447,347 +684,380 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-      <div className="hero-system-image-wrapper animate-on-scroll fade-up">
-        <div className="system-mockup-frame">
-          <div className="system-mockup-topbar">
-            <span className="mockup-dot red"></span>
-            <span className="mockup-dot yellow"></span>
-            <span className="mockup-dot green"></span>
+
+      {/* Hero Section (Seggle Style) */}
+      <section className="hero-section light-mode">
+          {/* Center Glow and Grid */}
+          <div className="hero-center-glow"></div>
+          <div className="hero-grid-bg"></div>
+
+          <div className="container hero-content centered">
+              <div className="hero-badge glossy"><i className="fa-solid fa-rocket" style={{ marginLeft: '8px' }}></i>النظام الأول للتحول الرقمي الموثوق</div>
+              <h1 className="hero-title">الوضوح التام لأعمالك... <br/><span className="gradient-text">في شاشة واحدة.</span></h1>
+              <p className="hero-subtitle">لا تكتفِ بإدارة أعمالك بل قُدها نحو المستقبل. Seggle يجمع المبيعات، المخزون، والمحاسبة في تجربة سحابية فاخرة تزيل التعقيد وتمنحك وقتاً للنمو.</p>
+              <div className="hero-actions centered">
+                  <button className="btn-success pulse-btn" onClick={() => navigate('/register')}>بدء الاستخدام مجانا</button>
+                  <button className="btn-glass" onClick={() => document.getElementById('story')?.scrollIntoView({behavior: 'smooth'})}>شاهد كيف يعمل <span className="icon"><i className="fa-solid fa-arrow-down"></i></span></button>
+              </div>
+
+              {/* 3D Perspective Dashboard Preview */}
+              <div className="hero-dashboard-preview perspective-wrapper large">
+                  {/* Floating UI Icons */}
+                  <div className="floating-icon icon-1"><i className="fa-solid fa-chart-line"></i></div>
+                  <div className="floating-icon icon-2"><i className="fa-solid fa-shield-halved"></i></div>
+                  <div className="floating-icon icon-3"><i className="fa-solid fa-circle-check"></i></div>
+                  
+                  <div className="mockup-frame tilt-effect">
+                      <img src={imgDashboard} alt="Seggle ERP Dashboard" className="screenshot-img" />
+                  </div>
+              </div>
           </div>
-          <div className="system-mockup-body">
-            <img src={systemImg} alt="واجهة النظام" className="hero-system-image" />
-          </div>
-        </div>
-      </div>
-
-      {/* Modules Features Grid Section (Daftra Style) */}
-      <section id="features" className="modules-grid-section">
-        <div className="container">
-          <div className="daftra-section-heading animate-on-scroll fade-up">
-            <p className="daftra-section-tag">برامج وحلول</p>
-            <h2>تحكم بالكامل في عملك،<br />مهما توسّعت، ومهما تغيّرت احتياجاتك.</h2>
-          </div>
-          <div className="daftra-modules-grid">
-            {/* 1. المبيعات */}
-            <div className="daftra-module-item animate-on-scroll fade-up">
-              <div className="daftra-module-header">
-                <h3 className="daftra-module-title">المبيعات</h3>
-                <span className="daftra-module-icon purple-theme">
-                  <Icons.Store />
-                </span>
-              </div>
-              <p className="daftra-module-desc">
-                الفاتورة الإلكترونية والضريبية، نقاط البيع، الفواتير وعروض الأسعار، الأقساط، العروض والمبيعات المستهدفة والعمولات.
-              </p>
-            </div>
-
-            {/* 2. المحاسبة العامة */}
-            <div className="daftra-module-item animate-on-scroll fade-up delay-100">
-              <div className="daftra-module-header">
-                <h3 className="daftra-module-title">المحاسبة العامة</h3>
-                <span className="daftra-module-icon green-theme">
-                  <Icons.BookOpen />
-                </span>
-              </div>
-              <p className="daftra-module-desc">
-                دليل الحسابات، دفتر الأستاذ، قيود اليومية، المصروفات، مراكز التكلفة، إدارة الأصول، دورة الشيكات، التقارير المالية.
-              </p>
-            </div>
-
-            {/* 3. المخزون */}
-            <div className="daftra-module-item animate-on-scroll fade-up delay-200">
-              <div className="daftra-module-header">
-                <h3 className="daftra-module-title">المخزون</h3>
-                <span className="daftra-module-icon rose-theme">
-                  <Icons.Package />
-                </span>
-              </div>
-              <p className="daftra-module-desc">
-                المنتجات والخدمات، تتبع المخزون، الجرد، المشتريات، المستودعات، الأذون المخزنية، الموردين، قوائم الأسعار، دورة المشتريات.
-              </p>
-            </div>
-
-            {/* 4. الموارد البشرية */}
-            <div className="daftra-module-item animate-on-scroll fade-up">
-              <div className="daftra-module-header">
-                <h3 className="daftra-module-title">الموارد البشرية</h3>
-                <span className="daftra-module-icon amber-theme">
-                  <Icons.Users />
-                </span>
-              </div>
-              <p className="daftra-module-desc">
-                شؤون الموظفين، الحضور والانصراف، المرتبات، العقود، الهيكل التنظيمي، الإجازات، الطلبات، السلف.
-              </p>
-            </div>
-
-            {/* 5. علاقات العملاء */}
-            <div className="daftra-module-item animate-on-scroll fade-up delay-100">
-              <div className="daftra-module-header">
-                <h3 className="daftra-module-title">علاقات العملاء</h3>
-                <span className="daftra-module-icon cyan-theme">
-                  <Icons.Briefcase />
-                </span>
-              </div>
-              <p className="daftra-module-desc">
-                متابعة العملاء، المواعيد، نقاط الولاء، العضويات والاشتراكات، النقاط والأرصدة، حضور العملاء، التأمينات.
-              </p>
-            </div>
-
-            {/* 6. إدارة العمليات */}
-            <div className="daftra-module-item animate-on-scroll fade-up delay-200">
-              <div className="daftra-module-header">
-                <h3 className="daftra-module-title">إدارة العمليات</h3>
-                <span className="daftra-module-icon blue-theme">
-                  <Icons.Settings />
-                </span>
-              </div>
-              <p className="daftra-module-desc">
-                أوامر الشغل وإدارة المشاريع، دورات العمل، تتبع الوقت، إدارة الوحدات والإيجارات، عقود الإيجار، الحجوزات، إدارة التصنيع.
-              </p>
-            </div>
-          </div>
-        </div>
       </section>
 
-
-      {/* Business Fields Banner Section */}
-      <section className="fields-banner-section">
-        <div className="container">
-          <div className="fields-banner-card animate-on-scroll fade-up">
-            <div className="fields-banner-bg-shape"></div>
-            <div className="fields-banner-inner">
-              <div className="fields-banner-top">
-                <div className="fields-banner-text">
-                  <h2 className="fields-banner-title">مخصص<br />لأكثر من 10 مجالاً</h2>
-                  <p className="fields-banner-desc">اكتشف حلول سجل المصممة خصيصاً لنجاحك. ابدأ مع نظام يفهم طبيعة عملك.</p>
-                </div>
-                <a href="/register" className="fields-banner-btn">سجل الآن</a>
+      {/* Social Proof Section */}
+      <section className="social-proof">
+          <div className="container">
+              <p>يثق بنا أكثر من <span className="highlight">10,000+</span> نشاط تجاري للنمو بأعمالهم</p>
+              <div className="logos-ticker">
+                  <div className="ticker-track">
+                      <div className="brand">شركة الأفق</div>
+                      <div className="brand">مطاعم ليالي</div>
+                      <div className="brand">مخابز القمح</div>
+                      <div className="brand">مؤسسة التوريد</div>
+                      <div className="brand">مجموعة السعد</div>
+                      <div className="brand">شركة الأفق</div>
+                      <div className="brand">مطاعم ليالي</div>
+                      <div className="brand">مخابز القمح</div>
+                      <div className="brand">مؤسسة التوريد</div>
+                      <div className="brand">مجموعة السعد</div>
+                  </div>
               </div>
-
-            </div>
           </div>
-        </div>
       </section>
 
-      {/* Interactive Tabs Showcase (Daftra Style Showcase) */}
-      <section className="interactive-showcase-section">
-        <div className="container">
-          <div className="showcase-card animate-on-scroll fade-up">
-            <div className="tabs-header">
-              <button className={activeTab === 'pos' ? 'active-tab' : ''} onClick={() => setActiveTab('pos')}>
-                كاشير المبيعات
-              </button>
-              <button className={activeTab === 'inventory' ? 'active-tab' : ''} onClick={() => setActiveTab('inventory')}>
-                المخازن والفروع
-              </button>
-              <button className={activeTab === 'finance' ? 'active-tab' : ''} onClick={() => setActiveTab('finance')}>
-                الحسابات والتقارير
-              </button>
-              <button className={activeTab === 'store' ? 'active-tab' : ''} onClick={() => setActiveTab('store')}>
-                المتجر الإلكتروني
-              </button>
-            </div>
-
-            <div className="showcase-content">
-              <div className="showcase-text">
-                <h3>{features[activeTab].title}</h3>
-                <p>{features[activeTab].description}</p>
-                <ul className="showcase-checklist">
-                  {features[activeTab].benefits.map((b, i) => (
-                    <li key={i}>
-                      <span className="check-bullet"><Icons.Check /></span>
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/register" className="btn-showcase-cta">ابدأ الآن مجاناً</Link>
+      {/* Features Section (From Mockup) */}
+      <section className="features-section" style={{ padding: '100px 0', background: 'var(--bg-light)' }}>
+          <div className="container">
+              <div className="section-header" style={{ marginBottom: '60px', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--primary-color)', fontWeight: 'bold', marginBottom: '12px', fontSize: '1.1rem', letterSpacing: '1px' }}>التميز الهندسي</p>
+                  <h2 style={{ color: 'var(--secondary-color)', fontSize: '2.8rem', maxWidth: '800px', margin: '0 auto', lineHeight: '1.4' }}>مصمم بأدق التفاصيل لتتحكم في كل زاوية من أعمالك، بكل أناقة.</h2>
               </div>
-
-              <div className="showcase-visual">
-                <div className="mockup-window">
-                  <div className="mockup-header">
-                    <span className="mockup-dot red"></span>
-                    <span className="mockup-dot yellow"></span>
-                    <span className="mockup-dot green"></span>
-                    <span className="mockup-url">http://localhost:5173/dashboard</span>
+              
+              <div className="features-grid bento-layout">
+                  {/* 1. المبيعات (Wide) */}
+                  <div className="feature-card wide" style={{ textAlign: 'right' }}>
+                      <span className="feature_icon"><i className="fa-solid fa-bolt text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
+                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>مبيعات لا تتوقف</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>تجربة كاشير فائقة السرعة تواكب أوقات الذروة، مع إمكانية العمل بدون إنترنت للحفاظ على انسيابية المبيعات.</p>
                   </div>
-                  <div className="mockup-body">
-                    {activeTab === 'pos' && (
-                      <div className="pos-mockup-view">
-                        <div className="pos-item-grid">
-                          <div className="pos-item-tile">
-                            <span className="emoji">☕</span>
-                            <span className="title">قهوة إسبريسو ممتازة</span>
-                            <span className="price">45.00 ج.م</span>
-                          </div>
-                          <div className="pos-item-tile">
-                            <span className="emoji">🍰</span>
-                            <span className="title">كعكة الشوكولاتة</span>
-                            <span className="price">90.00 ج.م</span>
-                          </div>
-                        </div>
-                        <div className="invoice-summary-box">
-                          <div className="sum-row"><span>الإجمالي الفرعي:</span><span>135.00 ج.م</span></div>
-                          <div className="sum-row"><span>الضريبة (14%):</span><span>18.90 ج.م</span></div>
-                          <div className="sum-row grand-total"><span>الإجمالي الكلي:</span><span>153.90 ج.م</span></div>
-                          <button className="btn-invoice-confirm">إصدار الفاتورة المعتمدة ✓</button>
-                        </div>
-                      </div>
-                    )}
-                    {activeTab === 'inventory' && (
-                      <div className="inventory-mockup-view">
-                        <div className="stock-indicator-item alert-danger">
-                          <div className="indicator-desc">
-                            <span>فرع المعادي - جهاز آيفون 15</span>
-                            <span className="badge">1 حبات (مستوى متدني!)</span>
-                          </div>
-                          <div className="progress-bg"><div className="progress-fill" style={{ width: '12%' }}></div></div>
-                        </div>
-                        <div className="stock-indicator-item alert-success">
-                          <div className="indicator-desc">
-                            <span>مخزن التجمع - جهاز آيفون 15</span>
-                            <span className="badge">85 حبة (مستقر)</span>
-                          </div>
-                          <div className="progress-bg"><div className="progress-fill" style={{ width: '85%' }}></div></div>
-                        </div>
-                        <button className="btn-transfer-mock">طلب تحويل مخزني سريع 🔄</button>
-                      </div>
-                    )}
-                    {activeTab === 'finance' && (
-                      <div className="finance-mockup-view">
-                        <div className="finance-metric-card positive">
-                          <span className="metric-title">صافي ربح الشهر الحالي</span>
-                          <span className="metric-val">+154,820 ج.م</span>
-                          <span className="metric-trend">📈 زيادة بمعدل 12% عن الشهر الماضي</span>
-                        </div>
-                        <div className="finance-metric-card negative">
-                          <span className="metric-title">مديونيات الموردين المستحقة</span>
-                          <span className="metric-val">-34,500 ج.م</span>
-                          <span className="metric-trend">⚠️ فواتير مستحقة الدفع خلال 3 أيام</span>
-                        </div>
-                      </div>
-                    )}
-                    {activeTab === 'store' && (
-                      <div className="store-mockup-view">
-                        <div className="store-banner-demo">
-                          <h4>خصم 20% على الطلبات من المتجر الإلكتروني 🎉</h4>
-                          <p>اطلب منتجاتك الآن واستلم فوراً من أقرب فرع لك.</p>
-                        </div>
-                        <div className="store-status">
-                          <span className="status-dot animate-pulse"></span>
-                          <span>المتجر نشط ومتزامن بالكامل مع نقاط البيع والخزينة</span>
-                        </div>
-                      </div>
-                    )}
+                  
+                  {/* 2. المخزون (Tall) */}
+                  <div className="feature-card tall" style={{ textAlign: 'right' }}>
+                      <span className="feature_icon"><i className="fa-solid fa-boxes-stacked text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
+                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>مخزون يتحدث إليك</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>تنبيهات استباقية ونظرة عميقة لحركة بضائعك عبر المستودعات، لضمان عدم نفاد أي صنف هام.</p>
                   </div>
-                </div>
+                  
+                  {/* 3. الحسابات */}
+                  <div className="feature-card" style={{ textAlign: 'right' }}>
+                      <span className="feature_icon"><i className="fa-solid fa-chart-pie text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
+                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>محاسبة بلا عناء</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>تقارير مالية دقيقة وإقرارات ضريبية بضغطة زر واحدة.</p>
+                  </div>
+                  
+                  {/* 4. المهام */}
+                  <div className="feature-card" style={{ textAlign: 'right' }}>
+                      <span className="feature_icon"><i className="fa-solid fa-users-gear text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
+                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>تكامل فريقك</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>صلاحيات دقيقة وتتبع لمهام الموظفين وإنجازاتهم بدقة.</p>
+                  </div>
+                  
+                  {/* 5. علاقات العملاء (Wide) */}
+                  <div className="feature-card wide" style={{ textAlign: 'right' }}>
+                      <span className="feature_icon"><i className="fa-solid fa-heart text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
+                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>ولاء يصنع الفارق</h4>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>افهم سلوك عملائك واصنع لهم عروضاً مخصصة تزيد من ارتباطهم بعلامتك التجارية وترفع مبيعاتك.</p>
+                  </div>
               </div>
-            </div>
           </div>
-        </div>
+      </section>
+
+      {/* Custom Banner (From Mockup) */}
+      <section className="custom-banner" style={{ padding: '60px 0', background: 'var(--bg-white)' }}>
+          <div className="container">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#EEF2FF', padding: '40px', borderRadius: '16px' }}>
+                  <div className="banner-text" style={{ textAlign: 'right' }}>
+                      <h2 style={{ color: '#1E3A8A', fontSize: '2.2rem', fontWeight: 800, marginBottom: '10px' }}>مصمم ليتأقلم مع قطاعك.. وليس العكس.</h2>
+                      <p style={{ color: '#475569', fontSize: '1.15rem', margin: 0, lineHeight: 1.5 }}>نظام مرن يغير جلده ليطابق طريقتك في العمل، مهما كان مجال أعمالك.</p>
+                  </div>
+                  <button className="btn-primary" onClick={() => navigate('/register')}>شاهد مجالك</button>
+              </div>
+          </div>
+      </section>
+
+      {/* Interactive System Showcase Section */}
+      <section className="system-showcase" id="story">
+          <div className="container">
+              {/* Tab Buttons at the very top */}
+              <div className="tabs-navigation horizontal">
+                  <button className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`} id="btn-tab-dashboard">لوحة التحكم</button>
+                  <button className={`tab-btn ${activeTab === 'pos' ? 'active' : ''}`} id="btn-tab-pos">نقطة البيع (POS)</button>
+                  <button className={`tab-btn ${activeTab === 'sales' ? 'active' : ''}`} id="btn-tab-sales">المخزون والمبيعات</button>
+                  <button className={`tab-btn ${activeTab === 'reports' ? 'active' : ''}`} id="btn-tab-reports">التقارير المالية</button>
+              </div>
+
+              <div className="showcase-content-wrapper">
+                  {/* Dashboard Content */}
+                  <div className={`tab-content ${activeTab === 'dashboard' ? 'active' : ''}`} id="tab-dashboard">
+                      <div className="split-layout">
+                          <div className="text-side">
+                              <h3>نظرة شاملة ومفصلة على أعمالك</h3>
+                              <p>شاشة رئيسية تجمع أهم مؤشرات الأداء، لتتمكن من مراقبة صحة عملك التجاري في ثوانٍ ومتابعة الإيرادات لحظة بلحظة.</p>
+                              <ul className="feature-checks">
+                                  <li><i className="fa-solid fa-check text-success"></i> عرض الإيرادات والمصروفات بصرياً.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> متابعة أداء الموظفين والفروع.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> واجهة قابلة للتخصيص الكامل.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> تصدير البيانات بنقرة واحدة.</li>
+                              </ul>
+                              <button className="btn-primary" onClick={() => navigate('/register')}>ابدأ استخدامك</button>
+                          </div>
+                          <div className="image-side">
+                              <div className="visual-frame">
+                                  <img src={imgDashboard} alt="Dashboard Screen" className="tab-img" />
+                              </div>
+                              <button className="btn-text skip-btn" onClick={() => document.getElementById('industries').scrollIntoView({behavior: 'smooth'})}>
+                                  تخطي هذا القسم <i className="fa-solid fa-arrow-down"></i>
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* POS Content */}
+                  <div className={`tab-content ${activeTab === 'pos' ? 'active' : ''}`} id="tab-pos">
+                      <div className="split-layout">
+                          <div className="text-side">
+                              <h3>أسرع كاشير سحابي لعمليات البيع اليومية</h3>
+                              <p>أدر مبيعاتك بسرعة فائقة، واجهة كاشير سهلة الاستخدام لا تحتاج لأي تدريب معقد وتدعم كافة أجهزة الباركود والطباعة.</p>
+                              <ul className="feature-checks">
+                                  <li><i className="fa-solid fa-check text-success"></i> واجهة بيع سريعة وسهلة.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> دعم الدفع المتعدد (نقدي، بطاقة، آجل).</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> العمل بدون إنترنت (Offline).</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> إدارة الورديات والجرد اليومي.</li>
+                              </ul>
+                              <button className="btn-primary" onClick={() => navigate('/register')}>ابدأ استخدامك</button>
+                          </div>
+                          <div className="image-side">
+                              <div className="visual-frame">
+                                  <img src={imgPos} alt="POS Screen" className="tab-img" />
+                              </div>
+                              <button className="btn-text skip-btn" onClick={() => document.getElementById('industries').scrollIntoView({behavior: 'smooth'})}>
+                                  تخطي هذا القسم <i className="fa-solid fa-arrow-down"></i>
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Sales Content */}
+                  <div className={`tab-content ${activeTab === 'sales' ? 'active' : ''}`} id="tab-sales">
+                      <div className="split-layout">
+                          <div className="text-side">
+                              <h3>إدارة مخزون ومبيعات لحظية فائقة الدقة</h3>
+                              <p>راقب حركات المخزون بدقة تامة، انقل البضائع، وراجع فواتير المبيعات بكل وضوح لضمان عدم نفاد أي صنف.</p>
+                              <ul className="feature-checks">
+                                  <li><i className="fa-solid fa-check text-success"></i> تنبيهات النواقص التلقائية.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> جرد مستمر بدون إغلاق الفرع.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> ربط الفروع والمستودعات.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> تتبع تواريخ الصلاحية والباتش.</li>
+                              </ul>
+                              <button className="btn-primary" onClick={() => navigate('/register')}>ابدأ استخدامك</button>
+                          </div>
+                          <div className="image-side">
+                              <div className="visual-frame">
+                                  <img src={imgSales} alt="Sales Screen" className="tab-img" />
+                              </div>
+                              <button className="btn-text skip-btn" onClick={() => document.getElementById('industries').scrollIntoView({behavior: 'smooth'})}>
+                                  تخطي هذا القسم <i className="fa-solid fa-arrow-down"></i>
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Reports Content */}
+                  <div className={`tab-content ${activeTab === 'reports' ? 'active' : ''}`} id="tab-reports">
+                      <div className="split-layout">
+                          <div className="text-side">
+                              <h3>قرارات مبنية على أرقام دقيقة وتقارير شاملة</h3>
+                              <p>تقارير مالية شاملة جاهزة للمحاسب بنقرة واحدة لنوجه أعمالك نحو النمو المستدام وزيادة الأرباح بشكل فعال.</p>
+                              <ul className="feature-checks">
+                                  <li><i className="fa-solid fa-check text-success"></i> تقارير أرباح وخسائر لحظية.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> إقرارات ضريبية جاهزة للاعتماد.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> تحليل المبيعات والأصناف الراكدة.</li>
+                                  <li><i className="fa-solid fa-check text-success"></i> ميزانية عمومية دقيقة.</li>
+                              </ul>
+                              <button className="btn-primary" onClick={() => navigate('/register')}>ابدأ استخدامك</button>
+                          </div>
+                          <div className="image-side">
+                              <div className="visual-frame">
+                                  <img src={imgReports} alt="Reports Screen" className="tab-img" />
+                              </div>
+                              <button className="btn-text skip-btn" onClick={() => document.getElementById('industries').scrollIntoView({behavior: 'smooth'})}>
+                                  تخطي هذا القسم <i className="fa-solid fa-arrow-down"></i>
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </section>
+
+      {/* Industries Section */}
+      <section className="industries-section light-mode" id="industries">
+          <div className="container">
+              <div className="section-header">
+                  <h2>مصمم خصيصاً ليتكيف مع نشاطك</h2>
+                  <p>مهما كان مجالك، لدينا الأدوات التقنية التي تضمن لك التشغيل بسلاسة.</p>
+              </div>
+              <div className="bento-grid">
+                  <div className="bento-item wide">
+                      <div className="bento-content">
+                          <h3>المقاهي والمطاعم <i className="fa-solid fa-mug-hot" style={{ color: 'var(--primary-color)' }}></i></h3>
+                          <p>إدارة الطاولات بدقة، الوصفات والمكونات، شاشات المطبخ (KDS) المباشرة، وتطبيقات التوصيل لتقليل أوقات الانتظار.</p>
+                      </div>
+                  </div>
+                  <div className="bento-item">
+                      <div className="bento-content">
+                          <h3>تجارة التجزئة <i className="fa-solid fa-store" style={{ color: 'var(--primary-color)' }}></i></h3>
+                          <p>نقاط بيع سريعة تدعم الباركود، وإدارة عروض وخصومات مرنة لجذب العملاء.</p>
+                      </div>
+                  </div>
+                  <div className="bento-item">
+                      <div className="bento-content">
+                          <h3>الخدمات اللوجستية <i className="fa-solid fa-truck" style={{ color: 'var(--primary-color)' }}></i></h3>
+                          <p>تتبع مباشر للأسطول وإدارة الشحنات وفواتير النقل لتنظيم عملياتك.</p>
+                      </div>
+                  </div>
+                  <div className="bento-item wide">
+                      <div className="bento-content">
+                          <h3>الشركات والمكاتب <i className="fa-solid fa-building" style={{ color: 'var(--primary-color)' }}></i></h3>
+                          <p>نظام موارد بشرية متكامل، محاسبة متقدمة مع مراكز التكلفة، ودورة مستندية كاملة ومرنة تناسب حجم أعمالك.</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="pricing-section">
-        <div className="container">
-          <div className="section-header-centered animate-on-scroll fade-up">
-            <h2>خطط أسعار مرنة تتناسب مع حجم نشاطك</h2>
-            <p>اختر الخطة المناسبة لأعمالك الآن. جميع الخطط تتضمن أماناً فائقاً ودعماً فنياً متكاملاً.</p>
-            
-            <div className="pricing-toggle-container">
-              <span className={!isYearly ? 'active' : ''}>شهرياً</span>
-              <button className={`pricing-toggle-switch ${isYearly ? 'active' : ''}`} onClick={() => setIsYearly(!isYearly)}>
-                <span className="switch-dot"></span>
-              </button>
-              <span className={isYearly ? 'active' : ''}>سنوياً (وفر 20% 🎁)</span>
-            </div>
+      <section className="pricing-section light-mode" id="pricing">
+          <div className="container">
+              <div className="section-header">
+                  <h2>استثمر في نمو أعمالك</h2>
+                  <p>خطط أسعار واضحة ومرنة، بدون أي تكاليف خفية. ابدأ اليوم ورقي باقتك لاحقاً.</p>
+              </div>
+
+              <div className="pricing-toggle">
+                  <span className={!isYearly ? 'active' : ''}>دفع شهري</span>
+                  <label className="switch">
+                      <input type="checkbox" checked={isYearly} onChange={(e) => setIsYearly(e.target.checked)} />
+                      <span className="slider"></span>
+                  </label>
+                  <span className={isYearly ? 'active' : ''}>دفع سنوي <span className="save-badge">وفر 20%</span></span>
+              </div>
+
+              <div className="pricing-grid">
+                  {/* الباقة الأساسية */}
+                  <div className="pricing-card">
+                      <h3>الباقة الأساسية</h3>
+                      <div className="price-box">
+                          <span className="price-amount">{isYearly ? '159' : '199'}</span>
+                          <span className="price-currency">ر.س</span>
+                          <span className="price-period">/ شهر</span>
+                      </div>
+                      <ul className="features-list">
+                          <li>نقطة بيع واحدة</li>
+                          <li>مستخدم واحد</li>
+                          <li>فواتير إلكترونية معتمدة</li>
+                          <li>تحديثات النظام المجانية</li>
+                      </ul>
+                      <button className="btn-outline" onClick={() => navigate('/register')}>ابدأ التجربة المجانية</button>
+                  </div>
+
+                  {/* الباقة المتقدمة */}
+                  <div className="pricing-card popular">
+                      <div className="popular-badge">الأكثر اختياراً</div>
+                      <h3>الباقة المتقدمة</h3>
+                      <div className="price-box">
+                          <span className="price-amount">{isYearly ? '319' : '399'}</span>
+                          <span className="price-currency">ر.س</span>
+                          <span className="price-period">/ شهر</span>
+                      </div>
+                      <ul className="features-list">
+                          <li>3 نقاط بيع</li>
+                          <li>5 مستخدمين</li>
+                          <li>إدارة فروع متعددة</li>
+                          <li>دعم فني عبر الهاتف 24/7</li>
+                      </ul>
+                      <button className="btn-primary" onClick={() => navigate('/register')}>اشترك واضمن نموك</button>
+                  </div>
+
+                  {/* باقة الشركات */}
+                  <div className="pricing-card">
+                      <h3>باقة الشركات</h3>
+                      <div className="price-box">
+                          <span className="price-amount">{isYearly ? '639' : '799'}</span>
+                          <span className="price-currency">ر.س</span>
+                          <span className="price-period">/ شهر</span>
+                      </div>
+                      <ul className="features-list">
+                          <li>نقاط بيع غير محدودة</li>
+                          <li>مستخدمين غير محدودين</li>
+                          <li>ربط API وتكامل مخصص</li>
+                          <li>مدير حساب شخصي مخصص لك</li>
+                      </ul>
+                      <button className="btn-outline" onClick={() => window.open('https://wa.me/201281018810', '_blank')}>تواصل مع المبيعات</button>
+                  </div>
+              </div>
           </div>
-
-          <div className="pricing-grid">
-            <div className="pricing-card animate-on-scroll fade-up">
-              <h3>الباقة الفردية</h3>
-              <p className="pricing-card-desc">مثالية للمتاجر الصغيرة والمستقلة لبدء تنظيم أعمالها السريعة.</p>
-              <div className="price-box">
-                <span className="price-num">{isYearly ? "199" : "249"}</span>
-                <span className="price-curr">ج.م / شهرياً</span>
-              </div>
-              <ul className="pricing-features-list">
-                <li><Icons.Check className="feat-check" /> <span>نقطة بيع واحدة (كاشير واحد)</span></li>
-                <li><Icons.Check className="feat-check" /> <span>مخزن واحد متكامل</span></li>
-                <li><Icons.Check className="feat-check" /> <span>دعم كامل للفواتير والباركود</span></li>
-                <li><Icons.Check className="feat-check" /> <span>التقارير والمبيعات اليومية</span></li>
-              </ul>
-              <Link to="/register" className="btn-pricing-secondary">ابدأ مجاناً الآن</Link>
-            </div>
-
-            <div className="pricing-card active-card animate-on-scroll fade-up delay-100">
-              <div className="popular-badge">الأكثر اختياراً</div>
-              <h3>الباقة الاحترافية</h3>
-              <p className="pricing-card-desc">الحل الأمثل للشركات المتوسعة وإدارة الفروع المتعددة والمخازن المشتركة.</p>
-              <div className="price-box">
-                <span className="price-num">{isYearly ? "399" : "499"}</span>
-                <span className="price-curr">ج.م / شهرياً</span>
-              </div>
-              <ul className="pricing-features-list">
-                <li><Icons.Check className="feat-check" /> <span>حتى 3 فروع / نقاط بيع متعددة</span></li>
-                <li><Icons.Check className="feat-check" /> <span>مزامنة المخازن والتحويل الفوري</span></li>
-                <li><Icons.Check className="feat-check" /> <span>التقارير المالية المتقدمة والمصروفات</span></li>
-                <li><Icons.Check className="feat-check" /> <span>إدارة الموارد البشرية والرواتب والشفتات</span></li>
-                <li><Icons.Check className="feat-check" /> <span>متجر إلكتروني متكامل مدمج ونشط</span></li>
-              </ul>
-              <Link to="/register" className="btn-pricing-primary">ابدأ تجربتك الاحترافية</Link>
-            </div>
-
-            <div className="pricing-card animate-on-scroll fade-up delay-200">
-              <h3>باقة المؤسسات</h3>
-              <p className="pricing-card-desc">للمؤسسات والشركات الكبرى التي تبحث عن أقصى عزل وتفصيل مخصص بالكامل.</p>
-              <div className="price-box">
-                <span className="price-num">{isYearly ? "799" : "999"}</span>
-                <span className="price-curr">ج.م / شهرياً</span>
-              </div>
-              <ul className="pricing-features-list">
-                <li><Icons.Check className="feat-check" /> <span>عدد فروع ونقاط بيع غير محدود</span></li>
-                <li><Icons.Check className="feat-check" /> <span>قاعدة بيانات مخصصة فائقة السرعة</span></li>
-                <li><Icons.Check className="feat-check" /> <span>واجهات ربط مخصصة (Custom API)</span></li>
-                <li><Icons.Check className="feat-check" /> <span>مدير حساب مخصص ودعم فني طارئ 24/7</span></li>
-              </ul>
-              <Link to="/register" className="btn-pricing-secondary">تواصل معنا الآن</Link>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="faq-section">
-        <div className="container">
-          <div className="section-header-centered animate-on-scroll fade-up">
-            <h2>لديك أسئلة؟ نحن نوفر لك كل الإجابات</h2>
-            <p>تصفح الأسئلة الشائعة حول نظام {softwareName} وكيف يمكن أن يساعدك في تنمية أعمالك.</p>
-          </div>
-
-          <div className="faq-grid animate-on-scroll fade-up">
-            {faqData.map((faq, index) => (
-              <div className={`faq-card-item ${openFaq === index ? 'faq-active' : ''}`} key={index}>
-                <button className="faq-question-trigger" onClick={() => toggleFaq(index)}>
-                  <span>{faq.q}</span>
-                  <span className="faq-indicator-icon">{openFaq === index ? '−' : '+'}</span>
-                </button>
-                <div className="faq-answer-panel">
-                  <p>{faq.a}</p>
-                </div>
+      <section className="faq-section" style={{ padding: '80px 0', background: 'var(--bg-light)' }}>
+          <div className="container">
+              <div className="section-header" style={{ textAlign: 'center', marginBottom: '50px' }}>
+                  <h2 style={{ color: 'var(--text-dark)', fontSize: '2.2rem', marginBottom: '10px' }}>لديك أسئلة؟ نحن نوفر لك حل الإجابات</h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>جمعنا لك الإجابات لأكثر الأسئلة شيوعاً لتبدأ استخدام النظام وأنت مطمئن.</p>
               </div>
-            ))}
+              <div className="faq-accordion" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                  {[
+                      { q: 'هل أحتاج لتدريب طويل للبدء؟', a: 'النظام مصمم ليكون بديهياً وسهل الاستخدام، لن تحتاج لتدريب طويل.' },
+                      { q: 'هل يدعم النظام ضريبة القيمة المضافة؟', a: 'نعم، النظام يدعم ضريبة القيمة المضافة والفواتير الإلكترونية بشكل كامل.' },
+                      { q: 'ماذا لو انقطع الاتصال بالإنترنت أثناء عملية البيع؟', a: 'نقطة البيع تدعم العمل بدون إنترنت (Offline) وتتزامن تلقائياً عند عودة الاتصال.' },
+                      { q: 'هل يمكنني ترقية الباقة لاحقاً مع نمو أرباحي؟', a: 'بالتأكيد، يمكنك ترقية باقتك في أي وقت بسهولة وبدون فقدان أي بيانات.' }
+                  ].map((faq, index) => (
+                  <div className="faq-item" style={{ borderBottom: '1px solid var(--border-light)', padding: '20px 0' }} key={index}>
+                      <div className="faq-question" onClick={() => toggleFaq(index)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                          {faq.q}
+                          <i className={`fa-solid ${openFaq === index ? 'fa-minus' : 'fa-plus'}`}></i>
+                      </div>
+                      {openFaq === index && (
+                      <div className="faq-answer-panel" style={{ marginTop: '15px', color: 'var(--text-muted)' }}>
+                          <p>{faq.a}</p>
+                      </div>
+                      )}
+                  </div>
+                  ))}
+              </div>
           </div>
-        </div>
       </section>
 
-      {/* Bottom CTA Banner (Clean & High Contrast) */}
-      <section className="cta-bottom-banner">
-        <div className="container banner-inner">
-          <h2>ابدأ الآن في تنظيم وإدارة أعمالك بكفاءة متناهية</h2>
-          <p>انضم لآلاف الشركات الناجحة التي تعتمد على أنظمتنا السحابية الذكية لتبسيط دورتها المستندية يومياً.</p>
-          <Link to="/register" className="btn-banner-register" onClick={() => fbTrackLead()}>ابدأ استخدام النظام مجاناً الآن</Link>
-        </div>
+      {/* Dark Footer CTA */}
+      <section className="dark-cta" style={{ backgroundColor: 'var(--secondary-color)', padding: '80px 0', textAlign: 'center', color: 'white' }}>
+          <div className="container">
+              <h2 style={{ fontSize: '2.5rem', marginBottom: '20px', color: 'white' }}>ابدأ الآن في تنظيم وإدارة أعمالك بكفاءة متناهية</h2>
+              <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1.2rem', marginBottom: '40px', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
+                  انضم لآلاف الشركات التي تثق بنظامنا وارفع إنتاجيتك من اليوم الأول.
+              </p>
+              <button className="btn-success" onClick={() => navigate('/register')}>ابدأ استخدامك مجاناً</button>
+          </div>
       </section>
 
       {/* Footer styled perfectly */}
@@ -2503,6 +2773,10 @@ const LandingPage = () => {
           }
         }
       `}</style>
+
+      {/* Custom Cursor */}
+      <div className="cursor-dot"></div>
+      <div className="cursor-ring"></div>
     </div>
   );
 };
