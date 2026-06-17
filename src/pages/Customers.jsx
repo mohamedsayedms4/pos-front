@@ -300,7 +300,6 @@ const Customers = () => {
             <h3>👥 إدارة العملاء</h3>
             <div className="toolbar">
               <div className="search-input">
-                <span className="search-icon">🔍</span>
                 <input
                   type="text"
                   placeholder="بحث سريع..."
@@ -311,6 +310,7 @@ const Customers = () => {
                     loadCustomers(0, pageSize, e.target.value);
                   }}
                 />
+                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>

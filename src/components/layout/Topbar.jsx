@@ -102,7 +102,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
           title="تخصيص الواجهة"
           onClick={() => setIsEditMode(!isEditMode)}
         >
-          🎨
+          <i className="fa-solid fa-palette"></i>
         </button>
 
         <button
@@ -111,7 +111,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
           onClick={() => navigate('/messages')}
           style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <img src={msgIcon} alt="Messages" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+          <i className="fa-solid fa-envelope" style={{ fontSize: '1.2rem' }}></i>
           {unreadMessages > 0 && (
             <span className="notif-badge" style={{ left: 'auto', right: '-2px', top: '-2px' }}>
               {unreadMessages > 99 ? '99+' : unreadMessages}
@@ -124,7 +124,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
           onClick={() => navigate('/notifications')}
           style={{ position: 'relative' }}
         >
-          🔔
+          <i className="fa-solid fa-bell"></i>
           {notifUnreadCount > 0 && (
             <span className="notif-badge">
               {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
@@ -153,7 +153,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
           onClick={toggleTheme}
           style={{ fontSize: '1.2rem' }}
         >
-          {theme === 'dark' ? '☀️' : '🌙'}
+          {theme === 'dark' ? <i className="fa-solid fa-sun"></i> : <i className="fa-solid fa-moon"></i>}
         </button>
         <button className="btn-logout" onClick={handleLogout} title="تسجيل الخروج">
           <span><i className="fa-solid fa-power-off"></i></span>

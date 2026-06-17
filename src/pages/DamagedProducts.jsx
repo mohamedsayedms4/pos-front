@@ -156,13 +156,13 @@ const DamagedProducts = () => {
                             </select>
                         )}
                         <div className="search-input">
-                            <span className="search-icon">🔍</span>
                             <input 
                                 type="text" 
                                 placeholder="بحث في التوالف..." 
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
+                            <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                         </div>
                         <button className="btn btn-primary" onClick={openCreateModal}>
                             <span>+</span> تسجيل هالك جديد

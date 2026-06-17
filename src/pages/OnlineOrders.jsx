@@ -338,13 +338,13 @@ const OnlineOrders = () => {
             <h3>📦 الطلبات الإلكترونية</h3>
             <div className="toolbar">
               <div className="search-input">
-                <span className="search-icon">🔍</span>
                 <input
                   type="text"
                   placeholder="بحث سريع..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
 
               {isAdmin && (

@@ -422,7 +422,6 @@ const Suppliers = () => {
               </select>
 
               <div className="search-input">
-                <span className="search-icon">🔍</span>
                 <input 
                   type="text" 
                   placeholder="بحث عن مورد..." 
@@ -432,6 +431,7 @@ const Suppliers = () => {
                     setCurrentPage(0);
                   }} 
                 />
+                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
               
               <select 

@@ -60,16 +60,15 @@ const InventoryReport = () => {
                             </p>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <div className="search-wrap-new" style={{ width: '300px', borderRadius: '8px', overflow: 'hidden', display: 'flex', border: '1px solid var(--border-color)', background: 'var(--bg-input)' }}>
-                                <span style={{ padding: '0 10px', display: 'flex', alignItems: 'center' }}>🔍</span>
+                            <div className="search-input" style={{ width: '300px', maxWidth: '300px' }}>
                                 <input 
                                     type="text" 
                                     className="form-control" 
                                     placeholder="بحث باسم المنتج أو الكود..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    style={{ border: 'none', background: 'transparent' }}
                                 />
+                                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                             </div>
                             <button className="btn btn-secondary" onClick={() => loadData()}>🔄 تحديث</button>
                             <div style={{ display: 'flex', gap: '5px' }}>
@@ -100,8 +99,8 @@ const InventoryReport = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.map((product) => (
-                                        <tr key={product.productId}>
+                                    {data.map((product, index) => (
+                                        <tr key={product.productId || `prod-${index}`}>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
@@ -130,8 +129,8 @@ const InventoryReport = () => {
                                             </td>
                                             <td style={{ verticalAlign: 'middle' }}>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                                    {product.warehouseStocks && product.warehouseStocks.length > 0 ? product.warehouseStocks.map(ws => (
-                                                        <div key={ws.warehouseId} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-hover)', padding: '4px 10px', borderRadius: '20px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
+                                                    {product.warehouseStocks && product.warehouseStocks.length > 0 ? product.warehouseStocks.map((ws, wsIndex) => (
+                                                        <div key={ws.warehouseId || `ws-${wsIndex}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-hover)', padding: '4px 10px', borderRadius: '20px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
                                                             <span style={{ color: 'var(--text-muted)' }}>{ws.branchName} - {ws.warehouseName}:</span>
                                                             <strong style={{ color: 'var(--color-primary)' }}>{Number(ws.quantity).toLocaleString()}</strong>
                                                         </div>

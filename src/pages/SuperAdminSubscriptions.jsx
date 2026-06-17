@@ -605,7 +605,6 @@ const SuperAdminSubscriptions = () => {
               </div>
               <div className="sa-sub-toolbar-right">
                 <div className="sa-sub-search-box">
-                  <span className="sa-sub-search-icon">🔍</span>
                   <input
                     className="sa-sub-input"
                     type="text"
@@ -613,6 +612,7 @@ const SuperAdminSubscriptions = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
+                  <span className="sa-sub-search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                 </div>
                 <div className="sa-sub-results-count">
                   النتائج: <span>{filteredTenants.length}</span>
@@ -779,7 +779,6 @@ const SuperAdminSubscriptions = () => {
               </div>
               <div className="sa-sub-toolbar-right">
                 <div className="sa-sub-search-box">
-                  <span className="sa-sub-search-icon">🔍</span>
                   <input
                     className="sa-sub-input"
                     type="text"
@@ -787,6 +786,7 @@ const SuperAdminSubscriptions = () => {
                     value={requestSearch}
                     onChange={(e) => setRequestSearch(e.target.value)}
                   />
+                  <span className="sa-sub-search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                 </div>
                 <div className="sa-sub-results-count">
                   النتائج: <span>{filteredRequests.length}</span>

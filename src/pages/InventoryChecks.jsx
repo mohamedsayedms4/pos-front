@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import Api from '../services/api';
 
 const InventoryChecks = () => {
     const [checks, setChecks] = useState([]);
@@ -116,6 +117,7 @@ const InventoryChecks = () => {
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                             />
+                            <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                         </div>
                         {Api.can('INVENTORY_CREATE') && (
                             <button className="btn btn-primary" onClick={() => setShowModal(true)}>

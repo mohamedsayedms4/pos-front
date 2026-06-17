@@ -199,13 +199,13 @@ const InventoryCheckDetails = () => {
                                     ref={barcodeInputRef}
                                     type="text"
                                     className="form-control"
-                                    style={{ paddingRight: '40px', fontSize: '1.1rem', height: '50px' }}
+                                    style={{ paddingLeft: '40px', paddingRight: '12px', fontSize: '1.1rem', height: '50px' }}
                                     placeholder="امسح الباركود أو ابحث باسم المنتج..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={handleBarcodeScan}
                                 />
-                                <span style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }}>🔍</span>
+                                <span className="search-icon" style={{ position: 'absolute', left: '15px', right: 'auto', top: '50%', transform: 'translateY(-50%)' }}><i className="fa-solid fa-magnifying-glass"></i></span>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '12px' }}>

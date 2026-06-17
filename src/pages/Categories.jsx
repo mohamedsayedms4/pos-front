@@ -317,8 +317,8 @@ const Categories = () => {
             <h3>📂 إدارة الفئات</h3>
             <div className="toolbar">
               <div className="search-input">
-                <span className="search-icon">🔍</span>
                 <input type="text" placeholder="بحث عن فئة..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
 
               <select 

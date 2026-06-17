@@ -607,13 +607,13 @@ const Campaigns = () => {
                         <h3>📣 الحملات التسويقية والرسائل <span className="badge badge-info" style={{ marginRight: '8px', borderRadius: 20 }}>{totalElements} حملة</span></h3>
                         <div className="toolbar">
                             <div className="search-input">
-                                <span className="search-icon">🔍</span>
                                 <input
                                     type="text"
                                     placeholder="بحث سريع عن حملة..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
+                                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button type="button" className="btn btn-primary" onClick={() => setShowModal(true)}>

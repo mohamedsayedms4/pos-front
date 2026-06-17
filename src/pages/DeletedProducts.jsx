@@ -192,9 +192,11 @@ const DeletedProducts = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="form-control search-input"
-                  style={{ paddingRight: '35px', height: '40px' }}
+                  style={{ paddingLeft: '35px', height: '40px' }}
                 />
-                <span className="search-icon" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
+                <span className="search-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                  <i className="fa-solid fa-magnifying-glass"></i>
+                </span>
               </div>
 
               {Api.isAdminOrBranchManager() && (

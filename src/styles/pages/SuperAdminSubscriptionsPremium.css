@@ -174,7 +174,7 @@
 
 .sa-sub-search-box .sa-sub-input {
     width: 100%;
-    padding: 12px 48px 12px 16px;
+    padding: 12px 16px 12px 42px !important;
     border-radius: 12px;
     border: 1px solid var(--sa-sub-border);
     background: var(--sa-sub-bg);
@@ -190,14 +190,20 @@
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.sa-sub-search-box .sa-sub-input:focus ~ .sa-sub-search-icon {
+    color: var(--sa-sub-accent-blue);
+}
+
 .sa-sub-search-box .sa-sub-search-icon {
     position: absolute;
-    right: 16px;
+    left: 16px !important;
+    right: auto !important;
     top: 50%;
     transform: translateY(-50%);
     color: var(--sa-sub-text-secondary);
     pointer-events: none;
     font-size: 0.9rem;
+    transition: color 0.2s ease;
 }
 
 /* Filter Buttons */

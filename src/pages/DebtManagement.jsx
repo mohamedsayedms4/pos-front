@@ -263,13 +263,13 @@ const DebtManagement = () => {
                     </select>
 
                     <div className="search-input" style={{ flex: 2 }}>
-                        <span className="search-icon">🔍</span>
                         <input
                             type="text"
                             placeholder="بحث بالاسم أو السبب..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                         />
+                        <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                     </div>
                     <select 
                       className="form-control" 

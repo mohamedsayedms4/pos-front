@@ -388,7 +388,6 @@ const POS = () => {
       <div className="pos-products-pane">
         <div className="pos-header-glass">
           <div className="pos-search-wrapper">
-            <span className="search-icon">🔍</span>
             <input
               ref={searchInputRef}
               type="text"
@@ -397,6 +396,7 @@ const POS = () => {
               onChange={e => handleBrowseSearch(e.target.value)}
               autoFocus
             />
+            <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
           </div>
           <div className={`sync-indicator ${connected ? 'active' : ''}`}>
             {connected ? '🟢 متصل' : '🔴 غير متصل'}
@@ -717,17 +717,19 @@ const POS = () => {
 
         .pos-search-wrapper .search-icon {
           position: absolute;
-          right: 14px;
+          left: 14px;
+          right: auto;
           top: 50%;
           transform: translateY(-50%);
           color: var(--text-muted);
           font-size: 1.1rem;
           pointer-events: none;
+          transition: color 0.25s ease;
         }
 
         .pos-search-wrapper input {
           width: 100%;
-          padding: 10px 14px 10px 38px;
+          padding: 10px 14px 10px 42px;
           border-radius: 30px;
           background: var(--bg-input);
           border: 1px solid var(--border-input);
@@ -735,6 +737,11 @@ const POS = () => {
           font-size: 0.9rem;
           font-family: inherit;
           transition: all 0.25s ease;
+        }
+
+        .pos-search-wrapper input:focus + .search-icon,
+        .pos-search-wrapper input:focus ~ .search-icon {
+          color: var(--metro-blue);
         }
 
         .pos-search-wrapper input:focus {

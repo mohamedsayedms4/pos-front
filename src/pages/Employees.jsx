@@ -346,13 +346,13 @@ const Employees = () => {
               </select>
             )}
             <div className="search-input" style={{ flex: '1 1 200px', minWidth: '200px', maxWidth: '350px' }}>
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="بحث باسم الموظف..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
               />
+              <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
             </div>
             <div style={{ display: 'flex', gap: '15px', flex: '1 1 100%' }}>
               <button className="btn btn-secondary" style={{ flex: 1, margin: '0 2px' }} onClick={() => setShowJobTitlesModal(true)}>

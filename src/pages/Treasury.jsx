@@ -143,7 +143,6 @@ const Treasury = () => {
             </select>
 
             <div className="search-input">
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="بحث سريع..."
@@ -153,6 +152,7 @@ const Treasury = () => {
                   setCurrentPage(0);
                 }}
               />
+              <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button className="btn btn-secondary" onClick={() => loadData()} disabled={loading}>

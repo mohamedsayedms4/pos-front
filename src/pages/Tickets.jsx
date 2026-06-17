@@ -263,7 +263,7 @@ const Tickets = () => {
           alignItems: 'center'
         }}>
           {/* Search Input */}
-          <div style={{ flex: '1 1 250px', position: 'relative' }}>
+          <div className="search-input" style={{ flex: '1 1 250px', position: 'relative' }}>
             <input
               type="text"
               placeholder="ابحث برقم التذكرة، المحتوى، أو العميل..."
@@ -271,6 +271,7 @@ const Tickets = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
+                paddingLeft: '36px',
                 paddingRight: '12px',
                 borderRadius: '10px',
                 background: 'rgba(255, 255, 255, 0.05)',
@@ -278,6 +279,7 @@ const Tickets = () => {
                 color: 'var(--text-primary)'
               }}
             />
+            <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
           </div>
 
           {/* Type Filter */}

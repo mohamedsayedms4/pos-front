@@ -609,7 +609,6 @@ const Purchases = () => {
               </select>
 
               <div className="search-input">
-                <span className="search-icon">🔍</span>
                 <input
                   type="text"
                   placeholder="بحث برقم الفاتورة أو المورد..."
@@ -619,6 +618,7 @@ const Purchases = () => {
                     setCurrentPage(0);
                   }}
                 />
+                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
 
               <select 

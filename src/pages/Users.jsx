@@ -204,28 +204,28 @@ const Users = () => {
             id="usr_count"
             label="المستخدمين"
             value={totalElements}
-            icon="👥"
+            icon={<i className="fa-solid fa-users"></i>}
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
           <StatTile
             id="usr_admins"
             label="مسؤول / مدير فرع"
             value={data.filter(u => u.roles && u.roles.some(r => r.includes('ADMIN') || r.includes('BRANCH_MANAGER'))).length}
-            icon="🛡️"
+            icon={<i className="fa-solid fa-shield-halved"></i>}
             defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 2 }}
           />
           <StatTile
             id="usr_active"
             label="نشط"
             value={data.filter(u => u.enabled).length}
-            icon="✅"
+            icon={<i className="fa-solid fa-check"></i>}
             defaults={{ color: 'teal', size: 'tile-sq-sm', order: 3 }}
           />
         </div>
 
         <div className="card">
           <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0 }}>👥 إدارة المستخدمين</h3>
+            <h3 style={{ margin: 0 }}><i className="fa-solid fa-users"></i> إدارة المستخدمين</h3>
             <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', flex: '1 1 100%', justifyContent: 'flex-end', alignItems: 'center' }}>
               {isAdmin && (
                 <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
@@ -234,7 +234,7 @@ const Users = () => {
                 </select>
               )}
               <div className="search-input" style={{ flex: '1 1 200px', minWidth: '200px', maxWidth: '350px' }}>
-                <span className="search-icon">🔍</span>
+                <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                 <input
                   type="text"
                   placeholder="بحث بالاسم أو البريد..."
@@ -247,7 +247,7 @@ const Users = () => {
               </div>
               {Api.can('USER_WRITE') && (
                 <button className="btn btn-primary" onClick={openForm}>
-                  <span>+</span> إضافة مستخدم
+                  <span><i className="fa-solid fa-plus"></i></span> إضافة مستخدم
                 </button>
               )}
             </div>
@@ -258,7 +258,7 @@ const Users = () => {
                 <Loader message="جاري تحميل قائمة المستخدمين..." />
               ) : data.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">👥</div>
+                  <div className="empty-icon"><i className="fa-solid fa-users"></i></div>
                   <h4>لا يوجد مستخدمين</h4>
                 </div>
               ) : (
@@ -287,8 +287,8 @@ const Users = () => {
                                   {(u.name || 'U').charAt(0).toUpperCase()}
                                 </div>
                               )}
-                              {(u.roles || []).some(r => r.includes('ADMIN')) && <span className="admin-badge-dot" title="مسؤول النظام">⭐</span>}
-                              {!(u.roles || []).some(r => r.includes('ADMIN')) && (u.roles || []).some(r => r.includes('BRANCH_MANAGER')) && <span className="admin-badge-dot" title="مدير فرع" style={{ background: '#d97706' }}>🏢</span>}
+                              {(u.roles || []).some(r => r.includes('ADMIN')) && <span className="admin-badge-dot" title="مسؤول النظام"><i className="fa-solid fa-star" style={{fontSize: '0.6rem'}}></i></span>}
+                              {!(u.roles || []).some(r => r.includes('ADMIN')) && (u.roles || []).some(r => r.includes('BRANCH_MANAGER')) && <span className="admin-badge-dot" title="مدير فرع" style={{ background: '#d97706' }}><i className="fa-solid fa-building" style={{fontSize: '0.6rem'}}></i></span>}
                             </div>
                             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</span>
                           </div>
@@ -306,14 +306,14 @@ const Users = () => {
                         </td>
                         <td>
                           <div className="table-actions">
-                            {Api.can('USER_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openEditForm(u)}>✏️</button>}
+                            {Api.can('USER_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openEditForm(u)}><i className="fa-solid fa-pen"></i></button>}
                             {Api.can('USER_WRITE') && (
                               <button className="btn btn-icon btn-ghost" title={u.enabled ? 'تعطيل' : 'تفعيل'} onClick={() => toggleEnabled(u.id, !u.enabled)}>
-                                {u.enabled ? '🔒' : '🔓'}
+                                {u.enabled ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-lock-open"></i>}
                               </button>
                             )}
-                            {Api.can('ROLE_WRITE') && <button className="btn btn-icon btn-ghost" title="الأدوار والصلاحيات" onClick={() => openAccessForm(u)}>🔑</button>}
-                            {Api.can('USER_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}>🗑️</button>}
+                            {Api.can('ROLE_WRITE') && <button className="btn btn-icon btn-ghost" title="الأدوار والصلاحيات" onClick={() => openAccessForm(u)}><i className="fa-solid fa-key"></i></button>}
+                            {Api.can('USER_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}><i className="fa-solid fa-trash"></i></button>}
                           </div>
                         </td>
                       </tr>
@@ -375,7 +375,7 @@ const Users = () => {
                         ) : userForm.profilePicture ? (
                           <img src={`${API_BASE_URL}/products/images/${userForm.profilePicture}`} alt="Current" />
                         ) : (
-                          <div className="avatar-preview-placeholder">📷</div>
+                          <div className="avatar-preview-placeholder"><i className="fa-solid fa-camera"></i></div>
                         )}
                       </div>
                       <div className="upload-btn-wrapper">
