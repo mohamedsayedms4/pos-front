@@ -18,7 +18,7 @@ const TrialBalance = () => {
             const data = await Api.getTrialBalance();
             setAccounts(data);
         } catch (err) {
-            toast('Failed to load trial balance: ' + err.message, 'error');
+            toast('فشل في تحميل ميزان المراجعة: ' + err.message, 'error');
         } finally {
             setLoading(false);
         }

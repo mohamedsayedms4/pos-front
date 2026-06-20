@@ -26,8 +26,66 @@ export const GlobalUIProvider = ({ children }) => {
         }
     }, []);
 
-    const toast = useCallback((message, type = 'info', silent = false) => {
+    const translateMessage = (msg) => {
+        if (typeof msg !== 'string') return msg;
+        
+        const lowerMsg = msg.toLowerCase();
+        
+        // Dictionary of common backend/network english errors
+        const dict = {
+            'failed to fetch': 'تعذر الاتصال بالخادم (تأكد من اتصالك بالإنترنت)',
+            'network error': 'خطأ في الشبكة',
+            'bad credentials': 'بيانات الدخول غير صحيحة',
+            'invalid password': 'كلمة المرور غير صحيحة',
+            'unauthorized': 'غير مصرح لك (يرجى تسجيل الدخول مجدداً)',
+            'access denied': 'ليس لديك صلاحية لهذا الإجراء',
+            'forbidden': 'ليس لديك صلاحية',
+            'product not found': 'المنتج غير موجود',
+            'user not found': 'المستخدم غير موجود',
+            'category not found': 'الفئة غير موجودة',
+            'not found': 'لم يتم العثور على العنصر',
+            'already exists': 'هذا العنصر موجود بالفعل',
+            'insufficient stock': 'المخزون غير كافٍ',
+            'out of stock': 'نفدت الكمية',
+            'expired': 'انتهت الصلاحية',
+            'server error': 'حدث خطأ في الخادم',
+            'internal server error': 'حدث خطأ داخلي في الخادم',
+            'invalid token': 'الجلسة غير صالحة',
+            'token': 'الجلسة غير صالحة',
+            'invalid': 'بيانات غير صحيحة',
+            'required': 'هناك حقول مطلوبة مفقودة',
+            'failed to load': 'فشل في تحميل البيانات',
+            'timeout': 'انتهى وقت الاتصال',
+            'request failed': 'فشل الطلب',
+            'duplicate': 'تكرار في البيانات',
+            'not allowed': 'غير مسموح',
+            'failed': 'حدث خطأ (فشل العملية)',
+            'error': 'حدث خطأ'
+        };
+
+        if (dict[lowerMsg]) return dict[lowerMsg];
+
+        for (const [eng, ar] of Object.entries(dict)) {
+            if (lowerMsg.includes(eng)) {
+                return ar; 
+            }
+        }
+        
+        // If it contains only english letters and numbers (no Arabic), and we reached here, 
+        // we might just return the original or a generic. But returning original is safer for debugging.
+        const arabicRegex = /[\u0600-\u06FF]/;
+        if (!arabicRegex.test(msg) && lowerMsg.length > 0) {
+            // For completely unhandled English strings, just keep it, or fallback.
+            // We keep it as is, to not swallow unknown technical errors completely.
+        }
+
+        return msg;
+    };
+
+    const toast = useCallback((rawMessage, type = 'info', silent = false) => {
         const id = Date.now();
+        const message = translateMessage(rawMessage);
+        
         setToasts(prev => [...prev, { id, message, type }]);
         if (!silent) {
             playSound('notification');
