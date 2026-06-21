@@ -4680,3 +4680,21 @@ body[dir="rtl"] .metro-tilt-br:active {
     text-overflow: ellipsis;
   }
 }
+@media screen and (max-width:768px){
+
+  .h2_mob{
+    font-size: 24px!important;
+  }
+.mob_banner{
+  flex-direction: column!important;
+  gap: 20px;
+}
+.mob_banner h2{
+  font-size: 21px!important;
+}
+
+
+}
+
+
+

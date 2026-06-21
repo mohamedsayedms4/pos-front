@@ -73,6 +73,8 @@ import FacebookAdsDashboard from './pages/FacebookAdsDashboard.jsx'
 import EmployeeCustody from './pages/EmployeeCustody.jsx'
 import TenantRegister from './pages/TenantRegister.jsx'
 import LandingPage from './pages/LandingPage.jsx'
+import WelcomePage from './pages/WelcomePage.jsx'
+import SubscriptionSuccess from './pages/SubscriptionSuccess.jsx'
 import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
 import SuperAdminSubscriptions from './pages/SuperAdminSubscriptions.jsx'
@@ -139,6 +141,8 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<TenantRegister />} />
+                <Route path="/welcome" element={<WelcomePage />} />
+                <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                 
                 {/* Public Store Routes with Context */}
                 <Route path="/store" element={<StoreAuthProvider><StoreProvider><EcommerceStore /></StoreProvider></StoreAuthProvider>} />

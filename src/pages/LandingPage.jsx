@@ -740,7 +740,7 @@ const LandingPage = () => {
           <div className="container">
               <div className="section-header" style={{ marginBottom: '60px', textAlign: 'center' }}>
                   <p style={{ color: 'var(--primary-color)', fontWeight: 'bold', marginBottom: '12px', fontSize: '1.1rem', letterSpacing: '1px' }}>التميز الهندسي</p>
-                  <h2 style={{ color: 'var(--secondary-color)', fontSize: '2.8rem', maxWidth: '800px', margin: '0 auto', lineHeight: '1.4' }}>مصمم بأدق التفاصيل لتتحكم في كل زاوية من أعمالك، بكل أناقة.</h2>
+                  <h2 className="h2_mob" style={{ color: 'var(--secondary-color)', fontSize: '2.8rem', maxWidth: '800px', margin: '0 auto', lineHeight: '1.4' }}>مصمم بأدق التفاصيل لتتحكم في كل زاوية من أعمالك، بكل أناقة.</h2>
               </div>
               
               <div className="features-grid bento-layout">
@@ -784,8 +784,8 @@ const LandingPage = () => {
 
       {/* Custom Banner (From Mockup) */}
       <section className="custom-banner" style={{ padding: '60px 0', background: 'var(--bg-white)' }}>
-          <div className="container">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#EEF2FF', padding: '40px', borderRadius: '16px' }}>
+          <div className="container ">
+              <div className="mob_banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#EEF2FF', padding: '40px', borderRadius: '16px' }}>
                   <div className="banner-text" style={{ textAlign: 'right' }}>
                       <h2 style={{ color: '#1E3A8A', fontSize: '2.2rem', fontWeight: 800, marginBottom: '10px' }}>مصمم ليتأقلم مع قطاعك.. وليس العكس.</h2>
                       <p style={{ color: '#475569', fontSize: '1.15rem', margin: 0, lineHeight: 1.5 }}>نظام مرن يغير جلده ليطابق طريقتك في العمل، مهما كان مجال أعمالك.</p>
@@ -963,59 +963,32 @@ const LandingPage = () => {
                   <span className={isYearly ? 'active' : ''}>دفع سنوي <span className="save-badge">وفر 20%</span></span>
               </div>
 
-              <div className="pricing-grid">
-                  {/* الباقة الأساسية */}
-                  <div className="pricing-card">
-                      <h3>الباقة الأساسية</h3>
-                      <div className="price-box">
-                          <span className="price-amount">{isYearly ? '159' : '199'}</span>
-                          <span className="price-currency">ر.س</span>
-                          <span className="price-period">/ شهر</span>
-                      </div>
-                      <ul className="features-list">
-                          <li>نقطة بيع واحدة</li>
-                          <li>مستخدم واحد</li>
-                          <li>فواتير إلكترونية معتمدة</li>
-                          <li>تحديثات النظام المجانية</li>
-                      </ul>
-                      <button className="btn-outline" onClick={() => navigate('/register')}>ابدأ التجربة المجانية</button>
-                  </div>
+
 
                   {/* الباقة المتقدمة */}
-                  <div className="pricing-card popular">
+                  <div className="pricing-card popular" style={{ maxWidth: '450px', margin: '0 auto' }}>
                       <div className="popular-badge">الأكثر اختياراً</div>
                       <h3>الباقة المتقدمة</h3>
                       <div className="price-box">
-                          <span className="price-amount">{isYearly ? '319' : '399'}</span>
-                          <span className="price-currency">ر.س</span>
+                          <span className="price-amount">{isYearly ? '340' : '399'}</span>
+                          <span className="price-currency">ج.م</span>
                           <span className="price-period">/ شهر</span>
                       </div>
+                      {isYearly && (
+                          <div className="annual-total" style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '-5px', marginBottom: '15px', fontWeight: '500' }}>
+                              يُدفع سنوياً: <span style={{ color: 'var(--primary-color)', fontWeight: '700' }}>4080</span> ج.م
+                          </div>
+                      )}
                       <ul className="features-list">
-                          <li>3 نقاط بيع</li>
-                          <li>5 مستخدمين</li>
+                          <li>عدد لا محدود من نقاط البيع</li>
+                          <li>عدد لا محدود من المستخدمين</li>
                           <li>إدارة فروع متعددة</li>
                           <li>دعم فني عبر الهاتف 24/7</li>
                       </ul>
                       <button className="btn-primary" onClick={() => navigate('/register')}>اشترك واضمن نموك</button>
                   </div>
 
-                  {/* باقة الشركات */}
-                  <div className="pricing-card">
-                      <h3>باقة الشركات</h3>
-                      <div className="price-box">
-                          <span className="price-amount">{isYearly ? '639' : '799'}</span>
-                          <span className="price-currency">ر.س</span>
-                          <span className="price-period">/ شهر</span>
-                      </div>
-                      <ul className="features-list">
-                          <li>نقاط بيع غير محدودة</li>
-                          <li>مستخدمين غير محدودين</li>
-                          <li>ربط API وتكامل مخصص</li>
-                          <li>مدير حساب شخصي مخصص لك</li>
-                      </ul>
-                      <button className="btn-outline" onClick={() => window.open('https://wa.me/201281018810', '_blank')}>تواصل مع المبيعات</button>
-                  </div>
-              </div>
+          
           </div>
       </section>
 

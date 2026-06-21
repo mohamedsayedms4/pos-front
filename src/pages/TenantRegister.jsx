@@ -67,8 +67,18 @@ const TenantRegister = () => {
       // 4. 📊 Facebook Pixel — حدث إتمام التسجيل بنجاح
       trackCompleteRegistration({ businessName: formData.businessName });
 
-      // 5. Go straight to the dashboard
-      navigate('/dashboard');
+      localStorage.setItem('welcome_business_name', formData.businessName);
+      localStorage.setItem('welcome_admin_email', formData.adminEmail);
+      localStorage.setItem('welcome_slug', formData.slug);
+
+      // 5. Go to Welcome page with subscription details
+      navigate('/welcome', {
+        state: {
+          businessName: formData.businessName,
+          adminEmail: formData.adminEmail,
+          slug: formData.slug,
+        }
+      });
     } catch (err) {
       alert(err.response?.data || err.message || 'Registration failed. Please try again.');
     } finally {

@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import '../styles/pages/StoreInactivePremium.css';
 
 const PACKAGES = [
-  { name: 'باقة 1 شهر', months: 1, price: 150 },
+  { name: 'باقة 1 شهر', months: 1, price: 399 },
   { name: 'باقة 3 أشهر', months: 3, price: 400 },
-  { name: 'باقة سنة كاملة', months: 12, price: 1200 }
+  { name: 'باقة سنة كاملة', months: 12, price: 3999 }
 ];
 
 const StoreInactive = () => {
+  const navigate = useNavigate();
   const { toast } = useGlobalUI ? useGlobalUI() : { toast: console.log };
   
   // Status check states
@@ -142,8 +144,7 @@ const StoreInactive = () => {
       setSenderDetail('');
       setReceiptFile(null);
       
-      // Refresh requests list
-      loadRequests();
+      navigate('/subscription-success');
     } catch (err) {
       toast(err.message || 'فشل في إرسال طلب التجديد', 'error');
     } finally {

@@ -7,6 +7,7 @@ import { useBranch } from '../context/BranchContext';
 import html2pdf from 'html2pdf.js';
 import SingleProductPdf from '../components/pdf/SingleProductPdf';
 import ReactDOM from 'react-dom';
+import ModalContainer from '../components/common/ModalContainer';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -19,6 +20,14 @@ const ProductDetails = () => {
   const [mainImage, setMainImage] = useState(null);
   const pdfRef = React.useRef(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ─── Print Quantity Modal State ──────────────────────────────────────────────
+  const [printQtyModalOpen, setPrintQtyModalOpen] = useState(false);
+  const [printQtyType, setPrintQtyType] = useState('barcode');
+  const [printQty, setPrintQty] = useState('');
+  const [printQtyStock, setPrintQtyStock] = useState(0);
+  const [printing, setPrinting] = useState(false);
 
   // ─── Online Store States ───────────────────────────────────────────────────
   const [showAddToStoreModal, setShowAddToStoreModal] = useState(false);
@@ -223,52 +232,48 @@ const ProductDetails = () => {
     }
   }, [id]);
 
-  const printCode = async (type) => {
-    if (type === 'qrcode') {
-      const base64Data = await Api.getProductQrCode(id);
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-          <html dir="rtl">
-            <head>
-              <title>QR Code</title>
-              <style>
-                body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-                img { max-width: 150px; }
-              </style>
-            </head>
-            <body onload="window.print(); window.close();">
-              <img src="data:image/png;base64,${base64Data}" />
-            </body>
-          </html>
-        `);
+  const handlePrintClick = (type) => {
+    const branchList = product.branchInventories || [];
+    const totalStock = branchList.reduce((sum, bi) => sum + Number(bi.stock || 0), 0);
+    const stockQty = Math.max(1, Math.floor(totalStock || 1));
+    setPrintQtyType(type);
+    setPrintQtyStock(stockQty);
+    setPrintQty(stockQty.toString());
+    setPrintQtyModalOpen(true);
+  };
+
+  const executePrintCode = async (e) => {
+    if (e) e.preventDefault();
+    const quantity = parseInt(printQty, 10);
+    if (isNaN(quantity) || quantity < 1) {
+      toast('عدد غير صحيح', 'warning');
       return;
     }
+    setPrintQtyModalOpen(false);
+    setPrinting(true);
 
     try {
-      // 1. Get Image URL and Config
-      const imageUrl = await Api.getProductBarcodeLabel(id);
       const config = await Api.getPrinterConfig();
       const width = config.labelWidthMm || 40;
       const height = config.labelHeightMm || 30;
 
-      // 2. Pre-load image as data URL to avoid blank labels
-      const dataUrl = await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => reject(new Error('فشل تحميل صورة الباركود'));
-        img.src = imageUrl;
-      });
+      const tenantName = Api._getUser()?.tenantName || Api._getUser()?.name || '';
+      
+      const canvas = document.createElement('canvas');
+      import('jsbarcode').then((JsBarcodeModule) => {
+        const JsBarcode = JsBarcodeModule.default || JsBarcodeModule;
+        JsBarcode(canvas, String(product.productCode || product.id), {
+          format: "CODE128",
+          displayValue: false,
+          margin: 0,
+          width: 2,
+          height: 50
+        });
+        const dataUrl = canvas.toDataURL('image/png');
 
-      // 3. Print using hidden iframe (no landscape, size:auto)
-      const oldFrame = document.getElementById('__barcode_print_frame');
-      if (oldFrame) oldFrame.remove();
+        // 3. Print using hidden iframe (no landscape, size:auto)
+        const oldFrame = document.getElementById('__barcode_print_frame');
+        if (oldFrame) oldFrame.remove();
 
       const iframe = document.createElement('iframe');
       iframe.id = '__barcode_print_frame';
@@ -279,18 +284,36 @@ const ProductDetails = () => {
       const sw = width - 4;
       const sh = height - 4;
 
+      let imagesHtml = '';
+      const codeStr = product.productCode || product.id || '';
+      const priceStr = parseFloat(product.salePrice || 0).toFixed(2) + ' EGP';
+      
+      for(let i=0; i<quantity; i++) {
+          imagesHtml += `
+            <div class="page">
+              <div class="product-price">${priceStr}</div>
+              <img src="${dataUrl}" class="barcode-img" />
+              <div class="product-code">${codeStr}</div>
+              <div class="tenant-name">${tenantName}</div>
+            </div>
+          `;
+      }
+
       idoc.open();
       idoc.write([
-        '<!DOCTYPE html><html><head><meta charset="utf-8">',
+        '<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8">',
         '<style>',
         '@page{size:auto;margin:0}',
-        '*{margin:0;padding:0;box-sizing:border-box}',
-        `html,body{width:${width}mm;height:${height}mm;overflow:hidden;background:#fff}`,
-        `body{display:flex;align-items:center;justify-content:center}`,
-        `img{max-width:${sw}mm;max-height:${sh}mm;width:auto;height:auto;display:block;object-fit:contain}`,
-        '@media print{html,body{overflow:hidden}img{page-break-inside:avoid;page-break-after:avoid;page-break-before:avoid}}',
+        '*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}',
+        `html,body{background:#fff;margin:0;padding:0;}`,
+        `.page{width:${width}mm;height:${height}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;page-break-after:always;page-break-inside:avoid;padding: 1mm; text-align:center;}`,
+        `.product-name { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: ${sw}mm; line-height: 1.1; margin-bottom: 2px; }`,
+        `.product-price { font-size: 13px; font-weight: bold; margin-bottom: 2px; line-height: 1; }`,
+        `.barcode-img { max-width:${sw}mm; max-height: 14mm; width:auto; height:auto; display:block; object-fit:contain; }`,
+        `.product-code { font-size: 9px; margin-top: 2px; letter-spacing: 1px; line-height: 1; }`,
+        `.tenant-name { font-size: 8px; margin-top: 2px; font-weight: bold; line-height: 1; }`,
         '</style></head>',
-        `<body><img src="${dataUrl}"/></body></html>`,
+        `<body>${imagesHtml}</body></html>`,
       ].join(''));
       idoc.close();
 
@@ -316,10 +339,14 @@ const ProductDetails = () => {
         };
       }
 
-      toast('جاري تحضير ملصق الباركود...', 'success');
+        toast('جاري تحضير ملصق الباركود...', 'success');
+      }).catch(err => {
+        toast('فشل في الطباعة: ' + err.message, 'error');
+      }).finally(() => setPrinting(false));
 
     } catch (err) {
       toast('فشل في الطباعة: ' + err.message, 'error');
+      setPrinting(false);
     }
   };
 
@@ -399,12 +426,7 @@ const ProductDetails = () => {
     }
   };
 
-  const handleSaveToStore = async (e) => {
-    e.preventDefault();
-    if (!storePrices.purchasePrice || !storePrices.salePrice) {
-      toast('يرجى تحديد أسعار الشراء والبيع للمتجر', 'warning');
-      return;
-    }
+  const confirmAddToStore = async () => {
     setAddingToStore(true);
     try {
       await Api.addProductToBranch(id, {
@@ -416,6 +438,7 @@ const ProductDetails = () => {
       });
       toast('تم إضافة المنتج للمتجر الإلكتروني بنجاح', 'success');
       setShowAddToStoreModal(false);
+      setShowWarningModal(false);
       
       // Reload product details
       const prod = await Api.getProduct(id);
@@ -425,6 +448,15 @@ const ProductDetails = () => {
     } finally {
       setAddingToStore(false);
     }
+  };
+
+  const handleSaveToStore = async (e) => {
+    e.preventDefault();
+    if (!storePrices.purchasePrice || !storePrices.salePrice) {
+      toast('يرجى تحديد أسعار الشراء والبيع للمتجر', 'warning');
+      return;
+    }
+    confirmAddToStore();
   };
 
   return (
@@ -449,7 +481,7 @@ const ProductDetails = () => {
             🌐 إضافة إلى المتجر الإلكتروني
           </button>
         )}
-        <button className="btn" style={{ background: 'var(--metro-blue)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(59,130,246,0.2)' }} onClick={() => printCode('barcode')}>
+        <button className="btn" style={{ background: 'var(--metro-blue)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(59,130,246,0.2)' }} onClick={() => handlePrintClick('barcode')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <rect x="2" y="5" width="3" height="14" /><rect x="7" y="5" width="1" height="14" />
             <rect x="10" y="5" width="3" height="14" /><rect x="15" y="5" width="2" height="14" />
@@ -457,7 +489,7 @@ const ProductDetails = () => {
           </svg>
           طباعة باركود
         </button>
-        <button className="btn" style={{ background: 'var(--accent-purple, #8b5cf6)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(139,92,246,0.2)' }} onClick={() => printCode('qrcode')}>
+        <button className="btn" style={{ background: 'var(--accent-purple, #8b5cf6)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(139,92,246,0.2)' }} onClick={() => handlePrintClick('qrcode')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
             <rect x="3" y="14" width="7" height="7" /><path d="M14 14h7v7h-7z" /><path d="M14 14v-2M14 21v-2M21 14v-2M21 21v-2M21 17h2M18 17h.01" />

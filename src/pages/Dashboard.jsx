@@ -14,9 +14,9 @@ import Expenses from './Expenses';
 import '../styles/pages/StoreInactivePremium.css';
 
 const PACKAGES = [
-  { name: 'باقة 1 شهر', months: 1, price: 150 },
+  { name: 'باقة 1 شهر', months: 1, price: 399 },
   { name: 'باقة 3 أشهر', months: 3, price: 400 },
-  { name: 'باقة سنة كاملة', months: 12, price: 1200 }
+  { name: 'باقة سنة كاملة', months: 12, price: 3999 }
 ];
 
 const Dashboard = () => {
@@ -200,8 +200,7 @@ const Dashboard = () => {
       setSenderDetail('');
       setReceiptFile(null);
       
-      // Refresh requests
-      loadRequests();
+      navigate('/subscription-success');
     } catch (err) {
       toast(err.message || 'فشل في إرسال طلب التجديد', 'error');
     } finally {

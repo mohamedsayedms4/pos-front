@@ -1265,12 +1265,12 @@ input:checked+.slider:before {
 .pricing-card {
     background: var(--bg-white);
     border-radius: var(--border-radius-lg);
-    padding: 50px 40px;
+    padding: 30px;
     border: none;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
     text-align: right;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease;
     transform-style: preserve-3d;
 }
@@ -1294,14 +1294,17 @@ input:checked+.slider:before {
 .popular-badge {
     position: absolute;
     top: -15px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: max-content;
     background: var(--primary-color);
     color: white;
     padding: 6px 20px;
     border-radius: 20px;
     font-weight: 700;
     font-size: 0.9rem;
+    z-index: 10;
 }
 
 .pricing-card h3 {

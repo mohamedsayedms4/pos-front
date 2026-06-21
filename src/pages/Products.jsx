@@ -89,6 +89,12 @@ const Products = () => {
   const [savingStock, setSavingStock] = useState(false);
   const [allWarehouses, setAllWarehouses] = useState([]);
 
+  // Print Quantity Modal State
+  const [printQtyModalOpen, setPrintQtyModalOpen] = useState(false);
+  const [printQtyProduct, setPrintQtyProduct] = useState(null);
+  const [printQty, setPrintQty] = useState('');
+  const [printQtyStock, setPrintQtyStock] = useState(0);
+
   /**
    * Convert a blob: URL to a data: URL (base64-embedded).
    * This ensures the image bytes are fully loaded BEFORE we write the print HTML.
@@ -118,7 +124,7 @@ const Products = () => {
    *  - @page size: auto — lets the PRINTER DRIVER control actual paper size
    *  - Image sized conservatively to never overflow one label
    */
-  const _openPrintWindow = (dataUrl, widthMm, heightMm) => {
+  const _openPrintWindow = (dataUrl, widthMm, heightMm, quantity = 1, productData = null, tenantName = '') => {
     // Remove any previous print iframe
     const oldFrame = document.getElementById('__barcode_print_frame');
     if (oldFrame) oldFrame.remove();
@@ -135,19 +141,40 @@ const Products = () => {
     const sw = widthMm - 4;
     const sh = heightMm - 4;
 
+    let imagesHtml = '';
+    for(let i=0; i<quantity; i++) {
+        if (productData) {
+            const codeStr = productData.productCode || productData.id || '';
+            const priceStr = parseFloat(productData.salePrice || 0).toFixed(2) + ' EGP';
+            imagesHtml += `
+              <div class="page">
+                <div class="product-price">${priceStr}</div>
+                <img src="${dataUrl}" class="barcode-img" />
+                <div class="product-code">${codeStr}</div>
+                <div class="tenant-name">${tenantName}</div>
+              </div>
+            `;
+        } else {
+            imagesHtml += `<div class="page"><img src="${dataUrl}"/></div>`;
+        }
+    }
+
     // Minified HTML with NO landscape keyword
     doc.open();
     doc.write([
-      '<!DOCTYPE html><html><head><meta charset="utf-8">',
+      '<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8">',
       '<style>',
       '@page{size:auto;margin:0}',
-      '*{margin:0;padding:0;box-sizing:border-box}',
-      `html,body{width:${widthMm}mm;height:${heightMm}mm;overflow:hidden;background:#fff}`,
-      `body{display:flex;align-items:center;justify-content:center}`,
-      `img{max-width:${sw}mm;max-height:${sh}mm;width:auto;height:auto;display:block;object-fit:contain}`,
-      '@media print{html,body{overflow:hidden}img{page-break-inside:avoid;page-break-after:avoid;page-break-before:avoid}}',
+      '*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}',
+      `html,body{background:#fff;margin:0;padding:0;}`,
+      `.page{width:${widthMm}mm;height:${heightMm}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;page-break-after:always;page-break-inside:avoid;padding: 1mm; text-align:center;}`,
+      `.product-name { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: ${sw}mm; line-height: 1.1; margin-bottom: 2px; }`,
+      `.product-price { font-size: 13px; font-weight: bold; margin-bottom: 2px; line-height: 1; }`,
+      `.barcode-img { max-width:${sw}mm; max-height: 14mm; width:auto; height:auto; display:block; object-fit:contain; }`,
+      `.product-code { font-size: 9px; margin-top: 2px; letter-spacing: 1px; line-height: 1; }`,
+      `.tenant-name { font-size: 8px; margin-top: 2px; font-weight: bold; line-height: 1; }`,
       '</style></head>',
-      `<body><img src="${dataUrl}"/></body></html>`,
+      `<body>${imagesHtml}</body></html>`,
     ].join(''));
     doc.close();
 
@@ -271,13 +298,22 @@ const Products = () => {
   const handleTestPrint = async () => {
     setTestingPrint(true);
     try {
-      const sampleImageUrl = await Api.getProductBarcodeLabel(data.length > 0 ? data[0].id : 1);
       const width = printerConfig.labelWidthMm || 40;
       const height = printerConfig.labelHeightMm || 30;
+      const sampleProduct = data.length > 0 ? data[0] : { name: 'منتج تجريبي', salePrice: 15.00, productCode: '123456789' };
+      const tenantName = Api._getUser()?.tenantName || Api._getUser()?.name || '';
 
-      // Pre-load image and convert to data URL to avoid blank pages
-      const dataUrl = await _blobUrlToDataUrl(sampleImageUrl);
-      _openPrintWindow(dataUrl, width, height);
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, String(sampleProduct.productCode || sampleProduct.id), {
+        format: "CODE128",
+        displayValue: false,
+        margin: 0,
+        width: 2,
+        height: 50
+      });
+      const dataUrl = canvas.toDataURL("image/png");
+
+      _openPrintWindow(dataUrl, width, height, 1, sampleProduct, tenantName);
       toast('تم بدء اختبار الطباعة بالصورة المباشرة', 'success');
     } catch (err) {
       toast('فشل طباعة التجربة: ' + err.message, 'error');
@@ -398,17 +434,32 @@ const Products = () => {
 
   const executePrint = async (e) => {
     e.preventDefault();
+    const quantity = parseInt(printQty, 10);
+    if (isNaN(quantity) || quantity < 1) {
+      toast('عدد غير صحيح', 'warning');
+      return;
+    }
+    setPrintQtyModalOpen(false);
+
     setPrinting(true);
+    toast('جاري تحضير ملصق الباركود للطباعة...', 'success');
     try {
-      const imageUrl = await Api.getProductBarcodeLabel(printProduct.id);
       const config = await Api.getPrinterConfig();
       const width = config.labelWidthMm || 40;
       const height = config.labelHeightMm || 30;
+      const tenantName = Api._getUser()?.tenantName || Api._getUser()?.name || '';
 
-      const dataUrl = await _blobUrlToDataUrl(imageUrl);
-      _openPrintWindow(dataUrl, width, height);
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, String(printQtyProduct.productCode || printQtyProduct.id), {
+        format: "CODE128",
+        displayValue: false,
+        margin: 0,
+        width: 2,
+        height: 50
+      });
+      const dataUrl = canvas.toDataURL("image/png");
 
-      toast('جاري تحضير ملصق الباركود للطباعة...', 'success');
+      _openPrintWindow(dataUrl, width, height, quantity, printQtyProduct, tenantName);
     } catch (err) {
       toast('فشل تحضير الباركود أو الطباعة: ' + err.message, 'error');
     } finally {
@@ -416,19 +467,12 @@ const Products = () => {
     }
   };
 
-  const handlePrintBarcode = async (product) => {
-    toast('جاري تحضير ملصق الباركود للطباعة...', 'success');
-    try {
-      const imageUrl = await Api.getProductBarcodeLabel(product.id);
-      const config = await Api.getPrinterConfig();
-      const width = config.labelWidthMm || 40;
-      const height = config.labelHeightMm || 30;
-
-      const dataUrl = await _blobUrlToDataUrl(imageUrl);
-      _openPrintWindow(dataUrl, width, height);
-    } catch (err) {
-      toast('فشل تحضير الباركود أو الطباعة: ' + err.message, 'error');
-    }
+  const handlePrintBarcodeClick = (product) => {
+    const stockQty = Math.max(1, Math.floor(product.stock || 1));
+    setPrintQtyProduct(product);
+    setPrintQtyStock(stockQty);
+    setPrintQty(stockQty.toString());
+    setPrintQtyModalOpen(true);
   };
 
   const renderPageNumbers = () => {
@@ -731,7 +775,7 @@ const Products = () => {
                           <div className="table-actions">
                             <button 
                               className="btn btn-icon btn-ghost" 
-                              onClick={() => handlePrintBarcode(p)} 
+                              onClick={() => handlePrintBarcodeClick(p)} 
                               title="طباعة باركود"
                               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
@@ -891,6 +935,45 @@ const Products = () => {
                 <button type="button" className="btn btn-ghost" onClick={() => setShowStockModal(false)}>إلغاء</button>
                 <button type="submit" form="stockForm" className="btn btn-primary" disabled={savingStock}>
                   {savingStock ? 'جاري الحفظ...' : 'حفظ التوزيع'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {printQtyModalOpen && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrintQtyModalOpen(false); }}>
+            <div className="modal" style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3>🖨️ طباعة ملصقات الباركود</h3>
+                <button className="modal-close" onClick={() => setPrintQtyModalOpen(false)}>✕</button>
+              </div>
+              <div className="modal-body">
+                <form id="printQtyForm" onSubmit={executePrint}>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '15px' }}>
+                    كم عدد الملصقات التي تريد طباعتها؟ <br/>
+                    <small>(الكمية المتوفرة: <strong>{printQtyStock}</strong>)</small>
+                  </p>
+                  <div className="form-group">
+                    <label>عدد الملصقات</label>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      min="1" 
+                      value={printQty} 
+                      onChange={(e) => setPrintQty(e.target.value)} 
+                      required 
+                      autoFocus
+                    />
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setPrintQtyModalOpen(false)}>إلغاء</button>
+                <button type="submit" form="printQtyForm" className="btn btn-primary" disabled={printing}>
+                  {printing ? 'جاري التحضير...' : 'طباعة الآن'}
                 </button>
               </div>
             </div>
