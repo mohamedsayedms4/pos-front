@@ -6,6 +6,7 @@ import logoLandingLight from '../assets/img/logo-landing-light.png';
 const PrivacyPolicyCorp = () => {
   const [logoUrl, setLogoUrl] = useState(logoLandingLight);
   const [softwareName, setSoftwareName] = useState('سجل');
+  const [whatsappNumber, setWhatsappNumber] = useState('+201281018810');
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -24,6 +25,7 @@ const PrivacyPolicyCorp = () => {
         if (cfg) {
           if (cfg.logoUrl) setLogoUrl(Api.getImageUrl(cfg.logoUrl));
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
+          if (cfg.supportPhone) setWhatsappNumber(cfg.supportPhone);
         }
       })
       .catch((err) => console.error('Error loading global config:', err));
@@ -141,16 +143,11 @@ const PrivacyPolicyCorp = () => {
                 <p>
                   إذا كان لديك أي تساؤل أو رغبة في معرفة المزيد عن آليات معالجة وتأمين البيانات، يرجى التواصل مع مسؤول حماية البيانات مباشرة:
                 </p>
-                <div className="contact-card-grid">
-                  <a href="mailto:support@seggelerp.com" className="contact-card">
-                    <span className="icon">✉</span>
-                    <span className="title">الدعم الفني والبريد</span>
-                    <span className="value">support@seggelerp.com</span>
-                  </a>
-                  <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" className="contact-card">
+                <div className="contact-card-grid" style={{ gridTemplateColumns: '1fr', maxWidth: '400px', margin: '24px auto 0 auto' }}>
+                  <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="contact-card">
                     <span className="icon" style={{ color: '#25D366' }}>💬</span>
                     <span className="title">واتساب الدعم المباشر</span>
-                    <span className="value">201281018810+</span>
+                    <span className="value" style={{ direction: 'ltr' }}>{whatsappNumber}</span>
                   </a>
                 </div>
               </section>
@@ -194,11 +191,10 @@ const PrivacyPolicyCorp = () => {
 
           <div className="footer-links-col">
             <h4>تواصل معنا</h4>
-            <p>الدعم الفني: support@seggelerp.com</p>
             <p>
               واتساب:{' '}
-              <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-                +201281018810
+              <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', direction: 'ltr', display: 'inline-block' }}>
+                {whatsappNumber}
               </a>
             </p>
           </div>

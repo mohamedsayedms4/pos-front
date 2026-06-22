@@ -993,29 +993,29 @@ const LandingPage = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="faq-section" style={{ padding: '80px 0', background: 'var(--bg-light)' }}>
+      <section className="faq-section" style={{ padding: '80px 0', background: 'var(--bg-light)' }} id="faq">
           <div className="container">
               <div className="section-header" style={{ textAlign: 'center', marginBottom: '50px' }}>
-                  <h2 style={{ color: 'var(--text-dark)', fontSize: '2.2rem', marginBottom: '10px' }}>لديك أسئلة؟ نحن نوفر لك حل الإجابات</h2>
+                  <h2 style={{ color: 'var(--text-dark)', fontSize: '2.2rem', marginBottom: '10px' }}>لديك أسئلة؟ نحن نوفر لك الإجابات</h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>جمعنا لك الإجابات لأكثر الأسئلة شيوعاً لتبدأ استخدام النظام وأنت مطمئن.</p>
               </div>
               <div className="faq-accordion" style={{ maxWidth: '800px', margin: '0 auto' }}>
-                  {[
-                      { q: 'هل أحتاج لتدريب طويل للبدء؟', a: 'النظام مصمم ليكون بديهياً وسهل الاستخدام، لن تحتاج لتدريب طويل.' },
-                      { q: 'هل يدعم النظام ضريبة القيمة المضافة؟', a: 'نعم، النظام يدعم ضريبة القيمة المضافة والفواتير الإلكترونية بشكل كامل.' },
-                      { q: 'ماذا لو انقطع الاتصال بالإنترنت أثناء عملية البيع؟', a: 'نقطة البيع تدعم العمل بدون إنترنت (Offline) وتتزامن تلقائياً عند عودة الاتصال.' },
-                      { q: 'هل يمكنني ترقية الباقة لاحقاً مع نمو أرباحي؟', a: 'بالتأكيد، يمكنك ترقية باقتك في أي وقت بسهولة وبدون فقدان أي بيانات.' }
-                  ].map((faq, index) => (
+                  {faqData.map((faq, index) => (
                   <div className="faq-item" style={{ borderBottom: '1px solid var(--border-light)', padding: '20px 0' }} key={index}>
-                      <div className="faq-question" onClick={() => toggleFaq(index)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                      <div className="faq-question" onClick={() => toggleFaq(index)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '1.15rem', transition: 'color 0.3s' }}>
                           {faq.q}
-                          <i className={`fa-solid ${openFaq === index ? 'fa-minus' : 'fa-plus'}`}></i>
+                          <div style={{ background: openFaq === index ? 'var(--primary-color)' : '#f1f5f9', color: openFaq === index ? '#fff' : 'var(--primary-color)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <i className={`fa-solid ${openFaq === index ? 'fa-minus' : 'fa-plus'}`}></i>
+                          </div>
                       </div>
-                      {openFaq === index && (
-                      <div className="faq-answer-panel" style={{ marginTop: '15px', color: 'var(--text-muted)' }}>
-                          <p>{faq.a}</p>
+                      <div className="faq-answer-panel" style={{ 
+                        maxHeight: openFaq === index ? '300px' : '0', 
+                        overflow: 'hidden', 
+                        transition: 'max-height 0.4s ease-in-out',
+                        opacity: openFaq === index ? 1 : 0,
+                      }}>
+                          <p style={{ marginTop: '15px', color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.7' }}>{faq.a}</p>
                       </div>
-                      )}
                   </div>
                   ))}
               </div>
@@ -1064,11 +1064,10 @@ const LandingPage = () => {
 
           <div className="footer-links-col">
             <h4>تواصل معنا</h4>
-            <p>الدعم الفني: support@seggelerp.com</p>
             <p>
               واتساب:{' '}
-              <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-                +201281018810
+              <a href={`https://wa.me/${(config?.supportPhone || '201281018810').replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', direction: 'ltr', display: 'inline-block' }}>
+                {config?.supportPhone || '+201281018810'}
               </a>
             </p>
           </div>

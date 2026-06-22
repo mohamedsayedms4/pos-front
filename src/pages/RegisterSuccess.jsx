@@ -37,6 +37,7 @@ const RegisterSuccess = () => {
   const [copied, setCopied] = useState(false);
   const [logoUrl, setLogoUrl] = useState(logoLandingLight);
   const [softwareName, setSoftwareName] = useState('سجل');
+  const [whatsappNumber, setWhatsappNumber] = useState('+201281018810');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -47,6 +48,7 @@ const RegisterSuccess = () => {
         if (cfg) {
           if (cfg.logoUrl) setLogoUrl(Api.getImageUrl(cfg.logoUrl));
           if (cfg.softwareName) setSoftwareName(cfg.softwareName);
+          if (cfg.supportPhone) setWhatsappNumber(cfg.supportPhone);
         }
       })
       .catch((err) => console.error('Error loading global config:', err));
@@ -260,11 +262,10 @@ const RegisterSuccess = () => {
 
           <div className="footer-links-col">
             <h4>تواصل معنا</h4>
-            <p>الدعم الفني: support@seggelerp.com</p>
             <p>
               واتساب:{' '}
-              <a href="https://wa.me/201281018810" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-                +201281018810
+              <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', direction: 'ltr', display: 'inline-block' }}>
+                {whatsappNumber}
               </a>
             </p>
           </div>

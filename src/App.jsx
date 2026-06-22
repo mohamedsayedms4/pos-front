@@ -52,6 +52,8 @@ import StoreAccountPage from './pages/StoreAccountPage.jsx'
 import StoreWishlistPage from './pages/StoreWishlistPage.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsOfUse from './pages/TermsOfUse.jsx'
+import PrivacyPolicyCorp from './pages/PrivacyPolicyCorp.jsx'
+import TermsOfUseCorp from './pages/TermsOfUseCorp.jsx'
 import FixedAssets from './pages/FixedAssets.jsx'
 import DeletedProducts from './pages/DeletedProducts.jsx'
 import LeaveTypes from './pages/LeaveTypes.jsx'
@@ -153,8 +155,8 @@ function App() {
                 <Route path="/store/wishlist" element={<StoreAuthProvider><StoreProvider><StoreWishlistPage /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/store/privacy-policy" element={<StoreAuthProvider><StoreProvider><PrivacyPolicy /></StoreProvider></StoreAuthProvider>} />
                 <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
-                <Route path="/terms" element={<TermsOfUse />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfUseCorp />} />
+                <Route path="/privacy" element={<PrivacyPolicyCorp />} />
                 <Route path="/blog" element={<Articles />} />
                 <Route path="/blog/:slug" element={<ArticleDetail />} />
                 <Route path="/403" element={<Error403 />} />
