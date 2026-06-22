@@ -79,6 +79,7 @@ import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
 import SuperAdminSubscriptions from './pages/SuperAdminSubscriptions.jsx'
 import StoreInactive from './pages/StoreInactive.jsx'
+import SubscriptionHistory from './pages/SubscriptionHistory.jsx'
 import Tickets from './pages/Tickets.jsx'
 import Articles from './pages/Articles.jsx'
 import ArticleDetail from './pages/ArticleDetail.jsx'
@@ -306,6 +307,7 @@ function App() {
                     <Route path="/settings/smtp" element={<Settings />} />
                     <Route path="/settings/print" element={<Settings />} />
                     <Route path="/settings/banner" element={<Settings />} />
+                    <Route path="/subscription-history" element={<SubscriptionHistory />} />
                     <Route element={<ProtectedRoute permission="SETTINGS_MANAGE" />}>
                       <Route path="/settings/attendance" element={<AttendanceSettings />} />
                     </Route>

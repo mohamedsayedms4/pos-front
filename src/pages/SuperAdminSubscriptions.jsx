@@ -137,7 +137,9 @@ const SuperAdminSubscriptions = () => {
     logoLoginDarkUrl: '',
     logoLandingLightUrl: '',
     logoLandingDarkUrl: '',
-    logoFaviconUrl: ''
+    logoFaviconUrl: '',
+    vodafoneCashNumber: '',
+    instapayAddress: ''
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [logoPreview, setLogoPreview] = useState('');
@@ -216,7 +218,9 @@ const SuperAdminSubscriptions = () => {
           logoLoginDarkUrl: configData.logoLoginDarkUrl || '',
           logoLandingLightUrl: configData.logoLandingLightUrl || '',
           logoLandingDarkUrl: configData.logoLandingDarkUrl || '',
-          logoFaviconUrl: configData.logoFaviconUrl || ''
+          logoFaviconUrl: configData.logoFaviconUrl || '',
+          vodafoneCashNumber: configData.vodafoneCashNumber || '',
+          instapayAddress: configData.instapayAddress || ''
         });
         setLogoPreview(configData.logoUrl || '');
         setLogoSidebarLightPreview(configData.logoSidebarLightUrl || '');
@@ -1252,6 +1256,35 @@ const SuperAdminSubscriptions = () => {
                   placeholder="مثال: https://youtube.com/c/yourchannel"
                   value={settings.youtubeUrl}
                   onChange={(e) => setSettings({ ...settings, youtubeUrl: e.target.value })}
+                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
+                />
+              </div>
+
+              {/* ─── Payment Methods ─────────────────────────────────────── */}
+              <div className="sa-sub-form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
+                  💳 رقم فودافون كاش للدفع:
+                </label>
+                <input
+                  type="text"
+                  className="sa-sub-form-input"
+                  placeholder="مثال: 01012345678"
+                  value={settings.vodafoneCashNumber}
+                  onChange={(e) => setSettings({ ...settings, vodafoneCashNumber: e.target.value })}
+                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
+                />
+              </div>
+
+              <div className="sa-sub-form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
+                  ⚡ عنوان إنستا باي (Instapay Address):
+                </label>
+                <input
+                  type="text"
+                  className="sa-sub-form-input"
+                  placeholder="مثال: pos@instapay"
+                  value={settings.instapayAddress}
+                  onChange={(e) => setSettings({ ...settings, instapayAddress: e.target.value })}
                   style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
                 />
               </div>

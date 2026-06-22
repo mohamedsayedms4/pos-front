@@ -15,7 +15,6 @@ import '../styles/pages/StoreInactivePremium.css';
 
 const PACKAGES = [
   { name: 'باقة 1 شهر', months: 1, price: 399 },
-  { name: 'باقة 3 أشهر', months: 3, price: 400 },
   { name: 'باقة سنة كاملة', months: 12, price: 3999 }
 ];
 
@@ -49,6 +48,7 @@ const Dashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const [myRequests, setMyRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(null);
+  const [globalConfig, setGlobalConfig] = useState(null);
 
   const loadRequests = async () => {
     try {
@@ -69,6 +69,7 @@ const Dashboard = () => {
       .catch(err => console.error('Error fetching tenant details:', err));
       
     Api.getLatestDesktopApp().then(setLatestApp).catch(() => {});
+    Api.getGlobalConfig().then(setGlobalConfig).catch(() => {});
 
     loadRequests();
   }, []);
@@ -835,9 +836,18 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
-            <button className="manage-sub-btn" onClick={handleManageSubscription}>
-              إدارة إشتراكك ⚡
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="manage-sub-btn" onClick={handleManageSubscription}>
+                إدارة إشتراكك ⚡
+              </button>
+              <button 
+                className="manage-sub-btn" 
+                onClick={() => navigate('/subscription-history')}
+                style={{ opacity: 0.9, display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <i className="fas fa-history"></i> سجل الاشتراكات
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1082,8 +1092,8 @@ const Dashboard = () => {
                   <div className="si-instructions-card">
                     <h4>📱 تعليمات التحويل والدفع:</h4>
                     <ul>
-                      <li>فودافون كاش: <strong>01012345678</strong></li>
-                      <li>انستا باي: <strong>pos@instapay</strong></li>
+                      <li>فودافون كاش: <strong>{globalConfig?.vodafoneCashNumber || '01012345678'}</strong></li>
+                      <li>انستا باي: <strong>{globalConfig?.instapayAddress || 'pos@instapay'}</strong></li>
                       <li style={{ color: '#ef4444', fontWeight: 'bold' }}>يرجى أخذ لقطة شاشة للتحويل (Screenshot) لرفعها كإثبات.</li>
                     </ul>
                   </div>

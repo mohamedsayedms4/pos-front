@@ -4,6 +4,11 @@ import Api from '../services/api';
 
 const SubscriptionExpired = () => {
     const navigate = useNavigate();
+    const [globalConfig, setGlobalConfig] = React.useState(null);
+
+    React.useEffect(() => {
+        Api.getGlobalConfig().then(setGlobalConfig).catch(console.error);
+    }, []);
 
     const handleLogout = () => {
         Api.logout();
@@ -45,7 +50,7 @@ const SubscriptionExpired = () => {
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <button 
-                        onClick={() => window.open('https://wa.me/201012345678', '_blank')}
+                        onClick={() => window.open('https://wa.me/' + (globalConfig?.supportPhone || '201012345678').replace(/\D/g, ''), '_blank')}
                         style={{
                             padding: '14px',
                             background: '#10b981',

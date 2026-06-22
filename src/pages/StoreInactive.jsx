@@ -7,7 +7,6 @@ import '../styles/pages/StoreInactivePremium.css';
 
 const PACKAGES = [
   { name: 'باقة 1 شهر', months: 1, price: 399 },
-  { name: 'باقة 3 أشهر', months: 3, price: 400 },
   { name: 'باقة سنة كاملة', months: 12, price: 3999 }
 ];
 
@@ -25,6 +24,7 @@ const StoreInactive = () => {
   const [pendingRequest, setPendingRequest] = useState(null);
   const [lastRejectedRequest, setLastRejectedRequest] = useState(null);
   const [loadingRequests, setLoadingRequests] = useState(true);
+  const [globalConfig, setGlobalConfig] = useState(null);
 
   // Form modal states
   const [showModal, setShowModal] = useState(false);
@@ -48,6 +48,7 @@ const StoreInactive = () => {
       return;
     }
 
+    Api.getGlobalConfig().then(setGlobalConfig).catch(console.error);
     loadRequests();
   }, []);
 
@@ -259,8 +260,17 @@ const StoreInactive = () => {
         <div className="si-support-info">
           <p>للمساعدة الفنية الفورية وتسهيل التفعيل:</p>
           <div className="si-support-links">
-            <a href="tel:+201000000000" className="si-support-link">📞 اتصل بنا</a>
-            <a href="https://wa.me/201000000000" target="_blank" rel="noopener noreferrer" className="si-support-link">💬 واتساب الدعم</a>
+            {globalConfig?.supportPhone && (
+              <a href={`tel:${globalConfig.supportPhone}`} className="si-support-link">📞 اتصل بنا</a>
+            )}
+            <a 
+              href={`https://wa.me/${(globalConfig?.supportPhone || '201000000000').replace(/\D/g, '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="si-support-link"
+            >
+              💬 واتساب الدعم
+            </a>
           </div>
         </div>
       </div>
@@ -283,8 +293,8 @@ const StoreInactive = () => {
                   <div className="si-instructions-card">
                     <h4>📱 تعليمات التحويل والدفع:</h4>
                     <ul>
-                      <li>فودافون كاش: <strong>01012345678</strong></li>
-                      <li>انستا باي: <strong>pos@instapay</strong></li>
+                      <li>فودافون كاش: <strong>{globalConfig?.vodafoneCashNumber || '01012345678'}</strong></li>
+                      <li>انستا باي: <strong>{globalConfig?.instapayAddress || 'pos@instapay'}</strong></li>
                       <li style={{ color: '#ef4444', fontWeight: 'bold' }}>يرجى أخذ لقطة شاشة للتحويل (Screenshot) لرفعها كإثبات.</li>
                     </ul>
                   </div>
