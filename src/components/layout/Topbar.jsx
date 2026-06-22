@@ -7,6 +7,7 @@ import { useTheme } from '../common/ThemeContext';
 import ChatService from '../../services/ChatService';
 import msgIcon from '../../assets/img/msg.png';
 import { useTileCustomizer } from '../../context/TileContext';
+import TelegramIntegrationModal from '../settings/TelegramIntegrationModal';
 
 const Topbar = ({ onMenuToggle, prevInfo }) => {
   const { theme, toggleTheme } = useTheme();
@@ -20,6 +21,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
 
   const [user, setUser] = useState(Api._getUser());
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
 
   // Initial fetch and real-time subscription for messages
   useEffect(() => {
@@ -149,6 +151,15 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
 
         <button
           className="topbar-btn theme-toggle-btn"
+          title="ربط تليجرام"
+          onClick={() => setShowTelegramModal(true)}
+          style={{ fontSize: '1.2rem', color: '#0088cc' }}
+        >
+          <i className="fa-brands fa-telegram"></i>
+        </button>
+
+        <button
+          className="topbar-btn theme-toggle-btn"
           title={theme === 'dark' ? 'الوضع المضيء' : 'الوضع الداكن'}
           onClick={toggleTheme}
           style={{ fontSize: '1.2rem' }}
@@ -160,6 +171,10 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
           <span className="logout-text">خروج</span>
         </button>
       </div>
+
+      {showTelegramModal && (
+        <TelegramIntegrationModal onClose={() => setShowTelegramModal(false)} />
+      )}
     </header>
   );
 };
