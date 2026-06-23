@@ -30,6 +30,7 @@ const TelegramIntegrationModal = ({ onClose }) => {
         try {
             const data = await Api._request('/telegram/link-token', { method: 'POST' });
             setLinkData(data);
+            window.open(data.link, '_blank');
         } catch (e) {
             toast('حدث خطأ أثناء إنشاء كود الربط', 'error');
         } finally {
