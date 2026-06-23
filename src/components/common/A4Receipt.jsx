@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
 import StoreApi from '../../services/storeApi';
+import Api from '../../services/api';
 import { useBranch } from '../../context/BranchContext';
 
 const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
@@ -10,7 +11,8 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
   const activeBranch = branchContext?.getSelectedBranch ? branchContext.getSelectedBranch() : null;
 
   useEffect(() => {
-    StoreApi.getStoreInfoPublic()
+    // استخدام Admin API لجلب بيانات المتجر الصحيحة للتنت الحالي
+    StoreApi.getStoreInfoAdmin()
       .then(res => {
         const configData = res?.data || res;
         if (configData) {
@@ -18,7 +20,14 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
         }
       })
       .catch(err => {
-        console.warn('Error fetching store config from network', err);
+        console.warn('Error fetching store config from admin API', err);
+        // fallback للـ public API
+        StoreApi.getStoreInfoPublic()
+          .then(res => {
+            const configData = res?.data || res;
+            if (configData) setStoreConfig(configData);
+          })
+          .catch(() => {});
       });
   }, []);
 
@@ -45,7 +54,13 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
   if (!invoice) return null;
 
   const displayStoreName = storeConfig?.name || invoice.tenantName || invoice.branchName || "المتجر";
-  const logoUrl = storeConfig?.offlineLogoBase64 || (storeConfig?.logoUrl ? StoreApi.getImageUrl(storeConfig.logoUrl) : null);
+  // اللوجو: يحاول offlineLogoBase64 أولاً، ثم يبني URL من الـ admin API
+  const logoUrl = storeConfig?.offlineLogoBase64 ||
+    (storeConfig?.logoUrl
+      ? (storeConfig.logoUrl.startsWith('http') || storeConfig.logoUrl.startsWith('data:') || storeConfig.logoUrl.startsWith('/')
+          ? (storeConfig.logoUrl.startsWith('/') ? `${window.location.origin.replace(':5173', ':8080')}${storeConfig.logoUrl}` : storeConfig.logoUrl)
+          : Api.getImageUrl(storeConfig.logoUrl))
+      : null);
   const displayBranchName = activeBranch?.name || invoice.branchName || "الفرع الرئيسي";
 
   const formatDate = (dateStr) => {
@@ -780,18 +795,22 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
 
         @media print {
           @page { size: A4 portrait; margin: 0; }
-          body * { visibility: hidden; }
-          #printable-receipt, #printable-receipt * { visibility: visible !important; }
+          .hide-on-print { display: none !important; }
+          .print-page-wrapper { padding: 0 !important; background: white !important; }
+          .receipt-preview-container { box-shadow: none !important; padding: 0 !important; }
           #printable-receipt {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
             width: 210mm !important;
             min-height: 280mm !important;
             padding: 15mm 20mm !important;
             box-shadow: none !important;
             border: none !important;
+            border-radius: 0 !important;
             box-sizing: border-box !important;
+            margin: 0 auto;
+          }
+          .a4-barcode-container svg {
+            display: block !important;
+            visibility: visible !important;
           }
         }
       `}</style>

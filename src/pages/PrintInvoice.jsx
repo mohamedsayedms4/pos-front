@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 import Api from '../services/api';
@@ -26,7 +26,6 @@ const PrintInvoice = () => {
     const loadInvoice = async () => {
       try {
         if (id && id.startsWith('OFF-')) {
-          // Fallback to localStorage for fake preview invoices during checkout
           const storedStr = localStorage.getItem('print_preview_invoice');
           if (storedStr) {
              const parsed = JSON.parse(storedStr);
@@ -52,12 +51,100 @@ const PrintInvoice = () => {
     loadInvoice();
   }, [id]);
 
+  /**
+   * الحل الجذري: فتح نافذة جديدة نظيفة بدون أي CSS من الـ dark theme
+   * ونسخ HTML الفاتورة فيها وطباعتها من هناك
+   */
+  const triggerCleanPrint = () => {
+    const receiptEl = document.getElementById('printable-receipt');
+    if (!receiptEl) {
+      window.print();
+      return;
+    }
+
+    // تحويل كل SVG باركود لـ data URL حتى يظهر في النافذة الجديدة
+    const receiptClone = receiptEl.cloneNode(true);
+    const svgsInClone = receiptClone.querySelectorAll('svg');
+    const svgsInOriginal = receiptEl.querySelectorAll('svg');
+    svgsInOriginal.forEach((svg, i) => {
+      if (svgsInClone[i]) {
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        const img = document.createElement('img');
+        img.src = svgUrl;
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        svgsInClone[i].replaceWith(img);
+      }
+    });
+
+    // استخراج جميع الـ <style> tags اللي جوه الـ receipt
+    const styleContent = Array.from(receiptEl.querySelectorAll('style'))
+      .map(s => s.innerText || s.textContent)
+      .join('\n');
+
+    // إزالة الـ <style> tags من الـ clone
+    receiptClone.querySelectorAll('style').forEach(s => s.remove());
+
+    const pageSize = printFormat === 'A4' ? 'A4 portrait' : '80mm auto';
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>فاتورة ${invoice?.invoiceNumber || invoice?.id || ''}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif !important;
+            direction: rtl;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            width: ${printFormat === 'A4' ? '210mm' : '100%'} !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+          }
+          @page { size: ${pageSize}; margin: 0; }
+          ${styleContent}
+        </style>
+      </head>
+      <body>
+        <div style="background:#fff; color:#000; direction:rtl;">
+          ${receiptClone.outerHTML}
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }, 600);
+          };
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // Automated print trigger on load
   useEffect(() => {
     if (!loading && invoice && printAutoTrigger) {
       const timer = setTimeout(() => {
-        window.print();
-      }, 1000); // 1-second delay for barcodes and images to fully render
+        triggerCleanPrint();
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [loading, invoice, printAutoTrigger]);
@@ -80,32 +167,29 @@ const PrintInvoice = () => {
     const wasPreview = element.classList.contains('preview-mode');
     if (wasPreview) element.classList.remove('preview-mode');
 
-    // Tailor PDF sizing and margins based on selected layout format
     const opt = {
-      margin:       0, // Set margins to 0 so the template's internal padding is used directly
+      margin:       0,
       filename:     `invoice_${invoice.invoiceNumber || invoice.id}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { 
         scale: 2, 
         useCORS: true,
+        backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
           if (document.fonts && clonedDoc.fonts) {
             document.fonts.forEach(font => {
               try {
                 clonedDoc.fonts.add(font);
-              } catch (e) {
-                console.warn('Failed to copy font face to cloned document:', e);
-              }
+              } catch (e) {}
             });
           }
         }
       },
-      jsPDF:        printFormat === 'A4'
-                      ? { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                      : { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+      jsPDF: printFormat === 'A4'
+               ? { unit: 'mm', format: 'a4', orientation: 'portrait' }
+               : { unit: 'mm', format: [80, 200], orientation: 'portrait' }
     };
 
-    // Wait until web fonts (Cairo, etc.) are fully loaded before rendering HTML to canvas
     document.fonts.ready.then(() => {
       html2pdf().from(element).set(opt).save().then(() => {
         if (wasPreview) element.classList.add('preview-mode');
@@ -114,7 +198,6 @@ const PrintInvoice = () => {
         if (wasPreview) element.classList.add('preview-mode');
       });
     }).catch(() => {
-      // Fallback if fonts.ready fails or is not supported
       html2pdf().from(element).set(opt).save().then(() => {
         if (wasPreview) element.classList.add('preview-mode');
       });
@@ -126,21 +209,56 @@ const PrintInvoice = () => {
   if (!invoice) return <div style={{ padding: '2rem', textAlign: 'center' }}>الفاتورة غير موجودة</div>;
 
   return (
-    <div className="print-page-wrapper">
-      <div className="print-controls hide-on-print">
-        <button onClick={() => window.print()} className="print-btn">
+    <div style={{
+      minHeight: '100vh',
+      background: '#f0f2f5',
+      color: '#000',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '20px',
+      direction: 'rtl',
+      fontFamily: "'Cairo', 'Tahoma', 'Arial', sans-serif"
+    }}>
+      {/* أزرار التحكم */}
+      <div style={{
+        marginBottom: '20px',
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        width: '100%',
+        maxWidth: '520px'
+      }}>
+        <button onClick={triggerCleanPrint} style={{
+          background: '#007bff', color: '#fff', border: 'none',
+          padding: '10px 18px', fontSize: '15px', borderRadius: '8px',
+          cursor: 'pointer', fontFamily: "'Cairo', sans-serif",
+          fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px'
+        }}>
           🖨️ طباعة الفاتورة
         </button>
-        <button onClick={handleDownloadPdf} className="download-btn">
+        <button onClick={handleDownloadPdf} style={{
+          background: '#28a745', color: '#fff', border: 'none',
+          padding: '10px 18px', fontSize: '15px', borderRadius: '8px',
+          cursor: 'pointer', fontFamily: "'Cairo', sans-serif",
+          fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px'
+        }}>
           📥 تنزيل الفاتورة
         </button>
         <ShareInvoice invoice={invoice} btnClassName="share-invoice-btn" />
-        <button onClick={() => window.close()} className="close-btn">
+        <button onClick={() => window.close()} style={{
+          background: '#dc3545', color: '#fff', border: 'none',
+          padding: '10px 18px', fontSize: '15px', borderRadius: '8px',
+          cursor: 'pointer', fontFamily: "'Cairo', sans-serif",
+          fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px'
+        }}>
           ❌ إغلاق المعاينة
         </button>
       </div>
 
-      <div className="receipt-preview-container">
+      {/* معاينة الفاتورة */}
+      <div style={{ background: 'transparent', padding: 0, borderRadius: 0, boxShadow: 'none' }}>
         {printFormat === 'A4' ? (
           <A4Receipt invoice={invoice} template={printTemplate} isPreview={true} />
         ) : (
@@ -148,118 +266,24 @@ const PrintInvoice = () => {
         )}
       </div>
 
+      {/* Share button CSS فقط */}
       <style>{`
-        body {
-          background-color: #f0f2f5;
-          margin: 0;
-          padding: 0;
-          font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
-          direction: rtl;
-          letter-spacing: normal !important;
-        }
-        .print-page-wrapper {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 20px;
-          direction: rtl;
-          text-align: right;
-          letter-spacing: normal !important;
-        }
-        .print-controls {
-          margin-bottom: 20px;
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          justify-content: center;
-          width: 100%;
-          max-width: 500px;
-        }
-        .print-btn, .download-btn, .share-invoice-btn, .close-btn {
-          color: white;
-          border: none;
-          padding: 10px 18px;
-          font-size: 15px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-family: 'Cairo', sans-serif;
-          font-weight: bold;
-          transition: background 0.2s;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          white-space: nowrap;
-        }
-        .print-btn {
-          background-color: #007bff;
-          box-shadow: 0 4px 6px rgba(0,123,255,0.2);
-        }
-        .print-btn:hover { background-color: #0056b3; }
-        .download-btn {
-          background-color: #28a745;
-          box-shadow: 0 4px 6px rgba(40,167,69,0.2);
-        }
-        .download-btn:hover { background-color: #218838; }
         .share-invoice-btn {
-          background-color: #17a2b8;
-          box-shadow: 0 4px 6px rgba(23,162,184,0.2);
+          background-color: #17a2b8 !important;
+          color: white !important;
+          border: none !important;
+          padding: 10px 18px !important;
+          font-size: 15px !important;
+          border-radius: 8px !important;
+          cursor: pointer !important;
+          font-family: 'Cairo', sans-serif !important;
+          font-weight: bold !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 6px !important;
+          white-space: nowrap !important;
         }
-        .share-invoice-btn:hover { background-color: #138496; }
-        .close-btn {
-          background-color: #dc3545;
-          box-shadow: 0 4px 6px rgba(220,53,69,0.2);
-        }
-        .close-btn:hover { background-color: #a71d2a; }
-
-        @media (max-width: 600px) {
-          .print-page-wrapper {
-            padding: 12px 8px !important;
-          }
-          .print-controls {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px !important;
-            max-width: 100% !important;
-          }
-          .print-btn, .download-btn, .share-invoice-btn, .close-btn {
-            font-size: 13px !important;
-            padding: 10px 8px !important;
-            justify-content: center;
-          }
-          .share-invoice-container {
-            width: 100%;
-          }
-          .share-trigger-btn {
-            width: 100%;
-            justify-content: center !important;
-          }
-          .receipt-preview-container {
-            width: 100%;
-            overflow-x: auto;
-          }
-        }
-        .receipt-preview-container {
-          background: transparent;
-          padding: 0;
-          border-radius: 0;
-          box-shadow: none;
-        }
-
-        @media print {
-          .hide-on-print {
-            display: none !important;
-          }
-          body {
-            background-color: white !important;
-          }
-          .receipt-preview-container {
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-          .print-page-wrapper {
-            padding: 0 !important;
-          }
-        }
+        .share-invoice-btn:hover { background-color: #138496 !important; }
       `}</style>
     </div>
   );

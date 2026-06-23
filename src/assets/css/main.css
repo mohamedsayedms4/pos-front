@@ -167,6 +167,86 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ─── Global Print Reset ─── */
+/* يمنع الـ dark theme من التأثير على صفحة الطباعة */
+@media print {
+  :root {
+    --bg-black: #ffffff !important;
+    --bg-dark: #ffffff !important;
+    --bg-sidebar: #ffffff !important;
+    --bg-topbar: #ffffff !important;
+    --bg-tile: #ffffff !important;
+    --text-white: #000000 !important;
+    --text-light: #000000 !important;
+    --text-main: #000000 !important;
+    color-scheme: light !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* إخفاء عناصر الـ layout الرئيسية */
+  .sidebar,
+  .top-bar,
+  .app-layout > :not(.main-content),
+  .hide-on-print {
+    display: none !important;
+  }
+
+  /* إظهار فقط محتوى الطباعة */
+  .main-content,
+  .print-page-wrapper,
+  .receipt-preview-container,
+  #printable-receipt {
+    display: block !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+/* ─── Print Page Active Override ─── */
+/* يتفعل لما نفتح صفحة الطباعة - بيتغلب على الـ dark theme */
+body.print-page-active {
+  background: #f0f2f5 !important;
+  color: #000000 !important;
+}
+
+body.print-page-active h1,
+body.print-page-active h2,
+body.print-page-active h3,
+body.print-page-active h4,
+body.print-page-active h5,
+body.print-page-active h6,
+body.print-page-active p,
+body.print-page-active span,
+body.print-page-active td,
+body.print-page-active th {
+  color: inherit !important;
+}
+
+@media print {
+  body.print-page-active {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body.print-page-active #printable-receipt,
+  body.print-page-active #printable-receipt * {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 /* ─── Theme Transition ─── */
 html.theme-transition *,
 html.theme-transition *::before,

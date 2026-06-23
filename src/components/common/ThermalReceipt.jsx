@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
 import StoreApi from '../../services/storeApi';
+import Api from '../../services/api';
 import { useBranch } from '../../context/BranchContext';
 
 const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPreview = false }) => {
@@ -10,7 +11,8 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
   const activeBranch = branchContext?.getSelectedBranch ? branchContext.getSelectedBranch() : null;
 
   useEffect(() => {
-    StoreApi.getStoreInfoPublic()
+    // استخدام Admin API لجلب بيانات المتجر الصحيحة للتنت الحالي
+    StoreApi.getStoreInfoAdmin()
       .then(res => {
         const configData = res?.data || res;
         if (configData) {
@@ -18,7 +20,14 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
         }
       })
       .catch(err => {
-        console.warn('Error fetching store config from network', err);
+        console.warn('Error fetching store config from admin API', err);
+        // fallback للـ public API
+        StoreApi.getStoreInfoPublic()
+          .then(res => {
+            const configData = res?.data || res;
+            if (configData) setStoreConfig(configData);
+          })
+          .catch(() => { });
       });
   }, []);
 
@@ -45,7 +54,13 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
   if (!invoice) return null;
 
   const displayStoreName = storeConfig?.name || invoice.tenantName || settings.storeName || invoice.branchName || "المتجر";
-  const logoUrl = storeConfig?.offlineLogoBase64 || (storeConfig?.logoUrl ? StoreApi.getImageUrl(storeConfig.logoUrl) : null);
+  // اللوجو: يحاول offlineLogoBase64 أولاً، ثم يبني URL من الـ admin API
+  const logoUrl = storeConfig?.offlineLogoBase64 ||
+    (storeConfig?.logoUrl
+      ? (storeConfig.logoUrl.startsWith('http') || storeConfig.logoUrl.startsWith('data:') || storeConfig.logoUrl.startsWith('/')
+        ? (storeConfig.logoUrl.startsWith('/') ? `${window.location.origin.replace(':5173', ':8080')}${storeConfig.logoUrl}` : storeConfig.logoUrl)
+        : Api.getImageUrl(storeConfig.logoUrl))
+      : null);
   const displayBranchName = activeBranch?.name || invoice.branchName || settings.branchName || "الفرع الرئيسي";
 
   const formatDate = (dateStr) => {
@@ -75,7 +90,7 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
           return user.name || user.username || createdBy;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     if (createdBy.includes('@')) {
       const part = createdBy.split('@')[0];
@@ -110,19 +125,18 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
 
   return (
     <div className={`receipt-container ${isPreview ? 'preview-mode' : ''} ${template === 'compact' ? 'compact-mode' : ''}`} id="printable-receipt" dir="rtl">
-      <div className="receipt-header-container" style={{ marginBottom: '5px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ textAlign: 'right', flex: 1 }}>
-            <h1 className="store-name-title" style={{ textAlign: 'right' }}>{displayStoreName}</h1>
-            <p className="branch-subtitle" style={{ textAlign: 'right', margin: '4px 0 0 0' }}>{displayBranchName}</p>
+      {/* Header: Logo + Store Name centered */}
+      <div className="receipt-header-container">
+        {logoUrl && (
+          <div className="logo-wrapper">
+            <img src={logoUrl} alt="Store Logo" className="store-logo" />
           </div>
-          {logoUrl && (
-            <div style={{ textAlign: 'left', flexShrink: 0, paddingRight: '10px' }}>
-              <img src={logoUrl} alt="Store Logo" style={{ height: '40px', width: 'auto', maxWidth: '80px', objectFit: 'contain', display: 'block' }} />
-            </div>
-          )}
+        )}
+        <div className="store-info-block">
+          <h1 className="store-name-title">{displayStoreName}</h1>
+          <p className="branch-subtitle">{displayBranchName}</p>
         </div>
-        <div className="solid-divider"></div>
+        <div className="solid-divider" style={{ marginTop: '8px' }}></div>
       </div>
 
       <table className="receipt-table">
@@ -186,9 +200,30 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
       <div className="powered-by-line">powered by seggelerp.com</div>
 
       <style>{`
+        /* ─── Header ─── */
+        .receipt-header-container {
+          text-align: center;
+          margin-bottom: 6px;
+        }
+        .logo-wrapper {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 6px;
+        }
+        .store-logo {
+          height: 48px;
+          width: auto;
+          max-width: 100px;
+          object-fit: contain;
+          display: block;
+        }
+        .store-info-block {
+          text-align: center;
+        }
         .receipt-container {
           width: 80mm;
-          padding: 8mm 5mm;
+          max-width: 80mm;
+          padding: 6mm 4mm;
           background: #fff;
           color: #000;
           font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
@@ -196,6 +231,10 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
           direction: rtl;
           text-align: right;
           margin: 0 auto;
+          box-sizing: border-box;
+          overflow: hidden;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .receipt-container h1,
         .receipt-container h2,
@@ -211,85 +250,102 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
           font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif !important;
           letter-spacing: normal !important;
           color: #000 !important;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .preview-mode {
-          box-shadow: 0 0 20px rgba(0,0,0,0.5);
-          border: 1px solid #ddd;
-          min-height: 500px;
+          box-shadow: 0 0 20px rgba(0,0,0,0.4);
+          border: 1px solid #ccc;
           border-radius: 4px;
         }
-        .receipt-header { text-align: center; margin-bottom: 5px; }
-        .store-name-title { font-size: 18pt; font-weight: 800; margin: 0; display: block; color: #000 !important; }
-        .branch-subtitle { font-size: 11pt; margin: 2px 0 8px 0; font-weight: 500; color: #000 !important; }
+        .store-name-title {
+          font-size: 16pt;
+          font-weight: 900;
+          margin: 0 0 3px 0;
+          display: block;
+          color: #000 !important;
+          text-align: center;
+          line-height: 1.3;
+          word-break: break-word;
+        }
+        .branch-subtitle {
+          font-size: 9.5pt;
+          margin: 0 0 4px 0;
+          font-weight: 500;
+          color: #444 !important;
+          text-align: center;
+          word-break: break-word;
+        }
         
-        .solid-divider { border-bottom: 1.5pt solid #000; margin: 4px 0; }
-        .dashed-divider { border-bottom: 1pt dashed #ccc; margin: 8px 0; }
+        .solid-divider { border: none; border-bottom: 1.5pt solid #000; margin: 4px 0; }
+        .dashed-divider { border: none; border-bottom: 1pt dashed #aaa; margin: 7px 0; }
         
-        .receipt-table { width: 100%; border-collapse: collapse; margin: 5px 0; table-layout: fixed; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin: 4px 0; table-layout: fixed; }
         .header-border-top { border-top: 1.5pt solid #000; }
         .header-border-bottom { border-bottom: 1.5pt solid #000; }
         
-        .receipt-table th { padding: 6px 0; font-size: 10pt; font-weight: bold; }
-        .receipt-table td { padding: 4px 0; font-size: 9.5pt; vertical-align: top; }
+        .receipt-table th {
+          padding: 5px 2px;
+          font-size: 9.5pt;
+          font-weight: bold;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        .receipt-table td {
+          padding: 3px 2px;
+          font-size: 9pt;
+          vertical-align: top;
+          overflow: hidden;
+        }
         
-        .col-value { width: 22%; }
-        .col-price { width: 22%; }
-        .col-qty { width: 15%; }
-        .col-item { width: 41%; }
+        .col-value { width: 22%; text-align: left; }
+        .col-price { width: 20%; text-align: center; }
+        .col-qty   { width: 15%; text-align: center; }
+        .col-item  { width: 43%; text-align: right; }
         
-        .item-row td { padding-top: 8px; }
-        .item-name-cell { font-weight: bold; font-size: 10.5pt; }
-        .product-id { font-size: 8pt; color: #666; padding-top: 0 !important; }
-        .dashed-separator { border-bottom: 0.5pt dashed #eee; height: 1px; }
+        .item-row td { padding-top: 6px; }
+        .item-name-cell {
+          font-weight: bold;
+          font-size: 9.5pt;
+          word-break: break-word;
+          white-space: normal;
+          line-height: 1.3;
+        }
+        .product-id {
+          font-size: 7.5pt;
+          color: #666;
+          padding-top: 1px !important;
+          font-family: monospace, sans-serif !important;
+          word-break: break-all;
+        }
+        .dashed-separator { border-bottom: 0.5pt dashed #ddd; height: 1px; }
 
-        .receipt-totals { margin-top: 5px; }
-        .total-row-item { margin-bottom: 8px; color: #444; }
-        .total-row-final { font-size: 13pt; font-weight: 900; margin-bottom: 10px; }
+        .receipt-totals { margin-top: 6px; }
+        .total-row-item { margin-bottom: 5px; color: #333; font-size: 9.5pt; }
+        .total-row-final { font-size: 14pt; font-weight: 900; margin-bottom: 8px; }
         .total-row-final span { color: #000; }
-        .total-lbl { font-size: 12pt; }
+        .total-lbl { font-size: 13pt; }
 
-        .receipt-footer-details { margin-top: 10px; line-height: 1.5; }
-        .footer-line { font-size: 10pt; }
-        .date-line { font-size: 8.5pt; margin-top: 5px; color: #555; font-family: sans-serif; }
-        .powered-by-line { font-size: 7.5pt; text-align: center; margin-top: 12px; color: #777; font-family: sans-serif; }
-        .receipt-barcode-container { display: flex; justify-content: center; margin-top: 15px; margin-bottom: 5px; }
+        .receipt-footer-details { margin-top: 8px; line-height: 1.6; }
+        .footer-line { font-size: 9.5pt; word-break: break-word; }
+        .date-line { font-size: 8pt; margin-top: 4px; color: #555; font-family: 'Courier New', monospace !important; direction: ltr; text-align: left; }
+        .powered-by-line { font-size: 7pt; text-align: center; margin-top: 10px; color: #888; font-family: sans-serif; }
+        .receipt-barcode-container { display: flex; justify-content: center; margin-top: 12px; margin-bottom: 4px; }
         .receipt-barcode-container svg { max-width: 100%; height: auto; }
+        .receipt-barcode-container img { max-width: 100%; height: auto; }
 
-        /* Compact Mode overrides */
-        .compact-mode {
-          font-size: 8.2pt !important;
-          padding: 4mm 2mm !important;
-        }
-        .compact-mode .store-name-title {
-          font-size: 14pt !important;
-        }
-        .compact-mode .branch-subtitle {
-          font-size: 9pt !important;
-          margin-bottom: 4px !important;
-        }
-        .compact-mode .receipt-table th {
-          padding: 4px 0 !important;
-          font-size: 8.5pt !important;
-        }
-        .compact-mode .receipt-table td {
-          padding: 2px 0 !important;
-          font-size: 8.2pt !important;
-        }
-        .compact-mode .item-name-cell {
-          font-size: 8.8pt !important;
-        }
-        .compact-mode .product-id {
-          font-size: 7pt !important;
-        }
-        .compact-mode .total-row-final {
-          font-size: 11pt !important;
-        }
-        .compact-mode .total-lbl {
-          font-size: 10.5pt !important;
-        }
-        .compact-mode .powered-by-line {
-          margin-top: 6px !important;
-        }
+        /* Compact Mode */
+        .compact-mode { font-size: 8pt !important; padding: 3mm 2mm !important; }
+        .compact-mode .store-name-title  { font-size: 13pt !important; }
+        .compact-mode .branch-subtitle   { font-size: 8.5pt !important; }
+        .compact-mode .receipt-table th  { padding: 3px 1px !important; font-size: 8pt !important; }
+        .compact-mode .receipt-table td  { padding: 2px 1px !important; font-size: 8pt !important; }
+        .compact-mode .item-name-cell    { font-size: 8.2pt !important; }
+        .compact-mode .product-id        { font-size: 6.5pt !important; }
+        .compact-mode .total-row-final   { font-size: 11pt !important; }
+        .compact-mode .total-lbl         { font-size: 10pt !important; }
+        .compact-mode .powered-by-line   { margin-top: 5px !important; }
+        .compact-mode .store-logo        { height: 36px !important; }
         
         .text-right { text-align: right; }
         .text-center { text-align: center; }
@@ -299,18 +355,30 @@ const ThermalReceipt = ({ invoice, template = 'standard', settings = {}, isPrevi
 
         @media print {
           @page { size: 80mm auto; margin: 0; }
-          body * { visibility: hidden; }
-          #printable-receipt, #printable-receipt * {
-            visibility: visible !important;
-          }
-          #printable-receipt { 
-            position: absolute !important; 
-            left: 0 !important; top: 0 !important; 
-            width: 80mm !important; 
+          .hide-on-print { display: none !important; }
+          .print-page-wrapper { padding: 0 !important; background: white !important; }
+          .receipt-preview-container { box-shadow: none !important; padding: 0 !important; }
+          #printable-receipt {
+            width: 100% !important;
+            max-width: 100% !important;
             background: white !important;
-            padding: 8mm 5mm !important;
-            z-index: 999999 !important;
+            padding: 0 2mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
             direction: rtl;
+            margin: 0;
+            box-sizing: border-box !important;
+          }
+          .receipt-barcode-container svg,
+          .receipt-barcode-container img {
+            display: block !important;
+            visibility: visible !important;
+            max-width: 100% !important;
+          }
+          .preview-mode {
+            box-shadow: none !important;
+            border: none !important;
           }
         }
       `}</style>
