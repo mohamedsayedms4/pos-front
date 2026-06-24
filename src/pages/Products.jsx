@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import JsBarcode from 'jsbarcode';
 import Api, { SERVER_URL } from '../services/api';
+import StoreApi from '../services/storeApi';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
@@ -74,13 +75,7 @@ const Products = () => {
   const [pdfProduct, setPdfProduct] = useState(null);
   const pdfRef = React.useRef(null);
 
-  // Printer Config State
-  const [printerConfigModalOpen, setPrinterConfigModalOpen] = useState(false);
-  const [printerConfig, setPrinterConfig] = useState(null);
-  const [availablePrinters, setAvailablePrinters] = useState([]);
-  const [loadingPrinters, setLoadingPrinters] = useState(false);
-  const [savingConfig, setSavingConfig] = useState(false);
-  const [testingPrint, setTestingPrint] = useState(false);
+
 
   // Distribution Modal State
   const [showStockModal, setShowStockModal] = useState(false);
@@ -94,6 +89,11 @@ const Products = () => {
   const [printQtyProduct, setPrintQtyProduct] = useState(null);
   const [printQty, setPrintQty] = useState('');
   const [printQtyStock, setPrintQtyStock] = useState(0);
+
+  // Barcode Template State
+  const [barcodeTemplate, setBarcodeTemplate] = useState(() => {
+    return localStorage.getItem('pos_barcode_template') || '1';
+  });
 
   /**
    * Convert a blob: URL to a data: URL (base64-embedded).
@@ -124,7 +124,7 @@ const Products = () => {
    *  - @page size: auto — lets the PRINTER DRIVER control actual paper size
    *  - Image sized conservatively to never overflow one label
    */
-  const _openPrintWindow = (dataUrl, widthMm, heightMm, quantity = 1, productData = null, tenantName = '') => {
+  const _openPrintWindow = (dataUrl, widthMm, heightMm, quantity = 1, productData = null, tenantName = '', templateId = '1') => {
     // Remove any previous print iframe
     const oldFrame = document.getElementById('__barcode_print_frame');
     if (oldFrame) oldFrame.remove();
@@ -146,14 +146,55 @@ const Products = () => {
         if (productData) {
             const codeStr = productData.productCode || productData.id || '';
             const priceStr = parseFloat(productData.salePrice || 0).toFixed(2) + ' EGP';
-            imagesHtml += `
-              <div class="page">
+            let templateHtml = '';
+            
+            if (templateId === '2') {
+              templateHtml = `
+                <div class="tenant-name" style="margin-bottom: 2px;">${tenantName}</div>
+                <img src="${dataUrl}" class="barcode-img" />
+                <div class="product-code">${codeStr}</div>
+                <div class="tenant-name" style="font-size: 8px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
+                <div class="product-price" style="margin-top: 2px;">${priceStr}</div>
+              `;
+            } else if (templateId === '3') {
+              templateHtml = `
+                <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
+                <hr style="width: 80%; border: 0; border-top: 1px solid #000; margin: 2px 0;" />
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
-                <div class="tenant-name">${tenantName}</div>
-              </div>
-            `;
+              `;
+            } else if (templateId === '4') {
+              templateHtml = `
+                <div class="product-price" style="margin-bottom: 4px;">${priceStr}</div>
+                <img src="${dataUrl}" class="barcode-img" />
+                <div class="product-code" style="margin-top: 4px;">${codeStr}</div>
+                <div class="tenant-name" style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
+              `;
+            } else if (templateId === '5') {
+              templateHtml = `
+                <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
+                <div class="product-price">${priceStr}</div>
+                <img src="${dataUrl}" class="barcode-img" />
+                <div class="product-code">${codeStr}</div>
+              `;
+            } else if (templateId === '6') {
+              templateHtml = `
+                <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
+                <div class="product-code" style="margin-bottom: 2px;">SKU: ${codeStr}</div>
+                <div class="product-price">${priceStr}</div>
+                <img src="${dataUrl}" class="barcode-img" />
+              `;
+            } else { // Template 1 (Default)
+              templateHtml = `
+                <div class="product-price">${priceStr}</div>
+                <img src="${dataUrl}" class="barcode-img" />
+                <div class="product-code">${codeStr}</div>
+                <div class="tenant-name" style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
+              `;
+            }
+            
+            imagesHtml += `<div class="page">${templateHtml}</div>`;
         } else {
             imagesHtml += `<div class="page"><img src="${dataUrl}"/></div>`;
         }
@@ -250,77 +291,7 @@ const Products = () => {
     }, 500); // Give React time to render the hidden component
   };
 
-  const openPrinterConfig = async () => {
-    try {
-      const config = await Api.getPrinterConfig();
-      setPrinterConfig(config || {
-        printerName: 'XP-370B',
-        labelWidthMm: 40,
-        labelHeightMm: 30,
-        marginMm: 1.5,
-        nameFontSize: 7,
-        priceFontSize: 8,
-        barcodeFontSize: 6
-      });
-      setPrinterConfigModalOpen(true);
-      refreshPrinters();
-    } catch (err) {
-      toast('فشل جلب الإعدادات', 'error');
-    }
-  };
 
-  const refreshPrinters = async () => {
-    setLoadingPrinters(true);
-    try {
-      const printers = await Api.getAvailablePrinters();
-      setAvailablePrinters(printers || []);
-    } catch (err) {
-      console.error('Failed to fetch printers:', err);
-    } finally {
-      setLoadingPrinters(false);
-    }
-  };
-
-  const savePrinterConfig = async (e) => {
-    e.preventDefault();
-    setSavingConfig(true);
-    try {
-      await Api.updatePrinterConfig(printerConfig);
-      toast('تم حفظ إعدادات الطابعة بنجاح', 'success');
-      setPrinterConfigModalOpen(false);
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setSavingConfig(false);
-    }
-  };
-
-  const handleTestPrint = async () => {
-    setTestingPrint(true);
-    try {
-      const width = printerConfig.labelWidthMm || 40;
-      const height = printerConfig.labelHeightMm || 30;
-      const sampleProduct = data.length > 0 ? data[0] : { name: 'منتج تجريبي', salePrice: 15.00, productCode: '123456789' };
-      const tenantName = Api._getUser()?.tenantName || Api._getUser()?.name || '';
-
-      const canvas = document.createElement('canvas');
-      JsBarcode(canvas, String(sampleProduct.productCode || sampleProduct.id), {
-        format: "CODE128",
-        displayValue: false,
-        margin: 0,
-        width: 2,
-        height: 50
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-
-      _openPrintWindow(dataUrl, width, height, 1, sampleProduct, tenantName);
-      toast('تم بدء اختبار الطباعة بالصورة المباشرة', 'success');
-    } catch (err) {
-      toast('فشل طباعة التجربة: ' + err.message, 'error');
-    } finally {
-      setTestingPrint(false);
-    }
-  };
 
   useEffect(() => {
     const user = Api._getUser();
@@ -439,7 +410,6 @@ const Products = () => {
       toast('عدد غير صحيح', 'warning');
       return;
     }
-    setPrintQtyModalOpen(false);
 
     setPrinting(true);
     toast('جاري تحضير ملصق الباركود للطباعة...', 'success');
@@ -447,7 +417,8 @@ const Products = () => {
       const config = await Api.getPrinterConfig();
       const width = config.labelWidthMm || 40;
       const height = config.labelHeightMm || 30;
-      const tenantName = Api._getUser()?.tenantName || Api._getUser()?.name || '';
+      const storeInfoReq = await StoreApi.getStoreInfoAdmin().catch(() => null);
+      const tenantName = storeInfoReq?.data?.name || Api._getUser()?.tenantName || Api._getUser()?.name || '';
 
       const canvas = document.createElement('canvas');
       JsBarcode(canvas, String(printQtyProduct.productCode || printQtyProduct.id), {
@@ -457,9 +428,11 @@ const Products = () => {
         width: 2,
         height: 50
       });
-      const dataUrl = canvas.toDataURL("image/png");
-
-      _openPrintWindow(dataUrl, width, height, quantity, printQtyProduct, tenantName);
+      
+      const dataUrl = await _blobUrlToDataUrl(canvas.toDataURL('image/png'));
+      _openPrintWindow(dataUrl, width, height, quantity, printQtyProduct, tenantName, barcodeTemplate);
+      
+      setPrintQtyModalOpen(false);
     } catch (err) {
       toast('فشل تحضير الباركود أو الطباعة: ' + err.message, 'error');
     } finally {
@@ -700,7 +673,7 @@ const Products = () => {
                 <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportingPdf || data.length === 0}>
                   {exportingPdf ? '⏳' : '📄'} PDF
                 </button>
-                <button className="btn btn-secondary" onClick={openPrinterConfig} title="إعدادات طابعة الباركود">
+                <button className="btn btn-secondary" onClick={() => navigate('/settings/print')} title="إعدادات الطباعة والقوالب">
                   ⚙️
                 </button>
                 {Api.can('PRODUCT_WRITE') && (
@@ -848,53 +821,7 @@ const Products = () => {
 
 
 
-      {printerConfigModalOpen && printerConfig && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrinterConfigModalOpen(false); }}>
-            <div className="modal" style={{ maxWidth: '500px' }}>
-              <div className="modal-header">
-                <h3>⚙️ إعدادات طابعة الباركود</h3>
-                <button className="modal-close" onClick={() => setPrinterConfigModalOpen(false)}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="printerConfigForm" onSubmit={savePrinterConfig}>
-                  <div className="form-group">
-                    <label>اختر الطابعة</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select className="form-control" value={printerConfig.printerName} onChange={(e) => setPrinterConfig({ ...printerConfig, printerName: e.target.value })} required>
-                        <option value="">-- اختر طابعة --</option>
-                        {availablePrinters.map(name => <option key={name} value={name}>{name}</option>)}
-                      </select>
-                      <button type="button" className="btn btn-icon" onClick={refreshPrinters} disabled={loadingPrinters}>
-                        {loadingPrinters ? '⏳' : '🔄'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>العرض (مم)</label>
-                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelWidthMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelWidthMm: parseFloat(e.target.value) })} required />
-                    </div>
-                    <div className="form-group">
-                      <label>الطول (مم)</label>
-                      <input className="form-control" type="number" step="0.1" value={printerConfig.labelHeightMm} onChange={(e) => setPrinterConfig({ ...printerConfig, labelHeightMm: parseFloat(e.target.value) })} required />
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={handleTestPrint} disabled={testingPrint}>
-                  {testingPrint ? 'جاري...' : '🖨️ طباعة تجريبية'}
-                </button>
-                <button type="button" className="btn btn-ghost" onClick={() => setPrinterConfigModalOpen(false)}>إلغاء</button>
-                <button type="submit" form="printerConfigForm" className="btn btn-primary" disabled={savingConfig}>
-                  {savingConfig ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
+
 
       {showStockModal && (
         <ModalContainer>

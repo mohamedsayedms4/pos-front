@@ -12,6 +12,7 @@ const PrintInvoice = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const isAutoPrintUrl = queryParams.get('auto') === 'true';
+  const isIframePrint = queryParams.get('iframe') === 'true';
 
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,11 +52,10 @@ const PrintInvoice = () => {
     loadInvoice();
   }, [id]);
 
-  /**
-   * الحل الجذري: فتح نافذة جديدة نظيفة بدون أي CSS من الـ dark theme
-   * ونسخ HTML الفاتورة فيها وطباعتها من هناك
+   /**
+   * الحل الجذري: فتح نافذة جديدة نظيفة أو طباعة صامتة (Iframe) بدون CSS خارجي
    */
-  const triggerCleanPrint = () => {
+  const triggerCleanPrint = (useIframe = false) => {
     const receiptEl = document.getElementById('printable-receipt');
     if (!receiptEl) {
       window.print();
@@ -90,13 +90,7 @@ const PrintInvoice = () => {
 
     const pageSize = printFormat === 'A4' ? 'A4 portrait' : '80mm auto';
 
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-    if (!printWindow) {
-      window.print();
-      return;
-    }
-
-    printWindow.document.write(`
+    const htmlContent = `
       <!DOCTYPE html>
       <html lang="ar" dir="rtl">
       <head>
@@ -125,6 +119,39 @@ const PrintInvoice = () => {
         <div style="background:#fff; color:#000; direction:rtl;">
           ${receiptClone.outerHTML}
         </div>
+      </body>
+      </html>
+    `;
+
+    if (useIframe) {
+      const printIframe = document.createElement('iframe');
+      printIframe.style.position = 'absolute';
+      printIframe.style.top = '0';
+      printIframe.style.left = '0';
+      printIframe.style.width = '1px';
+      printIframe.style.height = '1px';
+      printIframe.style.opacity = '0';
+      printIframe.style.pointerEvents = 'none';
+      document.body.appendChild(printIframe);
+      
+      const printDoc = printIframe.contentWindow.document;
+      printDoc.open();
+      printDoc.write(htmlContent);
+      printDoc.close();
+
+      setTimeout(() => {
+        printIframe.contentWindow.focus();
+        printIframe.contentWindow.print();
+        // Remove after print dialog finishes
+        setTimeout(() => document.body.removeChild(printIframe), 10000);
+      }, 800);
+    } else {
+      const printWindow = window.open('', '_blank', 'width=900,height=700');
+      if (!printWindow) {
+        window.print();
+        return;
+      }
+      printWindow.document.write(htmlContent + `
         <script>
           window.onload = function() {
             setTimeout(function() {
@@ -132,22 +159,21 @@ const PrintInvoice = () => {
               setTimeout(function() { window.close(); }, 500);
             }, 600);
           };
-        <\/script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
+        </script>
+      `);
+      printWindow.document.close();
+    }
   };
 
   // Automated print trigger on load
   useEffect(() => {
-    if (!loading && invoice && printAutoTrigger) {
+    if (!loading && invoice && (printAutoTrigger || isIframePrint)) {
       const timer = setTimeout(() => {
-        triggerCleanPrint();
+        triggerCleanPrint(isIframePrint);
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [loading, invoice, printAutoTrigger]);
+  }, [loading, invoice, printAutoTrigger, isIframePrint]);
 
   // Handle auto close if triggered by auto URL
   useEffect(() => {
@@ -221,7 +247,7 @@ const PrintInvoice = () => {
       fontFamily: "'Cairo', 'Tahoma', 'Arial', sans-serif"
     }}>
       {/* أزرار التحكم */}
-      <div style={{
+      <div className="no-print" style={{
         marginBottom: '20px',
         display: 'flex',
         gap: '10px',
@@ -230,7 +256,7 @@ const PrintInvoice = () => {
         width: '100%',
         maxWidth: '520px'
       }}>
-        <button onClick={triggerCleanPrint} style={{
+        <button onClick={() => triggerCleanPrint(false)} style={{
           background: '#007bff', color: '#fff', border: 'none',
           padding: '10px 18px', fontSize: '15px', borderRadius: '8px',
           cursor: 'pointer', fontFamily: "'Cairo', sans-serif",
@@ -266,8 +292,12 @@ const PrintInvoice = () => {
         )}
       </div>
 
-      {/* Share button CSS فقط */}
+      {/* Share button and Print CSS */}
       <style>{`
+        @media print {
+          body { background: #fff !important; margin: 0; padding: 0; }
+          .no-print { display: none !important; }
+        }
         .share-invoice-btn {
           background-color: #17a2b8 !important;
           color: white !important;

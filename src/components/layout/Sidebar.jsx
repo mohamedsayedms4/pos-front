@@ -179,6 +179,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
                   <span>الطباعة والقوالب</span>
                 </NavLink>
+                {/*
                 <NavLink
                   to="/settings/banner"
                   className={`nav-item sub-item ${location.pathname === '/settings/banner' ? 'active' : ''}`}
@@ -188,6 +189,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span>
                   <span>الـ Banner الإعلاني</span>
                 </NavLink>
+                */}
               </div>
             )}
           </div>
@@ -457,12 +459,14 @@ const Sidebar = ({ isOpen, onClose }) => {
               </NavLink>
             )}
 
+            {/* 
             {isAdmin && (
               <NavLink to="/settings/banner" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
                 <span className="nav-icon"><i className="fa-solid fa-image"></i></span>
                 <span>الـ Banner الإعلاني</span>
               </NavLink>
             )}
+            */}
           </>
         )}
 

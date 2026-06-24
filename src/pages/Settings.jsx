@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import StoreApi from '../services/storeApi';
-import { SERVER_URL } from '../services/api';
+import Api, { SERVER_URL } from '../services/api';
+import JsBarcode from 'jsbarcode';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import HeroSectionManager from '../components/settings/HeroSectionManager';
+import ModalContainer from '../components/common/ModalContainer';
+import A4Receipt from '../components/common/A4Receipt';
+import ThermalReceipt from '../components/common/ThermalReceipt';
 import ChatService from '../services/ChatService';
 import CommunicationApi from '../services/CommunicationApi';
 
 const Settings = () => {
     const location = useLocation();
     const { toast } = useGlobalUI();
+
+    const isIdentity = location.pathname === '/settings';
+    const isSmtp = location.pathname === '/settings/smtp';
+    const isPrint = location.pathname === '/settings/print';
+    const isBanner = location.pathname === '/settings/banner';
+
     const [info, setInfo] = useState({
         aboutUs: '', currency: 'جنيه', logoUrl: '', facebookPixelId: '',
         facebookAdAccountId: '', facebookAccessToken: ''
@@ -31,6 +41,49 @@ const Settings = () => {
     const [printFormat, setPrintFormat] = useState(() => localStorage.getItem('print_format') || '80mm');
     const [printTemplate, setPrintTemplate] = useState(() => localStorage.getItem('print_template') || 'standard');
     const [printAutoTrigger, setPrintAutoTrigger] = useState(() => localStorage.getItem('print_auto_trigger') === 'true');
+    const [posPrintPreview, setPosPrintPreview] = useState(() => localStorage.getItem('pos_print_preview') !== 'false');
+    const [showInvoicePreviewModal, setShowInvoicePreviewModal] = useState(false);
+
+    const dummyInvoice = {
+        id: "INV-PREVIEW-001",
+        invoiceNumber: "123456789",
+        invoiceDate: new Date().toISOString(),
+        status: "PAID",
+        createdBy: "أحمد محمد (تجريبي)",
+        customerName: "عميل نقدي",
+        tenantName: info?.name || 'اسم المتجر',
+        branchName: 'الفرع الرئيسي',
+        totalAmount: 150.00,
+        paidAmount: 150.00,
+        remainingAmount: 0,
+        discount: 10.00,
+        items: [
+            { id: 1, productName: 'منتج تجريبي 1', barcode: '1000123', quantity: 2, unitPrice: 50.00, unitName: 'قطعة' },
+            { id: 2, productName: 'منتج تجريبي 2', barcode: '1000124', quantity: 1, unitPrice: 50.00, unitName: 'قطعة' }
+        ]
+    };
+
+    // Barcode Settings State
+    const [barcodeConfig, setBarcodeConfig] = useState({ labelWidthMm: 40, labelHeightMm: 30 });
+    const [barcodeTemplate, setBarcodeTemplate] = useState(() => localStorage.getItem('pos_barcode_template') || '1');
+    const [barcodeDataUrl, setBarcodeDataUrl] = useState('');
+
+    useEffect(() => {
+        if (!isPrint) return;
+        try {
+            const canvas = document.createElement('canvas');
+            JsBarcode(canvas, '123456789', {
+                format: "CODE128",
+                displayValue: false,
+                margin: 0,
+                width: 1.5,
+                height: 35
+            });
+            setBarcodeDataUrl(canvas.toDataURL('image/png'));
+        } catch (e) {
+            console.error('Barcode preview error', e);
+        }
+    }, [isPrint]);
 
     // Sync template default when format changes
     useEffect(() => {
@@ -43,12 +96,19 @@ const Settings = () => {
         }
     }, [printFormat]);
 
-    const handleSavePrintSettings = (e) => {
+    const handleSavePrintSettings = async (e) => {
         e.preventDefault();
-        localStorage.setItem('print_format', printFormat);
-        localStorage.setItem('print_template', printTemplate);
-        localStorage.setItem('print_auto_trigger', String(printAutoTrigger));
-        toast('تم حفظ إعدادات الطباعة بنجاح على هذا الجهاز 🖨️', 'success');
+        try {
+            await Api.updatePrinterConfig(barcodeConfig);
+            localStorage.setItem('print_format', printFormat);
+            localStorage.setItem('print_template', printTemplate);
+            localStorage.setItem('print_auto_trigger', String(printAutoTrigger));
+            localStorage.setItem('pos_print_preview', String(posPrintPreview));
+            localStorage.setItem('pos_barcode_template', barcodeTemplate);
+            toast('تم حفظ إعدادات الطباعة بنجاح على هذا الجهاز 🖨️', 'success');
+        } catch (err) {
+            toast('فشل حفظ إعدادات طابعة الباركود', 'error');
+        }
     };
 
     useEffect(() => {
@@ -73,6 +133,13 @@ const Settings = () => {
                 if (smtpData) setSmtpConfig(smtpData);
             } catch (e) {
                 console.warn('Could not load SMTP config');
+            }
+
+            try {
+                const bConfig = await Api.getPrinterConfig();
+                if (bConfig) setBarcodeConfig(bConfig);
+            } catch (e) {
+                console.warn('Could not load barcode config');
             }
         } catch (e) {
             toast('خطأ في تحميل الإعدادات', 'error');
@@ -141,10 +208,7 @@ const Settings = () => {
 
     const logoPreview = StoreApi.getImageUrl(info.logoUrl);
 
-    const isIdentity = location.pathname === '/settings';
-    const isSmtp = location.pathname === '/settings/smtp';
-    const isPrint = location.pathname === '/settings/print';
-    const isBanner = location.pathname === '/settings/banner';
+
 
     return (
         <div className="page-section" style={{ direction: 'rtl' }}>
@@ -418,8 +482,21 @@ const Settings = () => {
                     </div>
                 </div>
                 
-                <div className="card-body">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                <div className="card-body print-settings-layout">
+                    <style>{`
+                        .print-settings-layout {
+                            display: grid;
+                            grid-template-columns: 1fr 350px;
+                            gap: 20px;
+                            align-items: start;
+                        }
+                        @media (max-width: 900px) {
+                            .print-settings-layout {
+                                grid-template-columns: 1fr;
+                            }
+                        }
+                    `}</style>
+                    <div className="print-settings-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                         <div className="form-group">
                             <label>تنسيق وحجم ورق الفاتورة</label>
                             <select 
@@ -467,6 +544,155 @@ const Settings = () => {
                                 فتح نافذة الطباعة تلقائياً عند فتح الفاتورة
                             </label>
                         </div>
+
+                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', gridColumn: '1 / -1' }}>
+                            <input 
+                                type="checkbox" 
+                                id="posPrintPreviewToggle"
+                                checked={posPrintPreview}
+                                onChange={e => setPosPrintPreview(e.target.checked)}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--metro-blue)' }}
+                            />
+                            <label htmlFor="posPrintPreviewToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
+                                معاينة الفاتورة قبل الطباعة من شاشة الكاشير (عند إلغاء التفعيل سيتم الطباعة مباشرة)
+                            </label>
+                        </div>
+                        
+                        <div style={{ gridColumn: '1 / -1', margin: '15px 0' }}>
+                            <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)' }} />
+                            <h4 style={{ marginTop: '15px', color: 'var(--text-main)' }}>🏷️ إعدادات طابعة الباركود</h4>
+                        </div>
+
+                        <div className="form-group">
+                            <label>العرض (مم)</label>
+                            <input 
+                                className="form-control" 
+                                type="number" 
+                                step="0.1" 
+                                value={barcodeConfig.labelWidthMm} 
+                                onChange={(e) => setBarcodeConfig({ ...barcodeConfig, labelWidthMm: parseFloat(e.target.value) })} 
+                                required 
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>الطول (مم)</label>
+                            <input 
+                                className="form-control" 
+                                type="number" 
+                                step="0.1" 
+                                value={barcodeConfig.labelHeightMm} 
+                                onChange={(e) => setBarcodeConfig({ ...barcodeConfig, labelHeightMm: parseFloat(e.target.value) })} 
+                                required 
+                            />
+                        </div>
+                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                            <label>قالب تصميم الباركود</label>
+                            <select 
+                                className="form-control" 
+                                value={barcodeTemplate} 
+                                onChange={(e) => setBarcodeTemplate(e.target.value)}
+                            >
+                                <option value="1">قالب 1 (التقليدي)</option>
+                                <option value="2">قالب 2 (نظام ERP)</option>
+                                <option value="3">قالب 3 (الخط الفاصل)</option>
+                                <option value="4">قالب 4 (المتباعد)</option>
+                                <option value="5">قالب 5 (التاج 🏷️)</option>
+                                <option value="6">قالب 6 (SKU)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    {/* Live Preview Panel */}
+                    <div className="preview-panel" style={{ background: 'var(--bg-hover)', padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <h4>👁️ معاينة الفاتورة</h4>
+                        <div className="invoice-preview-container" style={{ display: 'flex', justifyContent: 'center' }}>
+                            <button 
+                                className="btn btn-primary" 
+                                style={{ width: '100%' }}
+                                onClick={() => setShowInvoicePreviewModal(true)}
+                            >
+                                👁️ معاينة الفاتورة كاملة
+                            </button>
+                        </div>
+                        
+                        <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)' }} />
+                        <h4>👁️ معاينة الباركود</h4>
+                        <div className="barcode-preview-container" style={{ background: '#fff', color: '#000', padding: '15px', borderRadius: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'center', overflow: 'auto' }}>
+                            {(() => {
+                                if (!barcodeDataUrl) return null;
+                                const tenantName = info?.name || Api._getUser()?.tenantName || 'اسم المتجر';
+                                const priceStr = '15.00 EGP';
+                                const codeStr = '123456789';
+                                
+                                let templateHtml = '';
+                                if (barcodeTemplate === '2') {
+                                    templateHtml = `
+                                    <div style="margin-bottom: 2px;">${tenantName}</div>
+                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
+                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
+                                    <div style="font-size: 8px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
+                                    <div style="font-size: 13px; font-weight: bold; margin-top: 2px;">${priceStr}</div>
+                                    `;
+                                } else if (barcodeTemplate === '3') {
+                                    templateHtml = `
+                                    <div style="font-size: 10px; font-weight: bold;">${tenantName}</div>
+                                    <hr style="width: 80%; border: 0; border-top: 1px solid #000; margin: 2px 0;" />
+                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
+                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
+                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
+                                    `;
+                                } else if (barcodeTemplate === '4') {
+                                    templateHtml = `
+                                    <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">${priceStr}</div>
+                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
+                                    <div style="font-size: 9px; margin-top: 4px; letter-spacing: 1px;">${codeStr}</div>
+                                    <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
+                                    `;
+                                } else if (barcodeTemplate === '5') {
+                                    templateHtml = `
+                                    <div style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
+                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
+                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
+                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
+                                    `;
+                                } else if (barcodeTemplate === '6') {
+                                    templateHtml = `
+                                    <div style="font-size: 10px; font-weight: bold;">${tenantName}</div>
+                                    <div style="font-size: 9px; margin-bottom: 2px; letter-spacing: 1px;">SKU: ${codeStr}</div>
+                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
+                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
+                                    `;
+                                } else {
+                                    templateHtml = `
+                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
+                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
+                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
+                                    <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
+                                    `;
+                                }
+                        
+                                return (
+                                    <div style={{
+                                        width: `${barcodeConfig.labelWidthMm}mm`,
+                                        height: `${barcodeConfig.labelHeightMm}mm`,
+                                        background: '#fff',
+                                        color: '#000',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '1mm',
+                                        boxSizing: 'border-box',
+                                        textAlign: 'center',
+                                        border: '1px dashed #ccc',
+                                        overflow: 'hidden',
+                                        fontFamily: 'sans-serif',
+                                        lineHeight: 1,
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }} dangerouslySetInnerHTML={{ __html: templateHtml }} />
+                                );
+                            })()}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -481,6 +707,31 @@ const Settings = () => {
                     <HeroSectionManager />
                 </div>
             </div>
+            )}
+
+            {/* Invoice Preview Modal */}
+            {showInvoicePreviewModal && (
+                <ModalContainer>
+                    <div className="modal-overlay active" style={{ zIndex: 999999 }} onClick={() => setShowInvoicePreviewModal(false)}>
+                        <div className="modal" style={{ maxWidth: '800px', width: '90%', padding: 0 }} onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3 style={{ margin: 0 }}>👁️ معاينة الفاتورة</h3>
+                                <button className="btn-close" onClick={() => setShowInvoicePreviewModal(false)}>✕</button>
+                            </div>
+                            <div className="modal-body" style={{ padding: '20px', background: '#e2e8f0', maxHeight: '70vh', overflowY: 'auto' }}>
+                                {printFormat === 'A4' ? (
+                                    <div style={{ background: '#fff', margin: '0 auto', width: 'fit-content', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+                                        <A4Receipt invoice={dummyInvoice} template={printTemplate} isPreview={true} />
+                                    </div>
+                                ) : (
+                                    <div style={{ background: '#fff', margin: '0 auto', width: 'fit-content', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+                                        <ThermalReceipt invoice={dummyInvoice} template={printTemplate} isPreview={true} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </ModalContainer>
             )}
         </div>
     );

@@ -324,8 +324,25 @@ const POS = () => {
 
         localStorage.setItem('print_preview_invoice', JSON.stringify(invoiceData));
         setTimeout(() => {
-          const autoParam = (forceDirectPrint || !printPreview) ? '?auto=true' : '';
-          window.open(`/print-receipt/${invoiceData.id}${autoParam}`, '_blank');
+          if (forceDirectPrint || !printPreview) {
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '-10000px';
+            iframe.style.bottom = '-10000px';
+            iframe.style.width = '800px';
+            iframe.style.height = '1000px';
+            iframe.style.border = 'none';
+            iframe.src = `/print-receipt/${invoiceData.id}?iframe=true`;
+            document.body.appendChild(iframe);
+            // Clean up the iframe after a reasonable time
+            setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+              }
+            }, 15000);
+          } else {
+            window.open(`/print-receipt/${invoiceData.id}`, '_blank');
+          }
           setTimeout(() => setLastInvoice(null), 5000);
         }, 500);
 
@@ -346,26 +363,36 @@ const POS = () => {
       }
     };
 
-    if (forceDirectPrint === true) {
-      executeCheckout();
-    } else {
-      confirm('تأكيد إتمام الطلب وطباعة الفاتورة؟', executeCheckout);
-    }
+    executeCheckout();
   };
 
   handleCheckoutRef.current = handleCheckout;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+      const isCtrlB = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b';
+      const isEnter = e.key === 'Enter';
+
+      if (isCtrlB || isEnter) {
+        // Do not trigger checkout if Enter is pressed inside search inputs (e.g., barcode scanner or customer search)
+        if (isEnter && (
+          (searchInputRef.current && e.target === searchInputRef.current) ||
+          (typeof e.target.className === 'string' && e.target.className.includes('dropdown-search-input'))
+        )) {
+          return;
+        }
+
         e.preventDefault();
-        // Prevent printing if cart is empty or loading
+        // Prevent checkout if cart is empty or loading
         if (cart.length > 0 && !checkoutLoading) {
           if (handleCheckoutRef.current) {
-            handleCheckoutRef.current(true);
+            handleCheckoutRef.current(isCtrlB); // Ctrl+B forces print, Enter acts like the normal button
           }
-        } else if (cart.length === 0) {
+        } else if (cart.length === 0 && isCtrlB) {
           toast('السلة فارغة!', 'warning');
+        } else if (cart.length === 0 && isEnter) {
+          // Optional: we might not want to show a toast every time Enter is pressed randomly if cart is empty
+          // toast('السلة فارغة!', 'warning');
         }
       }
     };
