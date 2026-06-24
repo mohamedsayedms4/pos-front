@@ -223,8 +223,8 @@ const POS = () => {
     const timer = setTimeout(async () => {
       if (!browseSearch || browseSearch.length < 3) return;
       // If exact barcode match, auto-add
-      const exactMatch = browseProducts.find(p => p.barcode === browseSearch || p.name === browseSearch);
-      if (exactMatch && browseProducts.length === 1) {
+      const exactMatch = browseProducts.find(p => p.productCode === browseSearch || p.barcode === browseSearch || p.name === browseSearch || String(p.id) === browseSearch);
+      if (exactMatch) {
         addToCart(exactMatch);
         setBrowseSearch('');
       }
