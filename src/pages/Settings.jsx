@@ -623,11 +623,13 @@ const Settings = () => {
                                     const tenantName = info?.name || Api._getUser()?.tenantName || 'اسم المتجر';
                                     const priceStr = '15.00 EGP';
                                     const codeStr = '123456789';
+                                    const nameStr = 'اسم المنتج التجريبي';
 
                                     let templateHtml = '';
                                     if (barcodeTemplate === '2') {
                                         templateHtml = `
                                     <div style="margin-bottom: 2px;">${tenantName}</div>
+                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
                                     <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
                                     <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
                                     <div style="font-size: 8px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
@@ -637,12 +639,14 @@ const Settings = () => {
                                         templateHtml = `
                                     <div style="font-size: 10px; font-weight: bold;">${tenantName}</div>
                                     <hr style="width: 80%; border: 0; border-top: 1px solid #000; margin: 2px 0;" />
+                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
                                     <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
                                     <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
                                     <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
                                     `;
                                     } else if (barcodeTemplate === '4') {
                                         templateHtml = `
+                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
                                     <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">${priceStr}</div>
                                     <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
                                     <div style="font-size: 9px; margin-top: 4px; letter-spacing: 1px;">${codeStr}</div>
@@ -651,6 +655,7 @@ const Settings = () => {
                                     } else if (barcodeTemplate === '5') {
                                         templateHtml = `
                                     <div style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
+                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
                                     <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
                                     <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
                                     <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
@@ -658,12 +663,14 @@ const Settings = () => {
                                     } else if (barcodeTemplate === '6') {
                                         templateHtml = `
                                     <div style="font-size: 10px; font-weight: bold;">${tenantName}</div>
+                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
                                     <div style="font-size: 9px; margin-bottom: 2px; letter-spacing: 1px;">SKU: ${codeStr}</div>
                                     <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
                                     <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
                                     `;
                                     } else {
                                         templateHtml = `
+                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
                                     <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
                                     <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
                                     <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>

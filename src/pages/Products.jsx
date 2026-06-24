@@ -146,11 +146,13 @@ const Products = () => {
       if (productData) {
         const codeStr = productData.productCode || productData.id || '';
         const priceStr = parseFloat(productData.salePrice || 0).toFixed(2) + ' EGP';
+        const nameStr = productData.name || '';
         let templateHtml = '';
 
         if (templateId === '2') {
           templateHtml = `
                 <div class="tenant-name" style="margin-bottom: 2px;">${tenantName}</div>
+                <div class="product-name">${nameStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
                 <div class="tenant-name" style="font-size: 8px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
@@ -160,12 +162,14 @@ const Products = () => {
           templateHtml = `
                 <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
                 <hr style="width: 80%; border: 0; border-top: 1px solid #000; margin: 2px 0;" />
+                <div class="product-name">${nameStr}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
               `;
         } else if (templateId === '4') {
           templateHtml = `
+                <div class="product-name" style="margin-bottom: 2px;">${nameStr}</div>
                 <div class="product-price" style="margin-bottom: 4px;">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code" style="margin-top: 4px;">${codeStr}</div>
@@ -174,6 +178,7 @@ const Products = () => {
         } else if (templateId === '5') {
           templateHtml = `
                 <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
+                <div class="product-name">${nameStr}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
@@ -181,12 +186,14 @@ const Products = () => {
         } else if (templateId === '6') {
           templateHtml = `
                 <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
+                <div class="product-name">${nameStr}</div>
                 <div class="product-code" style="margin-bottom: 2px;">SKU: ${codeStr}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
               `;
         } else { // Template 1 (Default)
           templateHtml = `
+                <div class="product-name">${nameStr}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>

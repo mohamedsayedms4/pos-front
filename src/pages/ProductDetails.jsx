@@ -287,10 +287,12 @@ const ProductDetails = () => {
         let imagesHtml = '';
         const codeStr = product.productCode || product.id || '';
         const priceStr = parseFloat(product.salePrice || 0).toFixed(2) + ' EGP';
+        const nameStr = product.name || '';
 
         for (let i = 0; i < quantity; i++) {
           imagesHtml += `
             <div class="page">
+              <div class="product-name">${nameStr}</div>
               <div class="product-price">${priceStr}</div>
               <img src="${dataUrl}" class="barcode-img" />
               <div class="product-code">${codeStr}</div>
