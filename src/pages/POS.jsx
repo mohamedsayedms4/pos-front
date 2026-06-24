@@ -200,6 +200,9 @@ const POS = () => {
   }, [selectedBranchId, selectedCategoryId]);
 
   const handleBrowseSearch = (val) => {
+    if (typeof val === 'string') {
+      val = val.replace(/؛ٌ\]\-/g, '').replace(/\]C1/g, '').replace(/\]ؤ1/g, '');
+    }
     setBrowseSearch(val);
     loadBrowsePage(0, val, false, selectedBranchId, selectedCategoryId);
   };

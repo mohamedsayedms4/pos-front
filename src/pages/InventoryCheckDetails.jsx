@@ -202,7 +202,11 @@ const InventoryCheckDetails = () => {
                                     style={{ paddingLeft: '40px', paddingRight: '12px', fontSize: '1.1rem', height: '50px' }}
                                     placeholder="امسح الباركود أو ابحث باسم المنتج..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => {
+                                        let val = e.target.value;
+                                        val = val.replace(/؛ٌ\]\-/g, '').replace(/\]C1/g, '').replace(/\]ؤ1/g, '');
+                                        setSearchQuery(val);
+                                    }}
                                     onKeyDown={handleBarcodeScan}
                                 />
                                 <span className="search-icon" style={{ position: 'absolute', left: '15px', right: 'auto', top: '50%', transform: 'translateY(-50%)' }}><i className="fa-solid fa-magnifying-glass"></i></span>

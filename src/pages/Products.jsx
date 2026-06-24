@@ -348,8 +348,9 @@ const Products = () => {
 
   const handleBarcodeScan = (barcode) => {
     if (!barcode) return;
-    setSearchTerm(barcode);
-    toast(`تم سحب الكود: ${barcode}`, 'info', true);
+    const cleaned = barcode.replace(/؛ٌ\]\-/g, '').replace(/\]C1/g, '').replace(/\]ؤ1/g, '');
+    setSearchTerm(cleaned);
+    toast(`تم سحب الكود: ${cleaned}`, 'info', true);
   };
 
   // Reset page to 0 when filters change
@@ -631,7 +632,11 @@ const Products = () => {
                   type="text"
                   placeholder="بحث عن منتج..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    val = val.replace(/؛ٌ\]\-/g, '').replace(/\]C1/g, '').replace(/\]ؤ1/g, '');
+                    setSearchTerm(val);
+                  }}
                 />
                 <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
