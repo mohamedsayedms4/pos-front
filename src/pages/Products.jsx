@@ -26,7 +26,7 @@ const Products = () => {
   };
   const { toast, confirm } = useGlobalUI();
   const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
-  
+
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
@@ -142,62 +142,62 @@ const Products = () => {
     const sh = heightMm - 4;
 
     let imagesHtml = '';
-    for(let i=0; i<quantity; i++) {
-        if (productData) {
-            const codeStr = productData.productCode || productData.id || '';
-            const priceStr = parseFloat(productData.salePrice || 0).toFixed(2) + ' EGP';
-            let templateHtml = '';
-            
-            if (templateId === '2') {
-              templateHtml = `
+    for (let i = 0; i < quantity; i++) {
+      if (productData) {
+        const codeStr = productData.productCode || productData.id || '';
+        const priceStr = parseFloat(productData.salePrice || 0).toFixed(2) + ' EGP';
+        let templateHtml = '';
+
+        if (templateId === '2') {
+          templateHtml = `
                 <div class="tenant-name" style="margin-bottom: 2px;">${tenantName}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
                 <div class="tenant-name" style="font-size: 8px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
                 <div class="product-price" style="margin-top: 2px;">${priceStr}</div>
               `;
-            } else if (templateId === '3') {
-              templateHtml = `
+        } else if (templateId === '3') {
+          templateHtml = `
                 <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
                 <hr style="width: 80%; border: 0; border-top: 1px solid #000; margin: 2px 0;" />
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
               `;
-            } else if (templateId === '4') {
-              templateHtml = `
+        } else if (templateId === '4') {
+          templateHtml = `
                 <div class="product-price" style="margin-bottom: 4px;">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code" style="margin-top: 4px;">${codeStr}</div>
                 <div class="tenant-name" style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
               `;
-            } else if (templateId === '5') {
-              templateHtml = `
+        } else if (templateId === '5') {
+          templateHtml = `
                 <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
               `;
-            } else if (templateId === '6') {
-              templateHtml = `
+        } else if (templateId === '6') {
+          templateHtml = `
                 <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
                 <div class="product-code" style="margin-bottom: 2px;">SKU: ${codeStr}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
               `;
-            } else { // Template 1 (Default)
-              templateHtml = `
+        } else { // Template 1 (Default)
+          templateHtml = `
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
                 <div class="product-code">${codeStr}</div>
                 <div class="tenant-name" style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
               `;
-            }
-            
-            imagesHtml += `<div class="page">${templateHtml}</div>`;
-        } else {
-            imagesHtml += `<div class="page"><img src="${dataUrl}"/></div>`;
         }
+
+        imagesHtml += `<div class="page">${templateHtml}</div>`;
+      } else {
+        imagesHtml += `<div class="page"><img src="${dataUrl}"/></div>`;
+      }
     }
 
     // Minified HTML with NO landscape keyword
@@ -208,12 +208,13 @@ const Products = () => {
       '@page{size:auto;margin:0}',
       '*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}',
       `html,body{background:#fff;margin:0;padding:0;}`,
-      `.page{width:${widthMm}mm;height:${heightMm}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;page-break-after:always;page-break-inside:avoid;padding: 1mm; text-align:center;}`,
-      `.product-name { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: ${sw}mm; line-height: 1.1; margin-bottom: 2px; }`,
-      `.product-price { font-size: 13px; font-weight: bold; margin-bottom: 2px; line-height: 1; }`,
-      `.barcode-img { max-width:${sw}mm; max-height: 14mm; width:auto; height:auto; display:block; object-fit:contain; }`,
-      `.product-code { font-size: 9px; margin-top: 2px; letter-spacing: 1px; line-height: 1; }`,
-      `.tenant-name { font-size: 8px; margin-top: 2px; font-weight: bold; line-height: 1; }`,
+      `.page{width:${widthMm}mm;height:${heightMm}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;page-break-inside:avoid;padding:0; margin:0 auto; text-align:center;}`,
+      `.page:not(:last-child) { page-break-after: always; }`,
+      `.product-name { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: ${sw}mm; line-height: 1.1; margin-bottom: 2px; width: 100%; text-align: center; }`,
+      `.product-price { font-size: 13px; font-weight: bold; margin-bottom: 2px; line-height: 1; width: 100%; text-align: center; }`,
+      `.barcode-img { max-width:${sw}mm; max-height: 14mm; width:auto; height:auto; display:block; margin: 0 auto; object-fit:contain; }`,
+      `.product-code { font-size: 9px; margin-top: 2px; letter-spacing: 1px; line-height: 1; width: 100%; text-align: center; }`,
+      `.tenant-name { font-size: 8px; margin-top: 2px; font-weight: bold; line-height: 1; width: 100%; text-align: center; }`,
       '</style></head>',
       `<body>${imagesHtml}</body></html>`,
     ].join(''));
@@ -277,11 +278,11 @@ const Products = () => {
     setTimeout(() => {
       if (pdfRef.current) {
         const opt = {
-          margin:       0,
-          filename:     `product_${product.productCode || product.id}.pdf`,
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true },
-          jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+          margin: 0,
+          filename: `product_${product.productCode || product.id}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
         html2pdf().from(pdfRef.current).set(opt).save().then(() => {
           setPdfProduct(null);
@@ -307,7 +308,7 @@ const Products = () => {
     } else if (user && user.branchId) {
       setSelectedBranchId(user.branchId);
     }
-    
+
     if (contextBranches && contextBranches.length > 0) {
       setBranches(contextBranches);
     }
@@ -356,7 +357,7 @@ const Products = () => {
 
   // One-time load for warehouses
   useEffect(() => {
-    Api.getAllWarehouses().then(res => setAllWarehouses(res || [])).catch(() => {});
+    Api.getAllWarehouses().then(res => setAllWarehouses(res || [])).catch(() => { });
   }, []);
 
   const openStockModal = (product) => {
@@ -428,10 +429,10 @@ const Products = () => {
         width: 2,
         height: 50
       });
-      
+
       const dataUrl = await _blobUrlToDataUrl(canvas.toDataURL('image/png'));
       _openPrintWindow(dataUrl, width, height, quantity, printQtyProduct, tenantName, barcodeTemplate);
-      
+
       setPrintQtyModalOpen(false);
     } catch (err) {
       toast('فشل تحضير الباركود أو الطباعة: ' + err.message, 'error');
@@ -453,16 +454,16 @@ const Products = () => {
     const maxVisible = 5;
     let start = Math.max(0, page - Math.floor(maxVisible / 2));
     let end = Math.min(totalPages - 1, start + maxVisible - 1);
-    
+
     if (end - start + 1 < maxVisible) {
       start = Math.max(0, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(
-        <button 
-          key={i} 
-          className={page === i ? 'active' : ''} 
+        <button
+          key={i}
+          className={page === i ? 'active' : ''}
           onClick={() => setPage(i)}
         >
           {i + 1}
@@ -620,8 +621,8 @@ const Products = () => {
               <div className="search-input">
 
                 <input
-                    type="text"
-                  placeholder="بحث عن منتج..." 
+                  type="text"
+                  placeholder="بحث عن منتج..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -629,9 +630,9 @@ const Products = () => {
               </div>
 
               {(Api._getUser()?.roles || []).some(r => r.includes('ADMIN')) && (
-                <select 
-                  className="form-control" 
-                  value={selectedBranchId || ''} 
+                <select
+                  className="form-control"
+                  value={selectedBranchId || ''}
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                   style={{ width: '180px', height: '40px', padding: '0 10px' }}
                 >
@@ -640,9 +641,9 @@ const Products = () => {
                 </select>
               )}
 
-              <select 
-                className="form-control" 
-                value={categoryFilter} 
+              <select
+                className="form-control"
+                value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 style={{ width: '180px', height: '40px', padding: '0 10px' }}
               >
@@ -650,9 +651,9 @@ const Products = () => {
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
 
-              <select 
-                className="form-control" 
-                value={sort} 
+              <select
+                className="form-control"
+                value={sort}
                 onChange={(e) => setSort(e.target.value)}
                 style={{ width: '180px', height: '40px', padding: '0 10px' }}
               >
@@ -746,9 +747,9 @@ const Products = () => {
                         </td>
                         <td>
                           <div className="table-actions">
-                            <button 
-                              className="btn btn-icon btn-ghost" 
-                              onClick={() => handlePrintBarcodeClick(p)} 
+                            <button
+                              className="btn btn-icon btn-ghost"
+                              onClick={() => handlePrintBarcodeClick(p)}
                               title="طباعة باركود"
                               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
@@ -779,9 +780,9 @@ const Products = () => {
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>عدد الصفوف:</span>
-                    <select 
-                      className="form-control" 
-                      value={pageSize} 
+                    <select
+                      className="form-control"
+                      value={pageSize}
                       onChange={(e) => {
                         setPageSize(Number(e.target.value));
                         setPage(0);
@@ -797,16 +798,16 @@ const Products = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '2px' }}>
-                  <button 
-                    disabled={page === 0} 
+                  <button
+                    disabled={page === 0}
                     onClick={() => setPage(p => p - 1)}
                     style={{ width: 'auto', padding: '0 15px', borderRadius: '0' }}
                   >
                     السابق
                   </button>
                   {renderPageNumbers()}
-                  <button 
-                    disabled={page >= totalPages - 1} 
+                  <button
+                    disabled={page >= totalPages - 1}
                     onClick={() => setPage(p => p + 1)}
                     style={{ width: 'auto', padding: '0 15px', borderRadius: '0' }}
                   >
@@ -880,18 +881,18 @@ const Products = () => {
               <div className="modal-body">
                 <form id="printQtyForm" onSubmit={executePrint}>
                   <p style={{ color: 'var(--text-muted)', marginBottom: '15px' }}>
-                    كم عدد الملصقات التي تريد طباعتها؟ <br/>
+                    كم عدد الملصقات التي تريد طباعتها؟ <br />
                     <small>(الكمية المتوفرة: <strong>{printQtyStock}</strong>)</small>
                   </p>
                   <div className="form-group">
                     <label>عدد الملصقات</label>
-                    <input 
-                      type="number" 
-                      className="form-control" 
-                      min="1" 
-                      value={printQty} 
-                      onChange={(e) => setPrintQty(e.target.value)} 
-                      required 
+                    <input
+                      type="number"
+                      className="form-control"
+                      min="1"
+                      value={printQty}
+                      onChange={(e) => setPrintQty(e.target.value)}
+                      required
                       autoFocus
                     />
                   </div>

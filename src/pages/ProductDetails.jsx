@@ -194,7 +194,7 @@ const ProductDetails = () => {
       });
       toast('تم تحديث أسعار الفرع بنجاح', 'success');
       setShowEditBranchPriceModal(false);
-      
+
       // Reload product details to show updated prices
       const prod = await Api.getProduct(id);
       setProduct(prod);
@@ -258,7 +258,7 @@ const ProductDetails = () => {
       const height = config.labelHeightMm || 30;
 
       const tenantName = Api._getUser()?.tenantName || Api._getUser()?.name || '';
-      
+
       const canvas = document.createElement('canvas');
       import('jsbarcode').then((JsBarcodeModule) => {
         const JsBarcode = JsBarcodeModule.default || JsBarcodeModule;
@@ -275,20 +275,20 @@ const ProductDetails = () => {
         const oldFrame = document.getElementById('__barcode_print_frame');
         if (oldFrame) oldFrame.remove();
 
-      const iframe = document.createElement('iframe');
-      iframe.id = '__barcode_print_frame';
-      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
-      document.body.appendChild(iframe);
+        const iframe = document.createElement('iframe');
+        iframe.id = '__barcode_print_frame';
+        iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+        document.body.appendChild(iframe);
 
-      const idoc = iframe.contentDocument || iframe.contentWindow.document;
-      const sw = width - 4;
-      const sh = height - 4;
+        const idoc = iframe.contentDocument || iframe.contentWindow.document;
+        const sw = width - 4;
+        const sh = height - 4;
 
-      let imagesHtml = '';
-      const codeStr = product.productCode || product.id || '';
-      const priceStr = parseFloat(product.salePrice || 0).toFixed(2) + ' EGP';
-      
-      for(let i=0; i<quantity; i++) {
+        let imagesHtml = '';
+        const codeStr = product.productCode || product.id || '';
+        const priceStr = parseFloat(product.salePrice || 0).toFixed(2) + ' EGP';
+
+        for (let i = 0; i < quantity; i++) {
           imagesHtml += `
             <div class="page">
               <div class="product-price">${priceStr}</div>
@@ -297,47 +297,48 @@ const ProductDetails = () => {
               <div class="tenant-name">${tenantName}</div>
             </div>
           `;
-      }
+        }
 
-      idoc.open();
-      idoc.write([
-        '<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8">',
-        '<style>',
-        '@page{size:auto;margin:0}',
-        '*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}',
-        `html,body{background:#fff;margin:0;padding:0;}`,
-        `.page{width:${width}mm;height:${height}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;page-break-after:always;page-break-inside:avoid;padding: 1mm; text-align:center;}`,
-        `.product-name { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: ${sw}mm; line-height: 1.1; margin-bottom: 2px; }`,
-        `.product-price { font-size: 13px; font-weight: bold; margin-bottom: 2px; line-height: 1; }`,
-        `.barcode-img { max-width:${sw}mm; max-height: 14mm; width:auto; height:auto; display:block; object-fit:contain; }`,
-        `.product-code { font-size: 9px; margin-top: 2px; letter-spacing: 1px; line-height: 1; }`,
-        `.tenant-name { font-size: 8px; margin-top: 2px; font-weight: bold; line-height: 1; }`,
-        '</style></head>',
-        `<body>${imagesHtml}</body></html>`,
-      ].join(''));
-      idoc.close();
+        idoc.open();
+        idoc.write([
+          '<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8">',
+          '<style>',
+          '@page{size:auto;margin:0}',
+          '*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}',
+          `html,body{background:#fff;margin:0;padding:0;}`,
+          `.page{width:${width}mm;height:${height}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;page-break-inside:avoid;padding:0; margin:0 auto; text-align:center;}`,
+          `.page:not(:last-child) { page-break-after: always; }`,
+          `.product-name { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: ${sw}mm; line-height: 1.1; margin-bottom: 2px; width: 100%; text-align: center; }`,
+          `.product-price { font-size: 13px; font-weight: bold; margin-bottom: 2px; line-height: 1; width: 100%; text-align: center; }`,
+          `.barcode-img { max-width:${sw}mm; max-height: 14mm; width:auto; height:auto; display:block; margin: 0 auto; object-fit:contain; }`,
+          `.product-code { font-size: 9px; margin-top: 2px; letter-spacing: 1px; line-height: 1; width: 100%; text-align: center; }`,
+          `.tenant-name { font-size: 8px; margin-top: 2px; font-weight: bold; line-height: 1; width: 100%; text-align: center; }`,
+          '</style></head>',
+          `<body>${imagesHtml}</body></html>`,
+        ].join(''));
+        idoc.close();
 
-      const printImg = idoc.querySelector('img');
-      const doPrint = () => {
-        try {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-        } catch (e) { window.print(); }
-        setTimeout(() => {
-          const f = document.getElementById('__barcode_print_frame');
-          if (f) f.remove();
-        }, 2000);
-      };
-
-      if (printImg.complete && printImg.naturalWidth > 0) {
-        setTimeout(doPrint, 100);
-      } else {
-        printImg.onload = () => setTimeout(doPrint, 100);
-        printImg.onerror = () => {
-          const f = document.getElementById('__barcode_print_frame');
-          if (f) f.remove();
+        const printImg = idoc.querySelector('img');
+        const doPrint = () => {
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch (e) { window.print(); }
+          setTimeout(() => {
+            const f = document.getElementById('__barcode_print_frame');
+            if (f) f.remove();
+          }, 2000);
         };
-      }
+
+        if (printImg.complete && printImg.naturalWidth > 0) {
+          setTimeout(doPrint, 100);
+        } else {
+          printImg.onload = () => setTimeout(doPrint, 100);
+          printImg.onerror = () => {
+            const f = document.getElementById('__barcode_print_frame');
+            if (f) f.remove();
+          };
+        }
 
         toast('جاري تحضير ملصق الباركود...', 'success');
       }).catch(err => {
@@ -357,11 +358,11 @@ const ProductDetails = () => {
     setTimeout(() => {
       if (pdfRef.current) {
         const opt = {
-          margin:       0,
-          filename:     `product_${product.productCode || product.id}.pdf`,
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true },
-          jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+          margin: 0,
+          filename: `product_${product.productCode || product.id}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
         html2pdf().from(pdfRef.current).set(opt).save().then(() => {
           setGeneratingPdf(false);
@@ -439,7 +440,7 @@ const ProductDetails = () => {
       toast('تم إضافة المنتج للمتجر الإلكتروني بنجاح', 'success');
       setShowAddToStoreModal(false);
       setShowWarningModal(false);
-      
+
       // Reload product details
       const prod = await Api.getProduct(id);
       setProduct(prod);
@@ -498,8 +499,8 @@ const ProductDetails = () => {
         </button>
         <button className="btn" style={{ background: '#e74c3c', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(231,76,60,0.2)' }} onClick={handleDownloadPdf} disabled={generatingPdf}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
-            <path d="M9.5 17.5l1.5-3 1.5 3 1.5-3 1.5 3" stroke="currentColor" strokeWidth="1" fill="none"/>
+            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z" />
+            <path d="M9.5 17.5l1.5-3 1.5 3 1.5-3 1.5 3" stroke="currentColor" strokeWidth="1" fill="none" />
           </svg>
           {generatingPdf ? 'جاري التحضير...' : 'تنزيل PDF'}
         </button>
@@ -682,9 +683,9 @@ const ProductDetails = () => {
                         </td>
                         {Api.can('PRODUCT_WRITE') && (
                           <td>
-                            <button 
-                              className="btn btn-icon btn-ghost" 
-                              title="تعديل السعر" 
+                            <button
+                              className="btn btn-icon btn-ghost"
+                              title="تعديل السعر"
                               onClick={() => openEditBranchPriceModal(bi)}
                             >
                               ✏️
@@ -881,7 +882,7 @@ const ProductDetails = () => {
               <form id="stockForm" onSubmit={handleUpdateStock}>
                 <div className="form-group">
                   <label>المخزن المستهدف *</label>
-                  <select className="form-control" value={stockForm.warehouseId} 
+                  <select className="form-control" value={stockForm.warehouseId}
                     onChange={e => setStockForm({ ...stockForm, warehouseId: e.target.value })} required>
                     <option value="">اختر المخزن...</option>
                     {warehouses.map(w => (
@@ -1086,11 +1087,11 @@ const ProductDetails = () => {
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px', marginBottom: '15px' }}>
-                  <input 
-                    type="checkbox" 
-                    id="branchShowInStore" 
-                    checked={branchPriceForm.showInStore} 
-                    onChange={e => setBranchPriceForm({ ...branchPriceForm, showInStore: e.target.checked })} 
+                  <input
+                    type="checkbox"
+                    id="branchShowInStore"
+                    checked={branchPriceForm.showInStore}
+                    onChange={e => setBranchPriceForm({ ...branchPriceForm, showInStore: e.target.checked })}
                     style={{ width: '18px', height: '18px', cursor: 'pointer', margin: 0 }}
                   />
                   <label htmlFor="branchShowInStore" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, display: 'inline-block', color: 'var(--text-primary)' }}>
