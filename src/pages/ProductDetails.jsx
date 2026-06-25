@@ -60,6 +60,65 @@ const ProductDetails = () => {
   });
   const [savingBranchPrice, setSavingBranchPrice] = useState(false);
 
+  // --- Admin Branch Actions ---
+  const [showAdminTransferModal, setShowAdminTransferModal] = useState(false);
+  const [adminTransferForm, setAdminTransferForm] = useState({
+    fromBranchId: '',
+    fromBranchName: '',
+    toBranchId: '',
+    quantity: '',
+    notes: ''
+  });
+  const [adminTransferring, setAdminTransferring] = useState(false);
+
+  const handleAdminDelete = async (bi) => {
+    if (!window.confirm(`هل أنت متأكد من مسح المنتج من فرع ${bi.branchName}؟ (ستتمكن من استعادته لاحقاً)`)) return;
+    try {
+      await Api.adminRemoveProductFromBranch(id, bi.branchId);
+      toast('تم الحذف بنجاح (Soft Delete)', 'success');
+      const prod = await Api.getProduct(id);
+      setProduct(prod);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+
+  const openAdminTransfer = (bi) => {
+    setAdminTransferForm({
+      fromBranchId: bi.branchId,
+      fromBranchName: bi.branchName,
+      toBranchId: '',
+      quantity: '',
+      notes: ''
+    });
+    setShowAdminTransferModal(true);
+  };
+
+  const submitAdminTransfer = async (e) => {
+    e.preventDefault();
+    if (!adminTransferForm.toBranchId || !adminTransferForm.quantity) {
+      toast('يجب تحديد الفرع الوجهة والكمية', 'warning');
+      return;
+    }
+    setAdminTransferring(true);
+    try {
+      await Api.adminTransferProductBetweenBranches(id, {
+        fromBranchId: adminTransferForm.fromBranchId,
+        toBranchId: adminTransferForm.toBranchId,
+        quantity: parseFloat(adminTransferForm.quantity),
+        notes: adminTransferForm.notes
+      });
+      toast('تم إنشاء طلب النقل بنجاح', 'success');
+      setShowAdminTransferModal(false);
+      const prod = await Api.getProduct(id);
+      setProduct(prod);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setAdminTransferring(false);
+    }
+  };
+
   const loadUnits = async () => {
     try {
       const data = await Api.getProductUnits(id);
@@ -692,6 +751,26 @@ const ProductDetails = () => {
                             >
                               ✏️
                             </button>
+                            {Api.isAdmin() && (
+                              <>
+                                <button
+                                  className="btn btn-icon btn-ghost"
+                                  title="مسح من الفرع (أدمن)"
+                                  style={{ color: 'var(--metro-red)' }}
+                                  onClick={() => handleAdminDelete(bi)}
+                                >
+                                  🗑️
+                                </button>
+                                <button
+                                  className="btn btn-icon btn-ghost"
+                                  title="نقل مخزون (أدمن)"
+                                  style={{ color: 'var(--accent-purple)' }}
+                                  onClick={() => openAdminTransfer(bi)}
+                                >
+                                  🚚
+                                </button>
+                              </>
+                            )}
                           </td>
                         )}
                       </tr>
@@ -1107,6 +1186,68 @@ const ProductDetails = () => {
                 {savingBranchPrice ? 'جاري الحفظ...' : 'تأكيد الحفظ'}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setShowEditBranchPriceModal(false)}>إلغاء</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Admin Transfer Modal */}
+      {showAdminTransferModal && ReactDOM.createPortal(
+        <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <div className="modal" style={{ width: '100%', maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h3>🚚 طلب نقل منتج (صلاحية أدمن)</h3>
+              <button className="modal-close" onClick={() => setShowAdminTransferModal(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right' }}>
+              <form id="adminTransferForm" onSubmit={submitAdminTransfer}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label className="form-label">الفرع المصدر</label>
+                  <input className="form-control" value={adminTransferForm.fromBranchName || ''} disabled />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">الفرع الوجهة *</label>
+                  <select
+                    className="form-control"
+                    value={adminTransferForm.toBranchId}
+                    onChange={e => setAdminTransferForm({ ...adminTransferForm, toBranchId: e.target.value })}
+                    required
+                  >
+                    <option value="">اختر الفرع...</option>
+                    {branches && branches.filter(b => b.id != adminTransferForm.fromBranchId && b.type !== 'ONLINE').map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">الكمية للنقل *</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0.001"
+                    className="form-control"
+                    value={adminTransferForm.quantity}
+                    onChange={e => setAdminTransferForm({ ...adminTransferForm, quantity: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">ملاحظات النقل</label>
+                  <textarea
+                    className="form-control"
+                    rows="2"
+                    value={adminTransferForm.notes}
+                    onChange={e => setAdminTransferForm({ ...adminTransferForm, notes: e.target.value })}
+                  />
+                </div>
+              </form>
+            </div>
+            <div className="modal-footer" style={{ direction: 'rtl', display: 'flex', gap: '10px', justifyContent: 'flex-start' }}>
+              <button type="submit" form="adminTransferForm" className="btn btn-primary" disabled={adminTransferring}>
+                {adminTransferring ? 'جاري الإنشاء...' : 'إنشاء طلب النقل'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowAdminTransferModal(false)}>إلغاء</button>
             </div>
           </div>
         </div>,

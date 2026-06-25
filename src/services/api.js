@@ -735,6 +735,21 @@ const Api = {
     return res;
   },
 
+  async adminRemoveProductFromBranch(productId, branchId) {
+    const res = await this._request(`/admin/products/${productId}/branches/${branchId}`, {
+      method: 'DELETE'
+    });
+    return res;
+  },
+
+  async adminTransferProductBetweenBranches(productId, dto) {
+    const res = await this._request(`/admin/products/${productId}/transfer`, {
+      method: 'POST',
+      body: JSON.stringify(dto)
+    });
+    return res;
+  },
+
   async exportProductsPdf(search = '', sort = 'id,desc', branchId = null) {
     const query = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
