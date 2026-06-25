@@ -45,15 +45,11 @@ const validateForm = (formData) => {
 
   // Validate phone
   const phone = (formData.phone || '').trim();
-  const phoneDigits = phone.replace(/[\s\-\+]/g, '');
+  const egyptianPhoneRegex = /^(?:\+20|0)?1[0125]\d{8}$/;
   if (!phone) {
     errors.phone = 'رقم الجوال مطلوب';
-  } else if (!/^\+?[\d\s\-]+$/.test(phone)) {
-    errors.phone = 'رقم الجوال يجب أن يحتوي أرقاماً فقط';
-  } else if (phoneDigits.length < 10) {
-    errors.phone = 'رقم الجوال يجب أن يكون 10 أرقام على الأقل';
-  } else if (phoneDigits.length > 15) {
-    errors.phone = 'رقم الجوال لا يتجاوز 15 رقماً';
+  } else if (!egyptianPhoneRegex.test(phone)) {
+    errors.phone = 'رقم الجوال يجب أن يكون رقم مصري صحيح';
   }
 
   // Validate slug
