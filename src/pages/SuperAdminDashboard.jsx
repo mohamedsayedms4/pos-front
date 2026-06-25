@@ -87,6 +87,7 @@ const SuperAdminDashboard = () => {
                             <tr>
                                 <th>اسم المتجر</th>
                                 <th>الرابط (Slug)</th>
+                                <th>تاريخ الاشتراك</th>
                                 <th>تاريخ انتهاء الاشتراك</th>
                                 <th>الحالة</th>
                                 <th>الإجراءات</th>
@@ -102,6 +103,11 @@ const SuperAdminDashboard = () => {
                                         </div>
                                     </td>
                                     <td><code>{tenant.slug}</code></td>
+                                    <td>
+                                        <span className="created-date" style={{ color: 'var(--text-muted)' }}>
+                                            {tenant.createdAt ? new Date(tenant.createdAt).toLocaleDateString('ar-EG') : 'غير محدد'}
+                                        </span>
+                                    </td>
                                     <td>
                                         <span className={`expiry-date ${new Date(tenant.subscriptionExpiry) < new Date() ? 'expired' : ''}`}>
                                             {tenant.subscriptionExpiry ? new Date(tenant.subscriptionExpiry).toLocaleDateString('ar-EG') : 'غير محدد'}

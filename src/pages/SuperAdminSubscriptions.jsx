@@ -643,6 +643,7 @@ const SuperAdminSubscriptions = () => {
                          <th>المستأجر</th>
                          <th>البريد الإلكتروني</th>
                          <th>الهاتف</th>
+                         <th>تاريخ الاشتراك</th>
                          <th>الحالة</th>
                          <th>انتهاء الاشتراك</th>
                          <th>الإجراءات</th>
@@ -676,6 +677,11 @@ const SuperAdminSubscriptions = () => {
                              </td>
                              <td style={{ direction: 'ltr', textAlign: 'right' }}>
                                {tenant.phone || '—'}
+                             </td>
+                             <td>
+                               <span style={{ color: 'var(--sa-sub-text-secondary)' }}>
+                                 {formatDate(tenant.createdAt)}
+                               </span>
                              </td>
                              <td>
                                <span className={`sa-sub-status-badge ${getStatusClass(status)}`}>
