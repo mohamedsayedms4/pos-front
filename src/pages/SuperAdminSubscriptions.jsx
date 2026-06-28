@@ -20,6 +20,7 @@ const AVATAR_COLORS = [
 const getAvatarColor = (id) => AVATAR_COLORS[(id || 0) % AVATAR_COLORS.length];
 
 const getTenantStatus = (tenant) => {
+  if (tenant.deleted) return 'deleted';
   if (!tenant.active) return 'disabled';
   if (!tenant.subscriptionExpiry) return 'expired';
   const now = new Date();
@@ -33,6 +34,7 @@ const getStatusLabel = (status) => {
     case 'active': return '● نشط';
     case 'expired': return '● منتهي';
     case 'disabled': return '● معطل';
+    case 'deleted': return '● محذوف';
     default: return '—';
   }
 };
@@ -42,6 +44,7 @@ const getStatusClass = (status) => {
     case 'active': return 'sa-sub-badge-active';
     case 'expired': return 'sa-sub-badge-expired';
     case 'disabled': return 'sa-sub-badge-disabled';
+    case 'deleted': return 'sa-sub-badge-disabled';
     default: return '';
   }
 };
@@ -139,7 +142,8 @@ const SuperAdminSubscriptions = () => {
     logoLandingDarkUrl: '',
     logoFaviconUrl: '',
     vodafoneCashNumber: '',
-    instapayAddress: ''
+    instapayAddress: '',
+    newTenantNotificationNumbers: ''
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [logoPreview, setLogoPreview] = useState('');
@@ -173,6 +177,10 @@ const SuperAdminSubscriptions = () => {
 
   // Lightbox state
   const [lightbox, setLightbox] = useState({ open: false, imgUrl: '', tenantName: '' });
+
+  // Delete Modal state
+  const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, tenant: null, password: '', mode: 'soft' });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Auth guard
   useEffect(() => {
@@ -220,7 +228,8 @@ const SuperAdminSubscriptions = () => {
           logoLandingDarkUrl: configData.logoLandingDarkUrl || '',
           logoFaviconUrl: configData.logoFaviconUrl || '',
           vodafoneCashNumber: configData.vodafoneCashNumber || '',
-          instapayAddress: configData.instapayAddress || ''
+          instapayAddress: configData.instapayAddress || '',
+          newTenantNotificationNumbers: configData.newTenantNotificationNumbers || ''
         });
         setLogoPreview(configData.logoUrl || '');
         setLogoSidebarLightPreview(configData.logoSidebarLightUrl || '');
@@ -256,7 +265,9 @@ const SuperAdminSubscriptions = () => {
     }
 
     // Filter by status
-    if (filterStatus !== 'all') {
+    if (filterStatus === 'all') {
+      result = result.filter((t) => !t.deleted);
+    } else {
       result = result.filter((t) => getTenantStatus(t) === filterStatus);
     }
 
@@ -370,6 +381,22 @@ const SuperAdminSubscriptions = () => {
       toast(err.message || 'فشل في تمديد الاشتراك', 'error');
     } finally {
       setExtending(false);
+    }
+  };
+
+  // Delete Tenant
+  const handleDeleteSubmit = async (e) => {
+    e.preventDefault();
+    setIsDeleting(true);
+    try {
+      await Api.deleteSuperAdminTenant(deleteModalState.tenant.id, deleteModalState.password, deleteModalState.mode);
+      toast('تم حذف المتجر بنجاح', 'success');
+      setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' });
+      loadData();
+    } catch (err) {
+      toast(err.message || 'فشل في عملية الحذف', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -605,6 +632,13 @@ const SuperAdminSubscriptions = () => {
                   >
                     معطل
                   </button>
+                  <button
+                    className={`sa-sub-filter-btn ${filterStatus === 'deleted' ? 'active' : ''}`}
+                    onClick={() => setFilterStatus('deleted')}
+                    style={{ color: filterStatus === 'deleted' ? '#fff' : '#ef4444', borderColor: filterStatus === 'deleted' ? '#ef4444' : 'var(--sa-sub-border)', background: filterStatus === 'deleted' ? '#ef4444' : 'transparent' }}
+                  >
+                    المحذوفة
+                  </button>
                 </div>
               </div>
               <div className="sa-sub-toolbar-right">
@@ -736,16 +770,24 @@ const SuperAdminSubscriptions = () => {
                                      ⛔
                                    </button>
                                  ) : (
+                                     <button
+                                       className="sa-sub-action-btn sa-sub-btn-activate"
+                                       title="تفعيل المستأجر"
+                                       onClick={() => handleToggleStatus(tenant)}
+                                     >
+                                       ✅
+                                     </button>
+                                   )}
                                    <button
-                                     className="sa-sub-action-btn sa-sub-btn-activate"
-                                     title="تفعيل المستأجر"
-                                     onClick={() => handleToggleStatus(tenant)}
+                                     className="sa-sub-action-btn sa-sub-btn-deactivate"
+                                     style={{ background: '#fee2e2', color: '#dc2626' }}
+                                     title="حذف المستأجر"
+                                     onClick={() => setDeleteModalState({ isOpen: true, tenant, password: '', mode: 'soft' })}
                                    >
-                                     ✅
+                                     🗑️
                                    </button>
-                                 )}
-                               </div>
-                             </td>
+                                 </div>
+                               </td>
                            </tr>
                          );
                        })}
@@ -1295,6 +1337,35 @@ const SuperAdminSubscriptions = () => {
                 />
               </div>
 
+              {/* ─── Notifications ─────────────────────────────────────── */}
+              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
+                  📱 أرقام واتساب لإشعارات المشتركين الجدد (مفصولة بفاصلة):
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    className="sa-sub-form-input"
+                    placeholder="مثال: +201012345678, +201112345678"
+                    value={settings.newTenantNotificationNumbers}
+                    onChange={(e) => setSettings({ ...settings, newTenantNotificationNumbers: e.target.value })}
+                    style={{
+                      width: '100%',
+                      direction: 'ltr',
+                      textAlign: 'right',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      border: '1.5px solid var(--sa-sub-border)',
+                      background: 'var(--sa-sub-bg)',
+                      color: 'var(--sa-sub-text-primary)'
+                    }}
+                  />
+                  <small style={{ color: 'var(--sa-sub-text-secondary)', display: 'block', marginTop: '4px' }}>
+                    * سيتم إرسال إشعار على الواتساب لهذه الأرقام عند تسجيل متجر جديد. يمكنك إضافة أكثر من رقم مفصولين بفاصلة (,).
+                  </small>
+                </div>
+              </div>
+
               {/* ─── Facebook Pixel ID ─────────────────────────────────────── */}
               <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
@@ -1653,6 +1724,73 @@ const SuperAdminSubscriptions = () => {
           </div>
         </ModalContainer>
       )}
+
+      {/* Delete Tenant Modal */}
+      {deleteModalState.isOpen && (
+        <ModalContainer>
+          <div className="sa-sub-modal-overlay" onClick={() => setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' })}>
+            <div className="sa-sub-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+              <div className="sa-sub-modal-header">
+                <h3>🗑️ حذف المتجر: {deleteModalState.tenant?.name}</h3>
+                <button className="sa-sub-modal-close" onClick={() => setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' })}>✕</button>
+              </div>
+              <div className="sa-sub-modal-body">
+                <form onSubmit={handleDeleteSubmit}>
+                  <div className="form-group" style={{ marginBottom: '15px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>نوع الحذف:</label>
+                      <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                              <input 
+                                  type="radio" 
+                                  name="deleteMode" 
+                                  value="soft" 
+                                  checked={deleteModalState.mode === 'soft'} 
+                                  onChange={(e) => setDeleteModalState({...deleteModalState, mode: e.target.value})} 
+                              />
+                              أرشفة (Soft Delete)
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                              <input 
+                                  type="radio" 
+                                  name="deleteMode" 
+                                  value="hard" 
+                                  checked={deleteModalState.mode === 'hard'} 
+                                  onChange={(e) => setDeleteModalState({...deleteModalState, mode: e.target.value})} 
+                              />
+                              حذف نهائي (Hard Delete)
+                          </label>
+                      </div>
+                      {deleteModalState.mode === 'hard' && (
+                          <div style={{ color: '#dc2626', background: '#fee2e2', padding: '10px', borderRadius: '8px', marginTop: '15px', fontSize: '0.9rem' }}>
+                              ⚠️ تحذير: هذا الخيار سيقوم بحذف جميع البيانات المتعلقة بالمتجر نهائياً ولا يمكن التراجع عنه.
+                          </div>
+                      )}
+                  </div>
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>كلمة المرور الخاصة بك لتأكيد العملية:</label>
+                      <input 
+                          type="password" 
+                          className="sa-sub-input" 
+                          required 
+                          value={deleteModalState.password} 
+                          onChange={(e) => setDeleteModalState({...deleteModalState, password: e.target.value})} 
+                          placeholder="أدخل كلمة المرور"
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                      <button type="button" className="sa-sub-btn-ghost" onClick={() => setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' })} disabled={isDeleting}>إلغاء</button>
+                      <button type="submit" className="sa-sub-btn-primary" style={{ background: '#dc2626' }} disabled={isDeleting}>
+                          {isDeleting ? 'جاري الحذف...' : 'تأكيد الحذف'}
+                      </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
     </>
   );
 };

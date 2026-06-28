@@ -7,6 +7,7 @@ const SuperAdminDashboard = () => {
     const [tenants, setTenants] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, tenant: null, password: '', mode: 'soft' });
     const { toast: showToast, confirm: showConfirm } = useGlobalUI();
 
     const fetchData = async () => {
@@ -52,6 +53,18 @@ const SuperAdminDashboard = () => {
             fetchData();
         } catch (error) {
             showToast(error.message, 'error');
+        }
+    };
+
+    const handleDeleteSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await Api.deleteSuperAdminTenant(deleteModalState.tenant.id, deleteModalState.password, deleteModalState.mode);
+            showToast('تم حذف المتجر بنجاح', 'success');
+            setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' });
+            fetchData();
+        } catch (error) {
+            showToast(error.message || 'فشل في عملية الحذف', 'error');
         }
     };
 
@@ -147,6 +160,15 @@ const SuperAdminDashboard = () => {
                                                 </button>
                                                 <span className="unit-label">أسبوع</span>
                                             </div>
+
+                                            <button 
+                                                className="btn-action btn-danger" 
+                                                onClick={() => setDeleteModalState({ isOpen: true, tenant, password: '', mode: 'soft' })} 
+                                                title="حذف المتجر"
+                                                style={{ color: 'var(--danger)' }}
+                                            >
+                                                <i className="fas fa-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -155,6 +177,61 @@ const SuperAdminDashboard = () => {
                     </table>
                 </div>
             </section>
+
+            {deleteModalState.isOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '400px' }}>
+                        <h2>حذف المتجر: {deleteModalState.tenant?.name}</h2>
+                        <form onSubmit={handleDeleteSubmit}>
+                            <div className="form-group" style={{ marginBottom: '15px' }}>
+                                <label>نوع الحذف:</label>
+                                <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                                    <label>
+                                        <input 
+                                            type="radio" 
+                                            name="deleteMode" 
+                                            value="soft" 
+                                            checked={deleteModalState.mode === 'soft'} 
+                                            onChange={(e) => setDeleteModalState({...deleteModalState, mode: e.target.value})} 
+                                        />
+                                        أرشفة (Soft Delete)
+                                    </label>
+                                    <label>
+                                        <input 
+                                            type="radio" 
+                                            name="deleteMode" 
+                                            value="hard" 
+                                            checked={deleteModalState.mode === 'hard'} 
+                                            onChange={(e) => setDeleteModalState({...deleteModalState, mode: e.target.value})} 
+                                        />
+                                        حذف نهائي (Hard Delete)
+                                    </label>
+                                </div>
+                                {deleteModalState.mode === 'hard' && (
+                                    <small style={{ color: 'var(--danger)', display: 'block', marginTop: '10px' }}>
+                                        <i className="fas fa-exclamation-triangle"></i> تحذير: هذا الخيار سيقوم بحذف جميع البيانات المتعلقة بالمتجر نهائياً ولا يمكن التراجع عنه.
+                                    </small>
+                                )}
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                                <label>كلمة المرور الخاصة بك لتأكيد العملية:</label>
+                                <input 
+                                    type="password" 
+                                    className="form-control" 
+                                    required 
+                                    value={deleteModalState.password} 
+                                    onChange={(e) => setDeleteModalState({...deleteModalState, password: e.target.value})} 
+                                    placeholder="أدخل كلمة المرور"
+                                />
+                            </div>
+                            <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' })}>إلغاء</button>
+                                <button type="submit" className="btn btn-danger">تأكيد الحذف</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

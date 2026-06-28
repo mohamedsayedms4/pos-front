@@ -2352,6 +2352,13 @@ const Api = {
     });
     return res.data;
   },
+  async deleteSuperAdminTenant(tenantId, password, mode = 'soft') {
+    const res = await this._request(`/super-admin/tenants/${tenantId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ password, mode })
+    });
+    return res;
+  },
 
   async extendTenantSubscription(tenantId, { months, days }) {
     const body = months ? { months } : { days };
