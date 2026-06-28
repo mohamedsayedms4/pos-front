@@ -577,7 +577,7 @@ const TenantRegister = () => {
                   onChange={handleSlugChange}
                   aria-invalid={!!errors.slug}
                 />
-                <span className="slug-suffix">.pos.com</span>
+                <span className="slug-suffix">.seggelerp.com</span>
               </div>
               {errors.slug
                 ? <FieldError message={errors.slug} />

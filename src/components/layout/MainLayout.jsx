@@ -247,7 +247,10 @@ const MainLayout = () => {
       if (impersonationBackup.access) localStorage.setItem('pos_access_token', impersonationBackup.access);
       if (impersonationBackup.refresh) localStorage.setItem('pos_refresh_token', impersonationBackup.refresh);
       if (impersonationBackup.tenantId) localStorage.setItem('pos_tenant_id', impersonationBackup.tenantId);
-      if (impersonationBackup.user) localStorage.setItem('pos_user', impersonationBackup.user);
+      if (impersonationBackup.user) {
+        const userVal = typeof impersonationBackup.user === 'object' ? JSON.stringify(impersonationBackup.user) : impersonationBackup.user;
+        localStorage.setItem('pos_user', userVal);
+      }
       
       localStorage.removeItem('super_admin_backup');
       window.location.href = '/super-admin/subscriptions';
