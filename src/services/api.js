@@ -634,6 +634,31 @@ const Api = {
     window.location.href = '/login';
   },
 
+  async initForgotPassword(identifier) {
+    const res = await this._request('/auth/forgot-password/init', {
+      method: 'POST',
+      body: JSON.stringify({ identifier })
+    });
+    return res.data;
+  },
+
+  async forgotPassword(identifier, method = 'EMAIL', fullPhone = null) {
+    const clientUrl = window.location.origin;
+    const res = await this._request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, clientUrl, method, fullPhone })
+    });
+    return res;
+  },
+
+  async resetPassword(token, newPassword) {
+    const res = await this._request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword })
+    });
+    return res;
+  },
+
   // â”€â”€â”€ Products â”€â”€â”€
   async getProducts(page = 0, size = 1000, branchId = null) {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
@@ -1043,6 +1068,32 @@ const Api = {
     await this._request(`/suppliers/${id}`, { method: 'DELETE' });
   },
 
+  async importSuppliersExcel(file, branchId = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/suppliers/import${branchQuery}`, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    return res;
+  },
+
+  async downloadSuppliersImportTemplate() {
+    const res = await fetch(`${SERVER_URL}/api/v1/suppliers/import/template`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل تحميل قالب الاستيراد من السيرفر');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'suppliers_import_template.xlsx';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
   async exportSuppliersExcel(search = '', sort = 'name,asc', branchId = null) {
     const query = search ? `&query=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
@@ -1067,7 +1118,7 @@ const Api = {
     const res = await fetch(`${API_BASE}/suppliers/export/pdf?${query}${sortQuery}${branchQuery}`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ ØªØµØ¯ÙŠØ± Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ù„Ù‰ PDF');
+    if (!res.ok) throw new Error('فشل في تصدير البيانات إلى PDF');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1076,6 +1127,89 @@ const Api = {
     a.click();
     window.URL.revokeObjectURL(url);
   },
+
+  async downloadSalesImportTemplate() {
+    const res = await fetch(`${SERVER_URL}/api/v1/sales/import/template`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل تحميل قالب استيراد المبيعات من السيرفر');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sales_import_template.xlsx';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importSalesExcel(file, branchId) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await this._request(`/sales/import?branchId=${branchId}`, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    return res;
+  },
+
+  async exportSalesExcel(search = '', branchId = null) {
+    const query = search ? `&query=${encodeURIComponent(search)}` : '';
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${API_BASE}/sales/export/excel?${query}${branchQuery}`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل تصدير فواتير المبيعات');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales_export_${new Date().getTime()}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async downloadPurchasesImportTemplate() {
+    const res = await fetch(`${SERVER_URL}/api/v1/purchases/import/template`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل تحميل قالب استيراد المشتريات من السيرفر');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'purchases_import_template.xlsx';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importPurchasesExcel(file, branchId, warehouseId) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await this._request(`/purchases/import?branchId=${branchId}&warehouseId=${warehouseId}`, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    return res;
+  },
+
+  async exportPurchasesExcel(search = '', branchId = null) {
+    const query = search ? `&query=${encodeURIComponent(search)}` : '';
+    const branchQuery = branchId ? `&branchId=${branchId}` : '';
+    const res = await fetch(`${API_BASE}/purchases/export/excel?${query}${branchQuery}`, {
+      headers: { 'Authorization': `Bearer ${this._getToken()}` }
+    });
+    if (!res.ok) throw new Error('فشل تصدير فواتير المشتريات');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `purchases_export_${new Date().getTime()}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+
 
   async getSupplierLedger(id, branchId = null) {
     const branchQuery = branchId ? `?branchId=${branchId}` : '';

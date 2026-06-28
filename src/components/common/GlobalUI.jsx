@@ -137,8 +137,8 @@ export const GlobalUIProvider = ({ children }) => {
                             <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.95rem' }}>{confirm.message}</p>
                         </div>
                         <div className="modal-footer" style={{ justifyContent: 'center', gap: '15px', borderTop: 'none', paddingBottom: '30px' }}>
-                            <button className="btn btn-danger" style={{ minWidth: '140px', padding: '12px' }} onClick={() => { confirm.onConfirm(); closeConfirm(); }}>تأكيد الحذف</button>
-                            <button className="btn btn-ghost" style={{ minWidth: '80px', padding: '12px' }} onClick={() => { if (confirm.onCancel) confirm.onCancel(); closeConfirm(); }}>إلغاء</button>
+                            <button className="btn btn-danger" style={{ minWidth: '140px', padding: '12px' }} onClick={() => { if (typeof confirm.onConfirm === 'function') confirm.onConfirm(); closeConfirm(); }}>تأكيد الحذف</button>
+                            <button className="btn btn-ghost" style={{ minWidth: '80px', padding: '12px' }} onClick={() => { if (typeof confirm.onCancel === 'function') confirm.onCancel(); closeConfirm(); }}>إلغاء</button>
                         </div>
                     </div>
                 </div>,

@@ -18,6 +18,21 @@ const Sales = () => {
     const [returnNotes, setReturnNotes] = useState('');
     const [formErrors, setFormErrors] = useState({});
 
+    const fileInputRef = React.useRef(null);
+    const [importingExcel, setImportingExcel] = useState(false);
+    const [exportingExcel, setExportingExcel] = useState(false);
+
+    useEffect(() => {
+        const handleOutsideClick = (e) => {
+            const menu = document.getElementById('importSalesDropdownMenu');
+            if (menu && menu.style.display === 'block' && !e.target.closest('.dropdown-import-container')) {
+                menu.style.display = 'none';
+            }
+        };
+        window.addEventListener('click', handleOutsideClick);
+        return () => window.removeEventListener('click', handleOutsideClick);
+    }, []);
+
     const location = useLocation();
     const [searchParams] = useSearchParams();
     const [branches, setBranches] = useState([]);
@@ -109,6 +124,52 @@ const Sales = () => {
         }
     };
 
+    const handleImportExcel = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!selectedBranchId) {
+            toast('يرجى اختيار الفرع أولاً لتحديد وجهة الاستيراد', 'warning');
+            return;
+        }
+
+        setImportingExcel(true);
+        toast('جاري استيراد الفواتير من ملف إكسيل...', 'info');
+        try {
+            const res = await Api.importSalesExcel(file, selectedBranchId);
+            toast(res.data || res.message || 'تم استيراد فواتير المبيعات بنجاح', 'success');
+            loadSales();
+        } catch (err) {
+            toast(err.message || 'فشل استيراد فواتير المبيعات', 'error');
+        } finally {
+            setImportingExcel(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const handleDownloadTemplate = async () => {
+        toast('جاري تحميل نموذج الاستيراد...', 'info');
+        try {
+            await Api.downloadSalesImportTemplate();
+            toast('تم تحميل النموذج بنجاح', 'success');
+        } catch (err) {
+            toast(err.message || 'فشل تحميل النموذج', 'error');
+        }
+    };
+
+    const handleExportExcel = async () => {
+        setExportingExcel(true);
+        toast('جاري تصدير فواتير المبيعات...', 'info');
+        try {
+            await Api.exportSalesExcel(debouncedSearch, selectedBranchId);
+            toast('تم تصدير ملف الإكسيل بنجاح', 'success');
+        } catch (err) {
+            toast(err.message || 'فشل تصدير ملف الإكسيل', 'error');
+        } finally {
+            setExportingExcel(false);
+        }
+    };
+
     const handleReturn = async () => {
         const itemsToReturn = returnItems.filter(i => i.returnQty > 0);
         if (itemsToReturn.length === 0) {
@@ -171,7 +232,117 @@ const Sales = () => {
                             />
                             <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input 
+                              type="file" 
+                              ref={fileInputRef} 
+                              onChange={handleImportExcel} 
+                              accept=".xlsx, .xls" 
+                              style={{ display: 'none' }} 
+                            />
+
+                            {Api.can('SALE_READ') && (
+                              <button
+                                className="btn btn-secondary"
+                                onClick={handleExportExcel}
+                                disabled={exportingExcel || sales.length === 0}
+                              >
+                                {exportingExcel ? '⏳' : '📊'} تصدير إكسيل
+                              </button>
+                            )}
+
+                            {Api.can('SALE_WRITE') && (
+                              <div className="dropdown-import-container" style={{ position: 'relative', display: 'inline-block' }}>
+                                 <button
+                                   type="button"
+                                   className="btn btn-secondary"
+                                   onClick={() => {
+                                     const menu = document.getElementById('importSalesDropdownMenu');
+                                     if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                                   }}
+                                   disabled={importingExcel}
+                                 >
+                                   {importingExcel ? '⏳ جاري الاستيراد...' : '📥 استيراد'}
+                                 </button>
+                                 <div 
+                                   id="importSalesDropdownMenu" 
+                                   style={{ 
+                                     display: 'none', 
+                                     position: 'absolute', 
+                                     background: 'var(--bg-elevated, #1a1a1a)', 
+                                     minWidth: '200px', 
+                                     boxShadow: '0px 8px 24px rgba(0,0,0,0.3)', 
+                                     zIndex: 100, 
+                                     right: 0, 
+                                     borderRadius: '8px', 
+                                     border: '1px solid var(--border-subtle, #333)',
+                                     marginTop: '8px',
+                                     overflow: 'hidden'
+                                   }}
+                                 >
+                                   <button 
+                                     type="button"
+                                     onClick={() => {
+                                       const menu = document.getElementById('importSalesDropdownMenu');
+                                       if (menu) menu.style.display = 'none';
+                                       if (fileInputRef.current) fileInputRef.current.click();
+                                     }}
+                                     style={{ 
+                                       color: 'var(--text-main, #ffffff)', 
+                                       padding: '12px 16px', 
+                                       textDecoration: 'none', 
+                                       display: 'flex', 
+                                       alignItems: 'center',
+                                       justifyContent: 'flex-start',
+                                       gap: '10px',
+                                       width: '100%', 
+                                       border: 'none', 
+                                       background: 'transparent', 
+                                       textAlign: 'right', 
+                                       fontSize: '0.9rem', 
+                                       cursor: 'pointer',
+                                       transition: 'background-color 0.2s'
+                                     }}
+                                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover-tile, #2a2a2a)'}
+                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                   >
+                                     <span style={{ fontSize: '1.1rem' }}>📂</span>
+                                     <span style={{ color: 'var(--text-main, #ffffff)' }}>رفع ملف إكسيل</span>
+                                   </button>
+                                   <button 
+                                     type="button"
+                                     onClick={() => {
+                                       const menu = document.getElementById('importSalesDropdownMenu');
+                                       if (menu) menu.style.display = 'none';
+                                       handleDownloadTemplate();
+                                     }}
+                                     style={{ 
+                                       color: 'var(--text-main, #ffffff)', 
+                                       padding: '12px 16px', 
+                                       textDecoration: 'none', 
+                                       display: 'flex', 
+                                       alignItems: 'center',
+                                       justifyContent: 'flex-start',
+                                       gap: '10px',
+                                       width: '100%', 
+                                       border: 'none', 
+                                       background: 'transparent', 
+                                       textAlign: 'right', 
+                                       fontSize: '0.9rem', 
+                                       cursor: 'pointer',
+                                       borderTop: '1px solid var(--border-subtle, #333)',
+                                       transition: 'background-color 0.2s'
+                                     }}
+                                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover-tile, #2a2a2a)'}
+                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                   >
+                                     <span style={{ fontSize: '1.1rem' }}>📋</span>
+                                     <span style={{ color: 'var(--text-main, #ffffff)' }}>تحميل نموذج فارغ</span>
+                                   </button>
+                                 </div>
+                              </div>
+                            )}
+
                             <button
                                 className="btn btn-secondary"
                                 onClick={() => navigate('/sales/analytics')}

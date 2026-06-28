@@ -1,6 +1,8 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Products from './pages/Products.jsx'
 import AddProduct from './pages/AddProduct.jsx'
@@ -143,6 +145,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/register" element={<TenantRegister />} />
                 <Route path="/welcome" element={<WelcomePage />} />
                 <Route path="/subscription-success" element={<SubscriptionSuccess />} />

@@ -41,6 +41,8 @@ const POS = () => {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [lastInvoice, setLastInvoice] = useState(null);
+  const [globalConfig, setGlobalConfig] = useState({});
+  const [isWholesaleMode, setIsWholesaleMode] = useState(false);
 
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
@@ -125,6 +127,13 @@ const POS = () => {
         }
       } catch (err) {
         console.warn('Could not load session', err);
+      }
+      
+      try {
+        const configData = await Api.getGlobalConfig();
+        setGlobalConfig(configData);
+      } catch (err) {
+        console.warn('Could not load global config', err);
       }
     };
 
@@ -232,41 +241,226 @@ const POS = () => {
     return () => clearTimeout(timer);
   }, [browseSearch, browseProducts]);
 
+  const getEffectiveWholesalePrice = useCallback((p) => {
+    const wPrice = Number(p.wholesaleSalePrice);
+    if (!isNaN(wPrice) && wPrice > 0) return wPrice;
+
+    if (p.units && p.units.length > 0) {
+      // Look for a unit with conversion factor 1
+      const baseUnit = p.units.find(u => Number(u.wholesaleSalePrice) > 0 && Number(u.conversionFactor) === 1);
+      if (baseUnit) return Number(baseUnit.wholesaleSalePrice);
+      
+      // Fallback: take any unit with wholesale price
+      const anyUnit = p.units.find(u => Number(u.wholesaleSalePrice) > 0);
+      if (anyUnit) return Number(anyUnit.wholesaleSalePrice) / (Number(anyUnit.conversionFactor) || 1);
+    }
+    return null;
+  }, []);
+
+  const calculateItemPrice = useCallback((item, qty, unitId, wholesaleMode = isWholesaleMode) => {
+    // If no unit is selected (meaning base unit)
+    if (!unitId) {
+      const wPrice = getEffectiveWholesalePrice(item);
+      if (wholesaleMode && wPrice != null) {
+        return wPrice;
+      }
+      const minQty = Number(item.wholesaleMinQuantity);
+      if (globalConfig?.enableWholesale && !isNaN(minQty) && minQty > 0 && qty >= minQty && wPrice != null) {
+        return wPrice;
+      }
+      return item.basePrice;
+    }
+
+    // If a packaging unit is selected
+    const selectedUnit = item.units?.find(u => u.id == unitId);
+    if (selectedUnit) {
+      const unitFactor = Number(selectedUnit.conversionFactor) || 1;
+      if (wholesaleMode) {
+        // Wholesale unit price
+        const unitWPrice = Number(selectedUnit.wholesaleSalePrice);
+        if (!isNaN(unitWPrice) && unitWPrice > 0) return unitWPrice;
+        // Fallback: base product wholesale price * conversion factor
+        const baseWPrice = getEffectiveWholesalePrice(item);
+        if (baseWPrice != null) return baseWPrice * unitFactor;
+        // Absolute fallback: base product retail price * conversion factor
+        return item.basePrice * unitFactor;
+      } else {
+        // Retail unit price
+        const unitRPrice = Number(selectedUnit.salePrice);
+        if (!isNaN(unitRPrice) && unitRPrice > 0) return unitRPrice;
+        // Fallback: base product retail price * conversion factor
+        return item.basePrice * unitFactor;
+      }
+    }
+
+    return item.basePrice;
+  }, [globalConfig, isWholesaleMode, getEffectiveWholesalePrice]);
+
+  const calculatePrice = useCallback((product, qty, wholesaleMode = isWholesaleMode) => {
+    return calculateItemPrice({
+      basePrice: product.salePrice,
+      wholesaleSalePrice: product.wholesaleSalePrice,
+      wholesaleMinQuantity: product.wholesaleMinQuantity,
+      units: product.units
+    }, qty, '', wholesaleMode);
+  }, [calculateItemPrice, isWholesaleMode]);
+
   const addToCart = useCallback((product) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
+      
+      // Determine minQty if wholesale mode is active
+      const defaultUnit = product.units?.find(u => u.isDefaultSale);
+      const initialUnitId = defaultUnit ? defaultUnit.id : '';
+      const initialFactor = defaultUnit ? Number(defaultUnit.conversionFactor) || 1 : 1;
+      
+      let initialQty = 1;
+      if (isWholesaleMode) {
+        if (initialUnitId) {
+          const unitObj = product.units?.find(u => u.id == initialUnitId);
+          initialQty = Number(unitObj?.wholesaleMinQuantity) || 1;
+        } else {
+          initialQty = Number(product.wholesaleMinQuantity) || 1;
+        }
+      }
+
       if (existing) {
-        if (existing.qty + 1 > product.stock) {
+        // Calculate factor based on selected unit
+        const selectedUnit = existing.units?.find(u => u.id == existing.selectedUnitId);
+        const factor = selectedUnit ? Number(selectedUnit.conversionFactor) || 1 : 1;
+        const newQty = existing.qty + 1;
+        
+        if (newQty * factor > product.stock) {
           setTimeout(() => toast('تجاوزت الرصيد المتاح', 'warning'), 10);
           return prev;
         }
         // 🔊 Beep
         beepRef.current.currentTime = 0;
         beepRef.current.play().catch(() => {});
-        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+        const updatedPrice = calculateItemPrice({
+          basePrice: existing.basePrice,
+          wholesaleSalePrice: existing.wholesaleSalePrice,
+          wholesaleMinQuantity: existing.wholesaleMinQuantity,
+          units: existing.units
+        }, newQty, existing.selectedUnitId);
+        return prev.map(i => i.id === product.id ? { ...i, qty: newQty, price: updatedPrice } : i);
       }
-      if (product.stock <= 0) {
-        setTimeout(() => toast('نفذ المخزون', 'warning'), 10);
+      
+      if (initialQty * initialFactor > product.stock) {
+        setTimeout(() => toast('الكمية المطلوبة (الحد الأدنى للجملة) تتجاوز الرصيد المتاح', 'warning'), 10);
         return prev;
       }
       // 🔊 Beep
       beepRef.current.currentTime = 0;
       beepRef.current.play().catch(() => {});
-      return [...prev, { id: product.id, name: product.name, price: product.salePrice, qty: 1, stock: product.stock, unitName: product.unitName }];
+
+      const initialPrice = calculateItemPrice({
+        basePrice: product.salePrice,
+        wholesaleSalePrice: product.wholesaleSalePrice,
+        wholesaleMinQuantity: product.wholesaleMinQuantity,
+        units: product.units
+      }, initialQty, initialUnitId);
+
+      return [...prev, { 
+        id: product.id, 
+        name: product.name, 
+        price: initialPrice, 
+        basePrice: product.salePrice,
+        wholesaleSalePrice: product.wholesaleSalePrice,
+        wholesaleMinQuantity: product.wholesaleMinQuantity,
+        units: product.units,
+        selectedUnitId: initialUnitId,
+        qty: initialQty, 
+        stock: product.stock, 
+        unitName: product.unitName 
+      }];
     });
     if (searchInputRef.current) searchInputRef.current.focus();
-  }, [toast]);
+  }, [toast, calculateItemPrice, isWholesaleMode]);
 
   const updateQty = (id, newQty) => {
     setCart(prev => {
       const item = prev.find(i => i.id === id);
-      if (newQty > item.stock) {
+      const selectedUnit = item.units?.find(u => u.id == item.selectedUnitId);
+      const factor = selectedUnit ? Number(selectedUnit.conversionFactor) || 1 : 1;
+
+      if (newQty * factor > item.stock) {
         setTimeout(() => toast('تجاوزت المتاح', 'warning'), 10);
         return prev;
       }
       if (newQty <= 0) return prev.filter(i => i.id !== id);
-      return prev.map(i => i.id === id ? { ...i, qty: newQty } : i);
+
+      // Validate minQty for wholesale mode
+      if (isWholesaleMode) {
+        const minQty = selectedUnit ? (Number(selectedUnit.wholesaleMinQuantity) || 1) : (Number(item.wholesaleMinQuantity) || 1);
+        if (newQty < minQty) {
+          setTimeout(() => toast(`الحد الأدنى لبيع الجملة هو ${minQty}`, 'warning'), 10);
+          return prev;
+        }
+      }
+      
+      const updatedPrice = calculateItemPrice({
+        basePrice: item.basePrice,
+        wholesaleSalePrice: item.wholesaleSalePrice,
+        wholesaleMinQuantity: item.wholesaleMinQuantity,
+        units: item.units
+      }, newQty, item.selectedUnitId);
+
+      return prev.map(i => i.id === id ? { ...i, qty: newQty, price: updatedPrice } : i);
     });
+  };
+
+  const handleUnitChange = (itemId, unitId) => {
+    setCart(prev => {
+      const item = prev.find(i => i.id === itemId);
+      const selectedUnit = item.units?.find(u => u.id == unitId);
+      const factor = selectedUnit ? Number(selectedUnit.conversionFactor) || 1 : 1;
+      
+      let targetQty = item.qty;
+      if (isWholesaleMode) {
+        const minQty = selectedUnit ? (Number(selectedUnit.wholesaleMinQuantity) || 1) : (Number(item.wholesaleMinQuantity) || 1);
+        if (targetQty < minQty) {
+          targetQty = minQty;
+        }
+      }
+
+      if (targetQty * factor > item.stock) {
+        setTimeout(() => toast('الكمية المطلوبة بهذه الوحدة تتجاوز الرصيد المتاح', 'warning'), 10);
+        return prev;
+      }
+      const updatedPrice = calculateItemPrice({
+        basePrice: item.basePrice,
+        wholesaleSalePrice: item.wholesaleSalePrice,
+        wholesaleMinQuantity: item.wholesaleMinQuantity,
+        units: item.units
+      }, targetQty, unitId);
+      return prev.map(i => i.id === itemId ? { ...i, selectedUnitId: unitId, qty: targetQty, price: updatedPrice } : i);
+    });
+  };
+
+  const toggleWholesaleMode = () => {
+    const newMode = !isWholesaleMode;
+    setIsWholesaleMode(newMode);
+    setCart(prev => prev.map(item => {
+      const selectedUnit = item.units?.find(u => u.id == item.selectedUnitId);
+      let targetQty = item.qty;
+      if (newMode) {
+        const minQty = selectedUnit ? (Number(selectedUnit.wholesaleMinQuantity) || 1) : (Number(item.wholesaleMinQuantity) || 1);
+        if (targetQty < minQty) {
+          targetQty = minQty;
+        }
+      }
+      return {
+        ...item,
+        qty: targetQty,
+        price: calculateItemPrice({
+          basePrice: item.basePrice,
+          wholesaleSalePrice: item.wholesaleSalePrice,
+          wholesaleMinQuantity: item.wholesaleMinQuantity,
+          units: item.units
+        }, targetQty, item.selectedUnitId, newMode)
+      };
+    }));
   };
 
   const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
@@ -307,13 +501,23 @@ const POS = () => {
     }
 
     const executeCheckout = async () => {
+      if (paidAmount < total && !selectedCustomerId) {
+        toast('لا يمكن إتمام بيع آجل لعميل كاش، يرجى اختيار عميل مسجل.', 'error');
+        return;
+      }
+
       setCheckoutLoading(true);
       const saleData = {
         customerId: selectedCustomerId || null,
         discount,
         paidAmount,
         branchId: selectedBranchId,
-        items: cart.map(i => ({ productId: i.id, quantity: i.qty, unitPrice: i.price }))
+        items: cart.map(i => ({ 
+          productId: i.id, 
+          quantity: i.qty, 
+          unitPrice: i.price,
+          unitId: i.selectedUnitId || null
+        }))
       };
 
       try {
@@ -464,7 +668,19 @@ const POS = () => {
                   </div>
                   <div className="pos-item-details">
                     <div className="pos-item-name" title={p.name}>{p.name}</div>
-                    <div className="pos-item-price">{(Number(p.salePrice) || 0).toFixed(2)} ج.م</div>
+                    <div className="pos-item-price" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                      <span>{(Number(isWholesaleMode && getEffectiveWholesalePrice(p) ? getEffectiveWholesalePrice(p) : p.salePrice) || 0).toFixed(2)} ج.م</span>
+                      {isWholesaleMode && getEffectiveWholesalePrice(p) ? (
+                        <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 'bold' }}>(جملة)</span>
+                      ) : (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(قطاعي)</span>
+                      )}
+                    </div>
+                    {globalConfig?.enableWholesale && getEffectiveWholesalePrice(p) && p.wholesaleMinQuantity && !isWholesaleMode && (
+                      <div style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '2px', fontWeight: 'bold' }}>
+                        جملة: {(Number(getEffectiveWholesalePrice(p))).toFixed(2)} (بداية من {p.wholesaleMinQuantity})
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -480,6 +696,9 @@ const POS = () => {
         <div className="cart-header">
           <h3>🛒 الطلب الحالي</h3>
           <div style={{display:'flex', gap:'5px', flexWrap:'wrap', alignItems:'center'}}>
+            <button onClick={toggleWholesaleMode} style={{padding:'4px 10px', fontSize:'0.75rem', background: isWholesaleMode ? '#10b981' : '#6b7280', color:'white', borderRadius:'6px', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px'}}>
+              {isWholesaleMode ? '📦 بيع جملة' : 'بيع قطاعي'}
+            </button>
             <button onClick={() => setShowCashMovement(true)} style={{padding:'4px 10px', fontSize:'0.75rem', background:'var(--metro-blue)', color:'white', borderRadius:'6px', border:'none', cursor:'pointer'}}>حركة نقدية</button>
             <button onClick={() => setShowCloseSession(true)} style={{padding:'4px 10px', fontSize:'0.75rem', background:'#ef4444', color:'white', borderRadius:'6px', border:'none', cursor:'pointer'}}>تقفيل الوردية</button>
           </div>
@@ -564,8 +783,41 @@ const POS = () => {
             cart.map(item => (
               <div key={item.id} className="cart-item">
                 <div className="item-info">
-                  <div className="item-title">{item.name}</div>
-                  <div className="item-price">{(Number(item.price) || 0).toFixed(2)} ج.م</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '70%' }}>
+                    <div className="item-title">{item.name}</div>
+                    {item.units && item.units.length > 0 && (
+                      <select 
+                        value={item.selectedUnitId || ''} 
+                        onChange={(e) => handleUnitChange(item.id, e.target.value)}
+                        style={{
+                          background: 'var(--bg-input)',
+                          border: '1px solid var(--border-input)',
+                          borderRadius: '4px',
+                          color: 'var(--text-white)',
+                          padding: '2px 6px',
+                          fontSize: '0.75rem',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          width: 'fit-content'
+                        }}
+                      >
+                        <option value="">{item.unitName || 'القطعة'}</option>
+                        {item.units.map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.unitName} (×{u.conversionFactor})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  <div className="item-price" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', width: '30%', justifyContent: 'flex-end' }}>
+                    <span>{(Number(item.price) || 0).toFixed(2)} ج.م</span>
+                    {isWholesaleMode ? (
+                      <span style={{ color: '#10b981', fontSize: '0.7rem', fontWeight: 'bold' }}>(جملة)</span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>(قطاعي)</span>
+                    )}
+                  </div>
                 </div>
                 <div className="item-actions">
                   <div className="qty-spinner">

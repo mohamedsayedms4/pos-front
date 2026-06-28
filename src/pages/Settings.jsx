@@ -23,7 +23,7 @@ const Settings = () => {
 
     const [info, setInfo] = useState({
         aboutUs: '', currency: 'جنيه', logoUrl: '', facebookPixelId: '',
-        facebookAdAccountId: '', facebookAccessToken: ''
+        facebookAdAccountId: '', facebookAccessToken: '', enableWholesale: false
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -282,6 +282,16 @@ const Settings = () => {
                                 <div className="form-group">
                                     <label>العملة</label>
                                     <input type="text" className="form-control" value={info.currency} onChange={e => setInfo({ ...info, currency: e.target.value })} />
+                                </div>
+                                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="enableWholesaleToggle"
+                                        checked={info.enableWholesale || false} 
+                                        onChange={e => setInfo({ ...info, enableWholesale: e.target.checked })}
+                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                    />
+                                    <label htmlFor="enableWholesaleToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>تفعيل البيع بأسعار الجملة</label>
                                 </div>
 
                                 {/* Contact Info */}

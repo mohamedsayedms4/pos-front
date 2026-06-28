@@ -39,6 +39,9 @@ const AddProduct = () => {
     productCode: '',
     categoryId: '',
     unitName: 'القطعة',
+    wholesaleSalePrice: '',
+    wholesalePurchasePrice: '',
+    wholesaleMinQuantity: '',
     showInStore: true,
     units: [], // Packaging units
     onlineInventory: null
@@ -50,6 +53,7 @@ const AddProduct = () => {
   const [existingImages, setExistingImages] = useState([]);
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
+  const [enableWholesaleForm, setEnableWholesaleForm] = useState(false);
 
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
@@ -93,6 +97,9 @@ const AddProduct = () => {
           // or from onlineInventory, since ProductDto doesn't have these at the top level
           let branchPurchasePrice = '';
           let branchSalePrice = '';
+          let branchWholesaleSalePrice = '';
+          let branchWholesalePurchasePrice = '';
+          let branchWholesaleMinQuantity = '';
           let branchStock = '0';
           let branchShowInStore = true;
 
@@ -112,6 +119,9 @@ const AddProduct = () => {
             if (inv) {
               branchPurchasePrice = inv.purchasePrice ?? '';
               branchSalePrice = inv.salePrice ?? '';
+              branchWholesaleSalePrice = inv.wholesaleSalePrice ?? '';
+              branchWholesalePurchasePrice = inv.wholesalePurchasePrice ?? '';
+              branchWholesaleMinQuantity = inv.wholesaleMinQuantity ?? '';
               branchStock = inv.stock ?? '0';
               branchShowInStore = inv.showInStore !== false;
             }
@@ -122,6 +132,9 @@ const AddProduct = () => {
             description: product.description || '',
             purchasePrice: branchPurchasePrice,
             salePrice: branchSalePrice,
+            wholesaleSalePrice: branchWholesaleSalePrice,
+            wholesalePurchasePrice: branchWholesalePurchasePrice,
+            wholesaleMinQuantity: branchWholesaleMinQuantity,
             stock: branchStock,
             productCode: product.productCode || '',
             categoryId: product.categoryId || '',
@@ -130,6 +143,8 @@ const AddProduct = () => {
             units: product.units || [],
             onlineInventory: product.onlineInventory || null
           });
+          const hasWholesale = !!branchWholesaleSalePrice || (product.units && product.units.some(u => u.wholesaleSalePrice && parseFloat(u.wholesaleSalePrice) > 0));
+          setEnableWholesaleForm(hasWholesale);
           setExistingImages(product.imageUrls || []);
         })
         .catch(err => {
@@ -162,9 +177,28 @@ const AddProduct = () => {
       ...formData,
       purchasePrice: purchaseVal,
       salePrice: saleVal,
+      wholesaleSalePrice: enableWholesaleForm && formData.wholesaleSalePrice ? parseFloat(formData.wholesaleSalePrice) : null,
+      wholesalePurchasePrice: enableWholesaleForm && formData.wholesalePurchasePrice ? parseFloat(formData.wholesalePurchasePrice) : null,
+      wholesaleMinQuantity: enableWholesaleForm && formData.wholesaleMinQuantity ? parseFloat(formData.wholesaleMinQuantity) : null,
       stock: parseFloat(formData.stock) || 0,
       showInStore: formData.showInStore,
       categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
+      units: formData.units.map(u => {
+        const factor = parseFloat(u.conversionFactor) || 1;
+        const calcPurchasePrice = u.purchasePrice !== '' && u.purchasePrice !== null && u.purchasePrice !== undefined && parseFloat(u.purchasePrice) > 0
+          ? parseFloat(u.purchasePrice)
+          : purchaseVal * factor;
+        const calcSalePrice = u.salePrice !== '' && u.salePrice !== null && u.salePrice !== undefined && parseFloat(u.salePrice) > 0
+          ? parseFloat(u.salePrice)
+          : saleVal * factor;
+        return {
+          ...u,
+          purchasePrice: calcPurchasePrice,
+          salePrice: calcSalePrice,
+          wholesaleSalePrice: enableWholesaleForm && u.wholesaleSalePrice !== '' && u.wholesaleSalePrice !== null ? parseFloat(u.wholesaleSalePrice) : null,
+          wholesaleMinQuantity: enableWholesaleForm && u.wholesaleMinQuantity !== '' && u.wholesaleMinQuantity !== null ? parseFloat(u.wholesaleMinQuantity) : null,
+        };
+      })
     };
 
     try {
@@ -191,7 +225,7 @@ const AddProduct = () => {
   const addUnitRow = () => {
     setFormData({
       ...formData,
-      units: [...formData.units, { unitName: '', conversionFactor: 1, purchasePrice: 0, salePrice: 0 }]
+      units: [...formData.units, { unitName: '', conversionFactor: 1, purchasePrice: 0, salePrice: 0, wholesaleSalePrice: '', wholesaleMinQuantity: '' }]
     });
   };
 
@@ -423,6 +457,62 @@ const AddProduct = () => {
               </div>
             </div>
 
+            {/* Wholesale Enable Toggle */}
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-hover)', padding: '12px 15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+              <input 
+                type="checkbox" 
+                id="enableWholesaleForm" 
+                checked={enableWholesaleForm} 
+                onChange={(e) => setEnableWholesaleForm(e.target.checked)} 
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }} 
+              />
+              <label htmlFor="enableWholesaleForm" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: enableWholesaleForm ? 'var(--metro-blue)' : 'var(--text-muted)' }}>
+                ✓ تفعيل البيع بالجملة لهذا المنتج (يظهر حقول أسعار الجملة للقطعة والعلب)
+              </label>
+            </div>
+
+            {/* Wholesale Prices Grid */}
+            {enableWholesaleForm && (
+              <div className="grid grid-2 gap-15" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر شراء جملة (للقطعة الأساسية)</label>
+                  <input 
+                    className="form-control" 
+                    type="number" 
+                    step="0.01" 
+                    name="wholesalePurchasePrice" 
+                    value={formData.wholesalePurchasePrice} 
+                    onChange={(e) => setFormData({ ...formData, wholesalePurchasePrice: e.target.value })} 
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر بيع جملة (للقطعة الأساسية)</label>
+                  <input 
+                    className="form-control" 
+                    type="number" 
+                    step="0.01" 
+                    name="wholesaleSalePrice" 
+                    value={formData.wholesaleSalePrice} 
+                    onChange={(e) => setFormData({ ...formData, wholesaleSalePrice: e.target.value })} 
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>الحد الأدنى لبيع جملة القطعة</label>
+                  <input 
+                    className="form-control" 
+                    type="number" 
+                    step="0.01" 
+                    name="wholesaleMinQuantity" 
+                    value={formData.wholesaleMinQuantity} 
+                    onChange={(e) => setFormData({ ...formData, wholesaleMinQuantity: e.target.value })} 
+                    placeholder="10"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Stock & Product Code */}
             <div className="grid grid-2 gap-15" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
               <div className="form-group">
@@ -497,66 +587,120 @@ const AddProduct = () => {
             {/* Wholesale Units */}
             <div style={{ marginTop: '25px', padding: '20px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '25px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>📦 وحدات الجملة/التعبئة (اختياري)</h4>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>📦 وحدات التعبئة والتجزئة الكبرى (كرتونة / شكارة / دستة)</h4>
                 <button type="button" className="btn btn-sm btn-secondary" onClick={addUnitRow}>
-                  + إضافة وحدة جملة
+                  + إضافة وحدة
                 </button>
               </div>
 
               {formData.units.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '15px' }}>
-                  لم يتم إضافة وحدات جملة (مثلاً: كرتونة)
+                  لم يتم إضافة وحدات كبرى (مثلاً: كرتونة)
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {formData.units.map((unit, index) => (
-                    <div key={index} className="packaging-unit-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 40px', gap: '10px', alignItems: 'end', background: 'var(--bg-card)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>اسم الوحدة</label>
-                        <input 
-                          className="form-control form-control-sm" 
-                          value={unit.unitName} 
-                          onChange={(e) => updateUnitRow(index, 'unitName', e.target.value)} 
-                          placeholder="كرتونة، علبة..." 
-                        />
+                  {formData.units.map((unit, index) => {
+                    const factor = parseFloat(unit.conversionFactor) || 1;
+                    const autoPurchase = ((parseFloat(formData.purchasePrice) || 0) * factor).toFixed(2);
+                    const autoSale = ((parseFloat(formData.salePrice) || 0) * factor).toFixed(2);
+                    const autoWholesale = ((parseFloat(formData.wholesaleSalePrice) || 0) * factor).toFixed(2);
+
+                    return (
+                      <div key={index} style={{ background: 'var(--bg-card)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                        <div className="packaging-unit-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>اسم الوحدة</label>
+                            <input 
+                              className="form-control form-control-sm" 
+                              value={unit.unitName} 
+                              onChange={(e) => updateUnitRow(index, 'unitName', e.target.value)} 
+                              placeholder="كرتونة، علبة..." 
+                            />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>الكمية بالقطع</label>
+                            <input 
+                              className="form-control form-control-sm" 
+                              type="number" 
+                              value={unit.conversionFactor} 
+                              onChange={(e) => updateUnitRow(index, 'conversionFactor', parseFloat(e.target.value) || 1)} 
+                            />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>سعر الشراء</label>
+                            <input 
+                              className="form-control form-control-sm" 
+                              type="number" 
+                              value={unit.purchasePrice || ''} 
+                              onChange={(e) => updateUnitRow(index, 'purchasePrice', e.target.value)} 
+                              placeholder={`تلقائي: ${autoPurchase}`}
+                            />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>سعر البيع</label>
+                            <input 
+                              className="form-control form-control-sm" 
+                              type="number" 
+                              value={unit.salePrice || ''} 
+                              onChange={(e) => updateUnitRow(index, 'salePrice', e.target.value)} 
+                              placeholder={`تلقائي: ${autoSale}`}
+                            />
+                          </div>
+                        </div>
+                        {factor === 1 && (
+                          <div style={{ color: '#f59e0b', fontSize: '0.8rem', marginTop: '8px', padding: '6px 10px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '4px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                            💡 <strong>تنبيه:</strong> معامل التحويل (1) يعني أن هذه الوحدة هي نفس الوحدة الأساسية (القطعة). لتعريف أسعار الجملة للقطعة، يرجى استخدام الحقول في الأعلى مباشرة دون إضافة وحدة جديدة هنا.
+                          </div>
+                        )}
+                        {enableWholesaleForm && (
+                          <div className="packaging-unit-wholesale-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '10px', marginTop: '10px', alignItems: 'end' }}>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>سعر بيع جملة (للوحدة الكبرى - كالكرتونة مثلاً)</label>
+                              <input 
+                                className="form-control form-control-sm" 
+                                type="number" 
+                                value={unit.wholesaleSalePrice || ''} 
+                                onChange={(e) => updateUnitRow(index, 'wholesaleSalePrice', e.target.value)} 
+                                placeholder={`تلقائي: ${autoWholesale}`}
+                              />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>الحد الأدنى لبيع جملة الوحدة الكبرى</label>
+                              <input 
+                                className="form-control form-control-sm" 
+                                type="number" 
+                                value={unit.wholesaleMinQuantity || ''} 
+                                onChange={(e) => updateUnitRow(index, 'wholesaleMinQuantity', e.target.value)} 
+                                placeholder="5"
+                              />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+                              <button 
+                                type="button" 
+                                className="btn btn-icon btn-sm" 
+                                style={{ color: 'var(--metro-red)', height: '36px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                                onClick={() => removeUnitRow(index)}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {!enableWholesaleForm && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                            <button 
+                              type="button" 
+                              className="btn btn-sm btn-ghost" 
+                              style={{ color: 'var(--metro-red)', padding: '2px 8px' }} 
+                              onClick={() => removeUnitRow(index)}
+                            >
+                              ✕ حذف الوحدة
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>الكمية بالقطع</label>
-                        <input 
-                          className="form-control form-control-sm" 
-                          type="number" 
-                          value={unit.conversionFactor} 
-                          onChange={(e) => updateUnitRow(index, 'conversionFactor', parseFloat(e.target.value) || 1)} 
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>سعر الشراء</label>
-                        <input 
-                          className="form-control form-control-sm" 
-                          type="number" 
-                          value={unit.purchasePrice} 
-                          onChange={(e) => updateUnitRow(index, 'purchasePrice', parseFloat(e.target.value) || 0)} 
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>سعر البيع</label>
-                        <input 
-                          className="form-control form-control-sm" 
-                          type="number" 
-                          value={unit.salePrice} 
-                          onChange={(e) => updateUnitRow(index, 'salePrice', parseFloat(e.target.value) || 0)} 
-                        />
-                      </div>
-                      <button 
-                        type="button" 
-                        className="btn btn-icon btn-sm" 
-                        style={{ color: 'var(--metro-red)', marginBottom: '5px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
-                        onClick={() => removeUnitRow(index)}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

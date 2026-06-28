@@ -306,6 +306,9 @@ const Login = () => {
 
         <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #222' }}>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '8px' }}>
+            نسيت كلمة المرور؟ <Link to="/forgot-password" style={{ color: 'var(--metro-blue)', fontWeight: '600', textDecoration: 'none' }}>إعادة تعيين</Link>
+          </p>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '8px' }}>
             ليس لديك حساب؟ <a href="/register" style={{ color: 'var(--metro-blue)', fontWeight: '600', textDecoration: 'none' }}>إنشاء شركة جديدة</a>
           </p>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>

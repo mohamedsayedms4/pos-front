@@ -128,7 +128,7 @@ const ProductDetails = () => {
 
   const openAddUnit = () => {
     setEditingUnit(null);
-    setUnitForm({ unitName: '', conversionFactor: '', purchasePrice: '', salePrice: '', isDefaultPurchase: false, isDefaultSale: false });
+    setUnitForm({ unitName: '', conversionFactor: '', purchasePrice: '', salePrice: '', wholesaleSalePrice: '', isDefaultPurchase: false, isDefaultSale: false });
     setShowUnitForm(true);
   };
 
@@ -139,6 +139,7 @@ const ProductDetails = () => {
       conversionFactor: u.conversionFactor,
       purchasePrice: u.purchasePrice,
       salePrice: u.salePrice,
+      wholesaleSalePrice: u.wholesaleSalePrice || '',
       isDefaultPurchase: !!u.isDefaultPurchase,
       isDefaultSale: !!u.isDefaultSale,
     });
@@ -158,6 +159,7 @@ const ProductDetails = () => {
         conversionFactor: parseFloat(unitForm.conversionFactor),
         purchasePrice: parseFloat(unitForm.purchasePrice) || 0,
         salePrice: parseFloat(unitForm.salePrice) || 0,
+        wholesaleSalePrice: unitForm.wholesaleSalePrice !== '' ? parseFloat(unitForm.wholesaleSalePrice) : null,
         isDefaultPurchase: unitForm.isDefaultPurchase,
         isDefaultSale: unitForm.isDefaultSale,
       };
@@ -526,6 +528,11 @@ const ProductDetails = () => {
       <div className="toolbar" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button className="btn btn-ghost" onClick={() => navigate('/products')}>← عودة للمنتجات</button>
         <div style={{ flex: 1 }}></div>
+        {Api.can('PRODUCT_WRITE') && (
+          <button className="btn" style={{ background: 'var(--metro-orange)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(255,140,0,0.2)' }} onClick={() => navigate(`/products/edit/${id}`)}>
+            ✏️ تعديل المنتج
+          </button>
+        )}
         {onlineBranch && !isLinkedToOnline && (
           <button
             className="btn"
@@ -815,9 +822,14 @@ const ProductDetails = () => {
                     onChange={e => setUnitForm({ ...unitForm, purchasePrice: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label>سعر البيع بالجملة</label>
+                  <label>سعر البيع (القطاعي)</label>
                   <input className="form-control" type="number" step="0.01" min="0" placeholder="150.00" value={unitForm.salePrice}
                     onChange={e => setUnitForm({ ...unitForm, salePrice: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>سعر البيع بالجملة</label>
+                  <input className="form-control" type="number" step="0.01" min="0" placeholder="140.00" value={unitForm.wholesaleSalePrice}
+                    onChange={e => setUnitForm({ ...unitForm, wholesaleSalePrice: e.target.value })} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '20px', marginBottom: '16px' }}>
@@ -855,6 +867,7 @@ const ProductDetails = () => {
                     <th>معامل التحويل</th>
                     <th>= كم وحدة أساسية</th>
                     <th>سعر الشراء</th>
+                    <th>سعر البيع القطاعي</th>
                     <th>سعر البيع الجملة</th>
                     <th>افتراضي شراء</th>
                     <th>افتراضي بيع</th>
@@ -871,6 +884,7 @@ const ProductDetails = () => {
                       </td>
                       <td>{u.purchasePrice ? Number(u.purchasePrice).toFixed(2) : '—'}</td>
                       <td>{u.salePrice ? Number(u.salePrice).toFixed(2) : '—'}</td>
+                      <td>{u.wholesaleSalePrice ? Number(u.wholesaleSalePrice).toFixed(2) : '—'}</td>
                       <td style={{ textAlign: 'center' }}>{u.isDefaultPurchase ? '✅' : '—'}</td>
                       <td style={{ textAlign: 'center' }}>{u.isDefaultSale ? '✅' : '—'}</td>
                       <td>

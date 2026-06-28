@@ -59,35 +59,33 @@ const DeletedProducts = () => {
     loadDeletedProducts(selectedBranchId);
   }, [selectedBranchId]);
 
-  const handleRestoreGlobal = async (productId, name) => {
-    const ok = await confirm(`هل أنت متأكد من استعادة المنتج "${name}" بشكل كامل لجميع الفروع؟`);
-    if (!ok) return;
-
-    try {
-      await Api.restoreProductGlobal(productId);
-      toast(`تم استعادة المنتج "${name}" بنجاح`, 'success');
-      loadDeletedProducts(selectedBranchId);
-    } catch (err) {
-      toast(err.message, 'error');
-    }
+  const handleRestoreGlobal = (productId, name) => {
+    confirm(`هل أنت متأكد من استعادة المنتج "${name}" بشكل كامل لجميع الفروع؟`, async () => {
+      try {
+        await Api.restoreProductGlobal(productId);
+        toast(`تم استعادة المنتج "${name}" بنجاح`, 'success');
+        loadDeletedProducts(selectedBranchId);
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
   };
 
-  const handleRestoreInBranch = async (productId, name) => {
+  const handleRestoreInBranch = (productId, name) => {
     if (!selectedBranchId) {
       toast('الرجاء اختيار فرع محدد أولاً لإجراء الاستعادة فيه', 'warning');
       return;
     }
     const branchName = branches.find(b => String(b.id) === String(selectedBranchId))?.name || 'الفرع المحدد';
-    const ok = await confirm(`هل أنت متأكد من استعادة المنتج "${name}" للفرع "${branchName}"؟`);
-    if (!ok) return;
-
-    try {
-      await Api.restoreProductInBranch(productId, selectedBranchId);
-      toast(`تم استعادة المنتج "${name}" في فرع "${branchName}" بنجاح`, 'success');
-      loadDeletedProducts(selectedBranchId);
-    } catch (err) {
-      toast(err.message, 'error');
-    }
+    confirm(`هل أنت متأكد من استعادة المنتج "${name}" للفرع "${branchName}"؟`, async () => {
+      try {
+        await Api.restoreProductInBranch(productId, selectedBranchId);
+        toast(`تم استعادة المنتج "${name}" في فرع "${branchName}" بنجاح`, 'success');
+        loadDeletedProducts(selectedBranchId);
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
   };
 
   const filteredItems = data.filter(p => {
@@ -262,8 +260,8 @@ const DeletedProducts = () => {
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{p.categoryName || '—'}</td>
                       <td><code style={{ color: 'var(--text-muted)' }}>{p.productCode || '—'}</code></td>
-                      <td>{Number(p.purchasePrice || 0).toFixed(2)}</td>
-                      <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{Number(p.salePrice || 0).toFixed(2)}</td>
+                      <td>{Number(p.purchasePrice !== undefined ? p.purchasePrice : (p.branchInventories?.[0]?.purchasePrice || 0)).toFixed(2)}</td>
+                      <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{Number(p.salePrice !== undefined ? p.salePrice : (p.branchInventories?.[0]?.salePrice || 0)).toFixed(2)}</td>
                       <td>
                         <div className="table-actions" style={{ display: 'flex', gap: '8px' }}>
                           {selectedBranchId && (
