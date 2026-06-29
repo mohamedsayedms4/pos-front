@@ -98,6 +98,16 @@ import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
 import PrintInvoice from './pages/PrintInvoice.jsx'
 
+import CostCenterSetup from './pages/manufacturing/CostCenterSetup.jsx'
+import WorkstationSetup from './pages/manufacturing/WorkstationSetup.jsx'
+import BomManagement from './pages/manufacturing/BomManagement.jsx'
+import RoutingEditor from './pages/manufacturing/RoutingEditor.jsx'
+import ProductionOrderList from './pages/manufacturing/ProductionOrderList.jsx'
+import ProductionOrderForm from './pages/manufacturing/ProductionOrderForm.jsx'
+import MrpDashboard from './pages/manufacturing/MrpDashboard.jsx'
+import QualityControlBoard from './pages/manufacturing/QualityControlBoard.jsx'
+import ProductionCostReport from './pages/manufacturing/ProductionCostReport.jsx'
+
 import MainLayout from './components/layout/MainLayout.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 import Error403 from './pages/Error403.jsx'
@@ -202,6 +212,18 @@ function App() {
                       <Route path="/inventory/report" element={<InventoryReport />} />
                       <Route path="/inventory-checks" element={<InventoryChecks />} />
                       <Route path="/inventory-checks/:id" element={<InventoryCheckDetails />} />
+                      
+                      {/* Manufacturing */}
+                      <Route path="/manufacturing/cost-centers" element={<CostCenterSetup />} />
+                      <Route path="/manufacturing/workstations" element={<WorkstationSetup />} />
+                      <Route path="/manufacturing/boms" element={<BomManagement />} />
+                      <Route path="/manufacturing/routing" element={<RoutingEditor />} />
+                      <Route path="/manufacturing/production-orders" element={<ProductionOrderList />} />
+                      <Route path="/manufacturing/production-orders/new" element={<ProductionOrderForm />} />
+                      <Route path="/manufacturing/mrp" element={<MrpDashboard />} />
+                      <Route path="/manufacturing/quality" element={<QualityControlBoard />} />
+                      <Route path="/manufacturing/cost-report" element={<ProductionCostReport />} />
+                      <Route path="/manufacturing/production-orders/:id/cost-report" element={<ProductionCostReport />} />
                     </Route>
 
                     {/* Damaged Goods */}

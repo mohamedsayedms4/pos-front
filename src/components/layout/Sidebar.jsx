@@ -379,6 +379,84 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
         */}
 
+        {/* 14. التصنيع والإنتاج */}
+        {Api.can('PRODUCT_READ') && isOnline && (
+          <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div
+              className={`nav-item ${location.pathname.startsWith('/manufacturing') ? 'active' : ''}`}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', paddingRight: '16px' }}
+              onClick={() => {
+                const current = document.getElementById('manufacturing-menu-open');
+                if (current) current.click();
+              }}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, color: 'inherit', padding: '11px 0' }}
+              >
+                <span className="nav-icon"><i className="fa-solid fa-industry"></i></span>
+                <span>التصنيع والإنتاج</span>
+              </div>
+              <span
+                id="manufacturing-menu-open"
+                style={{
+                  fontSize: '0.8rem',
+                  transition: 'transform 0.2s',
+                  transform: location.pathname.startsWith('/manufacturing') ? 'rotate(90deg)' : 'rotate(0deg)',
+                  padding: '4px 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-muted)'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.target.style.transform = e.target.style.transform === 'rotate(90deg)' ? 'rotate(0deg)' : 'rotate(90deg)';
+                  const subItems = document.getElementById('manufacturing-sub-items');
+                  if (subItems) subItems.style.display = subItems.style.display === 'none' ? 'flex' : 'none';
+                }}
+              >
+                ◀
+              </span>
+            </div>
+
+            <div
+              id="manufacturing-sub-items"
+              className="nav-sub-items"
+              style={{
+                background: 'rgba(0, 0, 0, 0.2)',
+                display: location.pathname.startsWith('/manufacturing') ? 'flex' : 'none',
+                flexDirection: 'column',
+                paddingRight: '15px'
+              }}
+            >
+              <NavLink to="/manufacturing/cost-centers" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>مراكز التكلفة</span>
+              </NavLink>
+              <NavLink to="/manufacturing/workstations" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>محطات العمل</span>
+              </NavLink>
+              <NavLink to="/manufacturing/boms" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>قوائم المواد (BOM)</span>
+              </NavLink>
+              <NavLink to="/manufacturing/routing" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>مسارات التصنيع</span>
+              </NavLink>
+              <NavLink to="/manufacturing/production-orders" end className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>أوامر الإنتاج</span>
+              </NavLink>
+              <NavLink to="/manufacturing/mrp" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>تخطيط الاحتياجات (MRP)</span>
+              </NavLink>
+              <NavLink to="/manufacturing/quality" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>مراقبة الجودة</span>
+              </NavLink>
+              <NavLink to="/manufacturing/cost-report" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>تقرير التكاليف</span>
+              </NavLink>
+            </div>
+          </div>
+        )}
+
         {/* ────────────────── بقية العمليات والطلبات ────────────────── */}
         <div className="nav-section-title">{isOnline ? 'المبيعات المباشرة والتشغيل' : 'نظام الكاشير (أوفلاين)'}</div>
 
