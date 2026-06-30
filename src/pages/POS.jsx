@@ -71,6 +71,15 @@ const POS = () => {
     localStorage.getItem('pos_print_preview') !== 'false'
   );
 
+  // Quick Add State
+  const [showQuickAddCustomer, setShowQuickAddCustomer] = useState(false);
+  const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '' });
+  const [savingQuickCustomer, setSavingQuickCustomer] = useState(false);
+
+  const [showQuickAddProduct, setShowQuickAddProduct] = useState(false);
+  const [quickProductForm, setQuickProductForm] = useState({ name: '', purchasePrice: 0, salePrice: 0 });
+  const [savingQuickProduct, setSavingQuickProduct] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('pos_print_preview', printPreview);
   }, [printPreview]);
@@ -575,6 +584,49 @@ const POS = () => {
 
   handleCheckoutRef.current = handleCheckout;
 
+  // ─── Quick Add Handlers ──────────────────────────────────────────────────
+  const handleSaveQuickCustomer = async (e) => {
+    e.preventDefault();
+    setSavingQuickCustomer(true);
+    try {
+      const data = { ...quickCustomerForm, type: 'INDIVIDUAL', status: 'ACTIVE' };
+      const newCustomer = await Api.createCustomer(data);
+      toast('تم إضافة العميل السريع بنجاح', 'success');
+      setCustomers(prev => [newCustomer, ...prev]);
+      setSelectedCustomerId(newCustomer.id);
+      setShowQuickAddCustomer(false);
+      setQuickCustomerForm({ name: '', phone: '' });
+    } catch (err) {
+      toast(err.message || 'فشل إضافة العميل', 'error');
+    } finally {
+      setSavingQuickCustomer(false);
+    }
+  };
+
+  const handleSaveQuickProduct = async (e) => {
+    e.preventDefault();
+    setSavingQuickProduct(true);
+    try {
+      const data = {
+        name: quickProductForm.name,
+        price: quickProductForm.salePrice,
+        purchasePrice: quickProductForm.purchasePrice,
+        type: 'STANDARD',
+        status: 'ACTIVE',
+        trackStock: true
+      };
+      const newProduct = await Api.createProduct(data, null, selectedBranchId);
+      toast('تم إضافة المنتج السريع بنجاح', 'success');
+      setBrowseProducts(prev => [newProduct, ...prev]);
+      setShowQuickAddProduct(false);
+      setQuickProductForm({ name: '', purchasePrice: 0, salePrice: 0 });
+    } catch (err) {
+      toast(err.message || 'فشل إضافة المنتج', 'error');
+    } finally {
+      setSavingQuickProduct(false);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isCtrlB = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b';
@@ -621,16 +673,27 @@ const POS = () => {
       {/* LEFT: PRODUCTS BROWSER */}
       <div className="pos-products-pane">
         <div className="pos-header-glass">
-          <div className="pos-search-wrapper">
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="ابحث بالاسم أو امسح الباركود..."
-              value={browseSearch}
-              onChange={e => handleBrowseSearch(e.target.value)}
-              autoFocus
-            />
-            <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
+          <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+            <div className="pos-search-wrapper" style={{ flex: 1, margin: 0 }}>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="ابحث بالاسم أو امسح الباركود..."
+                value={browseSearch}
+                onChange={e => handleBrowseSearch(e.target.value)}
+                autoFocus
+              />
+              <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
+            </div>
+            <button 
+              type="button" 
+              className="btn" 
+              style={{ padding: '0 15px', background: 'var(--bg-glass)', border: '1px solid var(--border-glass)', borderRadius: '12px', color: 'var(--text-main)' }}
+              title="إضافة منتج سريع"
+              onClick={() => setShowQuickAddProduct(true)}
+            >
+              ➕
+            </button>
           </div>
           <div className={`sync-indicator ${connected ? 'active' : ''}`}>
             {connected ? '🟢 متصل' : '🔴 غير متصل'}
@@ -717,58 +780,69 @@ const POS = () => {
           </select>
 
           {/* Searchable Customer Dropdown */}
-          <div className="searchable-select-container" ref={customerDropdownRef}>
-            <div 
-              className="pos-select-display form-control pos-select" 
-              onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-            >
-              <span>{selectedCustomerName || 'عميل نقدي (كاش)'}</span>
-              <span className="dropdown-arrow">▼</span>
-            </div>
-            
-            {isCustomerDropdownOpen && (
-              <div className="pos-select-dropdown">
-                <div className="dropdown-search-wrapper">
-                  <input 
-                    type="text" 
-                    className="dropdown-search-input" 
-                    placeholder="ابحث باسم العميل أو رقم الهاتف..." 
-                    value={customerSearchQuery}
-                    onChange={e => setCustomerSearchQuery(e.target.value)}
-                    autoFocus 
-                  />
-                </div>
-                <div className="dropdown-options-list">
-                  <div 
-                    className={`dropdown-option ${!selectedCustomerId ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedCustomerId('');
-                      setIsCustomerDropdownOpen(false);
-                      setCustomerSearchQuery('');
-                    }}
-                  >
-                    عميل نقدي (كاش)
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="searchable-select-container" ref={customerDropdownRef} style={{ flex: 1 }}>
+              <div 
+                className="pos-select-display form-control pos-select" 
+                onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
+              >
+                <span>{selectedCustomerName || 'عميل نقدي (كاش)'}</span>
+                <span className="dropdown-arrow">▼</span>
+              </div>
+              
+              {isCustomerDropdownOpen && (
+                <div className="pos-select-dropdown">
+                  <div className="dropdown-search-wrapper">
+                    <input 
+                      type="text" 
+                      className="dropdown-search-input" 
+                      placeholder="ابحث باسم العميل أو رقم الهاتف..." 
+                      value={customerSearchQuery}
+                      onChange={e => setCustomerSearchQuery(e.target.value)}
+                      autoFocus 
+                    />
                   </div>
-                  {filteredCustomers.map(c => (
+                  <div className="dropdown-options-list">
                     <div 
-                      key={c.id} 
-                      className={`dropdown-option ${selectedCustomerId == c.id ? 'selected' : ''}`}
+                      className={`dropdown-option ${!selectedCustomerId ? 'selected' : ''}`}
                       onClick={() => {
-                        setSelectedCustomerId(c.id);
+                        setSelectedCustomerId('');
                         setIsCustomerDropdownOpen(false);
                         setCustomerSearchQuery('');
                       }}
                     >
-                      <span className="option-name">{c.name}</span>
-                      {c.phone && <span className="option-phone">{c.phone}</span>}
+                      عميل نقدي (كاش)
                     </div>
-                  ))}
-                  {filteredCustomers.length === 0 && (
-                    <div className="dropdown-no-results">لا يوجد نتائج</div>
-                  )}
+                    {filteredCustomers.map(c => (
+                      <div 
+                        key={c.id} 
+                        className={`dropdown-option ${selectedCustomerId == c.id ? 'selected' : ''}`}
+                        onClick={() => {
+                          setSelectedCustomerId(c.id);
+                          setIsCustomerDropdownOpen(false);
+                          setCustomerSearchQuery('');
+                        }}
+                      >
+                        <span className="option-name">{c.name}</span>
+                        {c.phone && <span className="option-phone">{c.phone}</span>}
+                      </div>
+                    ))}
+                    {filteredCustomers.length === 0 && (
+                      <div className="dropdown-no-results">لا يوجد نتائج</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+            <button 
+              type="button" 
+              className="btn btn-outline-primary" 
+              style={{ padding: '0 15px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-glass)', border: '1px solid var(--border-glass)', borderRadius: '12px' }}
+              title="إضافة عميل سريع"
+              onClick={() => setShowQuickAddCustomer(true)}
+            >
+              +
+            </button>
           </div>
         </div>
 
@@ -1722,6 +1796,71 @@ const POS = () => {
         }
       `}</style>
     </div>
+      {/* ═══ Modal: Quick Add Customer ═══════════════════════════════════════ */}
+      {showQuickAddCustomer && (
+        <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddCustomer(false); }}>
+          <div className="modal" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>➕ عميل جديد (سريع)</h3>
+              <button className="modal-close" onClick={() => setShowQuickAddCustomer(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <form id="quickCustomerForm" onSubmit={handleSaveQuickCustomer}>
+                <div className="form-group mb-3">
+                  <label>اسم العميل *</label>
+                  <input className="form-control" type="text" value={quickCustomerForm.name} onChange={e => setQuickCustomerForm({...quickCustomerForm, name: e.target.value})} required />
+                </div>
+                <div className="form-group mb-3">
+                  <label>رقم الهاتف</label>
+                  <input className="form-control" type="text" value={quickCustomerForm.phone} onChange={e => setQuickCustomerForm({...quickCustomerForm, phone: e.target.value})} />
+                </div>
+              </form>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost" onClick={() => setShowQuickAddCustomer(false)}>إلغاء</button>
+              <button type="submit" form="quickCustomerForm" className="btn btn-primary" disabled={savingQuickCustomer}>
+                {savingQuickCustomer ? 'جاري الحفظ...' : 'حفظ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Modal: Quick Add Product ════════════════════════════════════════ */}
+      {showQuickAddProduct && (
+        <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddProduct(false); }}>
+          <div className="modal" style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>➕ منتج جديد (سريع)</h3>
+              <button className="modal-close" onClick={() => setShowQuickAddProduct(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <form id="quickProductForm" onSubmit={handleSaveQuickProduct}>
+                <div className="form-group mb-3">
+                  <label>اسم المنتج *</label>
+                  <input className="form-control" type="text" value={quickProductForm.name} onChange={e => setQuickProductForm({...quickProductForm, name: e.target.value})} required />
+                </div>
+                <div className="form-row">
+                  <div className="form-group mb-3">
+                    <label>سعر التكلفة (الشراء) *</label>
+                    <input className="form-control" type="number" step="0.01" value={quickProductForm.purchasePrice} onChange={e => setQuickProductForm({...quickProductForm, purchasePrice: e.target.value})} required />
+                  </div>
+                  <div className="form-group mb-3">
+                    <label>سعر البيع *</label>
+                    <input className="form-control" type="number" step="0.01" value={quickProductForm.salePrice} onChange={e => setQuickProductForm({...quickProductForm, salePrice: e.target.value})} required />
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost" onClick={() => setShowQuickAddProduct(false)}>إلغاء</button>
+              <button type="submit" form="quickProductForm" className="btn btn-primary" disabled={savingQuickProduct}>
+                {savingQuickProduct ? 'جاري الحفظ...' : 'حفظ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

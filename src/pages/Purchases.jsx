@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
@@ -134,6 +134,25 @@ const Purchases = () => {
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
 
+  // Quick Add State
+  const [showQuickAddSupplier, setShowQuickAddSupplier] = useState(false);
+  const [quickSupplierForm, setQuickSupplierForm] = useState({ name: '', phone: '', address: '' });
+  const [savingQuickSupplier, setSavingQuickSupplier] = useState(false);
+
+  const [showQuickAddProduct, setShowQuickAddProduct] = useState(false);
+  const [quickProductForm, setQuickProductForm] = useState({ name: '', purchasePrice: 0, salePrice: 0 });
+  const [savingQuickProduct, setSavingQuickProduct] = useState(false);
+
+  // Product Search/Pagination State
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [productPage, setProductPage] = useState(0);
+  const [productTotalPages, setProductTotalPages] = useState(1);
+  const [productLoading, setProductLoading] = useState(false);
+  const productDropdownRef = useRef(null);
+  const productObserverTarget = useRef(null);
+  const [selectedProductObj, setSelectedProductObj] = useState(null);
+
   const handleSelectSupplier = (supplier) => {
     setInvoiceForm(prev => ({ ...prev, supplierId: supplier.id }));
     setSupplierSearch(supplier.name);
@@ -181,6 +200,52 @@ const Purchases = () => {
 
     return () => clearTimeout(timer);
   }, [supplierSearch, formSelectedBranchId, invoiceForm.supplierId, modalType]);
+
+  const loadProductPage = useCallback(async (page, search, append = false, branchId = formSelectedBranchId) => {
+    if (modalType !== 'form' || !branchId) return;
+    setProductLoading(true);
+    try {
+      const data = await Api.getProductsPaged(page, 20, search, 'id,desc', branchId);
+      const items = data.items || data.content || [];
+      setProducts(prev => append ? [...prev, ...items] : items);
+      setProductTotalPages(data.totalPages || 1);
+      setProductPage(page);
+    } catch (e) {
+      console.warn("Failed to load products", e);
+      if (!append) setProducts([]);
+    } finally {
+      setProductLoading(false);
+    }
+  }, [formSelectedBranchId, modalType]);
+
+  useEffect(() => {
+    if (modalType !== 'form') return;
+    const delayDebounceFn = setTimeout(() => {
+      loadProductPage(0, productSearchQuery, false, formSelectedBranchId);
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [productSearchQuery, formSelectedBranchId, modalType, loadProductPage]);
+
+  useEffect(() => {
+    if (!showProductDropdown) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !productLoading && productPage < productTotalPages - 1) {
+        loadProductPage(productPage + 1, productSearchQuery, true, formSelectedBranchId);
+      }
+    }, { threshold: 1.0 });
+    if (productObserverTarget.current) observer.observe(productObserverTarget.current);
+    return () => observer.disconnect();
+  }, [productLoading, productPage, productTotalPages, productSearchQuery, loadProductPage, formSelectedBranchId, showProductDropdown]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (productDropdownRef.current && !productDropdownRef.current.contains(event.target)) {
+        setShowProductDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ─── Data Loading ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -252,11 +317,10 @@ const Purchases = () => {
       const initialBranchId = selectedBranchId || user?.branchId || '';
       setFormSelectedBranchId(initialBranchId);
 
-      const prods = await Api.getProductsPaged(0, 1000, '', '', initialBranchId);
-      const prodsArray = Array.isArray(prods) ? prods : (prods.items || prods.content || prods);
-
       setSuppliers([]); // Start empty, useEffect will populate with size 5
-      setProducts(prodsArray);
+      setProducts([]);
+      setProductSearchQuery('');
+      setSelectedProductObj(null);
 
       if (initialBranchId) {
         const whs = await Api.getWarehousesByBranch(initialBranchId);
@@ -288,16 +352,19 @@ const Purchases = () => {
         if (whs.length > 0) setSelectedWarehouseId(whs[0].id);
         else setSelectedWarehouseId('');
 
-        // Reload products for the new branch
-        const prods = await Api.getProductsPaged(0, 1000, '', '', branchId);
-        setProducts(Array.isArray(prods) ? prods : (prods.items || prods.content || prods));
-        
-        // Clearing search and ID triggers the useEffect to fetch 5 suppliers for the new branch
-        setSuppliers([]);
-        setSupplierSearch('');
-        setInvoiceForm(prev => ({ ...prev, supplierId: '' }));
+        if (modalType === 'form') {
+          // Reset products and load via useEffect
+          setProducts([]);
+          setProductSearchQuery('');
+          setSelectedProductObj(null);
+          
+          // Clearing search and ID triggers the useEffect to fetch 5 suppliers for the new branch
+          setSuppliers([]);
+          setSupplierSearch('');
+          setInvoiceForm(prev => ({ ...prev, supplierId: '' }));
+        }
 
-      } catch {
+      } catch (err) {
         setWarehouses([]);
         setSelectedWarehouseId('');
       }
@@ -333,15 +400,64 @@ const Purchases = () => {
     setActivePurchase(null);
   };
 
+  // ─── Quick Add Handlers ──────────────────────────────────────────────────
+  const handleSaveQuickSupplier = async (e) => {
+    e.preventDefault();
+    setSavingQuickSupplier(true);
+    try {
+      const data = { ...quickSupplierForm, type: 'LOCAL', status: 'ACTIVE' };
+      const newSupplier = await Api.createSupplier(data, formSelectedBranchId);
+      toast('تم إضافة المورد السريع بنجاح', 'success');
+      setSuppliers(prev => [newSupplier, ...prev]);
+      setSupplierSearch(newSupplier.name);
+      setInvoiceForm(prev => ({ ...prev, supplierId: newSupplier.id }));
+      setShowQuickAddSupplier(false);
+      setQuickSupplierForm({ name: '', phone: '', address: '' });
+    } catch (err) {
+      toast(err.message || 'فشل إضافة المورد', 'error');
+    } finally {
+      setSavingQuickSupplier(false);
+    }
+  };
+
+  const handleSaveQuickProduct = async (e) => {
+    e.preventDefault();
+    setSavingQuickProduct(true);
+    try {
+      const data = {
+        name: quickProductForm.name,
+        price: quickProductForm.salePrice,
+        purchasePrice: quickProductForm.purchasePrice,
+        type: 'STANDARD',
+        status: 'ACTIVE',
+        trackStock: true
+      };
+      const newProduct = await Api.createProduct(data, null, formSelectedBranchId);
+      toast('تم إضافة المنتج السريع بنجاح', 'success');
+      setProducts(prev => [newProduct, ...prev]);
+      handleProductChange(newProduct.id, newProduct);
+      setShowQuickAddProduct(false);
+      setQuickProductForm({ name: '', purchasePrice: 0, salePrice: 0 });
+    } catch (err) {
+      toast(err.message || 'فشل إضافة المنتج', 'error');
+    } finally {
+      setSavingQuickProduct(false);
+    }
+  };
+
   // ─── Product Selection → load units ───────────────────────────────────────
-  const handleProductChange = async (productId) => {
-    const prod = products.find(p => p.id == productId);
+  const handleProductChange = async (productId, optionalProductObj = null) => {
+    let prod = optionalProductObj || products.find(p => p.id == productId);
+    if (!prod && selectedProductObj?.id == productId) prod = selectedProductObj;
+
     if (!productId || !prod) {
       setItemForm({ productId: '', unitId: '', quantity: 1, unitPrice: 0 });
       setAvailableUnits([]);
+      setSelectedProductObj(null);
       return;
     }
 
+    setSelectedProductObj(prod);
     setItemForm(prev => ({ ...prev, productId, unitId: '', unitPrice: prod.purchasePrice || 0 }));
 
     // Fetch units for this product
@@ -371,7 +487,7 @@ const Purchases = () => {
   const handleUnitChange = (unitId) => {
     if (!unitId) {
       // Base unit selected
-      const prod = products.find(p => p.id == itemForm.productId);
+      const prod = products.find(p => p.id == itemForm.productId) || selectedProductObj;
       setItemForm(prev => ({ ...prev, unitId: '', unitPrice: prod?.purchasePrice || 0 }));
       return;
     }
@@ -391,7 +507,7 @@ const Purchases = () => {
     if (isNaN(qty) || qty <= 0) { toast('الكمية غير صحيحة', 'warning'); return; }
     if (isNaN(price) || price < 0) { toast('السعر غير صحيح', 'warning'); return; }
 
-    const product = products.find(p => p.id == itemForm.productId);
+    const product = products.find(p => p.id == itemForm.productId) || selectedProductObj;
     const unit = availableUnits.find(u => u.id == itemForm.unitId);
     const factor = unit ? parseFloat(unit.conversionFactor) : 1;
     const qtyInBase = qty * factor;
@@ -957,10 +1073,11 @@ const Purchases = () => {
                   <div className="form-row">
                     <div className="form-group" style={{ position: 'relative' }}>
                       <label>المورد *</label>
-                      <div className="searchable-select-wrapper" style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          className="form-control"
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <div className="searchable-select-wrapper" style={{ position: 'relative', flex: 1 }}>
+                          <input
+                            type="text"
+                            className="form-control"
                           placeholder="ابحث عن مورد بالاسم أو الهاتف..."
                           value={supplierSearch}
                           onFocus={() => setShowSupplierDropdown(true)}
@@ -1043,6 +1160,16 @@ const Purchases = () => {
                             )}
                           </div>
                         )}
+                        </div>
+                        <button 
+                          type="button" 
+                          className="btn btn-outline-primary" 
+                          style={{ padding: '0 15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          title="إضافة مورد سريع"
+                          onClick={() => setShowQuickAddSupplier(true)}
+                        >
+                          +
+                        </button>
                       </div>
                       {formErrors.supplierId && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.supplierId}</span>}
                     </div>
@@ -1081,18 +1208,72 @@ const Purchases = () => {
                       {/* Product */}
                       <div className="form-group" style={{ flex: 2 }}>
                         <label>المنتج</label>
-                        <select
-                          className="form-control"
-                          value={itemForm.productId}
-                          onChange={(e) => handleProductChange(e.target.value)}
-                        >
-                          <option value="">-- اختر --</option>
-                          {products.map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} (مخزون: {p.stock} {p.unitName})
-                            </option>
-                          ))}
-                        </select>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <div className="searchable-select-container" ref={productDropdownRef} style={{ flex: 1, position: 'relative' }}>
+                            <div 
+                              className="form-control pos-select-display" 
+                              onClick={() => setShowProductDropdown(!showProductDropdown)}
+                              style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            >
+                              <span>{selectedProductObj ? `${selectedProductObj.name} (مخزون: ${selectedProductObj.stock} ${selectedProductObj.unitName})` : '-- اختر --'}</span>
+                              <span className="dropdown-arrow">▼</span>
+                            </div>
+                            
+                            {showProductDropdown && (
+                              <div className="pos-select-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: 'var(--bg-main, #fff)', border: '1px solid var(--border-color, #ccc)', borderRadius: '4px', marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                                <div className="dropdown-search-wrapper" style={{ padding: '8px' }}>
+                                  <input 
+                                    type="text" 
+                                    className="form-control" 
+                                    placeholder="ابحث باسم المنتج..." 
+                                    value={productSearchQuery}
+                                    onChange={e => setProductSearchQuery(e.target.value)}
+                                    autoFocus 
+                                  />
+                                </div>
+                                <div className="dropdown-options-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                  <div 
+                                    className="dropdown-option"
+                                    style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle, #eee)' }}
+                                    onClick={() => {
+                                      handleProductChange('');
+                                      setShowProductDropdown(false);
+                                    }}
+                                  >
+                                    -- اختر --
+                                  </div>
+                                  {products.map(p => (
+                                    <div 
+                                      key={p.id} 
+                                      className="dropdown-option"
+                                      style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle, #eee)', backgroundColor: itemForm.productId === p.id ? 'var(--bg-hover, #f5f5f5)' : 'transparent' }}
+                                      onClick={() => {
+                                        handleProductChange(p.id, p);
+                                        setShowProductDropdown(false);
+                                      }}
+                                    >
+                                      {p.name} (مخزون: {p.stock} {p.unitName})
+                                    </div>
+                                  ))}
+                                  <div ref={productObserverTarget} style={{ height: '20px' }}></div>
+                                  {productLoading && <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-muted, #888)' }}>جاري التحميل...</div>}
+                                  {!productLoading && products.length === 0 && (
+                                    <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-muted, #888)' }}>لا يوجد نتائج</div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <button 
+                            type="button" 
+                            className="btn btn-outline-primary" 
+                            style={{ padding: '0 15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="إضافة منتج سريع"
+                            onClick={() => setShowQuickAddProduct(true)}
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
 
                       {/* Unit */}
@@ -1106,11 +1287,11 @@ const Purchases = () => {
                         >
                           {/* Base unit option */}
                           {itemForm.productId && (() => {
-                            const prod = products.find(p => p.id == itemForm.productId);
+                            const prod = products.find(p => p.id == itemForm.productId) || selectedProductObj;
                             return <option value="">{prod?.unitName || 'الوحدة الأساسية'} (مفردة/قطاعي)</option>;
                           })()}
                           {availableUnits.map(u => {
-                            const prod = products.find(p => p.id == itemForm.productId);
+                            const prod = products.find(p => p.id == itemForm.productId) || selectedProductObj;
                             return (
                               <option key={u.id} value={u.id}>
                                 {u.unitName} (تحتوي على {u.conversionFactor} {prod?.unitName || 'قطعة'})
@@ -1344,6 +1525,80 @@ const Purchases = () => {
                   }}
                 >
                   عرض التفاصيل الكاملة 📄
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {/* ═══ Modal: Quick Add Supplier ═══════════════════════════════════════ */}
+      {showQuickAddSupplier && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddSupplier(false); }}>
+            <div className="modal" style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3>➕ مورد جديد (سريع)</h3>
+                <button className="modal-close" onClick={() => setShowQuickAddSupplier(false)}>✕</button>
+              </div>
+              <div className="modal-body">
+                <form id="quickSupplierForm" onSubmit={handleSaveQuickSupplier}>
+                  <div className="form-group mb-3">
+                    <label>اسم المورد *</label>
+                    <input className="form-control" type="text" value={quickSupplierForm.name} onChange={e => setQuickSupplierForm({...quickSupplierForm, name: e.target.value})} required />
+                  </div>
+                  <div className="form-group mb-3">
+                    <label>رقم الهاتف</label>
+                    <input className="form-control" type="text" value={quickSupplierForm.phone} onChange={e => setQuickSupplierForm({...quickSupplierForm, phone: e.target.value})} />
+                  </div>
+                  <div className="form-group mb-3">
+                    <label>العنوان</label>
+                    <input className="form-control" type="text" value={quickSupplierForm.address} onChange={e => setQuickSupplierForm({...quickSupplierForm, address: e.target.value})} />
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setShowQuickAddSupplier(false)}>إلغاء</button>
+                <button type="submit" form="quickSupplierForm" className="btn btn-primary" disabled={savingQuickSupplier}>
+                  {savingQuickSupplier ? 'جاري الحفظ...' : 'حفظ'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {/* ═══ Modal: Quick Add Product ════════════════════════════════════════ */}
+      {showQuickAddProduct && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddProduct(false); }}>
+            <div className="modal" style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3>➕ منتج جديد (سريع)</h3>
+                <button className="modal-close" onClick={() => setShowQuickAddProduct(false)}>✕</button>
+              </div>
+              <div className="modal-body">
+                <form id="quickProductForm" onSubmit={handleSaveQuickProduct}>
+                  <div className="form-group mb-3">
+                    <label>اسم المنتج *</label>
+                    <input className="form-control" type="text" value={quickProductForm.name} onChange={e => setQuickProductForm({...quickProductForm, name: e.target.value})} required />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group mb-3">
+                      <label>سعر التكلفة (الشراء) *</label>
+                      <input className="form-control" type="number" step="0.01" value={quickProductForm.purchasePrice} onChange={e => setQuickProductForm({...quickProductForm, purchasePrice: e.target.value})} required />
+                    </div>
+                    <div className="form-group mb-3">
+                      <label>سعر البيع *</label>
+                      <input className="form-control" type="number" step="0.01" value={quickProductForm.salePrice} onChange={e => setQuickProductForm({...quickProductForm, salePrice: e.target.value})} required />
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setShowQuickAddProduct(false)}>إلغاء</button>
+                <button type="submit" form="quickProductForm" className="btn btn-primary" disabled={savingQuickProduct}>
+                  {savingQuickProduct ? 'جاري الحفظ...' : 'حفظ'}
                 </button>
               </div>
             </div>
