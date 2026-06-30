@@ -11,7 +11,8 @@ const ProductionCostReport = () => {
     const fetchOrders = async () => {
         try {
             const response = await api.get('/manufacturing/production-orders?tenantId=1');
-            setOrders(response.data.filter(o => o.status === 'COMPLETED'));
+            const ordersData = Array.isArray(response) ? response : (response?.data || []);
+            setOrders(ordersData.filter(o => o.status !== 'PLANNED'));
         } catch (error) {
             console.error('Error fetching production orders', error);
         }
@@ -29,7 +30,7 @@ const ProductionCostReport = () => {
                 </div>
                 
                 <div style={{ padding: '15px 20px', background: 'rgba(var(--metro-blue-rgb), 0.05)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                    يقارن هذا التقرير بين التكلفة المعيارية (المخططة) والتكلفة الفعلية لأوامر الإنتاج المكتملة، ويحسب نسبة الانحراف.
+                    يقارن هذا التقرير بين التكلفة المعيارية (المخططة) والتكلفة الفعلية لأوامر الإنتاج (المكتملة وقيد التنفيذ)، ويحسب نسبة الانحراف.
                     <br />
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                         <strong>ملاحظة:</strong> الانحراف الإيجابي (لون أحمر) يعني أن التكلفة الفعلية تخطت المعيارية (خسارة/تجاوز)، والانحراف السلبي (لون أخضر) يعني توفير في التكلفة.
@@ -90,7 +91,7 @@ const ProductionCostReport = () => {
                                 })}
                                 {orders.length === 0 && (
                                     <tr>
-                                        <td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>لا توجد أوامر إنتاج مكتملة لعرض تقرير التكاليف.</td>
+                                        <td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>لا توجد أوامر إنتاج (قيد التنفيذ أو مكتملة) لعرض تقرير التكاليف.</td>
                                     </tr>
                                 )}
                             </tbody>

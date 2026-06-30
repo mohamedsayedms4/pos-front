@@ -14,7 +14,8 @@ const WorkstationSetup = () => {
     const fetchWorkstations = async () => {
         try {
             const response = await api.get('/manufacturing/workstations');
-            setWorkstations(response.data);
+            const wsData = Array.isArray(response) ? response : (response?.data || []);
+            setWorkstations(wsData);
         } catch (error) {
             console.error('Error fetching workstations', error);
         }

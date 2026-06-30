@@ -12,7 +12,8 @@ const CostCenterSetup = () => {
     const fetchCostCenters = async () => {
         try {
             const response = await api.get('/manufacturing/cost-centers');
-            setCostCenters(response.data);
+            const ccData = Array.isArray(response) ? response : (response?.data || []);
+            setCostCenters(ccData);
         } catch (error) {
             console.error('Error fetching cost centers', error);
         }

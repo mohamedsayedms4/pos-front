@@ -12,6 +12,10 @@ const AddProduct = () => {
   const { toast } = useGlobalUI();
   const { selectedBranchId, getSelectedBranch, branches } = useBranch();
   const [productBranchId, setProductBranchId] = useState('');
+  
+  // Check if query param exists
+  const queryParams = new URLSearchParams(window.location.search);
+  const defaultIsRawMaterial = queryParams.get('isRawMaterial') === 'true';
 
   useEffect(() => {
     if (selectedBranchId && !productBranchId) {
@@ -43,6 +47,7 @@ const AddProduct = () => {
     wholesalePurchasePrice: '',
     wholesaleMinQuantity: '',
     showInStore: true,
+    isRawMaterial: defaultIsRawMaterial,
     units: [], // Packaging units
     onlineInventory: null
   });
@@ -140,6 +145,7 @@ const AddProduct = () => {
             categoryId: product.categoryId || '',
             unitName: product.unitName || 'القطعة',
             showInStore: branchShowInStore,
+            isRawMaterial: product.isRawMaterial || false,
             units: product.units || [],
             onlineInventory: product.onlineInventory || null
           });
@@ -182,6 +188,7 @@ const AddProduct = () => {
       wholesaleMinQuantity: enableWholesaleForm && formData.wholesaleMinQuantity ? parseFloat(formData.wholesaleMinQuantity) : null,
       stock: parseFloat(formData.stock) || 0,
       showInStore: formData.showInStore,
+      isRawMaterial: formData.isRawMaterial,
       categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
       units: formData.units.map(u => {
         const factor = parseFloat(u.conversionFactor) || 1;
@@ -344,7 +351,7 @@ const AddProduct = () => {
       {/* Page Title & Back Button */}
       <div className="toolbar" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.6rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-          {isEditMode ? `✏️ تعديل المنتج: ${formData.name}` : '📦 إضافة منتج جديد'}
+          {isEditMode ? (formData.isRawMaterial ? `✏️ تعديل مادة خام: ${formData.name}` : `✏️ تعديل المنتج: ${formData.name}`) : (formData.isRawMaterial ? '🧱 إضافة مادة خام' : '📦 إضافة منتج جديد')}
         </h2>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {!isEditMode && (
@@ -442,37 +449,41 @@ const AddProduct = () => {
                 />
                 {formErrors.purchasePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.purchasePrice}</span>}
               </div>
-              <div className="form-group">
-                <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر البيع (اختياري)</label>
-                <input 
-                  className="form-control" 
-                  type="number" 
-                  step="0.01" 
-                  name="salePrice" 
-                  value={formData.salePrice} 
-                  onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })} 
-                  placeholder="0.00"
-                />
-                {formErrors.salePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.salePrice}</span>}
-              </div>
+              {!formData.isRawMaterial && (
+                <div className="form-group">
+                  <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر البيع (اختياري)</label>
+                  <input 
+                    className="form-control" 
+                    type="number" 
+                    step="0.01" 
+                    name="salePrice" 
+                    value={formData.salePrice} 
+                    onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })} 
+                    placeholder="0.00"
+                  />
+                  {formErrors.salePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.salePrice}</span>}
+                </div>
+              )}
             </div>
 
             {/* Wholesale Enable Toggle */}
-            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-hover)', padding: '12px 15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
-              <input 
-                type="checkbox" 
-                id="enableWholesaleForm" 
-                checked={enableWholesaleForm} 
-                onChange={(e) => setEnableWholesaleForm(e.target.checked)} 
-                style={{ width: '18px', height: '18px', cursor: 'pointer' }} 
-              />
-              <label htmlFor="enableWholesaleForm" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: enableWholesaleForm ? 'var(--metro-blue)' : 'var(--text-muted)' }}>
-                ✓ تفعيل البيع بالجملة لهذا المنتج (يظهر حقول أسعار الجملة للقطعة والعلب)
-              </label>
-            </div>
+            {!formData.isRawMaterial && (
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-hover)', padding: '12px 15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+                <input 
+                  type="checkbox" 
+                  id="enableWholesaleForm" 
+                  checked={enableWholesaleForm} 
+                  onChange={(e) => setEnableWholesaleForm(e.target.checked)} 
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }} 
+                />
+                <label htmlFor="enableWholesaleForm" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: enableWholesaleForm ? 'var(--metro-blue)' : 'var(--text-muted)' }}>
+                  ✓ تفعيل البيع بالجملة لهذا المنتج (يظهر حقول أسعار الجملة للقطعة والعلب)
+                </label>
+              </div>
+            )}
 
             {/* Wholesale Prices Grid */}
-            {enableWholesaleForm && (
+            {!formData.isRawMaterial && enableWholesaleForm && (
               <div className="grid grid-2 gap-15" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر شراء جملة (للقطعة الأساسية)</label>
@@ -571,16 +582,32 @@ const AddProduct = () => {
             </div>
 
             {/* Store Visibility */}
+            {!formData.isRawMaterial && (
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-hover)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '25px' }}>
+                <input 
+                  type="checkbox" 
+                  id="showInStore" 
+                  checked={formData.showInStore} 
+                  onChange={(e) => setFormData({ ...formData, showInStore: e.target.checked })} 
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }} 
+                />
+                <label htmlFor="showInStore" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: formData.showInStore ? 'var(--metro-blue)' : 'var(--text-muted)' }}>
+                  {isOnlineBranch ? '🌐 عرض المنتج في المتجر الإلكتروني للعملاء (أونلاين)' : '✓ تفعيل عرض المنتج للعملاء (نشط)'}
+                </label>
+              </div>
+            )}
+
+            {/* Is Raw Material */}
             <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-hover)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', marginBottom: '25px' }}>
               <input 
                 type="checkbox" 
-                id="showInStore" 
-                checked={formData.showInStore} 
-                onChange={(e) => setFormData({ ...formData, showInStore: e.target.checked })} 
+                id="isRawMaterial" 
+                checked={formData.isRawMaterial} 
+                onChange={(e) => setFormData({ ...formData, isRawMaterial: e.target.checked })} 
                 style={{ width: '20px', height: '20px', cursor: 'pointer' }} 
               />
-              <label htmlFor="showInStore" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: formData.showInStore ? 'var(--metro-blue)' : 'var(--text-muted)' }}>
-                {isOnlineBranch ? '🌐 عرض المنتج في المتجر الإلكتروني للعملاء (أونلاين)' : '✓ تفعيل عرض المنتج للعملاء (نشط)'}
+              <label htmlFor="isRawMaterial" style={{ margin: 0, cursor: 'pointer', fontWeight: 600, color: formData.isRawMaterial ? 'var(--metro-orange)' : 'var(--text-muted)' }}>
+                🧱 هذا المنتج عبارة عن "مادة خام" (يستخدم في التصنيع ولا يظهر للعميل النهائي)
               </label>
             </div>
 
@@ -652,7 +679,7 @@ const AddProduct = () => {
                             💡 <strong>تنبيه:</strong> معامل التحويل (1) يعني أن هذه الوحدة هي نفس الوحدة الأساسية (القطعة). لتعريف أسعار الجملة للقطعة، يرجى استخدام الحقول في الأعلى مباشرة دون إضافة وحدة جديدة هنا.
                           </div>
                         )}
-                        {enableWholesaleForm && (
+                        {!formData.isRawMaterial && enableWholesaleForm && (
                           <div className="packaging-unit-wholesale-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '10px', marginTop: '10px', alignItems: 'end' }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label style={{ fontSize: '0.75rem', marginBottom: '4px', display: 'block' }}>سعر بيع جملة (للوحدة الكبرى - كالكرتونة مثلاً)</label>
@@ -686,7 +713,7 @@ const AddProduct = () => {
                             </div>
                           </div>
                         )}
-                        {!enableWholesaleForm && (
+                        {(!enableWholesaleForm || formData.isRawMaterial) && (
                           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                             <button 
                               type="button" 
@@ -753,7 +780,7 @@ const AddProduct = () => {
                 disabled={saving}
                 style={{ minWidth: '150px' }}
               >
-                {saving ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديلات' : 'إضافة المنتج')}
+                {saving ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديلات' : (formData.isRawMaterial ? 'إضافة المادة الخام' : 'إضافة المنتج'))}
               </button>
             </div>
           </form>

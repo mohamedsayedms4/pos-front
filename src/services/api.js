@@ -455,6 +455,30 @@ const Api = {
     }
   },
 
+  async get(path) {
+    return await this._request(path);
+  },
+
+  async post(path, body) {
+    return await this._request(path, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
+  async put(path, body) {
+    return await this._request(path, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    });
+  },
+
+  async delete(path) {
+    return await this._request(path, {
+      method: 'DELETE'
+    });
+  },
+
   async getProfitLossReport(startDate, endDate, branchId = null) {
     const branchQuery = branchId ? `&branchId=${branchId}` : '';
     const res = await this._request(`/expenses/profit-loss?startDate=${startDate}&endDate=${endDate}${branchQuery}`);
@@ -666,16 +690,17 @@ const Api = {
     return res?.data?.items || res?.data?.content || res?.content || res?.items || res?.data || res || [];
   },
 
-  async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc', branchId = null, categoryId = null) {
+  async getProductsPaged(page = 0, size = 20, search = '', sort = 'id,desc', branchId = null, categoryId = null, isRawMaterial = null) {
     const searchQuery = search ? `&search=${encodeURIComponent(search)}` : '';
     const sortQuery = sort ? `&sort=${sort}` : '';
     const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `&branchId=${branchId}` : '';
+    const isRawMaterialQuery = (isRawMaterial !== null && isRawMaterial !== undefined) ? `&isRawMaterial=${isRawMaterial}` : '';
 
     let endpoint;
     if (categoryId && categoryId !== 'null' && categoryId !== 'undefined' && categoryId !== '' && !search) {
-      endpoint = `/v2/products/category/${categoryId}?page=${page}&size=${size}${sortQuery}${branchQuery}`;
+      endpoint = `/v2/products/category/${categoryId}?page=${page}&size=${size}${sortQuery}${branchQuery}${isRawMaterialQuery}`;
     } else {
-      endpoint = `/v2/products?page=${page}&size=${size}${searchQuery}${sortQuery}${branchQuery}`;
+      endpoint = `/v2/products?page=${page}&size=${size}${searchQuery}${sortQuery}${branchQuery}${isRawMaterialQuery}`;
     }
 
     console.log(`%c[ðŸš€ API CALL] Requesting Products Endpoint: ${endpoint} | Selected Branch: ${branchId || 'All Branches'}`, 'color: #00ff00; font-weight: bold; font-size: 14px;');

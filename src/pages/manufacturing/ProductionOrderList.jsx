@@ -13,7 +13,8 @@ const ProductionOrderList = () => {
     const fetchOrders = async () => {
         try {
             const response = await api.get('/manufacturing/production-orders');
-            setOrders(response.data);
+            const ordersData = Array.isArray(response) ? response : (response?.data || []);
+            setOrders(ordersData);
         } catch (error) {
             console.error('Error fetching production orders', error);
         }

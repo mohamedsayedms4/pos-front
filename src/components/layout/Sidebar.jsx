@@ -435,8 +435,11 @@ const Sidebar = ({ isOpen, onClose }) => {
               <NavLink to="/manufacturing/workstations" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
                 <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>محطات العمل</span>
               </NavLink>
+              <NavLink to="/manufacturing/raw-materials" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>المواد الخام</span>
+              </NavLink>
               <NavLink to="/manufacturing/boms" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
-                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>قوائم المواد (BOM)</span>
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>قوائم المواد (BOMs)</span>
               </NavLink>
               <NavLink to="/manufacturing/routing" className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`} style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={onClose}>
                 <span className="nav-icon" style={{ fontSize: '0.9rem' }}>•</span><span>مسارات التصنيع</span>

@@ -107,6 +107,7 @@ import ProductionOrderForm from './pages/manufacturing/ProductionOrderForm.jsx'
 import MrpDashboard from './pages/manufacturing/MrpDashboard.jsx'
 import QualityControlBoard from './pages/manufacturing/QualityControlBoard.jsx'
 import ProductionCostReport from './pages/manufacturing/ProductionCostReport.jsx'
+import RawMaterials from './pages/manufacturing/RawMaterials.jsx'
 
 import MainLayout from './components/layout/MainLayout.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
@@ -216,6 +217,7 @@ function App() {
                       {/* Manufacturing */}
                       <Route path="/manufacturing/cost-centers" element={<CostCenterSetup />} />
                       <Route path="/manufacturing/workstations" element={<WorkstationSetup />} />
+                      <Route path="/manufacturing/raw-materials" element={<RawMaterials />} />
                       <Route path="/manufacturing/boms" element={<BomManagement />} />
                       <Route path="/manufacturing/routing" element={<RoutingEditor />} />
                       <Route path="/manufacturing/production-orders" element={<ProductionOrderList />} />

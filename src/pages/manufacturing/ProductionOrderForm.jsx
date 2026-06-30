@@ -14,7 +14,8 @@ const ProductionOrderForm = () => {
     const fetchBoms = async () => {
         try {
             const response = await api.get('/manufacturing/boms');
-            setBoms(response.data);
+            const bomsData = Array.isArray(response) ? response : (response?.data || []);
+            setBoms(bomsData);
         } catch (error) {
             console.error('Error fetching BOMs', error);
         }

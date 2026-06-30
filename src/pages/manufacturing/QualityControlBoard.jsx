@@ -21,7 +21,8 @@ const QualityControlBoard = () => {
     const fetchInspections = async () => {
         try {
             const response = await api.get('/manufacturing/quality?tenantId=1');
-            setInspections(response.data);
+            const insData = Array.isArray(response) ? response : (response?.data || []);
+            setInspections(insData);
         } catch (error) {
             console.error('Error fetching quality inspections', error);
         }
@@ -30,7 +31,8 @@ const QualityControlBoard = () => {
     const fetchOrders = async () => {
         try {
             const response = await api.get('/manufacturing/production-orders?tenantId=1');
-            setOrders(response.data.filter(o => o.status !== 'PLANNED'));
+            const ordersData = Array.isArray(response) ? response : (response?.data || []);
+            setOrders(ordersData.filter(o => o.status !== 'PLANNED'));
         } catch (error) {
             console.error('Error fetching production orders', error);
         }
@@ -109,7 +111,7 @@ const QualityControlBoard = () => {
                     <h3>📋 سجل فحوصات الجودة</h3>
                 </div>
                 <div className="card-body no-padding">
-                    <div className="table-wrapper">
+                    <div className="table-wrapper" style={{ overflowX: 'auto' }}>
                         <table className="data-table">
                             <thead>
                                 <tr>

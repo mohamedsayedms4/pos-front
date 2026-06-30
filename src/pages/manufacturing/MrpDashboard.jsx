@@ -13,7 +13,8 @@ const MrpDashboard = () => {
     const fetchRequirements = async () => {
         try {
             const response = await api.get('/manufacturing/mrp/requirements?tenantId=1'); 
-            setRequirements(response.data);
+            const reqsData = Array.isArray(response) ? response : (response?.data || []);
+            setRequirements(reqsData);
         } catch (error) {
             console.error('Error fetching MRP requirements', error);
         }
