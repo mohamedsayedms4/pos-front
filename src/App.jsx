@@ -82,6 +82,7 @@ import SubscriptionSuccess from './pages/SubscriptionSuccess.jsx'
 import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
 import SuperAdminSubscriptions from './pages/SuperAdminSubscriptions.jsx'
+import SuperAdminTenantCommunications from './pages/SuperAdminTenantCommunications.jsx'
 import StoreInactive from './pages/StoreInactive.jsx'
 import SubscriptionHistory from './pages/SubscriptionHistory.jsx'
 import Tickets from './pages/Tickets.jsx'
@@ -316,6 +317,7 @@ function App() {
 
                     {/* Super Admin */}
                     <Route path="/super-admin/subscriptions" element={<SuperAdminSubscriptions />} />
+                    <Route path="/super-admin/tenants/:id/communications" element={<SuperAdminTenantCommunications />} />
                     <Route path="/super-admin/articles" element={<SuperAdminArticles />} />
                     <Route path="/super-admin/desktop-app" element={<SuperAdminDesktopApp />} />
 

@@ -2364,6 +2364,19 @@ const Api = {
     return res.data || {};
   },
 
+  async getTenantCommunications(tenantId) {
+    const res = await this._request(`/super-admin/tenants/${tenantId}/communications`);
+    return res.data || [];
+  },
+
+  async addTenantCommunication(tenantId, data) {
+    const res = await this._request(`/super-admin/tenants/${tenantId}/communications`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
   async toggleTenantStatus(tenantId, active) {
     return await this._request(`/super-admin/tenants/${tenantId}/status`, {
       method: 'PATCH',

@@ -437,6 +437,11 @@ const SuperAdminSubscriptions = () => {
     }
   };
 
+  // Communication Log methods
+  const openCommModal = (tenant) => {
+    navigate(`/super-admin/tenants/${tenant.id}/communications`, { state: { tenant } });
+  };
+
   // Handle logo file selection
   const handleLogoChange = (e, fieldName, setPreview) => {
     const file = e.target.files[0];
@@ -693,7 +698,12 @@ const SuperAdminSubscriptions = () => {
                                {index + 1}
                              </td>
                              <td>
-                               <div className="sa-sub-tenant-cell">
+                               <div 
+                                 className="sa-sub-tenant-cell" 
+                                 onClick={() => openCommModal(tenant)} 
+                                 style={{ cursor: 'pointer' }}
+                                 title="اضغط لعرض أو إضافة سجل تواصل"
+                               >
                                  <div
                                    className="sa-sub-tenant-avatar"
                                    style={{ background: getAvatarColor(tenant.id) }}
