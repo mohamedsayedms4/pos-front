@@ -5,6 +5,8 @@ import Loader from '../components/common/Loader';
 import ReactDOM from 'react-dom';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import { useBranch } from '../context/BranchContext';
+import { useExport } from '../utils/useExport';
+import ExportProgressModal from '../components/ExportProgressModal';
 
 const Sales = () => {
     const { toast, confirm } = useGlobalUI();
@@ -20,7 +22,7 @@ const Sales = () => {
 
     const fileInputRef = React.useRef(null);
     const [importingExcel, setImportingExcel] = useState(false);
-    const [exportingExcel, setExportingExcel] = useState(false);
+    const { exportState, triggerExport, closeExportModal } = useExport();
 
     useEffect(() => {
         const handleOutsideClick = (e) => {
@@ -158,16 +160,10 @@ const Sales = () => {
     };
 
     const handleExportExcel = async () => {
-        setExportingExcel(true);
-        toast('جاري تصدير فواتير المبيعات...', 'info');
-        try {
-            await Api.exportSalesExcel(debouncedSearch, selectedBranchId);
-            toast('تم تصدير ملف الإكسيل بنجاح', 'success');
-        } catch (err) {
-            toast(err.message || 'فشل تصدير ملف الإكسيل', 'error');
-        } finally {
-            setExportingExcel(false);
-        }
+        await triggerExport('SALES_EXCEL', {
+            query: debouncedSearch,
+            branchId: selectedBranchId
+        });
     };
 
     const handleReturn = async () => {
@@ -245,9 +241,9 @@ const Sales = () => {
                               <button
                                 className="btn btn-secondary"
                                 onClick={handleExportExcel}
-                                disabled={exportingExcel || sales.length === 0}
+                                disabled={exportState.isOpen || sales.length === 0}
                               >
-                                {exportingExcel ? '⏳' : '📊'} تصدير إكسيل
+                                تصدير إكسيل
                               </button>
                             )}
 
@@ -560,6 +556,7 @@ const Sales = () => {
             </div>,
             document.body
         )}
+        <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
     </div>
 );
 };

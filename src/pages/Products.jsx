@@ -11,6 +11,8 @@ import StatTile from '../components/common/StatTile';
 import { useBranch } from '../context/BranchContext';
 import html2pdf from 'html2pdf.js';
 import SingleProductPdf from '../components/pdf/SingleProductPdf';
+import { useExport } from '../utils/useExport';
+import ExportProgressModal from '../components/ExportProgressModal';
 
 const Products = () => {
   const location = useLocation();
@@ -26,6 +28,7 @@ const Products = () => {
   };
   const { toast, confirm } = useGlobalUI();
   const { selectedBranchId: globalBranchId, branches: contextBranches } = useBranch();
+  const { exportState, triggerExport, closeExportModal } = useExport();
 
   const [data, setData] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -63,8 +66,6 @@ const Products = () => {
   }, [searchTerm]);
 
   // Modal states for add/edit product have been migrated to the standalone AddProduct page.
-  const [exportingExcel, setExportingExcel] = useState(false);
-  const [exportingPdf, setExportingPdf] = useState(false);
 
   // Print Barcode State
   const [printModalOpen, setPrintModalOpen] = useState(false);
@@ -256,27 +257,21 @@ const Products = () => {
   };
 
   const handleExportExcel = async () => {
-    setExportingExcel(true);
-    try {
-      await Api.exportProductsExcel(debouncedSearch, sort, selectedBranchId);
-      toast('تم تصدير ملف الإكسيل بنجاح', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setExportingExcel(false);
-    }
+    await triggerExport('PRODUCTS_EXCEL', {
+      query: debouncedSearch,
+      sort,
+      branchId: selectedBranchId,
+      categoryId: categoryFilter
+    });
   };
 
   const handleExportPdf = async () => {
-    setExportingPdf(true);
-    try {
-      await Api.exportProductsPdf(debouncedSearch, sort, selectedBranchId);
-      toast('تم تصدير ملف PDF بنجاح', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setExportingPdf(false);
-    }
+    await triggerExport('PRODUCTS_PDF', {
+      query: debouncedSearch,
+      sort,
+      branchId: selectedBranchId,
+      categoryId: categoryFilter
+    });
   };
 
   const handleDownloadSinglePdf = (product) => {
@@ -680,11 +675,11 @@ const Products = () => {
               </select>
 
               <div className="toolbar-actions" style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportingExcel || data.length === 0}>
-                  {exportingExcel ? '⏳' : '📊'} إكسيل
+                <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportState.isOpen || data.length === 0}>
+                  {exportState.isOpen ? '⏳' : '📊'} إكسيل
                 </button>
-                <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportingPdf || data.length === 0}>
-                  {exportingPdf ? '⏳' : '📄'} PDF
+                <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportState.isOpen || data.length === 0}>
+                  {exportState.isOpen ? '⏳' : '📄'} PDF
                 </button>
                 <button className="btn btn-secondary" onClick={() => navigate('/settings/print')} title="إعدادات الطباعة والقوالب">
                   ⚙️
@@ -925,7 +920,7 @@ const Products = () => {
       <div style={{ display: 'none' }}>
         {pdfProduct && <SingleProductPdf ref={pdfRef} product={pdfProduct} />}
       </div>
-
+      <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
     </>
   );
 };

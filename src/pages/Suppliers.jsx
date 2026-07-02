@@ -17,6 +17,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { useBranch } from '../context/BranchContext';
+import { useExport } from '../utils/useExport';
+import ExportProgressModal from '../components/ExportProgressModal';
 
 
 const Suppliers = () => {
@@ -47,10 +49,9 @@ const Suppliers = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const [exportingExcel, setExportingExcel] = useState(false);
-  const [exportingPdf, setExportingPdf] = useState(false);
   const [importingExcel, setImportingExcel] = useState(false);
   const fileInputRef = React.useRef(null);
+  const { exportState, triggerExport, closeExportModal } = useExport();
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -78,27 +79,17 @@ const Suppliers = () => {
   const [formErrors, setFormErrors] = useState({});
 
   const handleExportExcel = async () => {
-    setExportingExcel(true);
-    try {
-      await Api.exportSuppliersExcel(debouncedSearch, sort, selectedBranchId);
-      toast('تم تصدير ملف الإكسيل بنجاح', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setExportingExcel(false);
-    }
+    await triggerExport('SUPPLIERS_EXCEL', {
+      query: debouncedSearch,
+      branchId: selectedBranchId
+    });
   };
 
   const handleExportPdf = async () => {
-    setExportingPdf(true);
-    try {
-      await Api.exportSuppliersPdf(debouncedSearch, sort, selectedBranchId);
-      toast('تم تصدير ملف PDF بنجاح', 'success');
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setExportingPdf(false);
-    }
+    await triggerExport('SUPPLIERS_PDF', {
+      query: debouncedSearch,
+      branchId: selectedBranchId
+    });
   };
 
   const handleImportExcel = async (e) => {
@@ -510,16 +501,16 @@ const Suppliers = () => {
                     <button
                       className="btn btn-secondary"
                       onClick={handleExportExcel}
-                      disabled={exportingExcel || items.length === 0}
+                      disabled={exportState.isOpen || items.length === 0}
                     >
-                      {exportingExcel ? '⏳' : '📊'} تصدير إكسيل
+                      تصدير إكسيل
                     </button>
                     <button
                       className="btn btn-secondary"
                       onClick={handleExportPdf}
-                      disabled={exportingPdf || items.length === 0}
+                      disabled={exportState.isOpen || items.length === 0}
                     >
-                      {exportingPdf ? '⏳' : '📄'} PDF
+                      تصدير PDF
                     </button>
                   </>
                 )}
@@ -697,6 +688,7 @@ const Suppliers = () => {
           </div>
         </div>
       </div>
+      <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
 
       {modalType === 'form' && (
         <ModalContainer>

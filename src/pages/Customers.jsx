@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import CommunicationApi from '../services/CommunicationApi';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import { useExport } from '../utils/useExport';
+import ExportProgressModal from '../components/ExportProgressModal';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 import StatTile from '../components/common/StatTile';
@@ -30,6 +32,7 @@ const Customers = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const { exportState, triggerExport, closeExportModal } = useExport();
 
   // Transaction History State
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -234,12 +237,10 @@ const Customers = () => {
   };
 
   const handleExportExcel = async () => {
-    try {
-      await Api.exportCustomersExcel(query, selectedBranchId);
-      toast('تم تصدير العملاء بنجاح', 'success');
-    } catch (err) {
-      toast(err.message || 'حدث خطأ أثناء التصدير', 'error');
-    }
+    triggerExport('CUSTOMERS_EXCEL', {
+      query: query,
+      branchId: selectedBranchId
+    });
   };
 
   const handleDownloadTemplate = async () => {
@@ -320,7 +321,7 @@ const Customers = () => {
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 )}
-                {Api.can('CUSTOMER_READ') && <button className="btn btn-secondary" onClick={handleExportExcel} title="تصدير إلى إكسيل">📥 تصدير</button>}
+                {Api.can('CUSTOMER_READ') && <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportState.isOpen} title="تصدير إلى إكسيل">📊 إكسيل</button>}
                 {Api.can('CUSTOMER_WRITE') !== false && (
                   <>
                     <input type="file" id="customerExcelInput" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
@@ -412,6 +413,8 @@ const Customers = () => {
           </div>
         </div>
       </div>
+
+      <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
 
       {/* --- Modals --- */}
       {showModal && (

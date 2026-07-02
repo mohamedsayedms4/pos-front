@@ -4,6 +4,8 @@ import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
+import { useExport } from '../utils/useExport';
+import ExportProgressModal from '../components/ExportProgressModal';
 import {
   ComposedChart,
   Bar,
@@ -39,7 +41,7 @@ const Purchases = () => {
   const [sort, setSort] = useState('id,desc');
   const fileInputRef = React.useRef(null);
   const [importingExcel, setImportingExcel] = useState(false);
-  const [exportingExcel, setExportingExcel] = useState(false);
+  const { exportState, triggerExport, closeExportModal } = useExport();
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -111,16 +113,10 @@ const Purchases = () => {
   };
 
   const handleExportExcel = async () => {
-    setExportingExcel(true);
-    toast('جاري تصدير فواتير المشتريات...', 'info');
-    try {
-      await Api.exportPurchasesExcel(debouncedSearch, selectedBranchId);
-      toast('تم تصدير ملف الإكسيل بنجاح', 'success');
-    } catch (err) {
-      toast(err.message || 'فشل تصدير ملف الإكسيل', 'error');
-    } finally {
-      setExportingExcel(false);
-    }
+    await triggerExport('PURCHASES_EXCEL', {
+      query: debouncedSearch,
+      branchId: selectedBranchId
+    });
   };
 
   // Form State (New Invoice)
@@ -831,9 +827,9 @@ const Purchases = () => {
                   <button
                     className="btn btn-secondary"
                     onClick={handleExportExcel}
-                    disabled={exportingExcel || items.length === 0}
+                    disabled={exportState.isOpen || items.length === 0}
                   >
-                    {exportingExcel ? '⏳' : '📊'} تصدير إكسيل
+                    تصدير إكسيل
                   </button>
                 )}
 
@@ -1026,7 +1022,6 @@ const Purchases = () => {
           </div>
         </div>
       </div>
-
       {/* ═══ Modal: New Invoice ═══════════════════════════════════════════════ */}
       {modalType === 'form' && (
         <ModalContainer>
@@ -1605,6 +1600,7 @@ const Purchases = () => {
           </div>
         </ModalContainer>
       )}
+      <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
     </>
   );
 };
