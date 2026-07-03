@@ -90,6 +90,7 @@ import Articles from './pages/Articles.jsx'
 import ArticleDetail from './pages/ArticleDetail.jsx'
 import SuperAdminArticles from './pages/SuperAdminArticles.jsx'
 import SuperAdminDesktopApp from './pages/SuperAdminDesktopApp.jsx'
+import SuperAdminWhatsApp from './pages/SuperAdminWhatsApp.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -320,6 +321,7 @@ function App() {
                     <Route path="/super-admin/tenants/:id/communications" element={<SuperAdminTenantCommunications />} />
                     <Route path="/super-admin/articles" element={<SuperAdminArticles />} />
                     <Route path="/super-admin/desktop-app" element={<SuperAdminDesktopApp />} />
+                    <Route path="/super-admin/whatsapp" element={<SuperAdminWhatsApp />} />
 
                     {/* Technical Support */}
                     <Route path="/tickets" element={<Tickets />} />
