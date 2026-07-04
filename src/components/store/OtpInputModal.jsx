@@ -157,6 +157,7 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
                 <i className="fab fa-whatsapp"></i>
                 إرسال عبر واتساب (أسرع)
               </button>
+              {/*
               <button 
                 className="btn-channel sms" 
                 onClick={() => sendOtp('sms')}
@@ -165,6 +166,7 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
                 <i className="fas fa-sms"></i>
                 إرسال عبر رسالة نصية (SMS)
               </button>
+              */}
             </div>
           </div>
         ) : (
@@ -214,9 +216,11 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
               <button className="otp-resend-btn" onClick={() => sendOtp('whatsapp')} disabled={loading}>
                 إعادة إرسال عبر الواتساب
               </button>
+              {/*
               <button className="otp-resend-btn alt-resend-btn" onClick={() => sendOtp('sms')} disabled={loading}>
                 إرسال عبر رسالة نصية (SMS)
               </button>
+              */}
             </div>
           ) : (
             <p className="otp-timer">
