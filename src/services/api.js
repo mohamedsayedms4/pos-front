@@ -2591,20 +2591,11 @@ const Api = {
   },
 
   getImageUrl(url) {
-},
-
-  async getWhatsAppStatus() {
-    return this._request('/super-admin/whatsapp/status');
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+    if (url.startsWith('/')) return `${SERVER_URL}${url}`;
+    return `${API_BASE}/products/images/${url.split('/').pop()}`;
   },
-
-  async getWhatsAppQrCode() {
-    return this._request('/super-admin/whatsapp/qrcode');
-  },
-
-  async logoutWhatsApp() {
-    return this._request('/super-admin/whatsapp/logout', { method: 'DELETE' });
-  },
-
   // --- Cashier Sessions ---
   async openSession(data) {
     const res = await this._request('/sessions/open', {

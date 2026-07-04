@@ -586,11 +586,6 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span className="nav-icon">⚖️</span>
               <span>ميزان المراجعة (GL)</span>
             </NavLink>
-
-            <NavLink to="/financial-analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">📊</span>
-              <span>التحليل المالي الموحد</span>
-            </NavLink>
             <NavLink to="/financial-accounts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">🏦</span>
               <span>إدارة البنوك والحسابات</span>
