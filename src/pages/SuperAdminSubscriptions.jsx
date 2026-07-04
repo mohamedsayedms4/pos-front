@@ -4,6 +4,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
+import StatTile from '../components/common/StatTile';
 import '../styles/pages/SuperAdminSubscriptionsPremium.css';
 
 const AVATAR_COLORS = [
@@ -123,43 +124,24 @@ const SuperAdminSubscriptions = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Settings state
-  const [settings, setSettings] = useState({
-    softwareName: '',
-    supportPhone: '',
-    facebookUrl: '',
-    linkedInUrl: '',
-    youtubeUrl: '',
-    facebookPixelId: '',
-    logoUrl: '',
-    logoSidebarLightUrl: '',
-    logoSidebarDarkUrl: '',
-    logoFooterLightUrl: '',
-    logoFooterDarkUrl: '',
-    logoLoginLightUrl: '',
-    logoLoginDarkUrl: '',
-    logoLandingLightUrl: '',
-    logoLandingDarkUrl: '',
-    logoFaviconUrl: '',
-    vodafoneCashNumber: '',
-    instapayAddress: '',
-    newTenantNotificationNumbers: ''
-  });
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [logoPreview, setLogoPreview] = useState('');
-  const [logoSidebarLightPreview, setLogoSidebarLightPreview] = useState('');
-  const [logoSidebarDarkPreview, setLogoSidebarDarkPreview] = useState('');
-  const [logoFooterLightPreview, setLogoFooterLightPreview] = useState('');
-  const [logoFooterDarkPreview, setLogoFooterDarkPreview] = useState('');
-  const [logoLoginLightPreview, setLogoLoginLightPreview] = useState('');
-  const [logoLoginDarkPreview, setLogoLoginDarkPreview] = useState('');
-  const [logoLandingLightPreview, setLogoLandingLightPreview] = useState('');
-  const [logoLandingDarkPreview, setLogoLandingDarkPreview] = useState('');
-  const [logoFaviconPreview, setLogoFaviconPreview] = useState('');
-
   // Tenants Filter state
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Requests Filter state
   const [requestSearch, setRequestSearch] = useState('');
@@ -190,123 +172,105 @@ const SuperAdminSubscriptions = () => {
   }, [navigate]);
 
   // Load data
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setLoading(true);
+  const loadInitialData = async () => {
     try {
-      const [tenantsData, statsData, requestsData, configData] = await Promise.all([
-        Api.getSuperAdminTenants(),
+      const [statsData, requestsData] = await Promise.all([
         Api.getSuperAdminStats(),
-        Api.getSuperAdminSubscriptionRequests(),
-        Api.getGlobalConfig().catch(err => {
-          console.error("Failed to load global config:", err);
-          return null;
-        })
+        Api.getSuperAdminSubscriptionRequests()
       ]);
-      setTenants(tenantsData);
       setStats(statsData);
       setRequests(requestsData);
-      if (configData) {
-        setSettings({
-          softwareName: configData.softwareName || '',
-          supportPhone: configData.supportPhone || '',
-          facebookUrl: configData.facebookUrl || '',
-          linkedInUrl: configData.linkedInUrl || '',
-          youtubeUrl: configData.youtubeUrl || '',
-          facebookPixelId: configData.facebookPixelId || '',
-          logoUrl: configData.logoUrl || '',
-          logoSidebarLightUrl: configData.logoSidebarLightUrl || '',
-          logoSidebarDarkUrl: configData.logoSidebarDarkUrl || '',
-          logoFooterLightUrl: configData.logoFooterLightUrl || '',
-          logoFooterDarkUrl: configData.logoFooterDarkUrl || '',
-          logoLoginLightUrl: configData.logoLoginLightUrl || '',
-          logoLoginDarkUrl: configData.logoLoginDarkUrl || '',
-          logoLandingLightUrl: configData.logoLandingLightUrl || '',
-          logoLandingDarkUrl: configData.logoLandingDarkUrl || '',
-          logoFaviconUrl: configData.logoFaviconUrl || '',
-          vodafoneCashNumber: configData.vodafoneCashNumber || '',
-          instapayAddress: configData.instapayAddress || '',
-          newTenantNotificationNumbers: configData.newTenantNotificationNumbers || ''
-        });
-        setLogoPreview(configData.logoUrl || '');
-        setLogoSidebarLightPreview(configData.logoSidebarLightUrl || '');
-        setLogoSidebarDarkPreview(configData.logoSidebarDarkUrl || '');
-        setLogoFooterLightPreview(configData.logoFooterLightUrl || '');
-        setLogoFooterDarkPreview(configData.logoFooterDarkUrl || '');
-        setLogoLoginLightPreview(configData.logoLoginLightUrl || '');
-        setLogoLoginDarkPreview(configData.logoLoginDarkUrl || '');
-        setLogoLandingLightPreview(configData.logoLandingLightUrl || '');
-        setLogoLandingDarkPreview(configData.logoLandingDarkUrl || '');
-        setLogoFaviconPreview(configData.logoFaviconUrl || '');
-      }
     } catch (err) {
       toast(err.message || 'فشل في تحميل البيانات', 'error');
+    }
+  };
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadData = async (pageNumber = page, size = pageSize, searchQuery = debouncedSearch, status = filterStatus) => {
+    setLoading(true);
+    try {
+      const res = await Api.getSuperAdminTenantsPaged(pageNumber, size, searchQuery, status);
+      setTenants(res.items || []);
+      setTotalPages(res.totalPages || 1);
+      setTotalElements(res.totalElements || 0);
+    } catch (err) {
+      toast(err.message || 'فشل في تحميل قائمة المتاجر', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Filtered tenants
-  const filteredTenants = useMemo(() => {
-    let result = tenants;
+  // Reset page to 0 when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, filterStatus]);
 
-    // Search
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (t) =>
-          (t.name || '').toLowerCase().includes(term) ||
-          (t.slug || '').toLowerCase().includes(term) ||
-          (t.contactEmail || '').toLowerCase().includes(term)
-      );
+  // Load tenants when page, page size, or filters change
+  useEffect(() => {
+    if (Api.isSuperAdmin()) {
+      loadData(page, pageSize, debouncedSearch, filterStatus);
     }
+  }, [page, pageSize, debouncedSearch, filterStatus]);
 
-    // Filter by status
-    if (filterStatus === 'all') {
-      result = result.filter((t) => !t.deleted);
-    } else {
-      result = result.filter((t) => getTenantStatus(t) === filterStatus);
+  const handleExport = async () => {
+    try {
+      toast('جاري تجهيز ملف الإكسيل...', 'info');
+      await Api.downloadSuperAdminTenantsExport();
+      toast('تم التصدير بنجاح ✅', 'success');
+    } catch (err) {
+      toast(err.message || 'فشل التصدير', 'error');
     }
+  };
 
-    return result;
-  }, [tenants, searchTerm, filterStatus]);
+  // Request Pagination State
+  const [requestsPage, setRequestsPage] = useState(0);
+  const [requestsPageSize, setRequestsPageSize] = useState(10);
+  const [requestsTotalPages, setRequestsTotalPages] = useState(1);
+  const [requestsTotalElements, setRequestsTotalElements] = useState(0);
+  const [debouncedRequestSearch, setDebouncedRequestSearch] = useState('');
 
-  // Filtered subscription requests
-  const filteredRequests = useMemo(() => {
-    let result = requests;
+  // Debounce requests search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRequestSearch(requestSearch);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [requestSearch]);
 
-    // Search
-    if (requestSearch.trim()) {
-      const term = requestSearch.toLowerCase();
-      result = result.filter(
-        (r) =>
-          (r.tenantName || '').toLowerCase().includes(term) ||
-          (r.senderDetail || '').toLowerCase().includes(term) ||
-          (r.packageName || '').toLowerCase().includes(term)
-      );
+  const loadRequestsData = async (pageNumber = requestsPage, size = requestsPageSize, searchQuery = debouncedRequestSearch, status = requestStatusFilter) => {
+    setLoading(true);
+    try {
+      const res = await Api.getSuperAdminSubscriptionRequestsPaged(pageNumber, size, searchQuery, status);
+      setRequests(res.data?.items || res.items || []);
+      setRequestsTotalPages(res.data?.totalPages || res.totalPages || 1);
+      setRequestsTotalElements(res.data?.totalElements || res.totalElements || 0);
+    } catch (err) {
+      toast(err.message || 'فشل في تحميل الطلبات', 'error');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Filter by status
-    if (requestStatusFilter !== 'ALL') {
-      result = result.filter((r) => r.status === requestStatusFilter);
+  useEffect(() => {
+    setRequestsPage(0);
+  }, [debouncedRequestSearch, requestStatusFilter]);
+
+  useEffect(() => {
+    if (Api.isSuperAdmin() && activeTab === 'requests') {
+      loadRequestsData(requestsPage, requestsPageSize, debouncedRequestSearch, requestStatusFilter);
     }
-
-    return result;
-  }, [requests, requestSearch, requestStatusFilter]);
+  }, [requestsPage, requestsPageSize, debouncedRequestSearch, requestStatusFilter, activeTab]);
 
   // Counts
-  const expiredCount = useMemo(() => tenants.filter(t => getTenantStatus(t) === 'expired').length, [tenants]);
-  const pendingRequestsCount = useMemo(() => requests.filter(r => r.status === 'PENDING').length, [requests]);
+  const pendingRequestsCount = stats.pendingRequestsCount || 0;
 
   // Impersonate tenant
   const handleImpersonate = async (tenant) => {
     try {
       const data = await Api.impersonateTenant(tenant.id);
-      // Backup current tokens directly using the original localStorage keys, 
-      // but Api uses obfuscation, so let's rely on Api getters:
       const backup = {
         access: Api._getToken(),
         refresh: Api._getRefreshToken(),
@@ -442,33 +406,6 @@ const SuperAdminSubscriptions = () => {
     navigate(`/super-admin/tenants/${tenant.id}/communications`, { state: { tenant } });
   };
 
-  // Handle logo file selection
-  const handleLogoChange = (e, fieldName, setPreview) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result);
-      setSettings(prev => ({ ...prev, [fieldName]: reader.result }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Save Settings
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
-    setSavingSettings(true);
-    try {
-      await Api.updateGlobalConfig(settings);
-      toast('تم حفظ إعدادات النظام والفوتر بنجاح ✅', 'success');
-      loadData();
-    } catch (err) {
-      toast(err.message || 'فشل في حفظ إعدادات النظام', 'error');
-    } finally {
-      setSavingSettings(false);
-    }
-  };
-
   if (!Api.isSuperAdmin()) return null;
 
   return (
@@ -487,41 +424,35 @@ const SuperAdminSubscriptions = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="sa-sub-stats-grid">
-          <div className="sa-sub-stat-card">
-            <div className="sa-sub-stat-info">
-              <h4>إجمالي المستأجرين</h4>
-              <div className="sa-sub-stat-value">{stats.totalTenants || 0}</div>
-            </div>
-            <div className="sa-sub-stat-icon sa-sub-icon-blue">🏢</div>
-          </div>
-          <div className="sa-sub-stat-card">
-            <div className="sa-sub-stat-info">
-              <h4>الاشتراكات النشطة</h4>
-              <div className="sa-sub-stat-value" style={{ color: 'var(--sa-sub-accent-green)' }}>
-                {stats.activeTenants || 0}
-              </div>
-            </div>
-            <div className="sa-sub-stat-icon sa-sub-icon-green">✅</div>
-          </div>
-          <div className="sa-sub-stat-card">
-            <div className="sa-sub-stat-info">
-              <h4>طلبات التجديد المعلقة</h4>
-              <div className="sa-sub-stat-value" style={{ color: 'var(--sa-sub-accent-amber)' }}>
-                {pendingRequestsCount}
-              </div>
-            </div>
-            <div className="sa-sub-stat-icon sa-sub-icon-amber">⏳</div>
-          </div>
-          <div className="sa-sub-stat-card">
-            <div className="sa-sub-stat-info">
-              <h4>المعطلة / المنتهية</h4>
-              <div className="sa-sub-stat-value" style={{ color: 'var(--sa-sub-accent-red)' }}>
-                {stats.inactiveTenants || 0}
-              </div>
-            </div>
-            <div className="sa-sub-stat-icon sa-sub-icon-red">⛔</div>
-          </div>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+          <StatTile
+            id="tenant_total"
+            label="إجمالي المستأجرين"
+            value={stats.totalTenants || 0}
+            icon="🏢"
+            defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
+          />
+          <StatTile
+            id="tenant_active"
+            label="الاشتراكات النشطة"
+            value={stats.activeTenants || 0}
+            icon="✅"
+            defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
+          />
+          <StatTile
+            id="tenant_pending"
+            label="طلبات التجديد المعلقة"
+            value={pendingRequestsCount}
+            icon="⏳"
+            defaults={{ color: 'amber', size: 'tile-wd-sm', order: 3 }}
+          />
+          <StatTile
+            id="tenant_inactive"
+            label="المعطلة / المنتهية"
+            value={stats.inactiveTenants || 0}
+            icon="⛔"
+            defaults={{ color: 'rose', size: 'tile-wd-sm', order: 4 }}
+          />
         </div>
 
         {/* Custom Tabs Navigation */}
@@ -584,98 +515,61 @@ const SuperAdminSubscriptions = () => {
               </span>
             )}
           </button>
-          <button 
-            className={`sa-sub-tab-item ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              background: activeTab === 'settings' ? 'var(--sa-sub-accent-blue)' : 'var(--sa-sub-card-bg)',
-              color: activeTab === 'settings' ? '#fff' : 'var(--sa-sub-text-secondary)',
-              fontWeight: '700',
-              cursor: 'pointer',
-              boxShadow: activeTab === 'settings' ? '0 4px 12px rgba(99, 102, 241, 0.2)' : 'none',
-              transition: 'all 0.2s',
-              fontFamily: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            ⚙️ إعدادات النظام العامة
-          </button>
         </div>
 
         {activeTab === 'tenants' ? (
           <>
-            {/* Tenants Toolbar */}
-            <div className="sa-sub-toolbar-card">
-              <div className="sa-sub-toolbar-left">
-                <div className="sa-sub-filter-group">
-                  <button
-                    className={`sa-sub-filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('all')}
-                  >
-                    الكل ({tenants.length})
-                  </button>
-                  <button
-                    className={`sa-sub-filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('active')}
-                  >
-                    نشط
-                  </button>
-                  <button
-                    className={`sa-sub-filter-btn ${filterStatus === 'expired' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('expired')}
-                  >
-                    منتهي ({expiredCount})
-                  </button>
-                  <button
-                    className={`sa-sub-filter-btn ${filterStatus === 'disabled' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('disabled')}
-                  >
-                    معطل
-                  </button>
-                  <button
-                    className={`sa-sub-filter-btn ${filterStatus === 'deleted' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('deleted')}
-                    style={{ color: filterStatus === 'deleted' ? '#fff' : '#ef4444', borderColor: filterStatus === 'deleted' ? '#ef4444' : 'var(--sa-sub-border)', background: filterStatus === 'deleted' ? '#ef4444' : 'transparent' }}
-                  >
-                    المحذوفة
-                  </button>
-                </div>
-              </div>
-              <div className="sa-sub-toolbar-right">
-                <div className="sa-sub-search-box">
-                  <input
-                    className="sa-sub-input"
-                    type="text"
-                    placeholder="ابحث بالاسم، السلاق، أو البريد..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <span className="sa-sub-search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
-                </div>
-                <div className="sa-sub-results-count">
-                  النتائج: <span>{filteredTenants.length}</span>
-                </div>
-              </div>
-            </div>
+            <div className="card">
+              <div className="card-header">
+                <h3>🏢 إدارة المتاجر</h3>
+                <div className="toolbar">
+                  <div className="search-input">
+                    <input
+                      type="text"
+                      placeholder="ابحث بالاسم، السلاق، أو البريد..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
+                  </div>
 
-            {/* Tenants Table */}
-            <div className="sa-sub-table-card">
-              {loading ? (
-                <Loader />
-              ) : filteredTenants.length === 0 ? (
-                <div className="sa-sub-empty-state">
-                  <div className="sa-sub-empty-icon">📋</div>
-                  <h3>لا يوجد مستأجرين</h3>
-                  <p>لا توجد نتائج مطابقة لبحثك</p>
+                  <select
+                    className="form-control"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                  >
+                    <option value="all">كل المتاجر</option>
+                    <option value="active">نشط</option>
+                    <option value="expired">منتهي</option>
+                    <option value="disabled">معطل</option>
+                    <option value="deleted">المحذوفة</option>
+                  </select>
+                  
+                  <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginRight: 'auto' }}>
+                    <button className="btn btn-outline-secondary" onClick={handleExport} style={{ height: '40px' }}>
+                      تصدير إكسيل
+                    </button>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '0 15px', background: 'var(--bg-hover)', borderRadius: '8px', height: '40px', display: 'flex', alignItems: 'center', fontWeight: 'bold' }}>
+                      النتائج: <span style={{ marginLeft: '5px', color: 'var(--text-primary)' }}>{totalElements}</span>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="sa-sub-table-container">
-                  <table className="sa-sub-table">
+              </div>
+
+              {/* Tenants Table */}
+              <div className="card-body no-padding">
+              <div className="table-wrapper">
+                {loading ? (
+                  <Loader message="جاري تحميل المتاجر..." />
+                ) : tenants.length === 0 ? (
+                  <div className="sa-sub-empty-state">
+                    <div className="sa-sub-empty-icon">📋</div>
+                    <h3>لا يوجد مستأجرين</h3>
+                    <p>لا توجد نتائج مطابقة لبحثك</p>
+                  </div>
+                ) : (
+                  <table className="data-table" style={{ minWidth: '1000px' }}>
                      <thead>
                        <tr>
                          <th>#</th>
@@ -689,30 +583,26 @@ const SuperAdminSubscriptions = () => {
                        </tr>
                      </thead>
                      <tbody>
-                       {filteredTenants.map((tenant, index) => {
+                       {tenants.map((tenant, index) => {
                          const status = getTenantStatus(tenant);
                          const remaining = getRemainingDays(tenant.subscriptionExpiry);
                          return (
                            <tr key={tenant.id}>
-                             <td style={{ fontWeight: 600, color: 'var(--sa-sub-text-secondary)' }}>
-                               {index + 1}
+                             <td style={{ color: 'var(--text-muted)' }}>
+                               {page * pageSize + index + 1}
                              </td>
                              <td>
                                <div 
-                                 className="sa-sub-tenant-cell" 
+                                 style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
                                  onClick={() => openCommModal(tenant)} 
-                                 style={{ cursor: 'pointer' }}
                                  title="اضغط لعرض أو إضافة سجل تواصل"
                                >
-                                 <div
-                                   className="sa-sub-tenant-avatar"
-                                   style={{ background: getAvatarColor(tenant.id) }}
-                                 >
+                                 <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: getAvatarColor(tenant.id), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
                                    {(tenant.name || '?').charAt(0)}
                                  </div>
-                                 <div className="sa-sub-tenant-info">
-                                   <div className="sa-sub-tenant-name">{tenant.name}</div>
-                                   <div className="sa-sub-tenant-slug">{tenant.slug}</div>
+                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{tenant.name}</span>
+                                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{tenant.slug}</span>
                                  </div>
                                </div>
                              </td>
@@ -722,50 +612,44 @@ const SuperAdminSubscriptions = () => {
                              <td style={{ direction: 'ltr', textAlign: 'right' }}>
                                {tenant.phone || '—'}
                              </td>
-                             <td>
-                               <span style={{ color: 'var(--sa-sub-text-secondary)' }}>
-                                 {formatDate(tenant.createdAt)}
-                               </span>
+                             <td style={{ color: 'var(--text-secondary)' }}>
+                               {formatDate(tenant.createdAt)}
                              </td>
                              <td>
-                               <span className={`sa-sub-status-badge ${getStatusClass(status)}`}>
-                                 {getStatusLabel(status)}
-                               </span>
+                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: status === 'active' ? 'var(--metro-green)' : status === 'expired' ? 'var(--metro-orange)' : 'var(--metro-red)' }}></div>
+                                 <span>{getStatusLabel(status).replace('● ', '')}</span>
+                               </div>
                              </td>
                              <td>
-                               <div className="sa-sub-expiry-cell">
-                                 <span className="sa-sub-expiry-date">
+                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                                    {formatDate(tenant.subscriptionExpiry)}
                                  </span>
                                  {remaining !== null && (
                                    <span
-                                     className={`sa-sub-expiry-remaining ${
-                                       remaining > 30
-                                         ? 'sa-sub-remaining-ok'
-                                         : remaining > 7
-                                         ? 'sa-sub-remaining-warning'
-                                         : 'sa-sub-remaining-danger'
-                                     }`}
+                                     style={{
+                                       fontSize: '0.8rem',
+                                       color: remaining > 30 ? 'var(--metro-green)' : remaining > 7 ? 'var(--metro-orange)' : 'var(--metro-red)',
+                                       fontWeight: 'bold'
+                                     }}
                                    >
-                                     {remaining > 0
-                                       ? `باقي ${remaining} يوم`
-                                       : `منتهي منذ ${Math.abs(remaining)} يوم`}
+                                     {remaining > 0 ? `باقي ${remaining} يوم` : `منتهي منذ ${Math.abs(remaining)} يوم`}
                                    </span>
                                  )}
                                </div>
                              </td>
                              <td>
-                               <div className="sa-sub-actions">
+                               <div className="table-actions" style={{ display: 'flex', gap: '8px' }}>
                                  <button
-                                   className="sa-sub-action-btn"
-                                   style={{ background: 'var(--sa-sub-accent-blue)', color: '#fff', fontSize: '1rem' }}
+                                   className="btn btn-icon btn-ghost"
                                    title="دخول كمدير"
                                    onClick={() => handleImpersonate(tenant)}
                                  >
                                    🔑
                                  </button>
                                  <button
-                                   className="sa-sub-action-btn sa-sub-btn-extend"
+                                   className="btn btn-icon btn-ghost"
                                    title="تمديد الاشتراك"
                                    onClick={() => openExtendModal(tenant)}
                                  >
@@ -773,7 +657,7 @@ const SuperAdminSubscriptions = () => {
                                  </button>
                                  {tenant.active ? (
                                    <button
-                                     className="sa-sub-action-btn sa-sub-btn-deactivate"
+                                     className="btn btn-icon btn-ghost"
                                      title="تعطيل المستأجر"
                                      onClick={() => handleToggleStatus(tenant)}
                                    >
@@ -781,7 +665,7 @@ const SuperAdminSubscriptions = () => {
                                    </button>
                                  ) : (
                                      <button
-                                       className="sa-sub-action-btn sa-sub-btn-activate"
+                                       className="btn btn-icon btn-ghost"
                                        title="تفعيل المستأجر"
                                        onClick={() => handleToggleStatus(tenant)}
                                      >
@@ -789,8 +673,7 @@ const SuperAdminSubscriptions = () => {
                                      </button>
                                    )}
                                    <button
-                                     className="sa-sub-action-btn sa-sub-btn-deactivate"
-                                     style={{ background: '#fee2e2', color: '#dc2626' }}
+                                     className="btn btn-icon btn-ghost"
                                      title="حذف المستأجر"
                                      onClick={() => setDeleteModalState({ isOpen: true, tenant, password: '', mode: 'soft' })}
                                    >
@@ -803,64 +686,128 @@ const SuperAdminSubscriptions = () => {
                        })}
                      </tbody>
                   </table>
+                )}
+              </div>
+
+              {!loading && tenants.length > 0 && (
+                <div className="pagination" style={{ borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', flexWrap: 'wrap', gap: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      عرض {tenants.length} من إجمالي {totalElements}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>عدد الصفوف:</span>
+                      <select
+                        className="form-control"
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(Number(e.target.value));
+                          setPage(0);
+                        }}
+                        style={{ width: '70px', height: '34px', padding: '0 5px', fontSize: '0.85rem', borderRadius: '0' }}
+                      >
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <button
+                      disabled={page === 0}
+                      onClick={() => setPage(page - 1)}
+                      style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', background: page === 0 ? 'var(--bg-hover)' : '#fff', color: page === 0 ? 'var(--text-muted)' : 'var(--text-primary)', cursor: page === 0 ? 'not-allowed' : 'pointer', borderRadius: '4px' }}
+                    >
+                      السابق
+                    </button>
+                    
+                    {[...Array(totalPages)].map((_, i) => {
+                      const maxVisible = 5;
+                      let start = Math.max(0, page - Math.floor(maxVisible / 2));
+                      let end = Math.min(totalPages - 1, start + maxVisible - 1);
+                      if (end - start + 1 < maxVisible) {
+                        start = Math.max(0, end - maxVisible + 1);
+                      }
+                      
+                      if (i >= start && i <= end) {
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => setPage(i)}
+                            style={{ 
+                              padding: '8px 12px', 
+                              border: '1px solid var(--border-subtle)', 
+                              background: page === i ? 'var(--metro-blue)' : '#fff', 
+                              color: page === i ? '#fff' : 'var(--text-primary)', 
+                              cursor: 'pointer', 
+                              borderRadius: '4px',
+                              fontWeight: page === i ? 'bold' : 'normal'
+                            }}
+                          >
+                            {i + 1}
+                          </button>
+                        );
+                      }
+                      return null;
+                    })}
+                    
+                    <button
+                      disabled={page >= totalPages - 1}
+                      onClick={() => setPage(page + 1)}
+                      style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', background: page >= totalPages - 1 ? 'var(--bg-hover)' : '#fff', color: page >= totalPages - 1 ? 'var(--text-muted)' : 'var(--text-primary)', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', borderRadius: '4px' }}
+                    >
+                      التالي
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
+          </div>
           </>
-        ) : activeTab === 'requests' ? (
+        ) : (
           <>
-            {/* Requests Toolbar */}
-            <div className="sa-sub-toolbar-card">
-              <div className="sa-sub-toolbar-left">
-                <div className="sa-sub-filter-group">
-                  <button
-                    className={`sa-sub-filter-btn ${requestStatusFilter === 'ALL' ? 'active' : ''}`}
-                    onClick={() => setRequestStatusFilter('ALL')}
-                  >
-                    الكل ({requests.length})
-                  </button>
-                  <button
-                    className={`sa-sub-filter-btn ${requestStatusFilter === 'PENDING' ? 'active' : ''}`}
-                    onClick={() => setRequestStatusFilter('PENDING')}
-                  >
-                    قيد الانتظار ({pendingRequestsCount})
-                  </button>
-                  <button
-                    className={`sa-sub-filter-btn ${requestStatusFilter === 'APPROVED' ? 'active' : ''}`}
-                    onClick={() => setRequestStatusFilter('APPROVED')}
-                  >
-                    المقبولة
-                  </button>
-                  <button
-                    className={`sa-sub-filter-btn ${requestStatusFilter === 'REJECTED' ? 'active' : ''}`}
-                    onClick={() => setRequestStatusFilter('REJECTED')}
-                  >
-                    المرفوضة
-                  </button>
-                </div>
-              </div>
-              <div className="sa-sub-toolbar-right">
-                <div className="sa-sub-search-box">
-                  <input
-                    className="sa-sub-input"
-                    type="text"
-                    placeholder="ابحث باسم المتجر أو رقم المرسل..."
-                    value={requestSearch}
-                    onChange={(e) => setRequestSearch(e.target.value)}
-                  />
-                  <span className="sa-sub-search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
-                </div>
-                <div className="sa-sub-results-count">
-                  النتائج: <span>{filteredRequests.length}</span>
-                </div>
-              </div>
-            </div>
+            <div className="card">
+              <div className="card-header">
+                <h3>📥 طلبات تجديد الدفع اليدوي</h3>
+                <div className="toolbar">
+                  <div className="search-input">
+                    <input
+                      type="text"
+                      placeholder="ابحث باسم المتجر أو رقم المرسل..."
+                      value={requestSearch}
+                      onChange={(e) => setRequestSearch(e.target.value)}
+                    />
+                    <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
+                  </div>
 
-            {/* Requests Table */}
-            <div className="sa-sub-table-card">
+                  <select
+                    className="form-control"
+                    value={requestStatusFilter}
+                    onChange={(e) => setRequestStatusFilter(e.target.value)}
+                    style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                  >
+                    <option value="ALL">الكل ({requests.length})</option>
+                    <option value="PENDING">قيد الانتظار ({pendingRequestsCount})</option>
+                    <option value="APPROVED">المقبولة</option>
+                    <option value="REJECTED">المرفوضة</option>
+                  </select>
+                  
+                  <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginRight: 'auto' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '0 15px', background: 'var(--bg-hover)', borderRadius: '8px', height: '40px', display: 'flex', alignItems: 'center', fontWeight: 'bold' }}>
+                      النتائج: <span style={{ marginLeft: '5px', color: 'var(--text-primary)' }}>{requestsTotalElements}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Requests Table */}
+              <div className="card-body no-padding">
               {loading ? (
                 <Loader />
-              ) : filteredRequests.length === 0 ? (
+              ) : requests.length === 0 ? (
                 <div className="sa-sub-empty-state">
                   <div className="sa-sub-empty-icon">📥</div>
                   <h3>لا توجد طلبات تجديد</h3>
@@ -884,7 +831,7 @@ const SuperAdminSubscriptions = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRequests.map((req, index) => (
+                      {requests.map((req, index) => (
                         <tr key={req.id}>
                           <td style={{ fontWeight: 600, color: 'var(--sa-sub-text-secondary)' }}>
                             {index + 1}
@@ -1012,443 +959,47 @@ const SuperAdminSubscriptions = () => {
                   </table>
                 </div>
               )}
+              {/* Pagination Controls for Requests */}
+              {requestsTotalPages > 1 && (
+                <div className="pagination-container" style={{ padding: '15px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="pagination-info" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                    عرض {requestsPage * requestsPageSize + 1} إلى {Math.min((requestsPage + 1) * requestsPageSize, requestsTotalElements)} من أصل {requestsTotalElements} طلب
+                  </div>
+                  <div className="pagination-buttons" style={{ display: 'flex', gap: '5px' }}>
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => setRequestsPage(Math.max(0, requestsPage - 1))}
+                      disabled={requestsPage === 0}
+                      style={{ padding: '5px 12px' }}
+                    >
+                      السابق
+                    </button>
+                    
+                    {[...Array(requestsTotalPages)].map((_, i) => (
+                      <button
+                        key={i}
+                        className={`btn ${requestsPage === i ? 'btn-primary' : 'btn-outline-secondary'}`}
+                        onClick={() => setRequestsPage(i)}
+                        style={{ padding: '5px 12px' }}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => setRequestsPage(Math.min(requestsTotalPages - 1, requestsPage + 1))}
+                      disabled={requestsPage === requestsTotalPages - 1}
+                      style={{ padding: '5px 12px' }}
+                    >
+                      التالي
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </>
-        ) : (
-          <div className="sa-sub-table-card" style={{ padding: '30px', border: '1px solid var(--sa-sub-border)', borderRadius: '16px', boxShadow: 'var(--sa-sub-shadow)' }}>
-            <div style={{ marginBottom: '24px', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                ⚙️ إعدادات النظام وشريط المعلومات السفلي (الفوتر)
-              </h3>
-              <p style={{ color: 'var(--sa-sub-text-secondary)', fontSize: '0.95rem', marginTop: '6px' }}>
-                تتيح لك هذه اللوحة تعديل البيانات المعروضة في شريط المعلومات السفلي (الفوتر) لجميع المستخدمين في النظام بشكل مباشر وتلقائي.
-              </p>
-            </div>
-
-            <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-
-              {/* Logo Uploads Grid with Light / Dark Mode support */}
-              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '850', marginBottom: '4px', fontSize: '1.1rem' }}>
-                  🖼️ إدارة شعارات النظام المتعددة (الوضع الداكن / الفاتح):
-                </label>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                  
-                  {/* 1. Sidebar Logo Card */}
-                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>📱 القائمة الجانبية (Sidebar)</strong>
-                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>32 × 32 px - Icon فقط</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      {/* Light Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
-                          {logoSidebarLightPreview
-                            ? <img src={logoSidebarLightPreview} alt="Sidebar Light" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-sidebar-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-sidebar-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoSidebarLightUrl', setLogoSidebarLightPreview)} />
-                          {logoSidebarLightPreview && <button type="button" onClick={() => { setLogoSidebarLightPreview(''); setSettings(prev => ({ ...prev, logoSidebarLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                      {/* Dark Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
-                          {logoSidebarDarkPreview
-                            ? <img src={logoSidebarDarkPreview} alt="Sidebar Dark" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-sidebar-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-sidebar-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoSidebarDarkUrl', setLogoSidebarDarkPreview)} />
-                          {logoSidebarDarkPreview && <button type="button" onClick={() => { setLogoSidebarDarkPreview(''); setSettings(prev => ({ ...prev, logoSidebarDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 2. Footer Logo Card */}
-                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>👣 شريط الفوتر (Footer)</strong>
-                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>32 × 32 px - Icon فقط</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      {/* Light Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
-                          {logoFooterLightPreview
-                            ? <img src={logoFooterLightPreview} alt="Footer Light" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-footer-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-footer-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoFooterLightUrl', setLogoFooterLightPreview)} />
-                          {logoFooterLightPreview && <button type="button" onClick={() => { setLogoFooterLightPreview(''); setSettings(prev => ({ ...prev, logoFooterLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                      {/* Dark Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
-                          {logoFooterDarkPreview
-                            ? <img src={logoFooterDarkPreview} alt="Footer Dark" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-footer-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-footer-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoFooterDarkUrl', setLogoFooterDarkPreview)} />
-                          {logoFooterDarkPreview && <button type="button" onClick={() => { setLogoFooterDarkPreview(''); setSettings(prev => ({ ...prev, logoFooterDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. Login Page Logo Card */}
-                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🔑 تسجيل الدخول (Login Page)</strong>
-                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>64 × 64 px - أيقونة أو لوجو</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      {/* Light Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
-                          {logoLoginLightPreview
-                            ? <img src={logoLoginLightPreview} alt="Login Light" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-login-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-login-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLoginLightUrl', setLogoLoginLightPreview)} />
-                          {logoLoginLightPreview && <button type="button" onClick={() => { setLogoLoginLightPreview(''); setSettings(prev => ({ ...prev, logoLoginLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                      {/* Dark Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
-                          {logoLoginDarkPreview
-                            ? <img src={logoLoginDarkPreview} alt="Login Dark" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-login-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-login-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLoginDarkUrl', setLogoLoginDarkPreview)} />
-                          {logoLoginDarkPreview && <button type="button" onClick={() => { setLogoLoginDarkPreview(''); setSettings(prev => ({ ...prev, logoLoginDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 4. Landing Page Header Logo Card */}
-                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🌐 صفحة الهبوط (Landing Page)</strong>
-                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>44 × 44 px - أيقونة ونص</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      {/* Light Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الفاتح</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
-                          {logoLandingLightPreview
-                            ? <img src={logoLandingLightPreview} alt="Landing Light" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-landing-light-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-landing-light-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLandingLightUrl', setLogoLandingLightPreview)} />
-                          {logoLandingLightPreview && <button type="button" onClick={() => { setLogoLandingLightPreview(''); setSettings(prev => ({ ...prev, logoLandingLightUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                      {/* Dark Mode */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>الوضع الداكن</span>
-                        <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
-                          {logoLandingDarkPreview
-                            ? <img src={logoLandingDarkPreview} alt="Landing Dark" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
-                          }
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <label htmlFor="logo-landing-dark-input" style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-landing-dark-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoLandingDarkUrl', setLogoLandingDarkPreview)} />
-                          {logoLandingDarkPreview && <button type="button" onClick={() => { setLogoLandingDarkPreview(''); setSettings(prev => ({ ...prev, logoLandingDarkUrl: '' })); }} style={{ padding: '4px 8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 5. Favicon Card */}
-                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🎯 أيقونة المتصفح (Favicon)</strong>
-                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>16x16 / 32x32 px</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
-                      <div style={{ width: '60px', height: '60px', borderRadius: '8px', border: '2px dashed var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
-                        {logoFaviconPreview
-                          ? <img src={logoFaviconPreview} alt="Favicon Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🎯</span>
-                        }
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>أيقونة تبويب المتصفح</span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <label htmlFor="logo-favicon-input" style={{ display: 'inline-block', padding: '6px 12px', background: '#6366f1', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-favicon-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoFaviconUrl', setLogoFaviconPreview)} />
-                          {logoFaviconPreview && <button type="button" onClick={() => { setLogoFaviconPreview(''); setSettings(prev => ({ ...prev, logoFaviconUrl: '' })); }} style={{ padding: '6px 12px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 6. Default Fallback Card */}
-                  <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🖼️ الشعار الاحتياطي العام (Fallback)</strong>
-                      <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>شعار افتراضي شامل</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
-                      <div style={{ width: '60px', height: '60px', borderRadius: '8px', border: '2px dashed var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
-                        {logoPreview
-                          ? <img src={logoPreview} alt="Default Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🖼️</span>
-                        }
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--sa-sub-text-secondary)' }}>يستخدم لتعويض أي حقل تركه فارغاً</span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <label htmlFor="logo-default-input" style={{ display: 'inline-block', padding: '6px 12px', background: '#6366f1', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>رفع</label>
-                          <input id="logo-default-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleLogoChange(e, 'logoUrl', setLogoPreview)} />
-                          {logoPreview && <button type="button" onClick={() => { setLogoPreview(''); setSettings(prev => ({ ...prev, logoUrl: '' })); }} style={{ padding: '6px 12px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: '0.75rem', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>حذف</button>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🏢 اسم البرنامج / العلامة التجارية:
-                </label>
-                <input
-                  type="text"
-                  className="sa-sub-form-input"
-                  placeholder="مثال: نظام سجل"
-                  value={settings.softwareName}
-                  onChange={(e) => setSettings({ ...settings, softwareName: e.target.value })}
-                  required
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
-                />
-              </div>
-
-              <div className="sa-sub-form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  📞 رقم الدعم الفني للواتساب / الاتصال:
-                </label>
-                <input
-                  type="text"
-                  className="sa-sub-form-input"
-                  placeholder="مثال: +201281018810"
-                  value={settings.supportPhone}
-                  onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
-                  required
-                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
-                />
-              </div>
-
-              <div className="sa-sub-form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🔵 رابط صفحة فيسبوك (Facebook URL):
-                </label>
-                <input
-                  type="url"
-                  className="sa-sub-form-input"
-                  placeholder="مثال: https://facebook.com/yourpage"
-                  value={settings.facebookUrl}
-                  onChange={(e) => setSettings({ ...settings, facebookUrl: e.target.value })}
-                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
-                />
-              </div>
-
-              <div className="sa-sub-form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🔗 رابط لينكد إن (LinkedIn URL):
-                </label>
-                <input
-                  type="url"
-                  className="sa-sub-form-input"
-                  placeholder="مثال: https://linkedin.com/company/yourcompany"
-                  value={settings.linkedInUrl}
-                  onChange={(e) => setSettings({ ...settings, linkedInUrl: e.target.value })}
-                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
-                />
-              </div>
-
-              <div className="sa-sub-form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🔴 رابط قناة يوتيوب (YouTube URL):
-                </label>
-                <input
-                  type="url"
-                  className="sa-sub-form-input"
-                  placeholder="مثال: https://youtube.com/c/yourchannel"
-                  value={settings.youtubeUrl}
-                  onChange={(e) => setSettings({ ...settings, youtubeUrl: e.target.value })}
-                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
-                />
-              </div>
-
-              {/* ─── Payment Methods ─────────────────────────────────────── */}
-              <div className="sa-sub-form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  💳 رقم فودافون كاش للدفع:
-                </label>
-                <input
-                  type="text"
-                  className="sa-sub-form-input"
-                  placeholder="مثال: 01012345678"
-                  value={settings.vodafoneCashNumber}
-                  onChange={(e) => setSettings({ ...settings, vodafoneCashNumber: e.target.value })}
-                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
-                />
-              </div>
-
-              <div className="sa-sub-form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  ⚡ عنوان إنستا باي (Instapay Address):
-                </label>
-                <input
-                  type="text"
-                  className="sa-sub-form-input"
-                  placeholder="مثال: pos@instapay"
-                  value={settings.instapayAddress}
-                  onChange={(e) => setSettings({ ...settings, instapayAddress: e.target.value })}
-                  style={{ width: '100%', direction: 'ltr', textAlign: 'right', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid var(--sa-sub-border)', background: 'var(--sa-sub-bg)', color: 'var(--sa-sub-text-primary)' }}
-                />
-              </div>
-
-              {/* ─── Notifications ─────────────────────────────────────── */}
-              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  📱 أرقام واتساب لإشعارات المشتركين الجدد (مفصولة بفاصلة):
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    className="sa-sub-form-input"
-                    placeholder="مثال: +201012345678, +201112345678"
-                    value={settings.newTenantNotificationNumbers}
-                    onChange={(e) => setSettings({ ...settings, newTenantNotificationNumbers: e.target.value })}
-                    style={{
-                      width: '100%',
-                      direction: 'ltr',
-                      textAlign: 'right',
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      border: '1.5px solid var(--sa-sub-border)',
-                      background: 'var(--sa-sub-bg)',
-                      color: 'var(--sa-sub-text-primary)'
-                    }}
-                  />
-                  <small style={{ color: 'var(--sa-sub-text-secondary)', display: 'block', marginTop: '4px' }}>
-                    * سيتم إرسال إشعار على الواتساب لهذه الأرقام عند تسجيل متجر جديد. يمكنك إضافة أكثر من رقم مفصولين بفاصلة (,).
-                  </small>
-                </div>
-              </div>
-
-              {/* ─── Facebook Pixel ID ─────────────────────────────────────── */}
-              <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  📊 Facebook Pixel ID (معرّف بيكسل فيسبوك للإعلانات):
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    className="sa-sub-form-input"
-                    placeholder="مثال: 1234567890123456"
-                    value={settings.facebookPixelId}
-                    onChange={(e) => setSettings({ ...settings, facebookPixelId: e.target.value.trim() })}
-                    style={{
-                      width: '100%',
-                      direction: 'ltr',
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      border: settings.facebookPixelId ? '1.5px solid #1877f2' : '1.5px solid var(--sa-sub-border)',
-                      background: 'var(--sa-sub-bg)',
-                      color: 'var(--sa-sub-text-primary)',
-                      fontFamily: 'monospace',
-                      fontSize: '1rem',
-                      letterSpacing: '1px'
-                    }}
-                  />
-                  {settings.facebookPixelId && (
-                    <span style={{
-                      position: 'absolute',
-                      left: '16px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      fontSize: '0.75rem',
-                      color: '#1877f2',
-                      fontWeight: 'bold',
-                      pointerEvents: 'none'
-                    }}>✓ Pixel ID محدد</span>
-                  )}
-                </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--sa-sub-text-secondary)', marginTop: '6px', lineHeight: '1.5' }}>
-                  🔍 ستجد الـ Pixel ID في: <strong>Meta Business Suite → Events Manager → اختار البيكسل → Settings</strong>
-                  <br />بعد الحفظ، سيُفعَّل البيكسل تلقائياً في Landing Page وصفحة التسجيل.
-                </p>
-              </div>
-
-              <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-start', marginTop: '16px' }}>
-                <button
-                  type="submit"
-                  className="sa-sub-btn-primary"
-                  disabled={savingSettings}
-                  style={{
-                    padding: '12px 30px',
-                    fontSize: '1rem',
-                    borderRadius: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    background: 'linear-gradient(135deg, var(--sa-sub-accent-blue), #4f46e5)',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    border: 'none',
-                    color: '#fff',
-                    fontFamily: 'inherit'
-                  }}
-                >
-                  {savingSettings && <span className="sa-sub-spinner"></span>}
-                  {savingSettings ? 'جاري حفظ الإعدادات...' : '💾 حفظ الإعدادات'}
-                </button>
-              </div>
-
-            </form>
           </div>
+          </>
         )}
       </div>
 

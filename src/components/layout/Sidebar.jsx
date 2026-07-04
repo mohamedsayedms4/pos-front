@@ -506,11 +506,11 @@ const Sidebar = ({ isOpen, onClose }) => {
         {isOnline && (
           <>
             <div className="nav-section-title">المتجر الإلكتروني</div>
-            
-            <a 
-              href="/store" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+
+            <a
+              href="/store"
+              target="_blank"
+              rel="noopener noreferrer"
               className="nav-item"
               style={{ textDecoration: 'none' }}
               onClick={onClose}
@@ -846,8 +846,20 @@ const Sidebar = ({ isOpen, onClose }) => {
           <>
             <div className="nav-section-title">🔑 Super Admin</div>
             <NavLink to="/super-admin/subscriptions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon"><i className="fa-solid fa-credit-card"></i></span>
-              <span>إدارة الاشتراكات</span>
+              <i className="fa-solid fa-crown nav-icon"></i>
+              <span>الاشتراكات و الدفع اليدوي</span>
+            </NavLink>
+            <NavLink to="/super-admin/leads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <i className="fa-solid fa-users-viewfinder nav-icon"></i>
+              <span>العملاء المحتملين (Leads)</span>
+            </NavLink>
+            <NavLink to="/super-admin/calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <i className="fa-solid fa-calendar-days nav-icon"></i>
+              <span>المواعيد والتقويم</span>
+            </NavLink>
+            <NavLink to="/super-admin/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <i className="fa-solid fa-gear nav-icon"></i>
+              <span>إعدادات النظام العامة</span>
             </NavLink>
             <NavLink to="/super-admin/articles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon"><i className="fa-solid fa-newspaper"></i></span>

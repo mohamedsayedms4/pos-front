@@ -20,14 +20,13 @@ const formatDateTime = (dateStr) => {
   }
 };
 
-const SuperAdminTenantCommunications = () => {
+const SuperAdminLeadCommunications = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useGlobalUI();
 
-  // In case we navigated with state containing tenant name
-  const [tenantName, setTenantName] = useState(location.state?.tenant?.name || 'المتجر');
+  const [leadName, setLeadName] = useState(location.state?.lead?.name || 'العميل');
 
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +46,7 @@ const SuperAdminTenantCommunications = () => {
   const loadLogs = async () => {
     setLoading(true);
     try {
-      const data = await Api.getTenantCommunications(id);
+      const data = await Api.getLeadCommunications(id);
       setLogs(data);
     } catch (err) {
       toast('فشل في جلب سجل التواصل', 'error');
@@ -64,7 +63,7 @@ const SuperAdminTenantCommunications = () => {
     }
     setSubmitting(true);
     try {
-      const newLog = await Api.addTenantCommunication(id, form);
+      const newLog = await Api.addLeadCommunication(id, form);
       setLogs([newLog, ...logs]);
       setForm({ contactMethod: 'PHONE', notes: '', clientStatus: 'INTERESTED', nextFollowUpDate: '' });
       toast('تمت إضافة سجل التواصل بنجاح ✅', 'success');
@@ -86,12 +85,12 @@ const SuperAdminTenantCommunications = () => {
         <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px 20px' }}>
           <button 
             className="btn btn-secondary"
-            onClick={() => navigate('/super-admin/subscriptions')} 
+            onClick={() => navigate('/super-admin/leads')} 
             style={{ padding: '8px 12px', fontSize: '1.2rem' }}
           >
             <i className="fa-solid fa-arrow-right"></i>
           </button>
-          <h3 style={{ margin: 0 }}>📞 سجل تواصل المتجر: {tenantName}</h3>
+          <h3 style={{ margin: 0 }}>📞 سجل تواصل العميل المحتمل: {leadName}</h3>
         </div>
       </div>
 
@@ -127,6 +126,7 @@ const SuperAdminTenantCommunications = () => {
                     <option value="NOT_INTERESTED">غير مهتم</option>
                     <option value="PENDING">قيد التفكير / مؤجل</option>
                     <option value="NO_ANSWER">لم يرد</option>
+                    <option value="QUALIFIED">مؤهل للشراء</option>
                   </select>
                 </div>
                 <div>
@@ -209,7 +209,7 @@ const SuperAdminTenantCommunications = () => {
                           <span className="badge badge-primary">{log.contactMethod}</span>
                         </td>
                         <td>
-                          <span className={`badge ${log.clientStatus === 'INTERESTED' ? 'badge-success' : log.clientStatus === 'NOT_INTERESTED' ? 'badge-danger' : 'badge-warning'}`}>
+                          <span className={`badge ${log.clientStatus === 'INTERESTED' || log.clientStatus === 'QUALIFIED' ? 'badge-success' : log.clientStatus === 'NOT_INTERESTED' ? 'badge-danger' : 'badge-warning'}`}>
                             {log.clientStatus}
                           </span>
                         </td>
@@ -234,11 +234,11 @@ const SuperAdminTenantCommunications = () => {
             toast('تم حجز الموعد بنجاح 📅', 'success');
           }
         }}
-        entityType="TENANT"
+        entityType="LEAD"
         entityId={id}
       />
     </div>
   );
 };
 
-export default SuperAdminTenantCommunications;
+export default SuperAdminLeadCommunications;

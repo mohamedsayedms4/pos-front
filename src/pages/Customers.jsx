@@ -314,18 +314,19 @@ const Customers = () => {
                 <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {isAdmin && (
-                  <select className="form-control" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)} style={{ width: '150px' }}>
-                    <option value="">جميع الفروع</option>
-                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                )}
+              {isAdmin && (
+                <select className="form-control" value={selectedBranchId} onChange={e => setSelectedBranchId(e.target.value)} style={{ width: '180px', height: '40px', padding: '0 10px' }}>
+                  <option value="">جميع الفروع</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
+
+              <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {Api.can('CUSTOMER_READ') && <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportState.isOpen} title="تصدير إلى إكسيل">📊 إكسيل</button>}
                 {Api.can('CUSTOMER_WRITE') !== false && (
                   <>
                     <input type="file" id="customerExcelInput" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
-                    <button className="btn btn-secondary" onClick={handleDownloadTemplate} title="تحميل قالب الاستيراد">📄 قالب الاستيراد</button>
+                    <button className="btn btn-secondary" onClick={handleDownloadTemplate} title="تحميل قالب الاستيراد">📄 قالب</button>
                     <button className="btn btn-secondary" onClick={() => document.getElementById('customerExcelInput').click()} title="استيراد من إكسيل">📤 استيراد</button>
                     <button className="btn btn-primary" onClick={openAddModal}>
                       <span>+</span> عميل جديد

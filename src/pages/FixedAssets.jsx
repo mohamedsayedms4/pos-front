@@ -194,7 +194,6 @@ const FixedAssets = () => {
         <div className="card-header">
           <h3>🏢 إدارة الأصول الثابتة</h3>
           <div className="toolbar">
-            <div style={{ display: 'flex', gap: '10px' }}>
               {isAdmin && (
                   <select className="form-control" value={selectedBranchId} onChange={(e) => { setSelectedBranchId(e.target.value); setSelectedWarehouseId(''); }} style={{ width: '150px', height: '40px' }}>
                     <option value="">جميع الفروع</option>
@@ -205,9 +204,8 @@ const FixedAssets = () => {
                 <option value="">جميع المخازن</option>
                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
-            </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
                 <span>+</span> إضافة أصل جديد
               </button>

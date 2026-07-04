@@ -211,12 +211,62 @@ const Settings = () => {
 
 
     return (
-        <div className="page-section" style={{ direction: 'rtl' }}>
+        <div className="page-section settings-page-wrapper" style={{ direction: 'rtl' }}>
+            <style>{`
+                .settings-responsive-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                }
+                .settings-logo-section {
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                    grid-column: 1 / -1;
+                    background: var(--bg-elevated);
+                    padding: 20px;
+                    border-radius: 8px;
+                    border: 1px solid var(--border-color);
+                }
+                .settings-ads-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    margin-top: 10px;
+                }
+                .settings-checkbox-group {
+                    grid-column: 1 / -1;
+                    display: flex;
+                    gap: 20px;
+                }
+                @media (max-width: 768px) {
+                    .settings-logo-section {
+                        flex-direction: column;
+                        text-align: center;
+                    }
+                    .settings-logo-section .logo-info-text {
+                        text-align: center;
+                    }
+                    .settings-ads-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .settings-checkbox-group {
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+                    .settings-toolbar-mobile {
+                        width: 100%;
+                    }
+                    .settings-toolbar-mobile button {
+                        width: 100%;
+                    }
+                }
+            `}</style>
             {isIdentity && (
                 <div className="card" style={{ marginBottom: '20px' }}>
-                    <div className="card-header">
+                    <div className="card-header" style={{ flexWrap: 'wrap' }}>
                         <h3>⚙️ إعدادات المتجر والهوية</h3>
-                        <div className="toolbar" style={{ display: 'flex', gap: '10px' }}>
+                        <div className="toolbar settings-toolbar-mobile" style={{ display: 'flex', gap: '10px' }}>
                             <button
                                 type="submit"
                                 form="settingsForm"
@@ -230,10 +280,10 @@ const Settings = () => {
 
                     <div className="card-body">
                         <form id="settingsForm" onSubmit={handleSave}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                            <div className="settings-responsive-grid">
 
                                 {/* Logo Section */}
-                                <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                <div className="form-group settings-logo-section">
                                     <div style={{
                                         width: '100px', height: '100px',
                                         background: 'var(--bg-card)', borderRadius: '8px',
@@ -252,7 +302,7 @@ const Settings = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div>
+                                    <div className="logo-info-text">
                                         <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: 'var(--text-main)' }}>شعار المتجر (اللوجو)</h4>
                                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
                                             يفضل استخدام صورة PNG شفافة أو SVG. المقاسات المستخدمة في النظام:
@@ -353,7 +403,7 @@ const Settings = () => {
                                         <strong>إعدادات تقارير الإعلانات (Facebook Ads Reports)</strong>
                                     </label>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '10px' }}>
+                                    <div className="settings-ads-grid">
                                         <div className="form-group">
                                             <label style={{ fontSize: '0.85rem' }}>Ad Account ID</label>
                                             <input
@@ -460,7 +510,7 @@ const Settings = () => {
                                     <label>اسم المرسل (From Name)</label>
                                     <input type="text" className="form-control" value={smtpConfig.fromName || ''} onChange={e => setSmtpConfig({ ...smtpConfig, fromName: e.target.value })} placeholder="اسم المتجر" />
                                 </div>
-                                <div className="form-group" style={{ gridColumn: '1 / -1', display: 'flex', gap: '20px' }}>
+                                <div className="form-group settings-checkbox-group">
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <input type="checkbox" checked={smtpConfig.authEnabled} onChange={e => setSmtpConfig({ ...smtpConfig, authEnabled: e.target.checked })} />
                                         تفعيل المصادقة (Auth Enabled)

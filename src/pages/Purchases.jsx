@@ -775,17 +775,6 @@ const Purchases = () => {
           <div className="card-header">
             <h3>🛒 إدارة المشتريات</h3>
             <div className="toolbar">
-              <select 
-                className="form-control" 
-                value={selectedBranchId} 
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                style={{ width: '180px', height: '40px', padding: '0 10px' }}
-                disabled={!Api.can('ROLE_ADMIN')}
-              >
-                <option value="">كل الفروع</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-
               <div className="search-input">
                 <input
                   type="text"
@@ -798,6 +787,17 @@ const Purchases = () => {
                 />
                 <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
               </div>
+
+              <select 
+                className="form-control" 
+                value={selectedBranchId} 
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                style={{ width: '180px', height: '40px', padding: '0 10px' }}
+                disabled={!Api.can('ROLE_ADMIN')}
+              >
+                <option value="">كل الفروع</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
 
               <select 
                 className="form-control" 
@@ -814,7 +814,7 @@ const Purchases = () => {
                 <option value="totalAmount,asc">الأقل سعراً</option>
               </select>
 
-              <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <input 
                   type="file" 
                   ref={fileInputRef} 

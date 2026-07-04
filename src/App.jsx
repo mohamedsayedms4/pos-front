@@ -82,6 +82,7 @@ import SubscriptionSuccess from './pages/SubscriptionSuccess.jsx'
 import FinancialAnalytics from './pages/FinancialAnalytics.jsx'
 import TrialBalance from './pages/TrialBalance.jsx'
 import SuperAdminSubscriptions from './pages/SuperAdminSubscriptions.jsx'
+import SuperAdminSettings from './pages/SuperAdminSettings.jsx'
 import SuperAdminTenantCommunications from './pages/SuperAdminTenantCommunications.jsx'
 import StoreInactive from './pages/StoreInactive.jsx'
 import SubscriptionHistory from './pages/SubscriptionHistory.jsx'
@@ -90,6 +91,10 @@ import Articles from './pages/Articles.jsx'
 import ArticleDetail from './pages/ArticleDetail.jsx'
 import SuperAdminArticles from './pages/SuperAdminArticles.jsx'
 import SuperAdminDesktopApp from './pages/SuperAdminDesktopApp.jsx'
+import SuperAdminLeads from './pages/SuperAdminLeads.jsx'
+import SuperAdminLeadCommunications from './pages/SuperAdminLeadCommunications.jsx'
+import SuperAdminCalendar from './pages/SuperAdminCalendar.jsx'
+import SuperAdminAppointmentDetails from './pages/SuperAdminAppointmentDetails.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -317,6 +322,11 @@ function App() {
 
                     {/* Super Admin */}
                     <Route path="/super-admin/subscriptions" element={<SuperAdminSubscriptions />} />
+                    <Route path="/super-admin/leads" element={<SuperAdminLeads />} />
+                    <Route path="/super-admin/leads/:id/communications" element={<SuperAdminLeadCommunications />} />
+                    <Route path="/super-admin/calendar" element={<SuperAdminCalendar />} />
+                    <Route path="/super-admin/appointments/:id" element={<SuperAdminAppointmentDetails />} />
+                    <Route path="/super-admin/settings" element={<SuperAdminSettings />} />
                     <Route path="/super-admin/tenants/:id/communications" element={<SuperAdminTenantCommunications />} />
                     <Route path="/super-admin/articles" element={<SuperAdminArticles />} />
                     <Route path="/super-admin/desktop-app" element={<SuperAdminDesktopApp />} />

@@ -56,6 +56,7 @@ const MainLayout = () => {
     '/damaged': 'الهوالك',
     '/online-orders': 'طلبات المتجر',
     '/super-admin/subscriptions': 'إدارة الاشتراكات',
+    '/super-admin/settings': 'إعدادات النظام العامة',
   };
 
   useEffect(() => {

@@ -142,22 +142,23 @@ const Expenses = () => {
         <div className="card-header">
           <h3>🏢 إدارة المصروفات</h3>
           <div className="toolbar">
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {isAdmin && (
-                  <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
-                    <option value="">جميع الفروع</option>
-                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-              )}
-              <select className="form-control" value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '180px', height: '40px', padding: '0 10px' }}>
-                <option value="">جميع التصنيفات</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-              </select>
-              <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ width: '150px', height: '40px' }} />
-              <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ width: '150px', height: '40px' }} />
-            </div>
+            {isAdmin && (
+                <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
+                  <option value="">جميع الفروع</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+            )}
+            
+            <select className="form-control" value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '180px', height: '40px', padding: '0 10px' }}>
+              <option value="">جميع التصنيفات</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+            </select>
+            
+            <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ width: '150px', height: '40px' }} />
+            
+            <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ width: '150px', height: '40px' }} />
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {Api.can('EXPENSE_CREATE') && (
               <button className="btn btn-primary" onClick={() => setShowModal(true)}>
                 <span>+</span> إضافة مصروف

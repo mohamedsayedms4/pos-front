@@ -374,6 +374,82 @@ const Api = {
   },
   // ——————————————————————————————————————————————————————————————————————————
 
+  // ——————————————————————————————————————————————————————————————————————————
+  // Super Admin Leads
+  async getSuperAdminLeads(page = 0, size = 10, search = '') {
+    const params = new URLSearchParams({ page, size, search });
+    const res = await this._request(`/super-admin/leads?${params.toString()}`);
+    return res;
+  },
+
+  async addSuperAdminLead(data) {
+    const res = await this._request('/super-admin/leads', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res;
+  },
+
+  async getLeadCommunications(leadId) {
+    const res = await this._request(`/super-admin/leads/${leadId}/communications`);
+    return res;
+  },
+
+  async addLeadCommunication(leadId, data) {
+    const res = await this._request(`/super-admin/leads/${leadId}/communications`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res;
+  },
+
+  async downloadSuperAdminLeadsExport() {
+    const token = this._getToken();
+    const res = await fetch(`${API_BASE}/super-admin/leads/export`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('فشل تصدير بيانات العملاء المحتملين');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_export_${new Date().getTime()}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async downloadSuperAdminLeadsImportTemplate() {
+    const token = this._getToken();
+    const res = await fetch(`${API_BASE}/super-admin/leads/import-template`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('فشل تحميل قالب الاستيراد');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'leads_import_template.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async importSuperAdminLeads(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await this._request('/super-admin/leads/import', {
+      method: 'POST',
+      body: formData
+    });
+    return res;
+  },
+  // ——————————————————————————————————————————————————————————————————————————
+
   async _request(path, options = {}) {
     // If path starts with http(s), use it as-is (absolute URL)
     const url = path.startsWith('http')
@@ -2359,6 +2435,33 @@ const Api = {
     return res.data || [];
   },
 
+  async getSuperAdminTenantsPaged(page = 0, size = 10, search = '', status = 'all') {
+    const params = new URLSearchParams({ page, size, status });
+    if (search) params.append('search', search);
+    const res = await this._request(`/super-admin/tenants/paged?${params.toString()}`);
+    return res;
+  },
+
+  async downloadSuperAdminTenantsExport() {
+    const token = this._getToken();
+    const response = await fetch(`${API_BASE}/super-admin/tenants/export`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) throw new Error('فشل تصدير بيانات المتاجر');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tenants_export.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   async getSuperAdminStats() {
     const res = await this._request('/super-admin/stats');
     return res.data || {};
@@ -2367,6 +2470,31 @@ const Api = {
   async getTenantCommunications(tenantId) {
     const res = await this._request(`/super-admin/tenants/${tenantId}/communications`);
     return res.data || [];
+  },
+
+  async createAppointment(data) {
+    const res = await this._request('/super-admin/appointments', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateAppointmentStatus(id, status) {
+    const res = await this._request(`/super-admin/appointments/${id}/status?status=${status}`, {
+      method: 'PUT'
+    });
+    return res.data;
+  },
+
+  async getAppointments(start, end) {
+    const res = await this._request(`/super-admin/appointments?start=${start}&end=${end}`);
+    return res.data;
+  },
+
+  async getAppointmentById(id) {
+    const res = await this._request(`/super-admin/appointments/${id}`);
+    return res.data;
   },
 
   async addTenantCommunication(tenantId, data) {
@@ -2431,6 +2559,14 @@ const Api = {
     const statusQuery = status ? `?status=${status}` : '';
     const res = await this._request(`/super-admin/subscriptions/requests${statusQuery}`);
     return res.data || [];
+  },
+
+  async getSuperAdminSubscriptionRequestsPaged(page = 0, size = 10, search = '', status = 'ALL') {
+    const params = new URLSearchParams({ page, size });
+    if (search) params.append('search', search);
+    if (status && status !== 'ALL') params.append('status', status);
+    const res = await this._request(`/super-admin/subscriptions/requests/paged?${params.toString()}`);
+    return res;
   },
 
   async approveSubscriptionRequest(id) {
