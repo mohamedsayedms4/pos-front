@@ -503,7 +503,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* ────────────────── المتجر الإلكتروني ────────────────── */}
-        {isOnline && (
+        {/*
+        isOnline && (
           <>
             <div className="nav-section-title">المتجر الإلكتروني</div>
 
@@ -539,17 +540,9 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>عروض وخصومات العملاء</span>
               </NavLink>
             )}
-
-            {/* 
-            {isAdmin && (
-              <NavLink to="/settings/banner" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon"><i className="fa-solid fa-image"></i></span>
-                <span>الـ Banner الإعلاني</span>
-              </NavLink>
-            )}
-            */}
           </>
-        )}
+        )
+        */}
 
         {/* ────────────────── الحسابات والتقارير المتقدمة ────────────────── */}
         {(Api.can('TREASURY_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ') || Api.can('PROFIT_LOSS_READ') || isAdmin || Api.can('CUSTOMER_READ')) && isOnline && (

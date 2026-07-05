@@ -9,7 +9,6 @@ import StatTile from '../components/common/StatTile';
 const DamagedProducts = () => {
     const { toast } = useGlobalUI();
     const [data, setData] = useState({ items: [], totalPages: 0, totalElements: 0 });
-    const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(0);
@@ -35,6 +34,14 @@ const DamagedProducts = () => {
         quantity: '',
         reason: ''
     });
+    const [productSearch, setProductSearch] = useState('');
+    const [selectedProductName, setSelectedProductName] = useState('');
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [selectProducts, setSelectProducts] = useState([]);
+    const [selectProductsPage, setSelectProductsPage] = useState(0);
+    const [selectProductsTotalPages, setSelectProductsTotalPages] = useState(0);
+    const [selectProductsLoading, setSelectProductsLoading] = useState(false);
+    const [debouncedProductSearch, setDebouncedProductSearch] = useState('');
 
     const loadData = async () => {
         setLoading(true);
@@ -52,18 +59,18 @@ const DamagedProducts = () => {
         }
     };
 
-    const loadProducts = async () => {
+    const fetchProductsForSelect = async (query = '', pageNum = 0) => {
+        setSelectProductsLoading(true);
         try {
-            // Always ensure a branchId is sent — fallback to user's own branch
             const branchToUse = selectedBranchId || currentUserBranchId;
-            if (!branchToUse && !Api.isAdmin()) {
-                console.warn('No branch available for loading products');
-                return;
-            }
-            const result = await Api.getProducts(0, 5000, branchToUse);
-            setProducts(Array.isArray(result) ? result : (result.items || result.content || []));
+            const res = await Api.getProductsPaged(pageNum, 10, query, 'id,desc', branchToUse);
+            setSelectProducts(res.items || []);
+            setSelectProductsTotalPages(res.totalPages || 0);
+            setSelectProductsPage(res.page || 0);
         } catch (err) {
-            console.error('Failed to load products', err);
+            console.error('Failed to fetch paged products', err);
+        } finally {
+            setSelectProductsLoading(false);
         }
     };
 
@@ -78,15 +85,36 @@ const DamagedProducts = () => {
         loadData();
     }, [page, search, selectedBranchId]);
 
+    // Reset pagination and search if branch changes
     useEffect(() => {
-        const branchToUse = selectedBranchId || currentUserBranchId;
-        if (branchToUse || Api.isAdmin()) {
-            loadProducts();
-        }
+        setSelectProductsPage(0);
+        setProductSearch('');
+        setSelectedProductName('');
+        setFormData(prev => ({ ...prev, productId: '' }));
     }, [selectedBranchId]);
+
+    // Debounce product search inside modal
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedProductSearch(productSearch);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [productSearch]);
+
+    // Fetch products when search, page, or modal opens
+    useEffect(() => {
+        if (isModalOpen) {
+            fetchProductsForSelect(debouncedProductSearch, selectProductsPage);
+        }
+    }, [debouncedProductSearch, selectProductsPage, selectedBranchId, isModalOpen]);
 
     const openCreateModal = () => {
         setFormData({ productId: '', quantity: '', reason: '' });
+        setProductSearch('');
+        setSelectedProductName('');
+        setSelectProductsPage(0);
+        setSelectProducts([]);
+        setIsDropdownOpen(false);
         setIsModalOpen(true);
     };
 
@@ -107,7 +135,6 @@ const DamagedProducts = () => {
             toast('تم تسجيل الهالك بنجاح', 'success');
             setIsModalOpen(false);
             loadData();
-            loadProducts();
         } catch (err) {
             toast(err.message, 'error');
         } finally {
@@ -254,21 +281,189 @@ const DamagedProducts = () => {
                             </div>
                             <div className="modal-body">
                                 <form id="damagedForm" onSubmit={handleSave}>
-                                    <div className="form-group">
+                                    <div className="form-group" style={{ position: 'relative' }}>
                                         <label>المنتج *</label>
-                                        <select 
-                                            className="form-control"
-                                            value={formData.productId}
-                                            onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">-- اختر المنتج --</option>
-                                            {products.map(p => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.name} (المخزن: {p.stock})
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div style={{ position: 'relative' }}>
+                                            <input 
+                                                type="text"
+                                                className="form-control"
+                                                style={{ paddingLeft: formData.productId ? '30px' : '10px' }}
+                                                placeholder="🔍 ابحث بالاسم أو كود المنتج..."
+                                                value={productSearch}
+                                                onChange={(e) => {
+                                                    setProductSearch(e.target.value);
+                                                    setSelectProductsPage(0);
+                                                    setIsDropdownOpen(true);
+                                                    if (e.target.value === '') {
+                                                        setFormData(prev => ({ ...prev, productId: '' }));
+                                                        setSelectedProductName('');
+                                                    }
+                                                }}
+                                                onFocus={() => setIsDropdownOpen(true)}
+                                                onBlur={() => {
+                                                    setTimeout(() => {
+                                                        setIsDropdownOpen(false);
+                                                        if (formData.productId && selectedProductName) {
+                                                            setProductSearch(selectedProductName);
+                                                        } else {
+                                                            setProductSearch('');
+                                                        }
+                                                    }, 200);
+                                                }}
+                                                required
+                                            />
+                                            {formData.productId && (
+                                                <button 
+                                                    type="button"
+                                                    style={{
+                                                        position: 'absolute',
+                                                        left: '10px',
+                                                        top: '50%',
+                                                        transform: 'translateY(-50%)',
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: 'var(--text-muted)',
+                                                        cursor: 'pointer',
+                                                        fontSize: '1rem',
+                                                        padding: '2px 5px'
+                                                    }}
+                                                    onClick={() => {
+                                                        setFormData(prev => ({ ...prev, productId: '' }));
+                                                        setProductSearch('');
+                                                        setSelectedProductName('');
+                                                    }}
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                            
+                                            {isDropdownOpen && (
+                                                <div 
+                                                    className="searchable-select-dropdown" 
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '100%',
+                                                        left: 0,
+                                                        right: 0,
+                                                        zIndex: 1000,
+                                                        backgroundColor: 'var(--bg-modal, #121212)',
+                                                        border: '1px solid var(--border-input, #333)',
+                                                        borderRadius: '4px',
+                                                        marginTop: '5px',
+                                                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                                                        scrollbarWidth: 'thin'
+                                                    }}
+                                                >
+                                                    {selectProductsLoading ? (
+                                                        <div style={{ padding: '20px', color: 'var(--text-muted, #888)', textAlign: 'center' }}>
+                                                            جاري جلب المنتجات...
+                                                        </div>
+                                                    ) : selectProducts.length === 0 ? (
+                                                        <div style={{ padding: '20px', color: 'var(--text-muted, #888)', textAlign: 'center' }}>
+                                                            لا توجد منتجات مطابقة
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                                                                {selectProducts.map(p => (
+                                                                    <div 
+                                                                        key={p.id}
+                                                                        className="searchable-select-item"
+                                                                        style={{
+                                                                            padding: '10px 15px',
+                                                                            cursor: 'pointer',
+                                                                            borderBottom: '1px solid var(--border-subtle, rgba(255,255,255,0.05))',
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            alignItems: 'center',
+                                                                            backgroundColor: formData.productId === p.id ? 'var(--metro-blue)' : 'transparent',
+                                                                            color: formData.productId === p.id ? '#ffffff' : 'var(--text-white)'
+                                                                        }}
+                                                                        onMouseDown={(e) => {
+                                                                            e.preventDefault();
+                                                                            setFormData(prev => ({ ...prev, productId: p.id }));
+                                                                            setProductSearch(p.name);
+                                                                            setSelectedProductName(p.name);
+                                                                            setIsDropdownOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        <div>
+                                                                            <div style={{ fontWeight: 600, color: formData.productId === p.id ? '#ffffff' : 'var(--text-white)' }}>{p.name}</div>
+                                                                            {p.productCode && <div style={{ fontSize: '0.75rem', color: formData.productId === p.id ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)' }}>{p.productCode}</div>}
+                                                                        </div>
+                                                                        <span 
+                                                                            style={{ 
+                                                                                fontSize: '0.8rem', 
+                                                                                padding: '2px 8px', 
+                                                                                borderRadius: '10px', 
+                                                                                backgroundColor: p.stock > 0 ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)',
+                                                                                color: p.stock > 0 ? '#2ecc71' : '#e74c3c'
+                                                                            }}
+                                                                        >
+                                                                            المخزن: {p.stock}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            {selectProductsTotalPages > 1 && (
+                                                                <div style={{
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    alignItems: 'center',
+                                                                    padding: '8px 12px',
+                                                                    borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.05))',
+                                                                    backgroundColor: 'var(--bg-elevated, #1a1a1a)',
+                                                                    fontSize: '0.8rem'
+                                                                }}
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                >
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-sm btn-secondary"
+                                                                        style={{ padding: '2px 8px', fontSize: '0.75rem', height: 'auto', minWidth: '0' }}
+                                                                        disabled={selectProductsPage === 0 || selectProductsLoading}
+                                                                        onClick={() => setSelectProductsPage(p => p - 1)}
+                                                                    >
+                                                                        السابق
+                                                                    </button>
+                                                                    <span style={{ color: 'var(--text-muted)' }}>
+                                                                        صفحة {selectProductsPage + 1} من {selectProductsTotalPages}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-sm btn-secondary"
+                                                                        style={{ padding: '2px 8px', fontSize: '0.75rem', height: 'auto', minWidth: '0' }}
+                                                                        disabled={selectProductsPage >= selectProductsTotalPages - 1 || selectProductsLoading}
+                                                                        onClick={() => setSelectProductsPage(p => p + 1)}
+                                                                    >
+                                                                        التالي
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <style>{`
+                                            .searchable-select-item:hover {
+                                                background-color: var(--bg-hover-tile, rgba(255, 255, 255, 0.08)) !important;
+                                            }
+                                            .searchable-select-dropdown::-webkit-scrollbar {
+                                                width: 6px;
+                                            }
+                                            .searchable-select-dropdown::-webkit-scrollbar-track {
+                                                background: transparent;
+                                            }
+                                            .searchable-select-dropdown::-webkit-scrollbar-thumb {
+                                                background: var(--border-input, rgba(255, 255, 255, 0.2));
+                                                border-radius: 3px;
+                                            }
+                                            .searchable-select-dropdown::-webkit-scrollbar-thumb:hover {
+                                                background: rgba(255, 255, 255, 0.4);
+                                            }
+                                        `}</style>
                                     </div>
                                     <div className="form-group">
                                         <label>الكمية التالفة *</label>
