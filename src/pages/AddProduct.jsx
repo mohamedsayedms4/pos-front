@@ -4,10 +4,7 @@ import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import { useBranch } from '../context/BranchContext';
 import Loader from '../components/common/Loader';
-import * as ReactJoyride from 'react-joyride';
-
-const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
-const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+import { Joyride, STATUS } from 'react-joyride';
 
 const AutoStartBeacon = () => {
     const beaconRef = useRef(null);
@@ -347,11 +344,11 @@ const AddProduct = () => {
           callback={handleJoyrideCallback}
           styles={{
               options: {
-                  primaryColor: 'var(--color-primary, #4f46e5)',
+                  primaryColor: '#6A00FF',
                   backgroundColor: 'var(--bg-card, #ffffff)',
                   textColor: 'var(--text-main, #333333)',
                   arrowColor: 'var(--bg-card, #ffffff)',
-                  zIndex: 9999999,
+                  zIndex: 1000,
               },
               tooltipContainer: { textAlign: 'right' },
               buttonNext: { outline: 'none' },

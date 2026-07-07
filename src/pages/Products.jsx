@@ -13,10 +13,8 @@ import html2pdf from 'html2pdf.js';
 import SingleProductPdf from '../components/pdf/SingleProductPdf';
 import { useExport } from '../utils/useExport';
 import ExportProgressModal from '../components/ExportProgressModal';
-import * as ReactJoyride from 'react-joyride';
+import { Joyride, STATUS } from 'react-joyride';
 
-const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
-const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
 
 const AutoStartBeacon = () => {
     const beaconRef = React.useRef(null);
@@ -589,14 +587,6 @@ const Products = () => {
           spotlightClicks={true}
           callback={handleJoyrideCallback}
           styles={{
-              options: {
-                  primaryColor: 'var(--color-primary, #4f46e5)',
-                  backgroundColor: 'var(--bg-card, #ffffff)',
-                  textColor: 'var(--text-main, #333333)',
-                  arrowColor: 'var(--bg-card, #ffffff)',
-                  zIndex: 9999999,
-              },
-              tooltipContainer: { textAlign: 'right' },
               buttonNext: { outline: 'none' },
               buttonBack: { marginRight: 10, outline: 'none' }
           }}

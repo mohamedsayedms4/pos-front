@@ -10,10 +10,8 @@ import beepSound from '../assets/sound/freesound_community-store-scanner-beep-90
 import OpenSessionModal from '../components/pos/OpenSessionModal';
 import CloseSessionModal from '../components/pos/CloseSessionModal';
 import CashMovementModal from '../components/pos/CashMovementModal';
-import * as ReactJoyride from 'react-joyride';
+import { Joyride, STATUS } from 'react-joyride';
 
-const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
-const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
 
 const AutoStartBeacon = () => {
     const beaconRef = useRef(null);

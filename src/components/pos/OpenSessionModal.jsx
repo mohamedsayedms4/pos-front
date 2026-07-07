@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import Api from '../../services/api';
 import { useGlobalUI } from '../common/GlobalUI';
-import * as ReactJoyride from 'react-joyride';
-
-const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
-const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+import { Joyride, STATUS } from 'react-joyride';
 
 const AutoStartBeacon = () => {
     const beaconRef = React.useRef(null);
@@ -91,15 +88,15 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
             callback={handleJoyrideCallback}
             styles={{
                 options: {
-                    primaryColor: 'var(--color-primary, #4f46e5)',
+                    primaryColor: '#6A00FF',
                     backgroundColor: 'var(--bg-card, #ffffff)',
                     textColor: 'var(--text-main, #333333)',
                     arrowColor: 'var(--bg-card, #ffffff)',
                     zIndex: 9999999,
                 },
                 tooltipContainer: { textAlign: 'right' },
-                buttonNext: { outline: 'none' },
-                buttonBack: { marginRight: 10, outline: 'none' }
+                buttonNext: { outline: 'none', fontFamily: 'Cairo, sans-serif', padding: '6px 16px', borderRadius: '6px' },
+                buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: 'var(--text-muted, #666)' }
             }}
             locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
         />
