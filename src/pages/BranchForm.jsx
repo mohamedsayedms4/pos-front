@@ -5,16 +5,6 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = useRef(null);
-    useEffect(() => {
-        if (beaconRef.current && beaconRef.current.parentElement) {
-            beaconRef.current.parentElement.click();
-        }
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
-};
-
 const BranchForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -65,7 +55,7 @@ const BranchForm = () => {
     if (onboardingStr) {
         try {
             const statusObj = JSON.parse(onboardingStr);
-            if (!statusObj.hasBranch && !localStorage.getItem('tour_branch_form_v3')) {
+            if (/* !statusObj.hasBranch && */ !localStorage.getItem('tour_branch_form_v3')) {
                 setTimeout(() => {
                     setRunTour(true);
                     localStorage.setItem('tour_branch_form_v3', 'true');
@@ -148,7 +138,6 @@ const BranchForm = () => {
       <Joyride
           steps={tourSteps}
           run={runTour}
-          beaconComponent={AutoStartBeacon}
           continuous={true}
           showProgress={true}
           showSkipButton={true}

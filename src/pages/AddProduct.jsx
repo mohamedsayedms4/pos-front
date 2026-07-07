@@ -6,15 +6,6 @@ import { useBranch } from '../context/BranchContext';
 import Loader from '../components/common/Loader';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = useRef(null);
-    useEffect(() => {
-        if (beaconRef.current && beaconRef.current.parentElement) {
-            beaconRef.current.parentElement.click();
-        }
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
-};
 
 const AddProduct = () => {
   const { id } = useParams();
@@ -79,7 +70,7 @@ const AddProduct = () => {
     if (onboardingStr) {
         try {
             const statusObj = JSON.parse(onboardingStr);
-            if (statusObj.hasBranch && !statusObj.hasProduct && !localStorage.getItem('tour_add_product_v3')) {
+            if (/* statusObj.hasBranch && !statusObj.hasProduct && */ !localStorage.getItem('tour_add_product_v3')) {
                 setTimeout(() => {
                     setRunTour(true);
                     localStorage.setItem('tour_add_product_v3', 'true');
@@ -336,7 +327,6 @@ const AddProduct = () => {
       <Joyride
           steps={tourSteps}
           run={runTour}
-          beaconComponent={AutoStartBeacon}
           continuous={true}
           showProgress={true}
           showSkipButton={true}

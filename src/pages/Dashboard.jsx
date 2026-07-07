@@ -15,16 +15,6 @@ import OnboardingDashboard from './OnboardingDashboard';
 import '../styles/pages/StoreInactivePremium.css';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = React.useRef(null);
-    React.useEffect(() => {
-        if (beaconRef.current && beaconRef.current.parentElement) {
-            beaconRef.current.parentElement.click();
-        }
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
-};
-
 const PACKAGES = [
   { name: 'باقة 1 شهر', months: 1, price: 399 },
   { name: 'باقة سنة كاملة', months: 12, price: 3999 }
@@ -65,7 +55,7 @@ const Dashboard = () => {
   const [runTour, setRunTour] = useState(false);
 
   useEffect(() => {
-    if (onboardingStatus?.completed && !localStorage.getItem('tour_dashboard_v3')) {
+    if (/* onboardingStatus?.completed && */ !localStorage.getItem('tour_dashboard_v3')) {
       setTimeout(() => {
         setRunTour(true);
         localStorage.setItem('tour_dashboard_v3', 'true');
@@ -316,7 +306,6 @@ const Dashboard = () => {
         <Joyride
             steps={tourSteps}
             run={runTour}
-            beaconComponent={AutoStartBeacon}
             continuous={true}
             showProgress={true}
             showSkipButton={true}

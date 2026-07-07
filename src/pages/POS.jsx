@@ -13,15 +13,6 @@ import CashMovementModal from '../components/pos/CashMovementModal';
 import { Joyride, STATUS } from 'react-joyride';
 
 
-const AutoStartBeacon = () => {
-    const beaconRef = useRef(null);
-    useEffect(() => {
-        if (beaconRef.current && beaconRef.current.parentElement) {
-            beaconRef.current.parentElement.click();
-        }
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
-};
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 const PAGE_SIZE = 24;
@@ -100,7 +91,7 @@ const POS = () => {
     if (onboardingStr && activeSession) {
         try {
             const statusObj = JSON.parse(onboardingStr);
-            if (statusObj.hasProduct && !statusObj.hasInvoice && !localStorage.getItem('tour_pos_v3')) {
+            if (/* statusObj.hasProduct && !statusObj.hasInvoice && */ !localStorage.getItem('tour_pos_v3')) {
                 setTimeout(() => {
                     setRunTour(true);
                     localStorage.setItem('tour_pos_v3', 'true');
@@ -742,7 +733,6 @@ const POS = () => {
         <Joyride
             steps={tourSteps}
             run={runTour}
-            beaconComponent={AutoStartBeacon}
             continuous={true}
             showProgress={true}
             showSkipButton={true}

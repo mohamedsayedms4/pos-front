@@ -15,17 +15,6 @@ import { Joyride, STATUS } from 'react-joyride';
 
 import { useRef } from 'react';
 
-const AutoStartBeacon = () => {
-    const beaconRef = useRef(null);
-    useEffect(() => {
-        // React-joyride wraps this component in a button. We click the parent button to auto-start.
-        if (beaconRef.current && beaconRef.current.parentElement) {
-            beaconRef.current.parentElement.click();
-        }
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
-};
-
 const Settings = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -298,7 +287,6 @@ const Settings = () => {
             <Joyride
                 steps={tourSteps}
                 run={runTour}
-                beaconComponent={AutoStartBeacon}
                 continuous={true}
                 showProgress={true}
                 showSkipButton={true}

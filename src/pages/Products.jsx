@@ -16,15 +16,6 @@ import ExportProgressModal from '../components/ExportProgressModal';
 import { Joyride, STATUS } from 'react-joyride';
 
 
-const AutoStartBeacon = () => {
-    const beaconRef = React.useRef(null);
-    useEffect(() => {
-        if (beaconRef.current && beaconRef.current.parentElement) {
-            beaconRef.current.parentElement.click();
-        }
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
-};
 
 const Products = () => {
   const location = useLocation();
@@ -68,7 +59,7 @@ const Products = () => {
     if (onboardingStr) {
         try {
             const statusObj = JSON.parse(onboardingStr);
-            if (statusObj.hasBranch && !statusObj.hasProduct && !localStorage.getItem('tour_products_list_v3')) {
+            if (/* statusObj.hasBranch && !statusObj.hasProduct && */ !localStorage.getItem('tour_products_list_v3')) {
                 if (data.length === 0) {
                     setTimeout(() => {
                         setRunTour(true);
@@ -579,7 +570,6 @@ const Products = () => {
       <Joyride
           steps={tourSteps}
           run={runTour}
-          beaconComponent={AutoStartBeacon}
           continuous={true}
           showProgress={true}
           showSkipButton={true}
