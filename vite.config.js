@@ -8,6 +8,9 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  define: {
+    global: 'window',
+  },
 
   resolve: {
     dedupe: ['react', 'react-dom'],
