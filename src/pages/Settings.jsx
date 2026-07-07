@@ -11,10 +11,7 @@ import A4Receipt from '../components/common/A4Receipt';
 import ThermalReceipt from '../components/common/ThermalReceipt';
 import ChatService from '../services/ChatService';
 import CommunicationApi from '../services/CommunicationApi';
-import * as ReactJoyride from 'react-joyride';
-
-const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
-const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+import { Joyride, STATUS } from 'react-joyride';
 
 import { useRef } from 'react';
 
@@ -310,7 +307,7 @@ const Settings = () => {
                 callback={handleJoyrideCallback}
                 styles={{
                     options: {
-                        primaryColor: 'var(--color-primary, #4f46e5)',
+                        primaryColor: '#6A00FF',
                         backgroundColor: 'var(--bg-card, #ffffff)',
                         textColor: 'var(--text-main, #333333)',
                         arrowColor: 'var(--bg-card, #ffffff)',
@@ -321,10 +318,16 @@ const Settings = () => {
                     },
                     buttonNext: {
                         outline: 'none',
+                        fontFamily: 'Cairo, sans-serif', 
+                        padding: '6px 16px', 
+                        borderRadius: '6px'
                     },
                     buttonBack: {
-                        marginRight: 10,
+                        marginLeft: 15,
+                        marginRight: 0,
                         outline: 'none',
+                        fontFamily: 'Cairo, sans-serif', 
+                        color: 'var(--text-muted, #666)'
                     }
                 }}
                 locale={{

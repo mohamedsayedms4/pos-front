@@ -47,6 +47,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       completed: status.hasCompanyDetails,
       action: () => navigate('/settings'),
       icon: '🏢',
+      isLocked: false,
     },
     {
       id: 2,
@@ -55,6 +56,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       completed: status.hasBranch,
       action: () => navigate('/branches'),
       icon: '🏪',
+      isLocked: !status.hasCompanyDetails,
     },
     {
       id: 3,
@@ -63,6 +65,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       completed: status.hasProduct,
       action: () => navigate('/products'),
       icon: '📦',
+      isLocked: !status.hasCompanyDetails || !status.hasBranch,
     },
     {
       id: 4,
@@ -71,6 +74,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       completed: status.hasInvoice,
       action: () => navigate('/pos'),
       icon: '🧾',
+      isLocked: !status.hasCompanyDetails || !status.hasBranch || !status.hasProduct,
     },
     {
       id: 5,
@@ -79,6 +83,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       completed: status.completed,
       action: null,
       icon: '🎉',
+      isLocked: true,
     }
   ];
 
@@ -107,7 +112,8 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
               key={step.id} 
               id={`step-row-${step.id}`}
               className={`checklist-item ${step.completed ? 'completed' : 'pending'}`}
-              onClick={!step.completed && step.action ? step.action : undefined}
+              style={step.isLocked ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+              onClick={!step.completed && step.action && !step.isLocked ? step.action : undefined}
             >
               <div className="check-icon">
                 {step.completed ? <i className="fas fa-check-circle"></i> : <i className="far fa-circle"></i>}
@@ -121,32 +127,44 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
                 </p>
               </div>
               {!step.completed && step.action && step.id !== 2 && (
-                <button className="step-action-btn" onClick={(e) => { e.stopPropagation(); step.action(); }}>
-                  ابدأ الآن
+                <button 
+                  className="step-action-btn" 
+                  onClick={(e) => { e.stopPropagation(); step.action(); }}
+                  disabled={step.isLocked}
+                  style={step.isLocked ? { background: '#e2e8f0', color: '#94a3b8', cursor: 'not-allowed', border: 'none' } : {}}
+                >
+                  {step.isLocked ? '🔒 مغلق' : 'ابدأ الآن'}
                 </button>
               )}
               {step.id === 2 && !step.completed && (
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="step-action-btn" onClick={(e) => { 
+                  <button 
+                    className="step-action-btn" 
+                    onClick={(e) => { 
                       e.stopPropagation(); 
                       navigate('/branches/add'); 
-                  }}>
-                    إضافة فرع آخر
+                    }}
+                    disabled={step.isLocked}
+                    style={step.isLocked ? { background: '#e2e8f0', color: '#94a3b8', cursor: 'not-allowed', border: 'none' } : {}}
+                  >
+                    {step.isLocked ? '🔒 مغلق' : 'إضافة فرع آخر'}
                   </button>
-                  <button className="step-action-btn" disabled={isSkippingBranch} style={{ background: 'transparent', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }} onClick={async (e) => { 
-                      e.stopPropagation(); 
-                      setIsSkippingBranch(true);
-                      try {
-                          await Api._request('/onboarding/step/branch', { method: 'POST' });
-                          reloadStatus();
-                      } catch(err) {
-                          console.error(err);
-                      } finally {
-                          setIsSkippingBranch(false);
-                      }
-                  }}>
-                    {isSkippingBranch ? 'جاري التخطي...' : 'تخطي'}
-                  </button>
+                  {!step.isLocked && (
+                    <button className="step-action-btn" disabled={isSkippingBranch} style={{ background: 'transparent', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }} onClick={async (e) => { 
+                        e.stopPropagation(); 
+                        setIsSkippingBranch(true);
+                        try {
+                            await Api._request('/onboarding/step/branch', { method: 'POST' });
+                            reloadStatus();
+                        } catch(err) {
+                            console.error(err);
+                        } finally {
+                            setIsSkippingBranch(false);
+                        }
+                    }}>
+                      {isSkippingBranch ? 'جاري التخطي...' : 'تخطي'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -13,10 +13,7 @@ import Customers from './Customers';
 import Expenses from './Expenses';
 import OnboardingDashboard from './OnboardingDashboard';
 import '../styles/pages/StoreInactivePremium.css';
-import * as ReactJoyride from 'react-joyride';
-
-const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
-const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+import { Joyride, STATUS } from 'react-joyride';
 
 const AutoStartBeacon = () => {
     const beaconRef = React.useRef(null);
@@ -128,6 +125,17 @@ const Dashboard = () => {
       localStorage.setItem('onboardingStatus', JSON.stringify(res.data));
     } catch (err) {
       console.error('Failed to load onboarding status:', err);
+      // Fallback so it doesn't block the dashboard from loading
+      const cached = localStorage.getItem('onboardingStatus');
+      if (cached) {
+        try {
+          setOnboardingStatus(JSON.parse(cached));
+        } catch(e) {
+          setOnboardingStatus({ completed: true });
+        }
+      } else {
+        setOnboardingStatus({ completed: true }); // Default to completed if there's an error and no cache
+      }
     }
   };
 
@@ -316,15 +324,15 @@ const Dashboard = () => {
             callback={handleJoyrideCallback}
             styles={{
                 options: {
-                    primaryColor: 'var(--color-primary, #4f46e5)',
+                    primaryColor: '#6A00FF',
                     backgroundColor: 'var(--bg-card, #ffffff)',
                     textColor: 'var(--text-main, #333333)',
                     arrowColor: 'var(--bg-card, #ffffff)',
                     zIndex: 9999999,
                 },
                 tooltipContainer: { textAlign: 'right' },
-                buttonNext: { outline: 'none' },
-                buttonBack: { marginRight: 10, outline: 'none' }
+                buttonNext: { outline: 'none', fontFamily: 'Cairo, sans-serif', padding: '6px 16px', borderRadius: '6px' },
+                buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: 'var(--text-muted, #666)' }
             }}
             locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
         />
