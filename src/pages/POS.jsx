@@ -12,18 +12,47 @@ import CloseSessionModal from '../components/pos/CloseSessionModal';
 import CashMovementModal from '../components/pos/CashMovementModal';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = React.useRef(null);
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (beaconRef.current && beaconRef.current.parentElement) {
-                beaconRef.current.parentElement.click();
-            }
-        }, 200);
-        return () => clearTimeout(timer);
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
+const StartTourBeacon = ({ beaconProps }) => {
+    return (
+        <>
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes pulseBeacon {
+                    0% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                    50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.7); }
+                    100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                }
+            `}} />
+            <button 
+                {...beaconProps}
+                style={{
+                    background: '#0B1354',
+                    color: '#ffffff',
+                    border: '2px solid #3B82F6',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    borderRadius: '30px',
+                    fontFamily: 'Cairo, sans-serif',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                    position: 'relative',
+                    zIndex: 9999,
+                    animation: 'pulseBeacon 2s infinite ease-in-out',
+                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)'
+                }}
+            >
+                ابدأ الجولة الإرشادية للنظام
+            </button>
+        </>
+    );
 };
+
+
 
 
 
@@ -100,18 +129,35 @@ const POS = () => {
   const [runTour, setRunTour] = useState(false);
 
   useEffect(() => {
-    const onboardingStr = localStorage.getItem('onboardingStatus');
-    if (onboardingStr && activeSession) {
-        try {
-            const statusObj = JSON.parse(onboardingStr);
-            if (/* statusObj.hasProduct && !statusObj.hasInvoice && */ !localStorage.getItem('tour_pos_v3')) {
-                setTimeout(() => {
-                    setRunTour(true);
-                    localStorage.setItem('tour_pos_v3', 'true');
-                }, 1500); 
-            }
-        } catch(e) {}
-    }
+    if (!activeSession) return;
+    const checkTour = async () => {
+        let onboarding = null;
+        const onboardingStr = localStorage.getItem('onboardingStatus');
+        if (onboardingStr) {
+            try { onboarding = JSON.parse(onboardingStr); } catch(e){}
+        }
+        
+        if (!onboarding) {
+            try {
+                const res = await Api.get('/onboarding/status');
+                onboarding = res.data || res;
+                if (onboarding) {
+                    localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
+                }
+            } catch(e){}
+        }
+        
+        if (onboarding && (onboarding.hasInvoice || onboarding.isCompleted || onboarding.completed)) {
+            return;
+        }
+
+        if (!localStorage.getItem('tour_pos_v3')) {
+            setTimeout(() => {
+                setRunTour(true);
+            }, 1500); 
+        }
+    };
+    checkTour();
   }, [activeSession]);
 
   const handleJoyrideCallback = (data) => {
@@ -139,7 +185,6 @@ const POS = () => {
       {
           target: '.tour-pos-search',
           content: 'هنا يمكنك البحث عن منتجاتك بالاسم أو مسح الباركود مباشرة لإضافتها للفاتورة.',
-          disableBeacon: true,
           placement: 'bottom',
       },
       {
@@ -710,6 +755,15 @@ const POS = () => {
     const handleKeyDown = (e) => {
       const isCtrlB = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b';
       const isEnter = e.key === 'Enter';
+      const isCtrlTwo = (e.ctrlKey || e.metaKey) && e.key === '2';
+
+      if (isCtrlTwo) {
+          e.preventDefault();
+          setRunTour(false);
+          localStorage.setItem('tour_pos_v3', 'true');
+          toast('تم تخطي الجولة الإرشادية للنظام', 'info');
+          return;
+      }
 
       if (isCtrlB || isEnter) {
         // Do not trigger checkout if Enter is pressed inside search inputs (e.g., barcode scanner or customer search)
@@ -746,7 +800,7 @@ const POS = () => {
         <Joyride
             steps={tourSteps}
             run={runTour}
-            beaconComponent={AutoStartBeacon}
+            beaconComponent={StartTourBeacon}
             continuous={true}
             showProgress={true}
             showSkipButton={true}
@@ -754,15 +808,15 @@ const POS = () => {
             callback={handleJoyrideCallback}
             styles={{
                 options: {
-                    primaryColor: 'var(--color-primary, #4f46e5)',
-                    backgroundColor: 'var(--bg-card, #ffffff)',
-                    textColor: 'var(--text-main, #333333)',
-                    arrowColor: 'var(--bg-card, #ffffff)',
+                    primaryColor: '#3B82F6',
+                    backgroundColor: '#0B1354',
+                    textColor: '#ffffff',
+                    arrowColor: '#0B1354',
                     zIndex: 9999999,
                 },
                 tooltipContainer: { textAlign: 'right' },
-                buttonNext: { outline: 'none' },
-                buttonBack: { marginRight: 10, outline: 'none' }
+                buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
+                buttonBack: { marginRight: 10, outline: 'none', color: '#a0aec0', fontFamily: 'Cairo, sans-serif' }
             }}
             locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
         />

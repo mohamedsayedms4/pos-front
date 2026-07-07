@@ -15,18 +15,47 @@ import OnboardingDashboard from './OnboardingDashboard';
 import '../styles/pages/StoreInactivePremium.css';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = React.useRef(null);
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (beaconRef.current && beaconRef.current.parentElement) {
-                beaconRef.current.parentElement.click();
-            }
-        }, 200);
-        return () => clearTimeout(timer);
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
+const StartTourBeacon = ({ beaconProps }) => {
+    return (
+        <>
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes pulseBeacon {
+                    0% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                    50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.7); }
+                    100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                }
+            `}} />
+            <button 
+                {...beaconProps}
+                style={{
+                    background: '#0B1354',
+                    color: '#ffffff',
+                    border: '2px solid #3B82F6',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    borderRadius: '30px',
+                    fontFamily: 'Cairo, sans-serif',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                    position: 'relative',
+                    zIndex: 9999,
+                    animation: 'pulseBeacon 2s infinite ease-in-out',
+                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)'
+                }}
+            >
+                ابدأ الجولة الإرشادية للنظام
+            </button>
+        </>
+    );
 };
+
+
 
 const PACKAGES = [
   { name: 'باقة 1 شهر', months: 1, price: 399 },
@@ -68,13 +97,35 @@ const Dashboard = () => {
   const [runTour, setRunTour] = useState(false);
 
   useEffect(() => {
-    if (/* onboardingStatus?.completed && */ !localStorage.getItem('tour_dashboard_v3')) {
-      setTimeout(() => {
-        setRunTour(true);
-        localStorage.setItem('tour_dashboard_v3', 'true');
-      }, 1500);
-    }
-  }, [onboardingStatus]);
+    const checkTour = async () => {
+        let onboarding = null;
+        const onboardingStr = localStorage.getItem('onboardingStatus');
+        if (onboardingStr) {
+            try { onboarding = JSON.parse(onboardingStr); } catch(e){}
+        }
+        
+        if (!onboarding) {
+            try {
+                const res = await Api.get('/onboarding/status');
+                onboarding = res.data || res;
+                if (onboarding) {
+                    localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
+                }
+            } catch(e){}
+        }
+        
+        if (onboarding && (onboarding.isCompleted || onboarding.completed)) {
+            return;
+        }
+
+        if (!localStorage.getItem('tour_dashboard_v3')) {
+            setTimeout(() => {
+                setRunTour(true);
+            }, 1500);
+        }
+    };
+    checkTour();
+  }, []);
 
   const handleJoyrideCallback = (data) => {
     const { status, type } = data;
@@ -86,26 +137,41 @@ const Dashboard = () => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+            e.preventDefault();
+            setRunTour(false);
+            localStorage.setItem('tour_dashboard_v3', 'true');
+            toast('تم تخطي الجولة الإرشادية للنظام', 'info');
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toast]);
+
   const tourSteps = [
     {
       target: '.tour-dashboard-store',
       content: 'من هنا يمكنك نسخ رابط المتجر الخاص بك لمشاركته مع عملائك أو موظفيك بسهولة.',
-      disableBeacon: true,
       placement: 'bottom',
     },
     {
       target: '.tour-dashboard-pos',
       content: 'هذا هو اختصارك السريع للدخول إلى شاشة الكاشير (نقطة البيع) للبدء في إصدار الفواتير.',
+      disableBeacon: true,
       placement: 'bottom',
     },
     {
       target: '.tour-dashboard-tabs',
       content: 'تتيح لك هذه التبويبات التنقل بين الإحصائيات المختلفة (مبيعات، مشتريات، أرباح، وغيرها) لمتابعة أداء عملك.',
+      disableBeacon: true,
       placement: 'bottom',
     },
     {
       target: '.tour-dashboard-shortcuts',
       content: 'هنا تجد اختصارات سريعة لجميع أقسام النظام المهمة للوصول إليها بنقرة واحدة.',
+      disableBeacon: true,
       placement: 'top',
     }
   ];
@@ -319,7 +385,7 @@ const Dashboard = () => {
         <Joyride
             steps={tourSteps}
             run={runTour}
-            beaconComponent={AutoStartBeacon}
+            beaconComponent={StartTourBeacon}
             continuous={true}
             showProgress={true}
             showSkipButton={true}
@@ -327,15 +393,15 @@ const Dashboard = () => {
             callback={handleJoyrideCallback}
             styles={{
                 options: {
-                    primaryColor: '#6A00FF',
-                    backgroundColor: 'var(--bg-card, #ffffff)',
-                    textColor: 'var(--text-main, #333333)',
-                    arrowColor: 'var(--bg-card, #ffffff)',
+                    primaryColor: '#3B82F6',
+                    backgroundColor: '#0B1354',
+                    textColor: '#ffffff',
+                    arrowColor: '#0B1354',
                     zIndex: 9999999,
                 },
                 tooltipContainer: { textAlign: 'right' },
-                buttonNext: { outline: 'none', fontFamily: 'Cairo, sans-serif', padding: '6px 16px', borderRadius: '6px' },
-                buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: 'var(--text-muted, #666)' }
+                buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
+                buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: '#a0aec0' }
             }}
             locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
         />

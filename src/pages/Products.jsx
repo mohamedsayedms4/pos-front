@@ -15,18 +15,47 @@ import { useExport } from '../utils/useExport';
 import ExportProgressModal from '../components/ExportProgressModal';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = React.useRef(null);
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (beaconRef.current && beaconRef.current.parentElement) {
-                beaconRef.current.parentElement.click();
-            }
-        }, 200);
-        return () => clearTimeout(timer);
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
+const StartTourBeacon = ({ beaconProps }) => {
+    return (
+        <>
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes pulseBeacon {
+                    0% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                    50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.7); }
+                    100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                }
+            `}} />
+            <button 
+                {...beaconProps}
+                style={{
+                    background: '#0B1354',
+                    color: '#ffffff',
+                    border: '2px solid #3B82F6',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    borderRadius: '30px',
+                    fontFamily: 'Cairo, sans-serif',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                    position: 'relative',
+                    zIndex: 9999,
+                    animation: 'pulseBeacon 2s infinite ease-in-out',
+                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)'
+                }}
+            >
+                ابدأ الجولة الإرشادية للنظام
+            </button>
+        </>
+    );
 };
+
+
 
 
 
@@ -68,22 +97,38 @@ const Products = () => {
 
   useEffect(() => {
     if (loading) return;
-    const onboardingStr = localStorage.getItem('onboardingStatus');
-    if (onboardingStr) {
-        try {
-            const statusObj = JSON.parse(onboardingStr);
-            if (/* statusObj.hasBranch && !statusObj.hasProduct && */ !localStorage.getItem('tour_products_list_v3')) {
-                if (data.length === 0) {
-                    setTimeout(() => {
-                        setRunTour(true);
-                        localStorage.setItem('tour_products_list_v3', 'true');
-                    }, 500); 
-                } else {
-                    localStorage.setItem('tour_products_list_v3', 'true');
+    const checkTour = async () => {
+        let onboarding = null;
+        const onboardingStr = localStorage.getItem('onboardingStatus');
+        if (onboardingStr) {
+            try { onboarding = JSON.parse(onboardingStr); } catch(e){}
+        }
+        
+        if (!onboarding) {
+            try {
+                const res = await Api.get('/onboarding/status');
+                onboarding = res.data || res;
+                if (onboarding) {
+                    localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
                 }
+            } catch(e){}
+        }
+        
+        if (onboarding && (onboarding.hasProduct || onboarding.isCompleted || onboarding.completed)) {
+            return;
+        }
+
+        if (!localStorage.getItem('tour_products_list_v3')) {
+            if (data.length === 0) {
+                setTimeout(() => {
+                    setRunTour(true);
+                }, 500); 
+            } else {
+                localStorage.setItem('tour_products_list_v3', 'true');
             }
-        } catch(e) {}
-    }
+        }
+    };
+    checkTour();
   }, [loading, data.length]);
 
   const handleJoyrideCallback = (data) => {
@@ -96,11 +141,23 @@ const Products = () => {
       }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+            e.preventDefault();
+            setRunTour(false);
+            localStorage.setItem('tour_products_list_v3', 'true');
+            toast('تم تخطي الجولة الإرشادية للنظام', 'info');
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toast]);
+
   const tourSteps = [
       {
           target: '.tour-add-product',
           content: 'ممتاز! الآن يمكنك البدء في إضافة أول منتج ستبيعه للعملاء. اضغط هنا!',
-          disableBeacon: true,
           placement: 'bottom',
       }
   ];
@@ -583,7 +640,7 @@ const Products = () => {
       <Joyride
           steps={tourSteps}
           run={runTour}
-          beaconComponent={AutoStartBeacon}
+          beaconComponent={StartTourBeacon}
           continuous={true}
           showProgress={true}
           showSkipButton={true}
@@ -591,8 +648,16 @@ const Products = () => {
           spotlightClicks={true}
           callback={handleJoyrideCallback}
           styles={{
-              buttonNext: { outline: 'none' },
-              buttonBack: { marginRight: 10, outline: 'none' }
+              options: {
+                  primaryColor: '#3B82F6',
+                  backgroundColor: '#0B1354',
+                  textColor: '#ffffff',
+                  arrowColor: '#0B1354',
+                  zIndex: 1000,
+              },
+              tooltipContainer: { textAlign: 'right' },
+              buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
+              buttonBack: { marginRight: 10, outline: 'none', color: '#a0aec0', fontFamily: 'Cairo, sans-serif' }
           }}
           locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
       />

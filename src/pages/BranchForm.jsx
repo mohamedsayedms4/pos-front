@@ -5,18 +5,46 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = React.useRef(null);
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (beaconRef.current && beaconRef.current.parentElement) {
-                beaconRef.current.parentElement.click();
-            }
-        }, 200);
-        return () => clearTimeout(timer);
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
+const StartTourBeacon = ({ beaconProps }) => {
+    return (
+        <>
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes pulseBeacon {
+                    0% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                    50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.7); }
+                    100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                }
+            `}} />
+            <button 
+                {...beaconProps}
+                style={{
+                    background: '#0B1354',
+                    color: '#ffffff',
+                    border: '2px solid #3B82F6',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    borderRadius: '30px',
+                    fontFamily: 'Cairo, sans-serif',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                    position: 'relative',
+                    zIndex: 9999,
+                    animation: 'pulseBeacon 2s infinite ease-in-out',
+                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)'
+                }}
+            >
+                ابدأ الجولة الإرشادية للنظام
+            </button>
+        </>
+    );
 };
+
 const BranchForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -63,47 +91,73 @@ const BranchForm = () => {
   }, [id]);
 
   useEffect(() => {
-    const onboardingStr = localStorage.getItem('onboardingStatus');
-    if (onboardingStr) {
-        try {
-            const statusObj = JSON.parse(onboardingStr);
-            if (/* !statusObj.hasBranch && */ !localStorage.getItem('tour_branch_form_v3')) {
-                setTimeout(() => {
-                    setRunTour(true);
-                    localStorage.setItem('tour_branch_form_v3', 'true');
-                }, 500); 
-            }
-        } catch(e) {}
-    }
+    const checkTour = async () => {
+        let onboarding = null;
+        const onboardingStr = localStorage.getItem('onboardingStatus');
+        if (onboardingStr) {
+            try { onboarding = JSON.parse(onboardingStr); } catch(e){}
+        }
+        
+        if (!onboarding) {
+            try {
+                const res = await Api.get('/onboarding/status');
+                onboarding = res.data || res;
+                if (onboarding) {
+                    localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
+                }
+            } catch(e){}
+        }
+        
+        if (onboarding && (onboarding.hasBranch || onboarding.isCompleted || onboarding.completed)) {
+            return;
+        }
+
+        if (!localStorage.getItem('tour_branch_form_v3')) {
+            setTimeout(() => {
+                setRunTour(true);
+            }, 500); 
+        }
+    };
+    checkTour();
   }, []);
 
   const handleJoyrideCallback = (data) => {
-      const { status } = data;
+      const { status, type } = data;
       const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
       
-      if (finishedStatuses.includes(status)) {
+      if (finishedStatuses.includes(status) || type === 'tour:end') {
           setRunTour(false);
           localStorage.setItem('tour_branch_form_v3', 'true');
       }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+            e.preventDefault();
+            setRunTour(false);
+            localStorage.setItem('tour_branch_form_v3', 'true');
+            toast('تم تخطي الجولة الإرشادية للنظام', 'info');
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toast]);
+
   const tourSteps = [
       {
           target: '.tour-branch-code',
           content: 'أدخل كوداً مميزاً للفرع (مثال: BR-01).',
-          disableBeacon: true,
           placement: 'bottom',
       },
       {
           target: '.tour-branch-name',
           content: 'أدخل اسم الفرع (مثال: الفرع الرئيسي).',
-          disableBeacon: true,
           placement: 'bottom',
       },
       {
           target: '.tour-branch-save',
           content: 'اضغط هنا لحفظ الفرع بنجاح!',
-          disableBeacon: true,
           placement: 'top',
       }
   ];
@@ -150,7 +204,7 @@ const BranchForm = () => {
       <Joyride
           steps={tourSteps}
           run={runTour}
-          beaconComponent={AutoStartBeacon}
+          beaconComponent={StartTourBeacon}
           continuous={true}
           showProgress={true}
           showSkipButton={true}
@@ -159,15 +213,15 @@ const BranchForm = () => {
           callback={handleJoyrideCallback}
           styles={{
             options: {
-              primaryColor: '#6A00FF',
-              backgroundColor: 'var(--bg-card, #ffffff)',
-              textColor: 'var(--text-main, #333333)',
-              arrowColor: 'var(--bg-card, #ffffff)',
+              primaryColor: '#3B82F6',
+              backgroundColor: '#0B1354',
+              textColor: '#ffffff',
+              arrowColor: '#0B1354',
               zIndex: 1000,
             },
             tooltipContainer: { textAlign: 'right' },
-            buttonNext: { outline: 'none', fontFamily: 'Cairo, sans-serif', padding: '6px 16px', borderRadius: '6px' },
-            buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: 'var(--text-muted, #666)' }
+            buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
+            buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: '#a0aec0' }
           }}
           locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
       />

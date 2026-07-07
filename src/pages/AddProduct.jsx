@@ -6,18 +6,47 @@ import { useBranch } from '../context/BranchContext';
 import Loader from '../components/common/Loader';
 import { Joyride, STATUS } from 'react-joyride';
 
-const AutoStartBeacon = () => {
-    const beaconRef = React.useRef(null);
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            if (beaconRef.current && beaconRef.current.parentElement) {
-                beaconRef.current.parentElement.click();
-            }
-        }, 200);
-        return () => clearTimeout(timer);
-    }, []);
-    return <span ref={beaconRef} style={{ display: 'none' }} />;
+const StartTourBeacon = ({ beaconProps }) => {
+    return (
+        <>
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes pulseBeacon {
+                    0% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                    50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.7); }
+                    100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
+                }
+            `}} />
+            <button 
+                {...beaconProps}
+                style={{
+                    background: '#0B1354',
+                    color: '#ffffff',
+                    border: '2px solid #3B82F6',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    borderRadius: '30px',
+                    fontFamily: 'Cairo, sans-serif',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                    position: 'relative',
+                    zIndex: 9999,
+                    animation: 'pulseBeacon 2s infinite ease-in-out',
+                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)'
+                }}
+            >
+                ابدأ الجولة الإرشادية للنظام
+            </button>
+        </>
+    );
 };
+
+
 
 
 const AddProduct = () => {
@@ -77,20 +106,68 @@ const AddProduct = () => {
 
   // Tour State
   const [runTour, setRunTour] = useState(false);
+  const [activeSteps, setActiveSteps] = useState([]);
 
   useEffect(() => {
-    const onboardingStr = localStorage.getItem('onboardingStatus');
-    if (onboardingStr) {
-        try {
-            const statusObj = JSON.parse(onboardingStr);
-            if (/* statusObj.hasBranch && !statusObj.hasProduct && */ !localStorage.getItem('tour_add_product_v3')) {
-                setTimeout(() => {
+    const checkTour = async () => {
+        let onboarding = null;
+        const onboardingStr = localStorage.getItem('onboardingStatus');
+        if (onboardingStr) {
+            try { onboarding = JSON.parse(onboardingStr); } catch(e){}
+        }
+        
+        if (!onboarding) {
+            try {
+                const res = await Api.get('/onboarding/status');
+                onboarding = res.data || res;
+                if (onboarding) {
+                    localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
+                }
+            } catch(e){}
+        }
+        
+        if (onboarding && (onboarding.hasProduct || onboarding.isCompleted || onboarding.completed)) {
+            return;
+        }
+
+        if (!localStorage.getItem('tour_add_product_v3')) {
+            setTimeout(() => {
+                const steps = [
+                    {
+                        target: '.tour-prod-branch',
+                        content: 'أولاً، يجب عليك تحديد الفرع الذي سيتم إضافة هذا المنتج ومخزونه إليه.',
+                        placement: 'bottom',
+                    },
+                    {
+                        target: '.tour-prod-name',
+                        content: 'أدخل اسم المنتج بوضوح هنا (مثل: تي شيرت قطن, أو كيبورد ميكانيكي).',
+                        placement: 'bottom',
+                    },
+                    {
+                        target: '.tour-prod-price',
+                        content: 'حدد السعر الذي ستبيع به هذا المنتج للعميل.',
+                        placement: 'bottom',
+                    },
+                    {
+                        target: '.tour-prod-cat',
+                        content: 'اختر الفئة التي ينتمي إليها المنتج لتسهيل تنظيمه.',
+                        placement: 'bottom',
+                    },
+                    {
+                        target: '.tour-prod-save',
+                        content: 'أخيراً، اضغط هنا لحفظ المنتج. وبذلك تكون قد أضفت أول منتج لك!',
+                        placement: 'top',
+                    }
+                ].filter(step => document.querySelector(step.target) !== null);
+
+                if (steps.length > 0) {
+                    setActiveSteps(steps);
                     setRunTour(true);
-                    localStorage.setItem('tour_add_product_v3', 'true');
-                }, 800); 
-            }
-        } catch(e) {}
-    }
+                }
+            }, 800); 
+        }
+    };
+    checkTour();
   }, []);
 
   const handleJoyrideCallback = (data) => {
@@ -103,35 +180,20 @@ const AddProduct = () => {
       }
   };
 
-  const tourSteps = [
-      {
-          target: '.tour-prod-branch',
-          content: 'أولاً، يجب عليك تحديد الفرع الذي سيتم إضافة هذا المنتج ومخزونه إليه.',
-          disableBeacon: true,
-          placement: 'bottom',
-      },
-      {
-          target: '.tour-prod-name',
-          content: 'أدخل اسم المنتج بوضوح هنا (مثل: تي شيرت قطن, أو كيبورد ميكانيكي).',
-          disableBeacon: true,
-          placement: 'bottom',
-      },
-      {
-          target: '.tour-prod-price',
-          content: 'حدد السعر الذي ستبيع به هذا المنتج للعميل.',
-          placement: 'bottom',
-      },
-      {
-          target: '.tour-prod-cat',
-          content: 'اختر الفئة التي ينتمي إليها المنتج لتسهيل تنظيمه.',
-          placement: 'bottom',
-      },
-      {
-          target: '.tour-prod-save',
-          content: 'أخيراً، اضغط هنا لحفظ المنتج. وبذلك تكون قد أضفت أول منتج لك!',
-          placement: 'top',
-      }
-  ];
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+            e.preventDefault();
+            setRunTour(false);
+            localStorage.setItem('tour_add_product_v3', 'true');
+            toast('تم تخطي الجولة الإرشادية للنظام', 'info');
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toast]);
+
+  // Steps are defined dynamically in useEffect
 
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
@@ -338,9 +400,9 @@ const AddProduct = () => {
   return (
     <>
       <Joyride
-          steps={tourSteps}
+          steps={activeSteps}
           run={runTour}
-          beaconComponent={AutoStartBeacon}
+          beaconComponent={StartTourBeacon}
           continuous={true}
           showProgress={true}
           showSkipButton={true}
@@ -348,15 +410,15 @@ const AddProduct = () => {
           callback={handleJoyrideCallback}
           styles={{
               options: {
-                  primaryColor: '#6A00FF',
-                  backgroundColor: 'var(--bg-card, #ffffff)',
-                  textColor: 'var(--text-main, #333333)',
-                  arrowColor: 'var(--bg-card, #ffffff)',
+                  primaryColor: '#3B82F6',
+                  backgroundColor: '#0B1354',
+                  textColor: '#ffffff',
+                  arrowColor: '#0B1354',
                   zIndex: 1000,
               },
               tooltipContainer: { textAlign: 'right' },
-              buttonNext: { outline: 'none' },
-              buttonBack: { marginRight: 10, outline: 'none' }
+              buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
+              buttonBack: { marginRight: 10, outline: 'none', color: '#a0aec0', fontFamily: 'Cairo, sans-serif' }
           }}
           locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
       />
