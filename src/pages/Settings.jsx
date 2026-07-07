@@ -13,6 +13,19 @@ import ChatService from '../services/ChatService';
 import CommunicationApi from '../services/CommunicationApi';
 import { Joyride, STATUS } from 'react-joyride';
 
+const AutoStartBeacon = () => {
+    const beaconRef = React.useRef(null);
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            if (beaconRef.current && beaconRef.current.parentElement) {
+                beaconRef.current.parentElement.click();
+            }
+        }, 200);
+        return () => clearTimeout(timer);
+    }, []);
+    return <span ref={beaconRef} style={{ display: 'none' }} />;
+};
+
 import { useRef } from 'react';
 
 const Settings = () => {
@@ -287,6 +300,7 @@ const Settings = () => {
             <Joyride
                 steps={tourSteps}
                 run={runTour}
+                beaconComponent={AutoStartBeacon}
                 continuous={true}
                 showProgress={true}
                 showSkipButton={true}
