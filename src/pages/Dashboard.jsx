@@ -11,7 +11,22 @@ import Returns from './Returns';
 import ProfitLoss from './ProfitLoss';
 import Customers from './Customers';
 import Expenses from './Expenses';
+import OnboardingDashboard from './OnboardingDashboard';
 import '../styles/pages/StoreInactivePremium.css';
+import * as ReactJoyride from 'react-joyride';
+
+const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
+const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+
+const AutoStartBeacon = () => {
+    const beaconRef = React.useRef(null);
+    React.useEffect(() => {
+        if (beaconRef.current && beaconRef.current.parentElement) {
+            beaconRef.current.parentElement.click();
+        }
+    }, []);
+    return <span ref={beaconRef} style={{ display: 'none' }} />;
+};
 
 const PACKAGES = [
   { name: 'باقة 1 شهر', months: 1, price: 399 },
@@ -49,6 +64,51 @@ const Dashboard = () => {
   const [myRequests, setMyRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(null);
   const [globalConfig, setGlobalConfig] = useState(null);
+  const [onboardingStatus, setOnboardingStatus] = useState(null);
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    if (onboardingStatus?.completed && !localStorage.getItem('tour_dashboard_v3')) {
+      setTimeout(() => {
+        setRunTour(true);
+        localStorage.setItem('tour_dashboard_v3', 'true');
+      }, 1500);
+    }
+  }, [onboardingStatus]);
+
+  const handleJoyrideCallback = (data) => {
+    const { status, type } = data;
+    const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+    
+    if (finishedStatuses.includes(status) || type === 'tour:end') {
+        setRunTour(false);
+        localStorage.setItem('tour_dashboard_v3', 'true');
+    }
+  };
+
+  const tourSteps = [
+    {
+      target: '.tour-dashboard-store',
+      content: 'من هنا يمكنك نسخ رابط المتجر الخاص بك لمشاركته مع عملائك أو موظفيك بسهولة.',
+      disableBeacon: true,
+      placement: 'bottom',
+    },
+    {
+      target: '.tour-dashboard-pos',
+      content: 'هذا هو اختصارك السريع للدخول إلى شاشة الكاشير (نقطة البيع) للبدء في إصدار الفواتير.',
+      placement: 'bottom',
+    },
+    {
+      target: '.tour-dashboard-tabs',
+      content: 'تتيح لك هذه التبويبات التنقل بين الإحصائيات المختلفة (مبيعات، مشتريات، أرباح، وغيرها) لمتابعة أداء عملك.',
+      placement: 'bottom',
+    },
+    {
+      target: '.tour-dashboard-shortcuts',
+      content: 'هنا تجد اختصارات سريعة لجميع أقسام النظام المهمة للوصول إليها بنقرة واحدة.',
+      placement: 'top',
+    }
+  ];
 
   const loadRequests = async () => {
     try {
@@ -58,6 +118,16 @@ const Dashboard = () => {
       setPendingRequest(pending || null);
     } catch (err) {
       console.error('Failed to load subscription requests', err);
+    }
+  };
+
+  const loadOnboardingStatus = async () => {
+    try {
+      const res = await Api.get('/onboarding/status');
+      setOnboardingStatus(res.data);
+      localStorage.setItem('onboardingStatus', JSON.stringify(res.data));
+    } catch (err) {
+      console.error('Failed to load onboarding status:', err);
     }
   };
 
@@ -72,6 +142,7 @@ const Dashboard = () => {
     Api.getGlobalConfig().then(setGlobalConfig).catch(() => {});
 
     loadRequests();
+    loadOnboardingStatus();
   }, []);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -223,12 +294,41 @@ const Dashboard = () => {
     ? new Date(tenantInfo.subscriptionExpiry) < new Date() 
     : false;
 
-  if (loading) {
+  if (loading || onboardingStatus === null) {
     return <Loader message="جاري التحميل..." />;
+  }
+
+  if (onboardingStatus && !onboardingStatus.completed) {
+    return <OnboardingDashboard status={onboardingStatus} reloadStatus={loadOnboardingStatus} />;
   }
 
   return (
     <div className="page-section">
+      {runTour && (
+        <Joyride
+            steps={tourSteps}
+            run={runTour}
+            beaconComponent={AutoStartBeacon}
+            continuous={true}
+            showProgress={true}
+            showSkipButton={true}
+            disableOverlayClose={true}
+            callback={handleJoyrideCallback}
+            styles={{
+                options: {
+                    primaryColor: 'var(--color-primary, #4f46e5)',
+                    backgroundColor: 'var(--bg-card, #ffffff)',
+                    textColor: 'var(--text-main, #333333)',
+                    arrowColor: 'var(--bg-card, #ffffff)',
+                    zIndex: 9999999,
+                },
+                tooltipContainer: { textAlign: 'right' },
+                buttonNext: { outline: 'none' },
+                buttonBack: { marginRight: 10, outline: 'none' }
+            }}
+            locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
+        />
+      )}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
@@ -818,7 +918,7 @@ const Dashboard = () => {
             )}
           </div>
           <div className="sub-banner-left">
-            <div className="store-link-section">
+            <div className="store-link-section tour-dashboard-store">
               <label className="store-link-label">رابط تسجيل دخول الموظفين / المتجر</label>
               <div className="store-link-input-wrapper">
                 <input 
@@ -853,7 +953,7 @@ const Dashboard = () => {
       )}
 
       {/* POS Quick Start Banner */}
-      <div className="pos-shortcut-banner" style={{ marginBottom: '20px' }}>
+      <div className="pos-shortcut-banner tour-dashboard-pos" style={{ marginBottom: '20px' }}>
         <div className="pos-banner-right">
           <div className="pos-banner-title-small">شاشة الكاشير</div>
           <h2 className="pos-banner-title-large">مخصصة للبيع السريع</h2>
@@ -898,7 +998,7 @@ const Dashboard = () => {
       {isOnline && (
         <>
           {/* Tab Navigation */}
-          <div className="dashboard-tabs-container">
+          <div className="dashboard-tabs-container tour-dashboard-tabs">
         <div className="dashboard-tabs">
           <div className={`tab-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} style={{cursor: 'pointer'}}>
             <span className="tab-icon">🖥️</span>
@@ -965,7 +1065,7 @@ const Dashboard = () => {
       )}
 
       {activeTab === 'overview' && (
-      <div className="shortcut-grid">
+      <div className="shortcut-grid tour-dashboard-shortcuts">
         {/* Branches */}
         {Api.can('BRANCH_READ') && (
           <div className="shortcut-card" onClick={() => navigate('/branches')}>

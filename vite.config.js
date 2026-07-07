@@ -20,5 +20,5 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 800
   }
-})
+}) // Trigger Vite restart
 

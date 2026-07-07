@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import StoreApi from '../services/storeApi';
 import Api, { SERVER_URL } from '../services/api';
 import JsBarcode from 'jsbarcode';
@@ -11,9 +11,27 @@ import A4Receipt from '../components/common/A4Receipt';
 import ThermalReceipt from '../components/common/ThermalReceipt';
 import ChatService from '../services/ChatService';
 import CommunicationApi from '../services/CommunicationApi';
+import * as ReactJoyride from 'react-joyride';
+
+const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
+const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+
+import { useRef } from 'react';
+
+const AutoStartBeacon = () => {
+    const beaconRef = useRef(null);
+    useEffect(() => {
+        // React-joyride wraps this component in a button. We click the parent button to auto-start.
+        if (beaconRef.current && beaconRef.current.parentElement) {
+            beaconRef.current.parentElement.click();
+        }
+    }, []);
+    return <span ref={beaconRef} style={{ display: 'none' }} />;
+};
 
 const Settings = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { toast } = useGlobalUI();
 
     const isIdentity = location.pathname === '/settings';
@@ -29,6 +47,62 @@ const Settings = () => {
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [interBranchChatEnabled, setInterBranchChatEnabled] = useState(true);
+
+    // Tour State
+    const [runTour, setRunTour] = useState(false);
+    
+    useEffect(() => {
+        // Run tour if on identity tab, not loading, and hasn't completed it yet
+        if (!loading && isIdentity && !localStorage.getItem('tour_settings_done')) {
+            // Delay to ensure elements are rendered after loading
+            setTimeout(() => {
+                setRunTour(true);
+            }, 300);
+        }
+    }, [loading, isIdentity]);
+
+    const handleJoyrideCallback = (data) => {
+        const { status } = data;
+        const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+        
+        if (finishedStatuses.includes(status)) {
+            setRunTour(false);
+            localStorage.setItem('tour_settings_done', 'true');
+        }
+    };
+
+    const tourSteps = [
+        {
+            target: '.tour-logo-upload',
+            content: 'نبدأ بإضافة شعار متجرك ليعكس هويتك، ارفع صورة مناسبة.',
+            disableBeacon: true,
+            placement: 'bottom',
+        },
+        {
+            target: '.tour-store-name',
+            content: 'أدخل اسم متجرك كما سيظهر للعملاء في الفواتير والنظام.',
+            disableBeacon: true,
+            placement: 'bottom',
+        },
+        {
+            target: '.tour-currency',
+            content: 'حدد العملة التي ستستخدمها في مبيعاتك (مثال: جنيه، ريال، دولار).',
+            disableBeacon: true,
+            placement: 'bottom',
+        },
+        {
+            target: '.tour-contact',
+            content: 'أضف أرقام التواصل الخاصة بك لتظهر بوضوح في الفواتير.',
+            disableBeacon: true,
+            placement: 'top',
+        },
+        {
+            target: '.tour-save-button',
+            content: 'أخيراً، اضغط هنا لحفظ التعديلات والبدء بالبيع بنجاح! 🎉',
+            disableBeacon: true,
+            placement: 'bottom',
+        }
+    ];
 
     // SMTP Config
     const [smtpConfig, setSmtpConfig] = useState({
@@ -162,6 +236,18 @@ const Settings = () => {
             if (res.success) {
                 toast('تم حفظ الإعدادات بنجاح ✅', 'success');
                 setInfo(res.data);
+                // Redirect back to dashboard if they are in onboarding phase
+                try {
+                    const onboardingStr = localStorage.getItem('onboardingStatus');
+                    if (onboardingStr) {
+                        const obs = JSON.parse(onboardingStr);
+                        if (!obs.completed) {
+                            navigate('/dashboard');
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
             } else {
                 toast(res.message, 'error');
             }
@@ -212,6 +298,43 @@ const Settings = () => {
 
     return (
         <div className="page-section settings-page-wrapper" style={{ direction: 'rtl' }}>
+            <Joyride
+                steps={tourSteps}
+                run={runTour}
+                beaconComponent={AutoStartBeacon}
+                continuous={true}
+                showProgress={true}
+                showSkipButton={true}
+                disableOverlayClose={true}
+                spotlightClicks={true}
+                callback={handleJoyrideCallback}
+                styles={{
+                    options: {
+                        primaryColor: 'var(--color-primary, #4f46e5)',
+                        backgroundColor: 'var(--bg-card, #ffffff)',
+                        textColor: 'var(--text-main, #333333)',
+                        arrowColor: 'var(--bg-card, #ffffff)',
+                        zIndex: 1000,
+                    },
+                    tooltipContainer: {
+                        textAlign: 'right',
+                    },
+                    buttonNext: {
+                        outline: 'none',
+                    },
+                    buttonBack: {
+                        marginRight: 10,
+                        outline: 'none',
+                    }
+                }}
+                locale={{
+                    back: 'السابق',
+                    close: 'إغلاق',
+                    last: 'إنهاء',
+                    next: 'التالي',
+                    skip: 'تخطي'
+                }}
+            />
             <style>{`
                 .settings-responsive-grid {
                     display: grid;
@@ -270,7 +393,7 @@ const Settings = () => {
                             <button
                                 type="submit"
                                 form="settingsForm"
-                                className="btn btn-primary"
+                                className="btn btn-primary tour-save-button"
                                 disabled={saving}
                             >
                                 {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
@@ -283,7 +406,7 @@ const Settings = () => {
                             <div className="settings-responsive-grid">
 
                                 {/* Logo Section */}
-                                <div className="form-group settings-logo-section">
+                                <div className="form-group settings-logo-section tour-logo-upload">
                                     <div style={{
                                         width: '100px', height: '100px',
                                         background: 'var(--bg-card)', borderRadius: '8px',
@@ -321,7 +444,7 @@ const Settings = () => {
                                 </div>
 
                                 {/* Basic Info */}
-                                <div className="form-group">
+                                <div className="form-group tour-store-name">
                                     <label>اسم المتجر</label>
                                     <input type="text" className="form-control" value={info.name} onChange={e => setInfo({ ...info, name: e.target.value })} required />
                                 </div>
@@ -329,7 +452,7 @@ const Settings = () => {
                                     <label>العنوان</label>
                                     <input type="text" className="form-control" value={info.address || ''} onChange={e => setInfo({ ...info, address: e.target.value })} />
                                 </div>
-                                <div className="form-group">
+                                <div className="form-group tour-currency">
                                     <label>العملة</label>
                                     <input type="text" className="form-control" value={info.currency} onChange={e => setInfo({ ...info, currency: e.target.value })} />
                                 </div>
@@ -345,7 +468,7 @@ const Settings = () => {
                                 </div>
 
                                 {/* Contact Info */}
-                                <div className="form-group">
+                                <div className="form-group tour-contact">
                                     <label>رقم الهاتف الأساسي</label>
                                     <input type="text" className="form-control" value={info.phone1} onChange={e => setInfo({ ...info, phone1: e.target.value })} required />
                                 </div>
@@ -377,7 +500,7 @@ const Settings = () => {
                                 </div>
 
                                 {/* Facebook Pixel */}
-                                <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                {/* <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                         <span style={{ fontSize: '1.2rem' }}>📊</span>
                                         <strong>Facebook Pixel ID</strong>
@@ -394,10 +517,10 @@ const Settings = () => {
                                     <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
                                         ستجد الـ Pixel ID في <a href="https://business.facebook.com/events_manager" target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>Facebook Events Manager</a> → Data Sources → Pixel
                                     </small>
-                                </div>
+                                </div> */}
 
                                 {/* Facebook Ads Insights Config */}
-                                <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                {/* <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                         <span style={{ fontSize: '1.2rem' }}>📈</span>
                                         <strong>إعدادات تقارير الإعلانات (Facebook Ads Reports)</strong>
@@ -429,7 +552,7 @@ const Settings = () => {
                                     <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
                                         للحصول على الـ Token والـ ID، اتبع دليل <a href="https://developers.facebook.com/docs/marketing-api/get-started" target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>Marketing API Get Started</a>. يجب أن يحتوي الـ Token على صلاحية <code>ads_read</code>.
                                     </small>
-                                </div>
+                                </div> */}
 
                                 {/* Chat Settings */}
                                 <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
@@ -456,10 +579,10 @@ const Settings = () => {
                                 </div>
 
                                 {/* About Us */}
-                                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                {/* <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                                     <label>نبذة عن المتجر (تظهر في تذييل الموقع)</label>
                                     <textarea className="form-control" rows={3} value={info.aboutUs || ''} onChange={e => setInfo({ ...info, aboutUs: e.target.value })} />
-                                </div>
+                                </div> */}
                             </div>
                         </form>
                     </div>

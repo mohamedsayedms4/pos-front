@@ -5,6 +5,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
+import useProductSearchSelect from '../utils/useProductSearchSelect';
 
 const DamagedProducts = () => {
     const { toast } = useGlobalUI();
@@ -34,14 +35,24 @@ const DamagedProducts = () => {
         quantity: '',
         reason: ''
     });
-    const [productSearch, setProductSearch] = useState('');
-    const [selectedProductName, setSelectedProductName] = useState('');
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [selectProducts, setSelectProducts] = useState([]);
-    const [selectProductsPage, setSelectProductsPage] = useState(0);
-    const [selectProductsTotalPages, setSelectProductsTotalPages] = useState(0);
-    const [selectProductsLoading, setSelectProductsLoading] = useState(false);
-    const [debouncedProductSearch, setDebouncedProductSearch] = useState('');
+
+    // Product search select — managed by custom hook
+    const {
+        productSearch,
+        setProductSearch,
+        selectedProductId,
+        selectedProductName,
+        isDropdownOpen,
+        setIsDropdownOpen,
+        products: selectProducts,
+        page: selectProductsPage,
+        setPage: setSelectProductsPage,
+        totalPages: selectProductsTotalPages,
+        loading: selectProductsLoading,
+        selectProduct: handleSelectProduct,
+        clearSelection,
+        reset: resetProductSelect
+    } = useProductSearchSelect(selectedBranchId, isModalOpen);
 
     const loadData = async () => {
         setLoading(true);
@@ -85,42 +96,21 @@ const DamagedProducts = () => {
         loadData();
     }, [page, search, selectedBranchId]);
 
-    // Reset pagination and search if branch changes
+    // Reset product selection when branch changes
     useEffect(() => {
-        setSelectProductsPage(0);
-        setProductSearch('');
-        setSelectedProductName('');
+        clearSelection();
         setFormData(prev => ({ ...prev, productId: '' }));
     }, [selectedBranchId]);
 
-    // Debounce product search inside modal
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedProductSearch(productSearch);
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [productSearch]);
-
-    // Fetch products when search, page, or modal opens
-    useEffect(() => {
-        if (isModalOpen) {
-            fetchProductsForSelect(debouncedProductSearch, selectProductsPage);
-        }
-    }, [debouncedProductSearch, selectProductsPage, selectedBranchId, isModalOpen]);
-
     const openCreateModal = () => {
         setFormData({ productId: '', quantity: '', reason: '' });
-        setProductSearch('');
-        setSelectedProductName('');
-        setSelectProductsPage(0);
-        setSelectProducts([]);
-        setIsDropdownOpen(false);
+        resetProductSelect();
         setIsModalOpen(true);
     };
 
     const handleSave = async (e) => {
         e.preventDefault();
-        if (!formData.productId || !formData.quantity) {
+        if (!selectedProductId || !formData.quantity) {
             toast('يرجى اختيار المنتج والكمية', 'warning');
             return;
         }
@@ -128,8 +118,9 @@ const DamagedProducts = () => {
         setSaving(true);
         try {
             await Api.recordDamagedProduct({
-                ...formData,
+                productId: selectedProductId,
                 quantity: parseFloat(formData.quantity),
+                reason: formData.reason,
                 branchId: selectedBranchId ? parseInt(selectedBranchId) : null
             });
             toast('تم تسجيل الهالك بنجاح', 'success');

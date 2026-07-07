@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
-import ModalContainer from '../components/common/ModalContainer';
 import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
 
@@ -11,19 +10,7 @@ const Branches = () => {
   const { toast, confirm } = useGlobalUI();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalType, setModalType] = useState(null); // 'form', null
-  const [activeBranch, setActiveBranch] = useState(null);
-  const [saving, setSaving] = useState(false);
-
-  const [formData, setFormData] = useState({
-    code: '',
-    name: '',
-    address: '',
-    phone: '',
-    type: 'RETAIL',
-    active: true,
-    treasuryLinkType: 'MANUAL'
-  });
+  const [runTour, setRunTour] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -40,63 +27,6 @@ const Branches = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  const openForm = (branch = null) => {
-    setActiveBranch(branch);
-    if (branch) {
-      setFormData({
-        code: branch.code || '',
-        name: branch.name || '',
-        address: branch.address || '',
-        phone: branch.phone || '',
-        type: branch.type || 'RETAIL',
-        active: branch.active ?? true,
-        treasuryLinkType: branch.treasuryLinkType || 'MANUAL'
-      });
-    } else {
-      setFormData({
-        code: '',
-        name: '',
-        address: '',
-        phone: '',
-        type: 'RETAIL',
-        active: true,
-        treasuryLinkType: 'MANUAL'
-      });
-    }
-    setModalType('form');
-  };
-
-  const closeModal = () => {
-    setModalType(null);
-    setActiveBranch(null);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      if (activeBranch) {
-        await Api._request(`/branches/${activeBranch.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(formData)
-        });
-        toast('تم تحديث الفرع بنجاح', 'success');
-      } else {
-        await Api._request('/branches', {
-          method: 'POST',
-          body: JSON.stringify(formData)
-        });
-        toast('تم إضافة الفرع بنجاح', 'success');
-      }
-      closeModal();
-      loadData();
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDelete = (id, name) => {
     confirm(`هل أنت متأكد من حذف الفرع "${name}"؟`, async () => {
@@ -140,7 +70,7 @@ const Branches = () => {
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>🏢 إدارة الفروع</h3>
         {Api.can('BRANCH_WRITE') && (
-          <button className="btn btn-primary" onClick={() => openForm()}>
+          <button className="btn btn-primary" onClick={() => navigate('/branches/add')}>
             <span>+</span> إضافة فرع جديد
           </button>
         )}
@@ -186,7 +116,7 @@ const Branches = () => {
                       <td>
                         <div className="table-actions">
                           {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="إدارة الفرع" onClick={() => navigate(`/branches/${b.id}/manage`)}>⚙️</button>}
-                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(b)}>✏️</button>}
+                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => navigate(`/branches/edit/${b.id}`)}>✏️</button>}
                           {Api.can('BRANCH_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(b.id, b.name)}>🗑️</button>}
                         </div>
                       </td>
@@ -198,70 +128,6 @@ const Branches = () => {
           </div>
         </div>
       </div>
-
-      {modalType === 'form' && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal">
-              <div className="modal-header">
-                <h3>{activeBranch ? 'تعديل بيانات الفرع' : 'إضافة فرع جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="branchForm" onSubmit={handleSave}>
-                  <div className="form-group">
-                    <label>كود الفرع * (فريد)</label>
-                    <input className="form-control" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} required placeholder="مثال: BR-001" />
-                  </div>
-                  <div className="form-group">
-                    <label>اسم الفرع *</label>
-                    <input className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-                  </div>
-                  <div className="form-group">
-                    <label>نوع الفرع</label>
-                    <select className="form-control" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
-                      <option value="RETAIL">فرع تجزئة (بيع مباشر)</option>
-                      <option value="WAREHOUSE_ONLY">مخزن فقط</option>
-                      <option value="ONLINE">متجر إلكتروني</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>العنوان</label>
-                    <input className="form-control" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label>الهاتف</label>
-                    <input className="form-control" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label>نظام ربط الخزينة</label>
-                    <select className="form-control" value={formData.treasuryLinkType} onChange={e => setFormData({...formData, treasuryLinkType: e.target.value})}>
-                      <option value="MANUAL">يدوي (يتم توريد المبالغ للمركزية يدوياً)</option>
-                      <option value="AUTOMATIC">تلقائي (تسميع فوري في الخزينة المركزية)</option>
-                    </select>
-                    <small style={{ color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                      النظام التلقائي يعكس كل حركات الفرع في الخزينة الرئيسية لحظياً.
-                    </small>
-                  </div>
-                  <div className="form-group">
-                    <label>نشط</label>
-                    <label className="toggle-switch">
-                      <input type="checkbox" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="branchForm" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : 'حفظ'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
     </div>
   );
 };

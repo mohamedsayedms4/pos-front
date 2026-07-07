@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { SERVER_URL } from '../services/api';
 import StoreApi, { PAGE_SIZE } from '../services/storeApi';
 import { useStore } from '../context/StoreContext';
 import StoreLayout from '../components/store/StoreLayout';
 import ProductCard from '../components/store/ProductCard';
 
-const CategoryRow = ({ category, addToCart, onSeeAll, currency }) => {
+const CategoryRow = ({ category }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
@@ -17,55 +16,48 @@ const CategoryRow = ({ category, addToCart, onSeeAll, currency }) => {
       .finally(() => setLoading(false));
   }, [category.id]);
 
-  const scroll = (dir) => {
-    if (scrollRef.current) {
-      const amt = 500;
-      scrollRef.current.scrollBy({ left: dir === 'left' ? -amt : amt, behavior: 'smooth' });
-    }
-  };
-
   if (!loading && products.length === 0) return null;
 
   return (
-    <div className="ec-category-row-section ec-animate-in">
-      <div className="ec-category-row-header">
-        <h3>{category.name}</h3>
-        <button onClick={() => onSeeAll(category.id)} className="ec-see-all-btn">
-          عرض الكل <i className="fas fa-arrow-left" style={{ marginRight: '5px', fontSize: '0.8rem' }}></i>
-        </button>
+    <div className="amz-scroller-section">
+      <div className="amz-scroller-header">
+        {category.name} <Link to={`/store/category/${category.id}`} style={{fontSize:'0.85rem', color: 'var(--amz-link)', textDecoration: 'none', marginRight: '10px'}}>تسوق الآن</Link>
       </div>
 
-      <div className="ec-row-carousel-container">
-        <button className="ec-row-nav-btn prev" onClick={() => scroll('right')}><i className="fas fa-chevron-right"></i></button>
-        <div className="ec-row-carousel-scroll" ref={scrollRef}>
-          {loading ? (
-            [...Array(4)].map((_, i) => (
-              <div key={i} className="ec-row-product-item">
-                <div className="ec-skeleton" style={{ height: '300px', borderRadius: '20px' }} />
-              </div>
-            ))
-          ) : (
-            products.map(p => (
-              <div key={p.id} className="ec-row-product-item">
-                <ProductCard product={p} onAddToCart={addToCart} />
-              </div>
-            ))
-          )}
-        </div>
-        <button className="ec-row-nav-btn next" onClick={() => scroll('left')}><i className="fas fa-chevron-left"></i></button>
+      <div className="amz-scroller-container" ref={scrollRef}>
+        {loading ? (
+          [...Array(6)].map((_, i) => (
+            <div key={i} className="amz-scroller-item">
+              <div className="ec-skeleton" style={{ height: '200px', width: '200px', borderRadius: '0' }} />
+            </div>
+          ))
+        ) : (
+          products.map(p => (
+            <Link key={p.id} to={`/store/product/${p.id}`} className="amz-scroller-item">
+              <img 
+                src={(p.imageUrls && p.imageUrls.length > 0) 
+                  ? StoreApi.getImageUrl(p.imageUrls[0]) 
+                  : (p.image ? StoreApi.getImageUrl(p.image) 
+                  : (p.imageUrl ? StoreApi.getImageUrl(p.imageUrl) 
+                  : '/placeholder.png'))} 
+                alt={p.name} 
+              />
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
 };
 
 const EcommerceStore = () => {
-  const { addToCart, storeInfo } = useStore();
+  // ─── Consume SHARED data from Context — do NOT re-fetch here ───────────
+  const { addToCart, storeInfo, categories, categoriesLoaded } = useStore();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialSearch = queryParams.get('search') || '';
 
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [selectedCat, setSelectedCat] = useState(null);
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
@@ -118,24 +110,29 @@ const EcommerceStore = () => {
     }
   };
 
+  // Sync search from URL when location changes (e.g., after navigating back)
+  useEffect(() => {
+    const searchFromUrl = new URLSearchParams(location.search).get('search') || '';
+    setSearch(searchFromUrl);
+    setDebouncedSearch(searchFromUrl);
+  }, [location.search]);
+
+  // Debounce search input
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(t);
   }, [search]);
 
+  // Fetch hero sections once on mount
   useEffect(() => {
-    setSearch(initialSearch);
-  }, [initialSearch]);
-
-  useEffect(() => {
-    StoreApi.getCategories().then(setCategories).catch(() => { });
     StoreApi.getHeroSections()
       .then(data => {
         if (Array.isArray(data)) {
           setHeroSections(data);
           setCurrentIndex(1);
+        } else {
+          setHeroSections([]);
         }
-        else setHeroSections([]);
       })
       .catch(() => setHeroSections([]));
   }, []);
@@ -240,6 +237,14 @@ const EcommerceStore = () => {
     return () => observer.disconnect();
   }, [loading, loadingMore, page, totalPages, loadProducts, selectedCat, debouncedSearch]);
 
+  // Reset products when switching to "home" view
+  useEffect(() => {
+    if (!selectedCat && !debouncedSearch) {
+      setProducts([]);
+      setPage(0);
+    }
+  }, [selectedCat, debouncedSearch]);
+
   const isMainHome = !selectedCat && !debouncedSearch;
 
   return (
@@ -255,8 +260,8 @@ const EcommerceStore = () => {
         </div>
       )}
 
-      {!selectedCat && !debouncedSearch && (
-        <>
+      {!selectedCat && !debouncedSearch ? (
+        <div className="amz-home-container">
           {heroSections && heroSections.length > 0 && (() => {
             const hasMultiple = heroSections.length > 1;
             const slides = hasMultiple
@@ -265,9 +270,9 @@ const EcommerceStore = () => {
             const activeDotIdx = hasMultiple ? (currentIndex - 1 + heroSections.length) % heroSections.length : 0;
 
             return (
-              <section className="ec-hero-dubai">
-                <div 
-                  className="ec-hero-slider-dubai"
+              <section className="amz-hero-carousel">
+                <div
+                  className="ec-hero-slider-dubai amz-hero-slider"
                   onMouseDown={hasMultiple ? handleDragStart : undefined}
                   onMouseMove={hasMultiple ? handleDragMove : undefined}
                   onMouseUp={hasMultiple ? handleDragEnd : undefined}
@@ -277,167 +282,93 @@ const EcommerceStore = () => {
                   onTouchEnd={hasMultiple ? handleDragEnd : undefined}
                   style={{ cursor: hasMultiple ? (isDragging ? 'grabbing' : 'grab') : 'default', direction: 'ltr' }}
                 >
-                  <div 
+                  <div
                     className="ec-hero-slider-track-dubai"
                     onTransitionEnd={hasMultiple ? handleTransitionEnd : undefined}
                     style={{
                       transform: `translateX(calc(-${(hasMultiple ? currentIndex : 0) * 100}% + ${dragOffset}px))`,
                       transition: (isDragging || disableTransition) ? 'none' : 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
-                      direction: 'ltr'
+                      direction: 'ltr', height: '100%'
                     }}
                   >
                     {slides.map((hero, idx) => {
                       const SlideContent = (
-                        <div
-                          className="ec-hero-slide-dubai"
-                          style={{ backgroundImage: `url(${StoreApi.getImageUrl(hero.imageUrl)})` }}
-                        >
-                          <div className="ec-hero-overlay-dubai" style={{ direction: 'rtl' }}>
-                            <div className="ec-hero-content-dubai">
-                              {hero.title && <h1>{hero.title}</h1>}
-                              {hero.subtitle && <p>{hero.subtitle}</p>}
-                            </div>
-                          </div>
-                        </div>
+                        <img 
+                          className="amz-hero-image"
+                          src={StoreApi.getImageUrl(hero.imageUrl)}
+                          alt={hero.title || 'hero'}
+                          style={{height: '100%'}}
+                        />
                       );
-
                       const key = `${hero.id}-${idx}`;
-
                       return hero.linkUrl ? (
-                        <Link 
-                          key={key} 
-                          to={hero.linkUrl} 
-                          style={{ display: 'block', height: '100%' }}
-                          draggable="false"
-                          onClick={(e) => {
-                            if (hasDraggedRef.current) {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
+                        <Link key={key} to={hero.linkUrl} style={{ display: 'block', height: '100%', width: '100%', flexShrink: 0 }} draggable="false" onClick={(e) => { if (hasDraggedRef.current) e.preventDefault(); }}>
                           {SlideContent}
                         </Link>
                       ) : (
-                        <div key={key} style={{ height: '100%' }}>
+                        <div key={key} style={{ height: '100%', width: '100%', flexShrink: 0 }}>
                           {SlideContent}
                         </div>
                       );
                     })}
                   </div>
-
-                  {/* Pagination Dots */}
-                  {hasMultiple && (
-                    <div className="ec-slider-dots-dubai">
-                      {heroSections.map((_, idx) => (
-                        <button
-                          key={idx}
-                          className={`ec-slider-dot ${idx === activeDotIdx ? 'active' : ''}`}
-                          onClick={(e) => { e.stopPropagation(); setDisableTransition(false); setCurrentIndex(idx + 1); }}
-                          aria-label={`Go to slide ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
                 </div>
               </section>
             );
           })()}
 
-          {/* Category Icons Section */}
-          {categories && categories.length > 0 && (
-            <section className="ec-cat-icons-section" style={{ padding: '0 28px', marginTop: '20px' }}>
-              <div className="ec-category-section-title" style={{ textAlign: 'right', marginBottom: '15px' }}>
-                <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: '#000', margin: 0 }}>تسوق بالفئة</h2>
+          {/* Cards Grid */}
+          <div className="amz-cards-grid">
+            {categoriesLoaded && categories.filter(c => !c.parentId).slice(0, 4).map(cat => (
+              <div key={cat.id} className="amz-category-card">
+                <h2>{cat.name}</h2>
+                <Link to={`/store/category/${cat.id}`}>
+                  {cat.imageUrl ? (
+                    <img src={StoreApi.getImageUrl(cat.imageUrl)} alt={cat.name} className="amz-card-image" />
+                  ) : (
+                    <div className="amz-card-image" style={{backgroundColor: '#f3f3f3', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                      <i className="fas fa-box" style={{fontSize: '4rem', color: '#ccc'}}></i>
+                    </div>
+                  )}
+                </Link>
+                <Link to={`/store/category/${cat.id}`} className="amz-card-link">تسوق الآن</Link>
               </div>
-              <div className="ec-cat-icons-wrapper">
-                <div className="ec-cat-icons-scroll" ref={catScrollRef}>
-                  {categories.filter(cat => !cat.parentId).map(cat => (
-                    <button 
-                      key={cat.id} 
-                      className="ec-cat-icon-item"
-                      onClick={() => setSelectedCat(cat.id)}
-                    >
-                      <div className="ec-cat-icon-circle-premium">
-                        {cat.imageUrl ? (
-                          <img src={`${SERVER_URL}${cat.imageUrl}`} alt={cat.name} />
-                        ) : (
-                          <span className="ec-cat-fallback">📁</span>
-                        )}
-                      </div>
-                      <span className="ec-cat-name-premium">{cat.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-        </>
-      )}
-
-      <section className="ec-products-section">
-        {isMainHome ? (
-          <div className="ec-home-sections">
-            {categories.slice(0, 6).map(cat => (
-              <CategoryRow 
-                key={cat.id} 
-                category={cat} 
-                addToCart={addToCart} 
-                onSeeAll={setSelectedCat}
-                currency={currency}
-              />
             ))}
           </div>
-        ) : (
-          <>
-            {selectedCat && categories.find(c => c.id === selectedCat)?.imageUrl && (
-              <div className="ec-category-banner">
-                <img src={`${SERVER_URL}${categories.find(c => c.id === selectedCat).imageUrl}`} alt="" />
-                <div className="ec-category-banner-overlay">
-                  <h2>{categories.find(c => c.id === selectedCat).name}</h2>
-                </div>
-              </div>
-            )}
 
-            <div className="ec-section-header">
-              <div className="ec-section-line" />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                {selectedCat && categories.find(c => c.id === selectedCat)?.imageUrl && (
-                  <img src={`${SERVER_URL}${categories.find(c => c.id === selectedCat).imageUrl}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                )}
-                <h2>{selectedCat ? categories.find(c => c.id === selectedCat)?.name || 'المنتجات' : debouncedSearch ? `نتائج البحث عن: ${debouncedSearch}` : 'جميع المنتجات'}</h2>
-              </div>
-              <div className="ec-section-line" />
+          {/* Scroller Rows */}
+          {categoriesLoaded && categories.filter(c => !c.parentId).slice(0, 5).map(cat => (
+            <CategoryRow key={cat.id} category={cat} />
+          ))}
+        </div>
+      ) : (
+        <section className="ec-products-section" style={{padding: '20px'}}>
+          <div className="ec-section-header">
+            <h2>{selectedCat ? categories.find(c => c.id === selectedCat)?.name : debouncedSearch ? `نتائج البحث عن: ${debouncedSearch}` : 'المنتجات'}</h2>
+          </div>
+
+          {loading ? (
+            <div className="ec-loading">
+              <div className="ec-spinner" />
+              <p>جاري تحميل المنتجات...</p>
             </div>
-
-            {loading ? (
-              <div className="ec-loading">
-                <div className="ec-spinner" />
-                <p>جاري تحميل المنتجات...</p>
+          ) : products.length === 0 ? (
+            <div className="ec-empty">
+              <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box-open"></i></span>
+              <p>لا توجد منتجات</p>
+            </div>
+          ) : (
+            <div className="ec-products-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px'}}>
+              {products.map(p => (
+                <ProductCard key={p.id} product={p} onAddToCart={addToCart} />
+              ))}
+              <div ref={observerRef} className="ec-observer-item" style={{gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', padding: '20px'}}>
+                {loadingMore && <div className="ec-spinner small" />}
               </div>
-            ) : products.length === 0 ? (
-              <div className="ec-empty">
-                <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box-open"></i></span>
-                <p>لا توجد منتجات</p>
-              </div>
-            ) : (
-              <div className="ec-products-carousel-outer">
-                <button className="ec-carousel-nav prev" onClick={() => scrollProds('right')}><i className="fas fa-chevron-right"></i></button>
-                <div className="ec-products-carousel-scroll" ref={prodScrollRef}>
-                  {products.map(p => (
-                    <div key={p.id} className="ec-product-carousel-item">
-                      <ProductCard product={p} onAddToCart={addToCart} />
-                    </div>
-                  ))}
-                  <div ref={observerRef} className="ec-observer-item">
-                    {loadingMore && <div className="ec-spinner small" />}
-                  </div>
-                </div>
-                <button className="ec-carousel-nav next" onClick={() => scrollProds('left')}><i className="fas fa-chevron-left"></i></button>
-              </div>
-            )}
-          </>
-        )}
-      </section>
+            </div>
+          )}
+        </section>
+      )}
     </StoreLayout>
   );
 };

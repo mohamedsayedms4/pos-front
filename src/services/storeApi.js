@@ -10,12 +10,12 @@ const StoreApi = {
     const urlParams = new URLSearchParams(window.location.search);
     const urlTenant = urlParams.get('tenantId');
     if (urlTenant) {
-        localStorage.setItem('public_tenant_id', urlTenant);
+        sessionStorage.setItem('public_tenant_id', urlTenant);
         return urlTenant;
     }
 
-    // 2. Check local storage
-    let saved = localStorage.getItem('public_tenant_id');
+    // 2. Check session storage
+    let saved = sessionStorage.getItem('public_tenant_id');
     
     // 3. Resolve by subdomain if needed
     const hostname = window.location.hostname;
@@ -25,7 +25,7 @@ const StoreApi = {
         const slug = parts[0];
             
             // If the slug changed or we don't have a saved ID, resolve it
-            if (!saved || localStorage.getItem('public_tenant_slug') !== slug) {
+            if (!saved || sessionStorage.getItem('public_tenant_slug') !== slug) {
                 // Singleton pattern: if we are already resolving, wait for that
                 if (this._resolvingPromise) {
                     return this._resolvingPromise;
@@ -37,8 +37,8 @@ const StoreApi = {
                         const res = await fetch(`${SERVER_URL}/api/public/tenants/resolve/${slug}`);
                         if (res.ok) {
                             const data = await res.json();
-                            localStorage.setItem('public_tenant_id', data.id);
-                            localStorage.setItem('public_tenant_slug', slug);
+                            sessionStorage.setItem('public_tenant_id', data.id);
+                            sessionStorage.setItem('public_tenant_slug', slug);
                             this._resolvingPromise = null;
                             return data.id;
                         }
@@ -100,7 +100,9 @@ const StoreApi = {
     });
     if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        throw new Error(e.message || 'فشل إرسال الطلب');
+        const err = new Error(e.message || 'فشل إرسال الطلب');
+        err.data = e;
+        throw err;
     }
     return res.json();
   },
@@ -315,15 +317,39 @@ const StoreApi = {
     return res.json();
   },
 
+  /**
+   * Resolves a product/category/logo image URL to an absolute URL.
+   *
+   * The backend stores image URLs in the format: /api/v1/products/images/{filename}
+   * These are served through the Spring MVC static file handler at the same path.
+   *
+   * Handles:
+   * 1. Already absolute (http/https) — returned as-is
+   * 2. Relative paths starting with /api/... — prepended with SERVER_URL only
+   * 3. Paths starting with /products/images/ — prepended with SERVER_URL + /api/v1
+   * 4. Bare filename — resolved under SERVER_URL/api/v1/products/images/
+   */
   getImageUrl(imageUrl) {
     if (!imageUrl) return null;
-    if (imageUrl.startsWith('http')) return imageUrl;
-    
-    // For local files, the backend might store just the filename
+
+    // Already a full URL
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+
+    // Already a full API path (e.g. /api/v1/products/images/xyz.jpg)
+    if (imageUrl.startsWith('/api/')) {
+      return `${SERVER_URL}${imageUrl}`;
+    }
+
+    // Relative path without /api/ prefix (e.g. /products/images/xyz.jpg)
+    if (imageUrl.startsWith('/products/') || imageUrl.startsWith('/categories/')) {
+      return `${SERVER_URL}/api/v1${imageUrl}`;
+    }
+
+    // Bare filename — default to products images directory
     const fileName = imageUrl.split('/').pop();
-    
-    // We try the products directory first as it's the default in FileStorageService
-    return `${API_BASE}/products/images/${fileName}`;
+    return `${SERVER_URL}/api/v1/products/images/${fileName}`;
   }
 };
 

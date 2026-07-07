@@ -609,17 +609,17 @@ const ProductDetails = () => {
         </div>
       )}
 
-      <div className="product-details-grid">
-        {/* Gallery */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: (product.imageUrls && product.imageUrls.length > 1) ? '20px' : '0', minHeight: '200px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-start' }}>
+        {/* Gallery - Takes about 35% on large screens */}
+        <div className="card" style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', padding: '24px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: (product.imageUrls && product.imageUrls.length > 1) ? '20px' : '0', minHeight: '300px', background: 'var(--bg-body)', borderRadius: '12px', padding: '16px', alignItems: 'center' }}>
             {mainImage
-              ? <img src={mainImage} style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} alt="Main Product" />
-              : <div style={{ fontSize: '100px', color: 'var(--text-dim)' }}>📦</div>
+              ? <img src={mainImage} style={{ width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'contain', borderRadius: '8px' }} alt="Main Product" />
+              : <div style={{ fontSize: '80px', color: 'var(--text-dim)', opacity: 0.5 }}>📦</div>
             }
           </div>
           {product.imageUrls && product.imageUrls.length > 0 && (
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', paddingTop: '15px', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
               {product.imageUrls.map(img => {
                 const thumbUrl = img.startsWith('http') ? img : `${API_BASE}/products/images/${img.split('/').pop()}`;
                 return (
@@ -628,7 +628,7 @@ const ProductDetails = () => {
                     src={thumbUrl}
                     alt="thumbnail"
                     onClick={() => setMainImage(thumbUrl)}
-                    style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: mainImage === thumbUrl ? '2px solid var(--metro-blue)' : '2px solid var(--border-color)', cursor: 'pointer', background: 'var(--bg-card)' }}
+                    style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '10px', border: mainImage === thumbUrl ? '3px solid var(--accent-emerald)' : '2px solid transparent', cursor: 'pointer', background: 'var(--bg-body)', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
                   />
                 );
               })}
@@ -636,22 +636,26 @@ const ProductDetails = () => {
           )}
         </div>
 
-        {/* Details */}
-        <div className="card">
-          <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '20px', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '1.8rem', margin: '0 0 10px 0', color: 'var(--text-primary)' }}>
+        {/* Details - Takes remaining space */}
+        <div className="card" style={{ flex: '2 1 500px', padding: '32px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '24px', marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '2.2rem', margin: '0 0 16px 0', color: 'var(--text-primary)', fontWeight: 800 }}>
               {product.name}
             </h2>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '0.9rem', flexWrap: 'wrap' }}>
-              <span style={{ background: 'var(--bg-card)', padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>{product.categoryName || 'بدون فئة'}</span>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '0.95rem', flexWrap: 'wrap' }}>
+              <span style={{ background: 'var(--accent-emerald-light)', color: 'var(--accent-emerald)', padding: '6px 14px', borderRadius: '8px', fontWeight: 700 }}>
+                {product.categoryName || 'بدون فئة'}
+              </span>
               <span style={{ color: 'var(--text-muted)' }}>|</span>
-              <span style={{ color: 'var(--text-muted)' }}>كود: <strong>{product.productCode || '—'}</strong></span>
+              <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <i className="fas fa-barcode"></i> <strong>{product.productCode || '—'}</strong>
+              </span>
               {units && units.length > 0 && (
                 <>
                   <span style={{ color: 'var(--text-muted)' }}>|</span>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {units.map(u => (
-                      <span key={u.id} className="badge" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--accent-emerald)', border: '1px solid rgba(16,185,129,0.2)', fontSize: '0.75rem' }}>
+                      <span key={u.id} style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--metro-blue)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
                         📦 {u.unitName} = {u.conversionFactor} {product.unitName || 'قطعة'}
                       </span>
                     ))}
@@ -659,44 +663,50 @@ const ProductDetails = () => {
                 </>
               )}
               <span style={{ color: 'var(--text-muted)' }}>|</span>
-              <span style={{ color: badgeColor, fontWeight: 600 }}>{badgeText}</span>
+              <span style={{ color: badgeColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {totalStock > 0 ? <i className="fas fa-check-circle"></i> : <i className="fas fa-times-circle"></i>} {badgeText}
+              </span>
             </div>
           </div>
 
-          <div className="card-body no-padding product-info-metrics">
-            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>سعر البيع (الفرع الحالي)</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-emerald-light)' }}>{Number(currentSalePrice).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>ج.م</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
+            <div style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'transform 0.2s' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-tag"></i> سعر البيع</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>{Number(currentSalePrice).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>ج.م</span></div>
             </div>
 
-            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>سعر الشراء (الفرع الحالي)</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{Number(currentPurchasePrice).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>ج.م</span></div>
+            <div style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-shopping-cart"></i> سعر الشراء</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>{Number(currentPurchasePrice).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>ج.م</span></div>
             </div>
 
-            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>إجمالي المخزون (كل الفروع)</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{Number(totalStock).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{product.unitName || 'القطعة'}</span></div>
+            <div style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-cubes"></i> إجمالي المخزون</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>{Number(totalStock).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{product.unitName || 'القطعة'}</span></div>
             </div>
 
-            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>إجمالي المبيعات (كل الفروع)</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--metro-blue)' }}>{Number(totalSoldQuantity).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>{product.unitName || 'القطعة'}</span></div>
+            <div style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-chart-line"></i> إجمالي المبيعات</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--metro-blue)' }}>{Number(totalSoldQuantity).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{product.unitName || 'القطعة'}</span></div>
             </div>
 
-            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>إجمالي الأرباح (كل الفروع)</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-amber)' }}>{Number(totalRealizedProfit).toFixed(2)} <span style={{ fontSize: '0.8rem' }}>ج.م</span></div>
+            <div style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-money-bill-wave"></i> إجمالي الأرباح</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-amber)' }}>{Number(totalRealizedProfit).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>ج.م</span></div>
             </div>
 
-            <div style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>مرات المشاهدة</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>👁️ {product.viewCount || 0}</div>
+            <div style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}><i className="fas fa-eye"></i> مرات المشاهدة</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>{product.viewCount || 0}</div>
             </div>
 
-            <div style={{ gridColumn: 'span 3', background: 'var(--bg-card)', padding: '15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>الوصف</div>
-              <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{product.description || 'لا يوجد وصف متاح لهذا المنتج.'}</div>
+            <div style={{ gridColumn: '1 / -1', background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fas fa-align-right"></i> الوصف التفصيلي
+              </div>
+              <div style={{ fontSize: '1rem', color: 'var(--text-primary)', lineHeight: 1.7, opacity: product.description ? 1 : 0.6 }}>
+                {product.description || 'لا يوجد وصف متاح لهذا المنتج حتى الآن.'}
+              </div>
             </div>
           </div>
         </div>

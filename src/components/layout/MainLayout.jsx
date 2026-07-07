@@ -17,6 +17,29 @@ const MainLayout = () => {
   const [tempIdleTime, setTempIdleTime] = useState('0.5');
   const [tempIdlePin, setTempIdlePin] = useState('');
   const [currentPinDisplay, setCurrentPinDisplay] = useState(localStorage.getItem('pos_idle_pin') || '');
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const checkOnboarding = () => {
+      const onboardingStr = localStorage.getItem('onboardingStatus');
+      if (onboardingStr) {
+        try {
+          const statusObj = JSON.parse(onboardingStr);
+          setIsOnboarding(!statusObj.completed);
+        } catch (e) {}
+      } else {
+        setIsOnboarding(false);
+      }
+    };
+    checkOnboarding();
+    // Also re-check when storage changes
+    const handleStorage = (e) => {
+      if (e.key === 'onboardingStatus') checkOnboarding();
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [location.pathname]);
 
   useEffect(() => {
     isIdleRef.current = isIdle;
@@ -26,7 +49,6 @@ const MainLayout = () => {
       localStorage.setItem('pos_idle_state', targetStr);
     }
   }, [isIdle]);
-  const location = useLocation();
   const prevRouteRef = useRef({ path: '', label: '' });
   const currentPathRef = useRef(location.pathname);
 
@@ -259,8 +281,8 @@ const MainLayout = () => {
   };
 
   return (
-    <div className="app-layout">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className={`app-layout ${isOnboarding ? 'onboarding-mode' : ''}`}>
+      {!isOnboarding && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {impersonationBackup && (
           <div style={{

@@ -10,43 +10,77 @@ export const useStore = () => {
   return context;
 };
 
+/**
+ * Compute a tenant-scoped localStorage key so that different stores
+ * (different tenants) do NOT share the same cart/wishlist data.
+ */
+const getTenantKey = (base) => {
+  const tenantId = sessionStorage.getItem('public_tenant_id') || 'default';
+  return `${base}_${tenantId}`;
+};
+
 export const StoreProvider = ({ children }) => {
+  // ── Cart: scoped per tenant ──────────────────────────────────────────────
   const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('ec_cart');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(getTenantKey('ec_cart'));
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
+  // ── Wishlist: scoped per tenant ──────────────────────────────────────────
   const [wishlist, setWishlist] = useState(() => {
-    const saved = localStorage.getItem('ec_wishlist');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(getTenantKey('ec_wishlist'));
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
   const [toast, setToast] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
+  const [storeInfoError, setStoreInfoError] = useState(false);
+
+  /**
+   * categories is fetched ONCE here and shared across all store pages.
+   * EcommerceStore and StoreLayout consume this from context
+   * instead of making their own redundant API calls.
+   */
   const [categories, setCategories] = useState([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
   useEffect(() => {
-    StoreApi.getStoreInfoPublic().then(res => {
-      if (res.success) setStoreInfo(res.data);
-    }).catch(() => { });
+    // Fetch store info and categories once when the provider mounts
+    StoreApi.getStoreInfoPublic()
+      .then(res => {
+        if (res && res.success) setStoreInfo(res.data);
+        else if (res && res.data) setStoreInfo(res.data);
+      })
+      .catch(() => setStoreInfoError(true));
 
-    StoreApi.getCategories().then(res => {
-      if (Array.isArray(res)) {
-        setCategories(res);
-      } else if (res && res.success) {
-        setCategories(res.data);
-      }
-    }).catch(() => { });
+    StoreApi.getCategories()
+      .then(res => {
+        if (Array.isArray(res)) {
+          setCategories(res);
+        } else if (res && res.success && Array.isArray(res.data)) {
+          setCategories(res.data);
+        } else if (res && Array.isArray(res.data)) {
+          setCategories(res.data);
+        }
+        setCategoriesLoaded(true);
+      })
+      .catch(() => setCategoriesLoaded(true));
   }, []);
 
+  // Persist cart to tenant-scoped key
   useEffect(() => {
-    localStorage.setItem('ec_cart', JSON.stringify(cart));
+    localStorage.setItem(getTenantKey('ec_cart'), JSON.stringify(cart));
   }, [cart]);
 
+  // Persist wishlist to tenant-scoped key
   useEffect(() => {
-    localStorage.setItem('ec_wishlist', JSON.stringify(wishlist));
+    localStorage.setItem(getTenantKey('ec_wishlist'), JSON.stringify(wishlist));
   }, [wishlist]);
 
   const showToast = (msg) => {
@@ -57,13 +91,14 @@ export const StoreProvider = ({ children }) => {
   const addToCart = (product, quantity = 1) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id);
-      const resolvedImage = (product.imageUrls && product.imageUrls.length > 0) 
-        ? StoreApi.getImageUrl(product.imageUrls[0]) 
-        : (product.image ? StoreApi.getImageUrl(product.image) : (product.imageUrl ? StoreApi.getImageUrl(product.imageUrl) : null));
+      const resolvedImage = (product.imageUrls && product.imageUrls.length > 0)
+        ? StoreApi.getImageUrl(product.imageUrls[0])
+        : (product.image ? StoreApi.getImageUrl(product.image)
+        : (product.imageUrl ? StoreApi.getImageUrl(product.imageUrl) : null));
 
       if (existing) {
-        return prev.map(i => i.id === product.id ? { 
-          ...i, 
+        return prev.map(i => i.id === product.id ? {
+          ...i,
           qty: i.qty + quantity,
           price: product.appliedOfferId ? Number(product.salePrice) : i.price,
           appliedOfferId: product.appliedOfferId || i.appliedOfferId,
@@ -130,7 +165,9 @@ export const StoreProvider = ({ children }) => {
     toast,
     showToast,
     storeInfo,
+    storeInfoError,
     categories,
+    categoriesLoaded,
     wishlist,
     toggleWishlist,
     isWishlisted

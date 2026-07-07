@@ -115,111 +115,122 @@ const StoreProductDetail = () => {
           <span style={{ color: '#333', fontWeight: 'bold' }}>{product.name}</span>
         </nav>
 
-        <div className="ec-detail-grid">
-          {/* Gallery */}
-          <div className="ec-detail-gallery">
-            <div className="ec-detail-main-img-wrapper">
-              {mainImage ? <img src={mainImage} alt={product.name} /> : <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box"></i></span>}
-            </div>
+        <div className="amz-pdp-container" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 400px) 1fr 300px', gap: '30px', padding: '20px', background: '#fff', margin: '0 auto', maxWidth: '1500px' }}>
+          
+          {/* Column 1: Gallery */}
+          <div className="amz-pdp-gallery" style={{ display: 'flex', gap: '15px' }}>
             {product.imageUrls?.length > 1 && (
-              <div className="ec-detail-thumbnails">
+              <div className="amz-pdp-thumbnails" style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '50px' }}>
                 {product.imageUrls.map((url, i) => {
                   const fullUrl = StoreApi.getImageUrl(url);
                   const isActive = mainImage === fullUrl;
                   return (
                     <div
                       key={i}
-                      onClick={() => setMainImage(fullUrl)}
-                      className={`ec-detail-thumb ${isActive ? 'active' : ''}`}
+                      onMouseEnter={() => setMainImage(fullUrl)}
+                      style={{ 
+                        width: '50px', height: '50px', border: isActive ? '2px solid var(--amz-orange)' : '1px solid #ccc', 
+                        borderRadius: 'var(--amz-radius)', cursor: 'pointer', overflow: 'hidden'
+                      }}
                     >
-                      <img src={fullUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <img src={fullUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   );
                 })}
               </div>
             )}
+            <div className="amz-pdp-main-image" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+              {mainImage ? <img src={mainImage} alt={product.name} style={{ width: '100%', maxHeight: '500px', objectFit: 'contain' }} /> : <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box"></i></span>}
+            </div>
           </div>
 
-          {/* Info */}
-          <div className="ec-detail-info">
-            <div className="ec-detail-category">
-              {product.categoryImageUrl && (
-                <img src={`${SERVER_URL}${product.categoryImageUrl}`} alt="" style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
-              )}
-              <span>{product.categoryName}</span>
+          {/* Column 2: Details */}
+          <div className="amz-pdp-details" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 500, margin: 0, lineHeight: 1.3 }}>{product.name}</h1>
+            <div style={{ color: 'var(--amz-link)', fontSize: '0.9rem', cursor: 'pointer' }}>
+              العلامة التجارية: {product.categoryName}
+            </div>
+            
+            <hr style={{ borderTop: '1px solid #ddd', margin: '10px 0' }} />
+
+            <div style={{ fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: '#565959' }}>السعر:</span>
+                <span style={{ fontSize: '1.5rem', color: '#B12704', fontWeight: 500 }}>
+                  <span style={{ fontSize: '0.8rem', position: 'relative', top: '-0.4em' }}>{storeInfo?.currency || 'جنيه'}</span>
+                  {Number(product.salePrice).toLocaleString()}
+                </span>
+              </div>
+              <span style={{ color: '#565959' }}>الأسعار تشمل ضريبة القيمة المضافة.</span>
             </div>
 
-            <h1 className="ec-detail-title">{product.name}</h1>
+            <hr style={{ borderTop: '1px solid #ddd', margin: '10px 0' }} />
 
             {productOffers.length > 0 && (
-                <div style={{ background: '#fef3c7', border: '2px dashed #f59e0b', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+                <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--amz-radius)', padding: '15px', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                        <span style={{ fontSize: '1.5rem', color: '#f59e0b' }}><i className="fas fa-gift"></i></span>
-                        <h3 style={{ margin: 0, color: '#b45309' }}>عروض مخصصة لك!</h3>
+                        <span style={{ color: '#f59e0b' }}><i className="fas fa-tag"></i></span>
+                        <h3 style={{ margin: 0, color: '#b45309', fontSize: '1rem' }}>عروض مخصصة لك!</h3>
                     </div>
                     {productOffers.map(offer => (
-                        <div key={offer.id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={offer.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
                             <div>
-                                <strong style={{ color: '#d97706', display: 'block' }}>{offer.titleAr}</strong>
-                                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{offer.messageAr}</span>
-                                <div style={{ fontWeight: 'bold', marginTop: '5px' }}>
-                                    خصم: {offer.discountType === 'PERCENTAGE' ? `${offer.discountValue}%` : `${offer.discountValue} ج.م`}
-                                </div>
+                                <strong style={{ color: '#d97706', fontSize: '0.9rem' }}>{offer.titleAr}</strong>
+                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{offer.messageAr}</div>
                             </div>
-                            <button 
-                                onClick={() => handleUseOffer(offer)}
-                                className="ec-btn ec-btn-primary" 
-                                style={{ padding: '8px 15px', fontSize: '0.9rem' }}
-                            >
-                                تطبيق العرض
+                            <button onClick={() => handleUseOffer(offer)} className="amz-btn-yellow" style={{ width: 'auto', padding: '5px 10px', fontSize: '0.8rem' }}>
+                                تطبيق
                             </button>
                         </div>
                     ))}
                 </div>
             )}
 
-            <div className="ec-detail-price-wrapper">
-              <span className="ec-detail-price">{Number(product.salePrice).toLocaleString()}</span>
-              <span className="ec-detail-currency">{storeInfo?.currency || 'جنيه'}</span>
+            <div style={{ marginTop: '10px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '10px' }}>عن هذه السلعة</h3>
+              <p style={{ fontSize: '0.9rem', lineHeight: 1.5, color: '#0F1111', whiteSpace: 'pre-line' }}>
+                {product.description || 'لا يوجد وصف متاح لهذا المنتج حالياً.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Column 3: Buy Box */}
+          <div className="amz-pdp-buybox" style={{ border: '1px solid #D5D9D9', borderRadius: 'var(--amz-radius)', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', height: 'fit-content' }}>
+            <div style={{ fontSize: '1.5rem', color: '#B12704', fontWeight: 500 }}>
+              <span style={{ fontSize: '0.8rem', position: 'relative', top: '-0.4em' }}>{storeInfo?.currency || 'جنيه'}</span>
+              {Number(product.salePrice).toLocaleString()}
             </div>
 
-            <div className={`ec-detail-stock-badge ${product.inStock ? 'ec-detail-stock-in' : 'ec-detail-stock-out'}`}>
-              <strong>
-                {product.inStock ? (
-                  <>
-                    <i className="fas fa-check-circle" style={{ marginLeft: '8px' }}></i>
-                    متوفر - جاهز للشحن
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-times-circle" style={{ marginLeft: '8px' }}></i>
-                    عذراً، غير متوفر حالياً
-                  </>
-                )}
-              </strong>
+            <div style={{ color: '#007185', fontSize: '0.9rem' }}>
+              التوصيل مجاني
             </div>
 
-            <p className="ec-detail-description">
-              {product.description || 'لا يوجد وصف متاح لهذا المنتج حالياً.'}
-            </p>
+            <div style={{ fontSize: '1.1rem', color: product.inStock ? '#007600' : '#B12704', fontWeight: 500 }}>
+              {product.inStock ? 'متوفر' : 'غير متوفر'}
+            </div>
 
-            <div className="ec-detail-actions">
-              <button
-                className="ec-btn-buy-now"
-                onClick={handleBuyNow}
-                disabled={!product.inStock}
-              >
-                <i className="fas fa-bolt" style={{ marginLeft: '8px' }}></i>
+            <div style={{ fontSize: '0.85rem', color: '#565959', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                 <span>تشحن من</span>
+                 <span>{storeInfo?.name || STORE_NAME}</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                 <span>تباع من قبل</span>
+                 <span>{storeInfo?.name || STORE_NAME}</span>
+               </div>
+            </div>
+
+            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button className="amz-btn-yellow" onClick={() => addToCart(product)} disabled={!product.inStock}>
+                إضافة إلى عربة التسوق
+              </button>
+              <button className="amz-btn-orange" onClick={handleBuyNow} disabled={!product.inStock}>
                 اشتري الآن
               </button>
-              <button
-                className="ec-btn-add-to-cart"
-                onClick={() => addToCart(product)}
-                disabled={!product.inStock}
-              >
-                <i className="fas fa-shopping-cart" style={{ marginLeft: '8px' }}></i>
-                أضف للسلة
-              </button>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#007185', fontSize: '0.85rem', marginTop: '10px', cursor: 'pointer' }}>
+              <i className="fas fa-lock" style={{ color: '#999' }}></i> معاملة آمنة
             </div>
           </div>
         </div>

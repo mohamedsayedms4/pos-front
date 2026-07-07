@@ -8,7 +8,7 @@ import ProductCard from '../components/store/ProductCard';
 
 const StoreCategoryPage = () => {
   const { id } = useParams();
-  const { addToCart } = useStore();
+  const { addToCart, categories } = useStore();
 
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
@@ -64,52 +64,73 @@ const StoreCategoryPage = () => {
 
   return (
     <StoreLayout>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '30px 20px' }}>
-        {/* Breadcrumb */}
-        <nav style={{ marginBottom: '30px', fontSize: '.85rem', color: '#888' }}>
-          <Link to="/store" style={{ color: '#888', textDecoration: 'none' }}>المتجر</Link>
-          <span style={{ margin: '0 10px' }}>/</span>
-          <span style={{ color: '#333', fontWeight: 'bold' }}>{category?.name || 'القسم'}</span>
-        </nav>
+      <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '20px', display: 'flex', gap: '20px' }}>
+        
+        {/* Sidebar */}
+        <aside style={{ width: '220px', flexShrink: 0 }} className="desktop-only">
+          <div style={{ padding: '0 10px', position: 'sticky', top: '20px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '10px' }}>الأقسام</h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <li>
+                <Link to="/store" style={{ color: '#0F1111', textDecoration: 'none', fontSize: '0.9rem' }}>
+                  <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem', marginLeft: '5px' }}></i>
+                  جميع الأقسام
+                </Link>
+              </li>
+              {categories && categories.filter(c => !c.parentId).map(c => (
+                <li key={c.id}>
+                  <Link 
+                    to={`/store/category/${c.id}`} 
+                    style={{ 
+                      color: String(c.id) === String(id) ? '#e47911' : '#0F1111', 
+                      fontWeight: String(c.id) === String(id) ? 'bold' : 'normal',
+                      textDecoration: 'none', 
+                      fontSize: '0.9rem' 
+                    }}
+                  >
+                    {c.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
 
-        {/* Banner */}
-        {category?.imageUrl && (
-          <div className="ec-category-banner" style={{ height: '240px' }}>
-            <img src={`${SERVER_URL}${category.imageUrl}`} alt="" />
-            <div className="ec-category-banner-overlay" style={{ padding: '40px' }}>
-              <h2 style={{ fontSize: '3rem' }}>{category.name}</h2>
-              {category.description && <p style={{ color: 'rgba(255,255,255,.8)', marginTop: '10px' }}>{category.description}</p>}
+        {/* Main Content */}
+        <div style={{ flex: 1 }}>
+          {/* Breadcrumb */}
+          <nav style={{ marginBottom: '10px', fontSize: '0.85rem', color: '#565959' }}>
+            <Link to="/store" style={{ color: '#565959', textDecoration: 'none' }}>المتجر</Link>
+            <span style={{ margin: '0 10px' }}>/</span>
+            <span style={{ color: '#0F1111', fontWeight: 'bold' }}>{category?.name || 'القسم'}</span>
+          </nav>
+
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 500, margin: '10px 0 20px 0' }}>{category?.name}</h2>
+
+          {/* Banner */}
+          {category?.imageUrl && (
+            <div style={{ height: '240px', marginBottom: '20px', borderRadius: 'var(--amz-radius)', overflow: 'hidden', position: 'relative' }}>
+              <img src={StoreApi.getImageUrl(category.imageUrl)} alt={category.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="ec-section-header" style={{ marginTop: '40px' }}>
-          <div className="ec-section-line" />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {category?.imageUrl && (
-              <img src={`${SERVER_URL}${category.imageUrl}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-            )}
-            <h2>تصفح منتجات {category?.name || 'القسم'}</h2>
-          </div>
-          <div className="ec-section-line" />
-        </div>
+          {products.length === 0 ? (
+            <div className="ec-empty" style={{ minHeight: '30vh' }}>
+              <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box-open"></i></span>
+              <p>لا توجد منتجات في هذا القسم حالياً</p>
+              <Link to="/store" className="amz-btn-yellow" style={{ marginTop: '20px', display: 'inline-block', textDecoration: 'none' }}>تصفح منتجات أخرى</Link>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '15px' }}>
+              {products.map(p => (
+                <ProductCard key={p.id} product={p} onAddToCart={addToCart} />
+              ))}
+            </div>
+          )}
 
-        {products.length === 0 ? (
-          <div className="ec-empty" style={{ minHeight: '30vh' }}>
-            <span style={{ fontSize: '3rem', color: '#e2e8f0' }}><i className="fas fa-box-open"></i></span>
-            <p>لا توجد منتجات في هذا القسم حالياً</p>
-            <Link to="/store" className="ec-btn ec-btn-ghost" style={{ marginTop: '20px', display: 'inline-block', textDecoration: 'none' }}>تصفح منتجات أخرى</Link>
+          <div ref={observerRef} style={{ height: 60, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {loadingMore && <div className="ec-spinner small" />}
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '25px' }}>
-            {products.map(p => (
-              <ProductCard key={p.id} product={p} onAddToCart={addToCart} />
-            ))}
-          </div>
-        )}
-
-        <div ref={observerRef} style={{ height: 60, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          {loadingMore && <div className="ec-spinner small" />}
         </div>
       </div>
     </StoreLayout>

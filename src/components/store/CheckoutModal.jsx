@@ -5,7 +5,7 @@ import { useStoreAuth } from '../../context/StoreAuthContext';
 import * as fbPixel from '../../services/fbPixel';
 
 const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
-  const { storeInfo } = useStore();
+  const { storeInfo, removeFromCart } = useStore();
   const { storeCustomer } = useStoreAuth();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ 
@@ -71,7 +71,14 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
       fbPixel.trackPurchase(orderData, total);
       onSuccess?.();
     } catch (e) {
-      setError(e.message);
+      if (e.data && e.data.errorCode === 'OUT_OF_STOCK' && e.data.productId) {
+        removeFromCart(e.data.productId);
+        setError(`${e.message} - تم إزالة المنتج من السلة لتتمكن من إكمال طلبك.`);
+        // Optional: Send user back to review step to see the updated cart
+        setTimeout(() => setStep(3), 2000);
+      } else {
+        setError(e.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -81,13 +88,13 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
   const currency = storeInfo?.currency || 'جنيه';
 
   return (
-    <div className="ec-modal-overlay">
-      <div className="ec-modal-premium">
-        <div className="ec-modal-header-premium">
-          <h3>
+    <div className="ec-modal-overlay" style={{ background: 'rgba(0,0,0,0.5)', zIndex: 2000 }}>
+      <div className="ec-modal-premium" style={{ background: '#fff', maxWidth: '800px', width: '90%', borderRadius: 'var(--amz-radius)', overflow: 'hidden' }}>
+        <div className="ec-modal-header-premium" style={{ background: '#f3f3f3', borderBottom: '1px solid #ddd', padding: '15px 20px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0F1111', fontWeight: 500 }}>
             {step === 4 ? 'تم إرسال طلبك' : 'إتمام الطلب'}
           </h3>
-          <button className="ec-modal-close-btn" onClick={onClose}>
+          <button className="ec-modal-close-btn" onClick={onClose} style={{ color: '#0F1111' }}>
             <i className="fas fa-times"></i>
           </button>
         </div>
@@ -294,31 +301,29 @@ const CheckoutModal = ({ isOpen, onClose, cart, onSuccess }) => {
           )}
         </div>
 
-        <div className="ec-modal-footer-premium">
+        <div className="ec-modal-footer-premium" style={{ background: '#f3f3f3', borderTop: '1px solid #ddd', padding: '15px 20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           {step === 1 && (
-            <button className="ec-btn-black-premium w-full" onClick={handleNextToPayment}>
+            <button className="amz-btn-yellow" onClick={handleNextToPayment} style={{ width: '200px' }}>
               المتابعة لطريقة الدفع
-              <i className="fas fa-arrow-left" style={{ marginRight: '8px' }}></i>
             </button>
           )}
           {step === 2 && (
-            <div style={{ display: 'flex', gap: '15px', width: '100%' }}>
-              <button className="ec-btn-ghost-premium" onClick={() => setStep(1)}>رجوع</button>
-              <button className="ec-btn-black-premium flex-1" onClick={handleNextToReview}>
+            <>
+              <button className="amz-btn-gray" onClick={() => setStep(1)} style={{ padding: '8px 15px' }}>رجوع</button>
+              <button className="amz-btn-yellow" onClick={handleNextToReview} style={{ width: '200px' }}>
                 المتابعة للمراجعة
-                <i className="fas fa-arrow-left" style={{ marginRight: '8px' }}></i>
               </button>
-            </div>
+            </>
           )}
           {step === 3 && (
-            <div style={{ display: 'flex', gap: '15px', width: '100%' }}>
-              <button className="ec-btn-ghost-premium" onClick={() => setStep(2)} disabled={loading}>رجوع</button>
-              <button className="ec-btn-black-premium flex-1" onClick={handleSubmit} disabled={loading}>
+            <>
+              <button className="amz-btn-gray" onClick={() => setStep(2)} disabled={loading} style={{ padding: '8px 15px' }}>رجوع</button>
+              <button className="amz-btn-yellow" onClick={handleSubmit} disabled={loading} style={{ width: '250px' }}>
                 {loading ? 'جاري الإرسال...' : (paymentMethod === 'ONLINE' ? 'المتابعة للدفع أونلاين' : 'تأكيد وشراء الآن')}
               </button>
-            </div>
+            </>
           )}
-          {step === 4 && <button className="ec-btn-black-premium w-full" onClick={onClose}>العودة للمتجر</button>}
+          {step === 4 && <button className="amz-btn-yellow" onClick={onClose} style={{ width: '200px' }}>العودة للمتجر</button>}
         </div>
       </div>
     </div>

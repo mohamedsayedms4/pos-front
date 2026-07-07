@@ -1,11 +1,67 @@
 import React, { useState } from 'react';
 import Api from '../../services/api';
 import { useGlobalUI } from '../common/GlobalUI';
+import * as ReactJoyride from 'react-joyride';
+
+const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
+const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+
+const AutoStartBeacon = () => {
+    const beaconRef = React.useRef(null);
+    React.useEffect(() => {
+        if (beaconRef.current && beaconRef.current.parentElement) {
+            beaconRef.current.parentElement.click();
+        }
+    }, []);
+    return <span ref={beaconRef} style={{ display: 'none' }} />;
+};
 
 const OpenSessionModal = ({ onOpenSuccess }) => {
   const [openingCash, setOpeningCash] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useGlobalUI();
+
+  // Tour State
+  const [runTour, setRunTour] = useState(false);
+
+  React.useEffect(() => {
+    const onboardingStr = localStorage.getItem('onboardingStatus');
+    if (onboardingStr) {
+        try {
+            const statusObj = JSON.parse(onboardingStr);
+            if (statusObj.hasProduct && !statusObj.hasInvoice && !localStorage.getItem('tour_open_session_v3')) {
+                setTimeout(() => {
+                    setRunTour(true);
+                    localStorage.setItem('tour_open_session_v3', 'true');
+                }, 500); 
+            }
+        } catch(e) {}
+    }
+  }, []);
+
+  const handleJoyrideCallback = (data) => {
+      const { status, type } = data;
+      const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+      
+      if (finishedStatuses.includes(status) || type === 'tour:end') {
+          setRunTour(false);
+          localStorage.setItem('tour_open_session_v3', 'true');
+      }
+  };
+
+  const tourSteps = [
+      {
+          target: '.tour-session-input',
+          content: 'قبل البدء في البيع، يجب عليك فتح وردية جديدة. أدخل المبلغ المالي الموجود في الدرج حالياً (العهدة).',
+          disableBeacon: true,
+          placement: 'bottom',
+      },
+      {
+          target: '.tour-session-btn',
+          content: 'بعد إدخال المبلغ، اضغط هنا لفتح الدرج وبدء العمل.',
+          placement: 'bottom',
+      }
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,6 +79,31 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
 
   return (
     <div className="session-modal-overlay">
+      {runTour && (
+        <Joyride
+            steps={tourSteps}
+            run={runTour}
+            beaconComponent={AutoStartBeacon}
+            continuous={true}
+            showProgress={true}
+            showSkipButton={true}
+            disableOverlayClose={true}
+            callback={handleJoyrideCallback}
+            styles={{
+                options: {
+                    primaryColor: 'var(--color-primary, #4f46e5)',
+                    backgroundColor: 'var(--bg-card, #ffffff)',
+                    textColor: 'var(--text-main, #333333)',
+                    arrowColor: 'var(--bg-card, #ffffff)',
+                    zIndex: 9999999,
+                },
+                tooltipContainer: { textAlign: 'right' },
+                buttonNext: { outline: 'none' },
+                buttonBack: { marginRight: 10, outline: 'none' }
+            }}
+            locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
+        />
+      )}
       <div className="session-modal-content">
         <h2 className="session-modal-title">فتح الوردية (الدرج)</h2>
         <p className="session-modal-desc">
@@ -40,7 +121,7 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
                 required
                 value={openingCash}
                 onChange={(e) => setOpeningCash(e.target.value)}
-                className="session-input"
+                className="session-input tour-session-input"
                 placeholder="0.00"
                 style={{ paddingLeft: '40px' }}
                 autoFocus
@@ -49,7 +130,7 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
             </div>
           </div>
           
-          <button type="submit" disabled={loading} className="session-btn session-btn-primary">
+          <button type="submit" disabled={loading} className="session-btn session-btn-primary tour-session-btn">
             {loading ? 'جاري الفتح...' : 'فتح الدرج وبدء العمل'}
           </button>
         </form>

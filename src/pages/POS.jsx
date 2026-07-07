@@ -10,6 +10,20 @@ import beepSound from '../assets/sound/freesound_community-store-scanner-beep-90
 import OpenSessionModal from '../components/pos/OpenSessionModal';
 import CloseSessionModal from '../components/pos/CloseSessionModal';
 import CashMovementModal from '../components/pos/CashMovementModal';
+import * as ReactJoyride from 'react-joyride';
+
+const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
+const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+
+const AutoStartBeacon = () => {
+    const beaconRef = useRef(null);
+    useEffect(() => {
+        if (beaconRef.current && beaconRef.current.parentElement) {
+            beaconRef.current.parentElement.click();
+        }
+    }, []);
+    return <span ref={beaconRef} style={{ display: 'none' }} />;
+};
 
 const WS_URL = API_BASE.replace('/api/v1', '') + '/ws';
 const PAGE_SIZE = 24;
@@ -79,6 +93,69 @@ const POS = () => {
   const [showQuickAddProduct, setShowQuickAddProduct] = useState(false);
   const [quickProductForm, setQuickProductForm] = useState({ name: '', purchasePrice: 0, salePrice: 0 });
   const [savingQuickProduct, setSavingQuickProduct] = useState(false);
+
+  // Tour State
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    const onboardingStr = localStorage.getItem('onboardingStatus');
+    if (onboardingStr && activeSession) {
+        try {
+            const statusObj = JSON.parse(onboardingStr);
+            if (statusObj.hasProduct && !statusObj.hasInvoice && !localStorage.getItem('tour_pos_v3')) {
+                setTimeout(() => {
+                    setRunTour(true);
+                    localStorage.setItem('tour_pos_v3', 'true');
+                }, 1500); 
+            }
+        } catch(e) {}
+    }
+  }, [activeSession]);
+
+  const handleJoyrideCallback = (data) => {
+      const { status, type } = data;
+      const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+      
+      if (finishedStatuses.includes(status) || type === 'tour:end') {
+          setRunTour(false);
+          localStorage.setItem('tour_pos_v3', 'true');
+          
+          // Confetti for completing onboarding!
+          const onboardingStr = localStorage.getItem('onboardingStatus');
+          if (onboardingStr) {
+             try {
+                let statusObj = JSON.parse(onboardingStr);
+                statusObj.hasInvoice = true;
+                localStorage.setItem('onboardingStatus', JSON.stringify(statusObj));
+             } catch (e) {}
+             toast('🎉 رائع! لقد أنهيت الجولة الإرشادية لنقطة البيع. اصنع فاتورتك الأولى الآن!', 'success');
+          }
+      }
+  };
+
+  const tourSteps = [
+      {
+          target: '.tour-pos-search',
+          content: 'هنا يمكنك البحث عن منتجاتك بالاسم أو مسح الباركود مباشرة لإضافتها للفاتورة.',
+          disableBeacon: true,
+          placement: 'bottom',
+      },
+      {
+          target: '.tour-pos-products',
+          content: 'أو يمكنك ببساطة الضغط على أي منتج من القائمة ليتم إضافته فوراً لسلة المشتريات.',
+          placement: 'right',
+      },
+      {
+          target: '.tour-pos-cart',
+          content: 'هنا تظهر المنتجات المطلوبة. يمكنك تعديل الكميات أو حذف المنتجات.',
+          placement: 'left',
+      },
+      {
+          target: '.tour-pos-checkout',
+          content: 'وأخيراً، بعد التأكد من الفاتورة، اضغط هنا لإتمام الدفع وطباعة الإيصال. مبروك على أول مبيعاتك! 🎉',
+          placement: 'top',
+      }
+  ];
 
   useEffect(() => {
     localStorage.setItem('pos_print_preview', printPreview);
@@ -663,6 +740,31 @@ const POS = () => {
 
   return (
     <>
+      {runTour && (
+        <Joyride
+            steps={tourSteps}
+            run={runTour}
+            beaconComponent={AutoStartBeacon}
+            continuous={true}
+            showProgress={true}
+            showSkipButton={true}
+            disableOverlayClose={true}
+            callback={handleJoyrideCallback}
+            styles={{
+                options: {
+                    primaryColor: 'var(--color-primary, #4f46e5)',
+                    backgroundColor: 'var(--bg-card, #ffffff)',
+                    textColor: 'var(--text-main, #333333)',
+                    arrowColor: 'var(--bg-card, #ffffff)',
+                    zIndex: 9999999,
+                },
+                tooltipContainer: { textAlign: 'right' },
+                buttonNext: { outline: 'none' },
+                buttonBack: { marginRight: 10, outline: 'none' }
+            }}
+            locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
+        />
+      )}
       {showOpenSession && <OpenSessionModal onOpenSuccess={() => { setShowOpenSession(false); Api.getCurrentSession().then(setActiveSession).catch(()=>{}); }} />}
       {showCloseSession && <CloseSessionModal onCloseSuccess={() => { setShowCloseSession(false); setActiveSession(null); setShowOpenSession(true); }} onCancel={() => setShowCloseSession(false)} />}
       {showCashMovement && <CashMovementModal onClose={() => setShowCashMovement(false)} />}
@@ -671,10 +773,10 @@ const POS = () => {
       {checkoutLoading && <div className="loader-overlay"><Loader message="جاري إتمام الدفع..." /></div>}
 
       {/* LEFT: PRODUCTS BROWSER */}
-      <div className="pos-products-pane">
+      <div className="pos-products-pane tour-pos-products">
         <div className="pos-header-glass">
           <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-            <div className="pos-search-wrapper" style={{ flex: 1, margin: 0 }}>
+            <div className="pos-search-wrapper tour-pos-search" style={{ flex: 1, margin: 0 }}>
               <input
                 ref={searchInputRef}
                 type="text"
@@ -755,7 +857,7 @@ const POS = () => {
       </div>
 
       {/* RIGHT: CART & CHECKOUT */}
-      <div className="pos-cart-pane">
+      <div className="pos-cart-pane tour-pos-cart">
         <div className="cart-header">
           <h3>🛒 الطلب الحالي</h3>
           <div style={{display:'flex', gap:'5px', flexWrap:'wrap', alignItems:'center'}}>
@@ -949,7 +1051,7 @@ const POS = () => {
           </div>
           
           <button 
-            className="checkout-btn" 
+            className="checkout-btn tour-pos-checkout" 
             onClick={() => handleCheckout(false)} 
             disabled={checkoutLoading || cart.length === 0}
             title="إتمام الدفع (Ctrl+B للطباعة الفورية)"

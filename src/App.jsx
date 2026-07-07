@@ -120,6 +120,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 import Error403 from './pages/Error403.jsx'
 import Error404 from './pages/Error404.jsx'
 import Error500 from './pages/Error500.jsx'
+import BranchForm from './pages/BranchForm.jsx'
 
 import { GlobalUIProvider } from './components/common/GlobalUI'
 import { ThemeProvider } from './components/common/ThemeContext'
@@ -168,14 +169,77 @@ function App() {
                 <Route path="/welcome" element={<WelcomePage />} />
                 <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                 
-                {/* Public Store Routes with Context */}
-                <Route path="/store" element={<StoreAuthProvider><StoreProvider><EcommerceStore /></StoreProvider></StoreAuthProvider>} />
-                <Route path="/store/account" element={<StoreAuthProvider><StoreProvider><StoreAccountPage /></StoreProvider></StoreAuthProvider>} />
-                <Route path="/store/product/:id" element={<StoreAuthProvider><StoreProvider><StoreProductDetail /></StoreProvider></StoreAuthProvider>} />
-                <Route path="/store/category/:id" element={<StoreAuthProvider><StoreProvider><StoreCategoryPage /></StoreProvider></StoreAuthProvider>} />
-                <Route path="/store/wishlist" element={<StoreAuthProvider><StoreProvider><StoreWishlistPage /></StoreProvider></StoreAuthProvider>} />
-                <Route path="/store/privacy-policy" element={<StoreAuthProvider><StoreProvider><PrivacyPolicy /></StoreProvider></StoreAuthProvider>} />
-                <Route path="/store/terms-of-use" element={<StoreAuthProvider><StoreProvider><TermsOfUse /></StoreProvider></StoreAuthProvider>} />
+                {/* Public Store Routes — wrapped ONCE in a shared context to preserve cart/auth state between pages */}
+                <Route
+                  path="/store"
+                  element={
+                    <StoreAuthProvider>
+                      <StoreProvider>
+                        <EcommerceStore />
+                      </StoreProvider>
+                    </StoreAuthProvider>
+                  }
+                />
+                <Route
+                  path="/store/account"
+                  element={
+                    <StoreAuthProvider>
+                      <StoreProvider>
+                        <StoreAccountPage />
+                      </StoreProvider>
+                    </StoreAuthProvider>
+                  }
+                />
+                <Route
+                  path="/store/product/:id"
+                  element={
+                    <StoreAuthProvider>
+                      <StoreProvider>
+                        <StoreProductDetail />
+                      </StoreProvider>
+                    </StoreAuthProvider>
+                  }
+                />
+                <Route
+                  path="/store/category/:id"
+                  element={
+                    <StoreAuthProvider>
+                      <StoreProvider>
+                        <StoreCategoryPage />
+                      </StoreProvider>
+                    </StoreAuthProvider>
+                  }
+                />
+                <Route
+                  path="/store/wishlist"
+                  element={
+                    <StoreAuthProvider>
+                      <StoreProvider>
+                        <StoreWishlistPage />
+                      </StoreProvider>
+                    </StoreAuthProvider>
+                  }
+                />
+                <Route
+                  path="/store/privacy-policy"
+                  element={
+                    <StoreAuthProvider>
+                      <StoreProvider>
+                        <PrivacyPolicy />
+                      </StoreProvider>
+                    </StoreAuthProvider>
+                  }
+                />
+                <Route
+                  path="/store/terms-of-use"
+                  element={
+                    <StoreAuthProvider>
+                      <StoreProvider>
+                        <TermsOfUse />
+                      </StoreProvider>
+                    </StoreAuthProvider>
+                  }
+                />
                 <Route path="/terms" element={<TermsOfUseCorp />} />
                 <Route path="/privacy" element={<PrivacyPolicyCorp />} />
                 <Route path="/blog" element={<Articles />} />
@@ -312,6 +376,8 @@ function App() {
                     </Route>
                     <Route element={<ProtectedRoute permission="BRANCH_READ" />}>
                       <Route path="/branches" element={<Branches />} />
+                      <Route path="/branches/add" element={<BranchForm />} />
+                      <Route path="/branches/edit/:id" element={<BranchForm />} />
                       <Route path="/branches/:id/manage" element={<BranchManagement />} />
                     </Route>
                     <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>

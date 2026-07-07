@@ -1083,6 +1083,11 @@ textarea.form-control {
   margin-right: 0;
 }
 
+.app-layout.onboarding-mode .main-content {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+
 /* ─── Top Bar — Metro Minimal ─── */
 .topbar {
   position: sticky;

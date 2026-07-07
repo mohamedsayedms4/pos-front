@@ -503,8 +503,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* ────────────────── المتجر الإلكتروني ────────────────── */}
-        {/*
-        isOnline && (
+        {isOnline && (
           <>
             <div className="nav-section-title">المتجر الإلكتروني</div>
 
@@ -541,8 +540,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               </NavLink>
             )}
           </>
-        )
-        */}
+        )}
 
         {/* ────────────────── الحسابات والتقارير المتقدمة ────────────────── */}
         {(Api.can('TREASURY_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ') || Api.can('PROFIT_LOSS_READ') || isAdmin || Api.can('CUSTOMER_READ')) && isOnline && (

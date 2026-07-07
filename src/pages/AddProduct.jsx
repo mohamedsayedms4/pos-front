@@ -1,9 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import { useBranch } from '../context/BranchContext';
 import Loader from '../components/common/Loader';
+import * as ReactJoyride from 'react-joyride';
+
+const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
+const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+
+const AutoStartBeacon = () => {
+    const beaconRef = useRef(null);
+    useEffect(() => {
+        if (beaconRef.current && beaconRef.current.parentElement) {
+            beaconRef.current.parentElement.click();
+        }
+    }, []);
+    return <span ref={beaconRef} style={{ display: 'none' }} />;
+};
 
 const AddProduct = () => {
   const { id } = useParams();
@@ -59,6 +73,64 @@ const AddProduct = () => {
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [enableWholesaleForm, setEnableWholesaleForm] = useState(false);
+
+  // Tour State
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    const onboardingStr = localStorage.getItem('onboardingStatus');
+    if (onboardingStr) {
+        try {
+            const statusObj = JSON.parse(onboardingStr);
+            if (statusObj.hasBranch && !statusObj.hasProduct && !localStorage.getItem('tour_add_product_v3')) {
+                setTimeout(() => {
+                    setRunTour(true);
+                    localStorage.setItem('tour_add_product_v3', 'true');
+                }, 800); 
+            }
+        } catch(e) {}
+    }
+  }, []);
+
+  const handleJoyrideCallback = (data) => {
+      const { status, type } = data;
+      const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+      
+      if (finishedStatuses.includes(status) || type === 'tour:end') {
+          setRunTour(false);
+          localStorage.setItem('tour_add_product_v3', 'true');
+      }
+  };
+
+  const tourSteps = [
+      {
+          target: '.tour-prod-branch',
+          content: 'أولاً، يجب عليك تحديد الفرع الذي سيتم إضافة هذا المنتج ومخزونه إليه.',
+          disableBeacon: true,
+          placement: 'bottom',
+      },
+      {
+          target: '.tour-prod-name',
+          content: 'أدخل اسم المنتج بوضوح هنا (مثل: تي شيرت قطن, أو كيبورد ميكانيكي).',
+          disableBeacon: true,
+          placement: 'bottom',
+      },
+      {
+          target: '.tour-prod-price',
+          content: 'حدد السعر الذي ستبيع به هذا المنتج للعميل.',
+          placement: 'bottom',
+      },
+      {
+          target: '.tour-prod-cat',
+          content: 'اختر الفئة التي ينتمي إليها المنتج لتسهيل تنظيمه.',
+          placement: 'bottom',
+      },
+      {
+          target: '.tour-prod-save',
+          content: 'أخيراً، اضغط هنا لحفظ المنتج. وبذلك تكون قد أضفت أول منتج لك!',
+          placement: 'top',
+      }
+  ];
 
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
@@ -129,6 +201,9 @@ const AddProduct = () => {
               branchWholesaleMinQuantity = inv.wholesaleMinQuantity ?? '';
               branchStock = inv.stock ?? '0';
               branchShowInStore = inv.showInStore !== false;
+              if (inv.branchId) {
+                setProductBranchId(inv.branchId.toString());
+              }
             }
           }
 
@@ -210,13 +285,20 @@ const AddProduct = () => {
 
     try {
       if (isEditMode) {
-        await Api.updateProduct(id, apiData, images);
+        await Api.updateProduct(id, apiData, images, selectedBranchId || productBranchId);
         toast('تم تحديث المنتج بنجاح', 'success');
+        navigate('/products');
       } else {
         await Api.createProduct(apiData, images, productBranchId);
         toast('تم إضافة المنتج بنجاح', 'success');
+        
+        // If in onboarding mode, go back to dashboard!
+        if (localStorage.getItem('onboardingStatus')) {
+            navigate('/dashboard');
+        } else {
+            navigate('/products');
+        }
       }
-      navigate('/products');
     } catch (err) {
       if (err.errors) {
         setFormErrors(err.errors);
@@ -254,6 +336,29 @@ const AddProduct = () => {
 
   return (
     <>
+      <Joyride
+          steps={tourSteps}
+          run={runTour}
+          beaconComponent={AutoStartBeacon}
+          continuous={true}
+          showProgress={true}
+          showSkipButton={true}
+          disableOverlayClose={true}
+          callback={handleJoyrideCallback}
+          styles={{
+              options: {
+                  primaryColor: 'var(--color-primary, #4f46e5)',
+                  backgroundColor: 'var(--bg-card, #ffffff)',
+                  textColor: 'var(--text-main, #333333)',
+                  arrowColor: 'var(--bg-card, #ffffff)',
+                  zIndex: 9999999,
+              },
+              tooltipContainer: { textAlign: 'right' },
+              buttonNext: { outline: 'none' },
+              buttonBack: { marginRight: 10, outline: 'none' }
+          }}
+          locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
+      />
       <style>{`
         /* Responsive CSS Overrides for Add/Edit Product Page */
         @media (max-width: 1024px) {
@@ -385,7 +490,7 @@ const AddProduct = () => {
           <form onSubmit={handleSave} id="productForm">
             {/* Branch Selection (Only in Add Mode) */}
             {!isEditMode && branches && branches.length > 0 && (
-              <div className="form-group" style={{ marginBottom: '20px' }}>
+              <div className="form-group tour-prod-branch" style={{ marginBottom: '20px' }}>
                 <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>الفرع المستهدف *</label>
                 <select
                   className="form-control"
@@ -407,7 +512,7 @@ const AddProduct = () => {
             )}
 
             {/* Name */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
+            <div className="form-group tour-prod-name" style={{ marginBottom: '20px' }}>
               <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>اسم المنتج *</label>
               <input 
                 className="form-control" 
@@ -450,7 +555,7 @@ const AddProduct = () => {
                 {formErrors.purchasePrice && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.purchasePrice}</span>}
               </div>
               {!formData.isRawMaterial && (
-                <div className="form-group">
+                <div className="form-group tour-prod-price">
                   <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>سعر البيع (اختياري)</label>
                   <input 
                     className="form-control" 
@@ -554,7 +659,7 @@ const AddProduct = () => {
 
             {/* Category & Unit */}
             <div className="grid grid-2 gap-15" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-              <div className="form-group">
+              <div className="form-group tour-prod-cat">
                 <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>الفئة</label>
                 <select 
                   className="form-control" 
@@ -776,7 +881,7 @@ const AddProduct = () => {
               </button>
               <button 
                 type="submit" 
-                className="btn btn-primary" 
+                className="btn btn-primary tour-prod-save" 
                 disabled={saving}
                 style={{ minWidth: '150px' }}
               >

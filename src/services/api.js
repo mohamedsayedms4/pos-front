@@ -1019,6 +1019,13 @@ const Api = {
     return res.data;
   },
 
+  async removeProductFromOnlineStore(id) {
+    const res = await this._request(`/products/${id}/remove-from-online`, {
+      method: 'POST'
+    });
+    return res;
+  },
+
   async createProduct(productData, images, branchId = null) {
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(productData)], { type: 'application/json' }));
@@ -1036,7 +1043,7 @@ const Api = {
     return res.data;
   },
 
-  async updateProduct(id, productData, images) {
+  async updateProduct(id, productData, images, branchId = null) {
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(productData)], { type: 'application/json' }));
     if (images) {
@@ -1044,7 +1051,8 @@ const Api = {
         formData.append('images', img);
       }
     }
-    const res = await this._request(`/v2/products/${id}`, {
+    const branchQuery = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== '') ? `?branchId=${branchId}` : '';
+    const res = await this._request(`/v2/products/${id}${branchQuery}`, {
       method: 'PUT',
       body: formData,
       headers: { 'Authorization': `Bearer ${this._getToken()}` }

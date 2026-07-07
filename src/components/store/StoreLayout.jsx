@@ -7,6 +7,7 @@ import CheckoutModal from './CheckoutModal';
 import StoreLoginModal from './StoreLoginModal';
 import { useStoreAuth } from '../../context/StoreAuthContext';
 import '../../styles/ecommerce.css';
+import '../../pages/AmazonStore.css';
 import * as fbPixel from '../../services/fbPixel';
 
 const STORE_NAME = 'Seggel Ecommerce';
@@ -113,75 +114,50 @@ const StoreLayout = ({ children, hideHeader = false }) => {
     finally { setTrackLoading(false); }
   };
 
+  React.useEffect(() => {
+    document.body.classList.add('store-active');
+    return () => document.body.classList.remove('store-active');
+  }, []);
+
   return (
     <div className="ec-store">
-      {/* ─── NEW TOP BAR (Dubai Phone Style) ─── */}
-      <div className="ec-topbar-premium">
-        <div className="ec-topbar-inner">
-          <div className="ec-topbar-right" style={{ flex: 1, overflow: 'hidden' }}>
-            <div className="ec-topbar-ticker desktop-only" style={{ whiteSpace: 'nowrap' }}>
-              <span>سعر واحد للكاش و التقسيط • سعر واحد للكاش و التقسيط • سعر واحد للكاش و التقسيط • ضمان حتي عامين من الوكيل • ضمان حتي عامين من الوكيل • توصيل سريع وأمن مع ارامكس • توصيل سريع وأمن مع ارامكس • نقاط مشتريات مجانية • نقاط مشتريات مجانية</span>
-            </div>
-          </div>
-          <div className="ec-topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <span className="ec-topbar-text" style={{ fontWeight: 'bold' }}>
-              <i className="fas fa-phone-alt" style={{ marginLeft: '5px', color: '#1e3a8a', transform: 'scaleX(-1)' }}></i> 
-              <span style={{ direction: 'ltr', display: 'inline-block' }}>{storeInfo?.phone1 || '15254'}</span>
-            </span>
-            <span className="ec-sep"></span>
-            
-            <a href={`https://wa.me/${storeInfo?.whatsappNumber}`} className="ec-topbar-link" style={{ fontWeight: 'bold' }} target="_blank" rel="noopener noreferrer">
-              <i className="fab fa-whatsapp" style={{ color: '#25D366', marginLeft: '5px', fontSize: '1.1rem' }}></i>
-              دعم من خلال الواتساب
-            </a>
-            <span className="ec-sep"></span>
-            
-            <a href="#" className="ec-topbar-link" style={{ fontWeight: 'bold' }}>أماكن الفروع</a>
-            <span className="ec-sep">|</span>
-
-            <div className="ec-lang-selector" style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-              <img src="https://flagcdn.com/w20/eg.png" alt="Egypt" style={{ width: '20px', height: '14px', borderRadius: '2px' }} />
-              <span style={{ fontSize: '0.9rem' }}>العربية</span>
-              <i className="fas fa-chevron-down" style={{ fontSize: '0.7rem' }}></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── MAIN HEADER (Dubai Phone Style) ─── */}
+      {/* ─── AMAZON STYLE HEADER ─── */}
       {!hideHeader && (
-        <header className="ec-header-dubai">
-          <div className="ec-header-dubai-inner">
-            {/* Logo (Right) */}
-            <div className="ec-header-logo-dubai">
-              <Link to="/store">
-                {storeInfo?.logoUrl ? (
-                  <img src={StoreApi.getImageUrl(storeInfo.logoUrl)} alt={storeInfo.name} />
-                ) : (
-                  <span className="ec-logo-text-fallback">{storeInfo?.name || STORE_NAME}</span>
-                )}
-              </Link>
+        <header className="amz-header">
+          <div className="amz-header-top">
+            <Link to="/store" className="amz-logo-link">
+              <span className="amz-logo-text">{storeInfo?.name || STORE_NAME}</span>
+              <span className="amz-logo-eg">.eg</span>
+            </Link>
+            
+            <div className="amz-nav-location desktop-only">
+              <i className="fas fa-map-marker-alt"></i>
+              <div className="amz-nav-loc-text">
+                <span className="amz-nav-loc-line1">التوصيل إلى</span>
+                <span className="amz-nav-loc-line2">مصر</span>
+              </div>
             </div>
 
-            {/* Search (Center) */}
-            <form ref={searchRef} className="ec-search-container-dubai" onSubmit={handleSearch}>
-              <div className="ec-search-input-wrapper-dubai">
-                <input
-                  type="text"
-                  className="ec-search-input-dubai"
-                  placeholder="بحث المنتجات ...."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }}
-                  onFocus={() => { if(search.trim().length >= 2) setShowSuggestions(true); }}
-                />
-                <button type="submit" className="ec-search-submit-btn-dubai" aria-label="بحث">
-                  <i className="fa-solid fa-magnifying-glass" style={{ color: '#a0aec0', fontSize: '1.1rem' }}></i>
-                </button>
-              </div>
-
+            <form ref={searchRef} className="amz-search-bar" onSubmit={handleSearch}>
+              <select className="amz-search-dropdown desktop-only">
+                <option value="all">الكل</option>
+                {categories && categories.slice(0, 5).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <input
+                type="text"
+                className="amz-search-input"
+                placeholder="البحث في المتجر"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setShowSuggestions(true); }}
+                onFocus={() => { if(search.trim().length >= 2) setShowSuggestions(true); }}
+              />
+              <button type="submit" className="amz-search-btn" aria-label="بحث">
+                <i className="fas fa-search"></i>
+              </button>
+              
               {/* Autocomplete Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="ec-search-suggestions-dropdown" style={{ top: '50px' }}>
+                <div className="ec-search-suggestions-dropdown" style={{ top: '45px', left: 0, width: '100%', borderRadius: 'var(--amz-radius)' }}>
                   {suggestions.map(p => (
                     <div 
                       key={p.id} 
@@ -205,72 +181,44 @@ const StoreLayout = ({ children, hideHeader = false }) => {
                       </div>
                     </div>
                   ))}
-                  <div 
-                    className="ec-search-suggestion-footer"
-                    onClick={handleSearch}
-                  >
+                  <div className="ec-search-suggestion-footer" onClick={handleSearch}>
                     عرض كل النتائج لـ "{search}"
                   </div>
                 </div>
               )}
             </form>
 
-            {/* Actions (Left) */}
-            <div className="ec-header-actions-dubai">
-              {/* Login Button (Renders to the right, closer to search bar in RTL) */}
-              <button className="ec-action-btn-dubai" onClick={() => navigate(storeCustomer ? '/store/account' : '#')} onClickCapture={(e) => { if(!storeCustomer) { e.preventDefault(); setLoginModalOpen(true); } }}>
-                <span className="ec-btn-icon-dubai"><i className="fas fa-user"></i></span>
-                <div className="ec-action-text-dubai">
-                  {storeCustomer ? (
-                    <>حسابي<br/><strong>{storeCustomer.name.split(' ')[0]}</strong></>
-                  ) : (
-                    <>تسجيل<br/>الدخول</>
-                  )}
-                </div>
-                {storeCustomer && offersCount > 0 && <span className="ec-badge-dubai">{offersCount}</span>}
-              </button>
-
-              {/* Cart Button (Renders to the left, closer to screen edge in RTL) */}
-              <button className="ec-action-btn-dubai" onClick={() => setCartOpen(true)}>
-                <span className="ec-btn-icon-dubai"><i className="fas fa-shopping-cart"></i></span>
-                <div className="ec-action-text-dubai">
-                  عربة التسوق <strong>({cartCount})</strong>
-                </div>
-              </button>
+            <div className="amz-nav-actions">
+               <div className="amz-nav-action-item desktop-only" onClick={() => navigate(storeCustomer ? '/store/account' : '#')} onClickCapture={(e) => { if(!storeCustomer) { e.preventDefault(); setLoginModalOpen(true); } }}>
+                 <span className="amz-nav-line1">مرحباً{storeCustomer ? ` ${storeCustomer.name.split(' ')[0]}` : '، تسجيل الدخول'}</span>
+                 <span className="amz-nav-line2">الحساب والقوائم <i className="fas fa-caret-down"></i></span>
+               </div>
+               <div className="amz-nav-action-item desktop-only" onClick={() => setTrackOpen(true)}>
+                 <span className="amz-nav-line1">المرتجعات</span>
+                 <span className="amz-nav-line2">والطلبات</span>
+               </div>
+               <div className="amz-cart-container" onClick={() => setCartOpen(true)}>
+                 <div className="amz-cart-icon">
+                   <i className="fas fa-shopping-cart" style={{fontSize: '2rem'}}></i>
+                   <span className="amz-cart-count">{cartCount}</span>
+                 </div>
+                 <span className="amz-cart-text desktop-only">عربة التسوق</span>
+               </div>
             </div>
           </div>
-          {/* CATEGORY NAVBAR */}
-          <div className="ec-navbar-dubai">
-            <div className="ec-navbar-inner-dubai">
-               <ul className="ec-nav-links-dubai">
-                  {categories && categories.length > 0 ? (
-                    categories.filter(cat => !cat.parentId).slice(0, 8).map(cat => {
-                      const hasChildren = categories.some(child => child.parentId === cat.id);
-                      return (
-                        <li key={cat.id}>
-                           <Link to={`/store/category/${cat.id}`}>
-                             {cat.name} 
-                             {hasChildren && <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i>}
-                           </Link>
-                        </li>
-                      );
-                    })
-                  ) : (
-                    <>
-                      <li><Link to="/store">موبايلات و تابلت <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
-                      <li><Link to="/store">لاب توب و طابعات <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
-                      <li><Link to="/store">شاشات و اجهزة عرض <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
-                      <li><Link to="/store">العاب <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
-                      <li><Link to="/store">اكسسوارات <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
-                      <li><Link to="/store">منتجات المنزل <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
-                      <li><Link to="/store">الماركات <i className="fas fa-chevron-down" style={{fontSize: '0.6rem', marginRight: '5px'}}></i></Link></li>
-                    </>
-                  )}
-               </ul>
-            </div>
+
+          <div className="amz-header-bottom">
+            <Link to="/store" className="amz-subnav-item amz-menu-btn"><i className="fas fa-bars"></i> الكل</Link>
+            <Link to="/store" className="amz-subnav-item">عروض اليوم</Link>
+            <Link to="/store" className="amz-subnav-item">خدمة العملاء</Link>
+            {storeCustomer && <Link to="/store/wishlist" className="amz-subnav-item">قوائمك</Link>}
+            {categories && categories.slice(0, 5).map(cat => (
+              <Link key={cat.id} to={`/store/category/${cat.id}`} className="amz-subnav-item">{cat.name}</Link>
+            ))}
           </div>
         </header>
       )}
+
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="ec-main">
@@ -278,114 +226,39 @@ const StoreLayout = ({ children, hideHeader = false }) => {
       </main>
 
       {/* ─── PREMIUM FOOTER ─── */}
-      <footer className="ec-footer-premium">
-        <div className="ec-footer-top">
-          <div className="ec-footer-container">
-            <div className="ec-footer-grid">
-              
-              {/* Brand Column */}
-              <div className="ec-footer-col brand">
-                <Link to="/store" className="ec-footer-logo">
-                  {storeInfo?.logoUrl ? (
-                    <img src={StoreApi.getImageUrl(storeInfo.logoUrl)} alt={storeInfo.name} />
-                  ) : (
-                    <span className="ec-logo-text-fallback light">{storeInfo?.name || STORE_NAME}</span>
-                  )}
-                </Link>
-                <p className="ec-footer-tagline">
-                  {storeInfo?.aboutUs ? (
-                    storeInfo.aboutUs.length > 150 ? storeInfo.aboutUs.substring(0, 150) + '...' : storeInfo.aboutUs
-                  ) : 'وجهتك الأولى لتسوق أفضل المنتجات بأعلى جودة وأفضل الأسعار.'}
-                </p>
-                <div className="ec-footer-socials">
-                  {storeInfo?.facebookUrl && (
-                    <a href={storeInfo.facebookUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon fb" title="فيسبوك">
-                      <i className="fab fa-facebook-f"></i>
-                    </a>
-                  )}
-                  {storeInfo?.instagramUrl && (
-                    <a href={storeInfo.instagramUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon ig" title="إنستجرام">
-                      <i className="fab fa-instagram"></i>
-                    </a>
-                  )}
-                  {storeInfo?.tiktokUrl && (
-                    <a href={storeInfo.tiktokUrl} target="_blank" rel="noopener noreferrer" className="ec-social-icon tt" title="تيك توك">
-                      <i className="fab fa-tiktok"></i>
-                    </a>
-                  )}
-                  {storeInfo?.whatsappNumber && (
-                    <a href={`https://wa.me/${storeInfo.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="ec-social-icon wa" title="واتساب">
-                      <i className="fab fa-whatsapp"></i>
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Shopping Categories */}
-              <div className="ec-footer-col">
-                <h4 className="ec-footer-title">تسوق حسب الفئة</h4>
-                <ul className="ec-footer-links">
-                  {categories && categories.length > 0 ? (
-                    categories.slice(0, 6).map(cat => (
-                      <li key={cat.id}>
-                        <Link to={`/store/category/${cat.id}`}>{cat.name}</Link>
-                      </li>
-                    ))
-                  ) : (
-                    <>
-                      <li><Link to="/store">جميع المنتجات</Link></li>
-                      <li><Link to="/store">وصل حديثاً</Link></li>
-                      <li><Link to="/store">الأكثر مبيعاً</Link></li>
-                    </>
-                  )}
-                </ul>
-              </div>
-
-              {/* Quick Links */}
-              <div className="ec-footer-col">
-                <h4 className="ec-footer-title">روابط هامة</h4>
-                <ul className="ec-footer-links">
-                  <li><Link to="/store/account">حسابي</Link></li>
-                  <li><Link to="/store/wishlist">المفضلة</Link></li>
-                  <li><Link to="/store/privacy-policy">سياسة الخصوصية</Link></li>
-                  <li><Link to="/store/terms-of-use">شروط الاستخدام</Link></li>
-                  <li><span style={{ cursor: 'pointer' }} onClick={() => setTrackOpen(true)}>تتبع طلبك</span></li>
-                </ul>
-              </div>
-
-              {/* Contact Column */}
-              <div className="ec-footer-col">
-                <h4 className="ec-footer-title">تواصل معنا</h4>
-                <div className="ec-footer-contact">
-                  <div className="ec-contact-item">
-                    <span className="ec-contact-icon"><i className="fas fa-map-marker-alt"></i></span>
-                    <span className="ec-contact-text">{storeInfo?.address || 'القاهرة، مصر'}</span>
-                  </div>
-                  <div className="ec-contact-item">
-                    <span className="ec-contact-icon"><i className="fas fa-phone-alt"></i></span>
-                    <span className="ec-contact-text">{storeInfo?.phone1 || '15254'}</span>
-                  </div>
-                  {storeInfo?.email && (
-                    <div className="ec-contact-item">
-                      <span className="ec-contact-icon"><i className="fas fa-envelope"></i></span>
-                      <span className="ec-contact-text">{storeInfo.email}</span>
-                    </div>
-                  )}
-                  <div className="ec-contact-item">
-                    <span className="ec-contact-icon"><i className="fas fa-clock"></i></span>
-                    <span className="ec-contact-text">السبت - الخميس: 10ص - 10م</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+      <footer className="ec-footer-premium" style={{background: 'var(--amz-navy-light)'}}>
+        <div className="amz-footer-back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          العودة إلى الأعلى
+        </div>
+        <div className="amz-footer-main">
+          <div className="amz-footer-col">
+            <h3>تعرف علينا</h3>
+            <Link to="/store">عن {storeInfo?.name || STORE_NAME}</Link>
+            <Link to="/store">وظائف</Link>
+            <Link to="/store">البيانات الصحفية</Link>
+          </div>
+          <div className="amz-footer-col">
+            <h3>تسوق معنا</h3>
+            <Link to="/store/account">حسابك</Link>
+            <Link to="/store/account">طلباتك</Link>
+            <Link to="/store/account">عناوينك</Link>
+            <Link to="/store/wishlist">قوائمك</Link>
+          </div>
+          <div className="amz-footer-col">
+            <h3>دعنا نساعدك</h3>
+            <Link to="/store">سياسة الإرجاع</Link>
+            <Link to="/store/privacy-policy">الخصوصية</Link>
+            <Link to="/store/terms-of-use">شروط الاستخدام</Link>
+            {storeInfo?.whatsappNumber && (
+              <a href={`https://wa.me/${storeInfo.whatsappNumber}`} target="_blank" rel="noopener noreferrer">تواصل معنا عبر واتساب</a>
+            )}
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="ec-footer-bottom">
+        <div className="ec-footer-bottom" style={{background: 'var(--amz-navy)', borderTop: '1px solid #333'}}>
           <div className="ec-footer-container">
-            <div className="ec-footer-bottom-inner">
+            <div className="ec-footer-bottom-inner" style={{display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center'}}>
               <div className="ec-copyright">
                 © {new Date().getFullYear()} {storeInfo?.name || STORE_NAME}. جميع الحقوق محفوظة.
               </div>

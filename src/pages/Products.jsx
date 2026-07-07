@@ -13,6 +13,20 @@ import html2pdf from 'html2pdf.js';
 import SingleProductPdf from '../components/pdf/SingleProductPdf';
 import { useExport } from '../utils/useExport';
 import ExportProgressModal from '../components/ExportProgressModal';
+import * as ReactJoyride from 'react-joyride';
+
+const Joyride = ReactJoyride.default || ReactJoyride.Joyride || ReactJoyride;
+const STATUS = ReactJoyride.STATUS || { FINISHED: 'finished', SKIPPED: 'skipped' };
+
+const AutoStartBeacon = () => {
+    const beaconRef = React.useRef(null);
+    useEffect(() => {
+        if (beaconRef.current && beaconRef.current.parentElement) {
+            beaconRef.current.parentElement.click();
+        }
+    }, []);
+    return <span ref={beaconRef} style={{ display: 'none' }} />;
+};
 
 const Products = () => {
   const location = useLocation();
@@ -46,6 +60,48 @@ const Products = () => {
     return (!isAdmin && user?.branchId) ? user.branchId : '';
   });
   const [categoryFilter, setCategoryFilter] = useState(categoryId || '');
+
+  // Tour State
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    if (loading) return;
+    const onboardingStr = localStorage.getItem('onboardingStatus');
+    if (onboardingStr) {
+        try {
+            const statusObj = JSON.parse(onboardingStr);
+            if (statusObj.hasBranch && !statusObj.hasProduct && !localStorage.getItem('tour_products_list_v3')) {
+                if (data.length === 0) {
+                    setTimeout(() => {
+                        setRunTour(true);
+                        localStorage.setItem('tour_products_list_v3', 'true');
+                    }, 500); 
+                } else {
+                    localStorage.setItem('tour_products_list_v3', 'true');
+                }
+            }
+        } catch(e) {}
+    }
+  }, [loading, data.length]);
+
+  const handleJoyrideCallback = (data) => {
+      const { status, type } = data;
+      const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+      
+      if (finishedStatuses.includes(status) || type === 'tour:end') {
+          setRunTour(false);
+          localStorage.setItem('tour_products_list_v3', 'true');
+      }
+  };
+
+  const tourSteps = [
+      {
+          target: '.tour-add-product',
+          content: 'ممتاز! الآن يمكنك البدء في إضافة أول منتج ستبيعه للعملاء. اضغط هنا!',
+          disableBeacon: true,
+          placement: 'bottom',
+      }
+  ];
 
   useEffect(() => {
     setCategoryFilter(categoryId || '');
@@ -90,6 +146,12 @@ const Products = () => {
   const [printQtyProduct, setPrintQtyProduct] = useState(null);
   const [printQty, setPrintQty] = useState('');
   const [printQtyStock, setPrintQtyStock] = useState(0);
+
+  // Online Store Publish Modal State
+  const [showOnlineModal, setShowOnlineModal] = useState(false);
+  const [onlineProduct, setOnlineProduct] = useState(null);
+  const [onlinePricing, setOnlinePricing] = useState({ purchasePrice: '', salePrice: '' });
+  const [publishing, setPublishing] = useState(false);
 
   // Barcode Template State
   const [barcodeTemplate, setBarcodeTemplate] = useState(() => {
@@ -407,6 +469,42 @@ const Products = () => {
     });
   };
 
+  const openOnlineModal = (product) => {
+    setOnlineProduct(product);
+    setOnlinePricing({
+      purchasePrice: product.purchasePrice || '',
+      salePrice: product.salePrice || ''
+    });
+    setShowOnlineModal(true);
+  };
+
+  const handlePublishToOnlineStore = async (e) => {
+    e.preventDefault();
+    setPublishing(true);
+    try {
+      await Api.addProductToOnlineStore(onlineProduct.id, parseFloat(onlinePricing.purchasePrice) || 0, parseFloat(onlinePricing.salePrice) || 0);
+      toast('تم النشر في المتجر الإلكتروني بنجاح', 'success');
+      setShowOnlineModal(false);
+      loadData(page, pageSize, debouncedSearch, sort, selectedBranchId, categoryFilter);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleRemoveFromOnlineStore = async (id, name) => {
+    confirm(`هل أنت متأكد من إزالة "${name}" من المتجر الإلكتروني؟`, async () => {
+      try {
+        await Api.removeProductFromOnlineStore(id);
+        toast('تم الإزالة من المتجر بنجاح', 'success');
+        loadData(page, pageSize, debouncedSearch, sort, selectedBranchId, categoryFilter);
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+  };
+
   const executePrint = async (e) => {
     e.preventDefault();
     const quantity = parseInt(printQty, 10);
@@ -480,6 +578,30 @@ const Products = () => {
 
   return (
     <>
+      <Joyride
+          steps={tourSteps}
+          run={runTour}
+          beaconComponent={AutoStartBeacon}
+          continuous={true}
+          showProgress={true}
+          showSkipButton={true}
+          disableOverlayClose={true}
+          spotlightClicks={true}
+          callback={handleJoyrideCallback}
+          styles={{
+              options: {
+                  primaryColor: 'var(--color-primary, #4f46e5)',
+                  backgroundColor: 'var(--bg-card, #ffffff)',
+                  textColor: 'var(--text-main, #333333)',
+                  arrowColor: 'var(--bg-card, #ffffff)',
+                  zIndex: 9999999,
+              },
+              tooltipContainer: { textAlign: 'right' },
+              buttonNext: { outline: 'none' },
+              buttonBack: { marginRight: 10, outline: 'none' }
+          }}
+          locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
+      />
       <style>{`
         /* Responsive CSS Overrides for Products Page */
         @media (max-width: 1024px) {
@@ -685,7 +807,10 @@ const Products = () => {
                   ⚙️
                 </button>
                 {Api.can('PRODUCT_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => navigate('/products/add')}>
+                  <button className="btn btn-primary tour-add-product" onClick={() => {
+                    localStorage.setItem('tour_products_list_done', 'true');
+                    navigate('/products/add');
+                  }}>
                     <span>+</span> إضافة منتج
                   </button>
                 )}
@@ -747,9 +872,16 @@ const Products = () => {
                           </span>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: Number(p.stock) > 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}></div>
-                            <span>{Number(p.stock) > 0 ? 'متوفر' : 'منتهي'}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: Number(p.stock) > 0 ? 'var(--metro-green)' : 'var(--metro-red)' }}></div>
+                              <span>{Number(p.stock) > 0 ? 'متوفر' : 'منتهي'}</span>
+                            </div>
+                            {p.onlineInventory != null && (
+                              <div style={{ display: 'inline-block', fontSize: '0.75rem', background: 'var(--brand-primary)', color: 'white', padding: '2px 6px', borderRadius: '4px', textAlign: 'center', width: 'fit-content' }}>
+                                🌐 أونلاين
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td>
@@ -768,6 +900,17 @@ const Products = () => {
                             </button>
                             <button className="btn btn-icon btn-ghost" onClick={() => handleDownloadSinglePdf(p)} title="تنزيل كـ PDF">📄</button>
                             <button className="btn btn-icon btn-ghost" onClick={() => openStockModal(p)} title="توزيع المخزون">🏭</button>
+                            {Api.can('PRODUCT_WRITE') && (
+                              p.onlineInventory != null ? (
+                                <button className="btn btn-icon btn-ghost" onClick={() => handleRemoveFromOnlineStore(p.id, p.name)} title="إزالة من المتجر الإلكتروني" style={{ color: 'var(--metro-red)' }}>
+                                  <i className="fa-solid fa-store-slash"></i>
+                                </button>
+                              ) : (
+                                <button className="btn btn-icon btn-ghost" onClick={() => openOnlineModal(p)} title="نشر في المتجر الإلكتروني" style={{ color: 'var(--brand-primary)' }}>
+                                  <i className="fa-solid fa-store"></i>
+                                </button>
+                              )
+                            )}
                             {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/products/edit/${p.id}`)} title="تعديل">✏️</button>}
                             {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" onClick={() => handleDelete(p.id, p.name)} title="حذف">🗑️</button>}
                           </div>
@@ -909,6 +1052,55 @@ const Products = () => {
                 <button type="button" className="btn btn-ghost" onClick={() => setPrintQtyModalOpen(false)}>إلغاء</button>
                 <button type="submit" form="printQtyForm" className="btn btn-primary" disabled={printing}>
                   {printing ? 'جاري التحضير...' : 'طباعة الآن'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {showOnlineModal && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowOnlineModal(false); }}>
+            <div className="modal" style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>🌐 إضافة للمتجر الإلكتروني: {onlineProduct?.name}</h3>
+                <button className="modal-close" onClick={() => setShowOnlineModal(false)}>✕</button>
+              </div>
+              <div className="modal-body">
+                <form id="onlineForm" onSubmit={handlePublishToOnlineStore}>
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '15px' }}>
+                    يمكنك تحديد سعر بيع أونلاين مختلف عن سعر الفرع. (افتراضياً يأخذ سعر المنتج).
+                  </p>
+                  <div className="grid grid-2 gap-15">
+                    <div className="form-group">
+                      <label>سعر الشراء</label>
+                      <input 
+                        className="form-control" 
+                        type="number" 
+                        step="0.01" 
+                        value={onlinePricing.purchasePrice}
+                        onChange={e => setOnlinePricing({ ...onlinePricing, purchasePrice: e.target.value })} 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>سعر البيع (أونلاين) *</label>
+                      <input 
+                        className="form-control" 
+                        type="number" 
+                        step="0.01" 
+                        value={onlinePricing.salePrice}
+                        onChange={e => setOnlinePricing({ ...onlinePricing, salePrice: e.target.value })} 
+                        required 
+                      />
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setShowOnlineModal(false)}>إلغاء</button>
+                <button type="submit" form="onlineForm" className="btn btn-primary" disabled={publishing}>
+                  {publishing ? 'جاري النشر...' : 'تأكيد النشر'}
                 </button>
               </div>
             </div>
