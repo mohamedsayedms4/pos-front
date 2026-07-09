@@ -58,13 +58,13 @@ const ForgotPassword = () => {
             )}
           </Link>
           <h1>نسيت كلمة المرور</h1>
-          <p>أدخل بريدك الإلكتروني أو رقم هاتفك لإرسال رابط التعيين</p>
+          <p>أدخل بريدك الإلكتروني لإرسال رابط التعيين</p>
         </div>
 
         {success ? (
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <div style={{ color: 'var(--metro-green)', fontSize: '1.1rem', marginBottom: '15px' }}>
-              ✅ تم إرسال رابط إعادة تعيين كلمة المرور بنجاح إلى {success === 'email' ? 'بريدك الإلكتروني' : 'رقم الواتساب الخاص بك'}.
+              ✅ تم إرسال رابط إعادة تعيين كلمة المرور بنجاح إلى بريدك الإلكتروني.
             </div>
             <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>
               الرجاء التحقق من رسائلك والنقر على الرابط لتغيير كلمة المرور.
@@ -73,12 +73,12 @@ const ForgotPassword = () => {
         ) : (
           <form onSubmit={handleSend} autoComplete="off">
             <div className="form-group">
-              <label htmlFor="identifierInput">البريد الإلكتروني أو رقم الهاتف</label>
+              <label htmlFor="identifierInput">البريد الإلكتروني</label>
               <input
                 className="form-control"
                 id="identifierInput"
-                type="text"
-                placeholder="أدخل الإيميل أو رقم الموبايل"
+                type="email"
+                placeholder="أدخل بريدك الإلكتروني"
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}

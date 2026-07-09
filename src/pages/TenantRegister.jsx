@@ -372,8 +372,9 @@ const TenantRegister = () => {
       setLoading(true);
       try {
         await axios.post(`${SERVER_URL}/api/public/tenants/validate`, formData);
-        setLoading(false);
-        setShowOtpModal(true);
+        // OTP Providers are down: bypass OTP entirely
+        // setShowOtpModal(true);
+        await submitRegistrationForm("dummy_bypassed_token");
       } catch (err) {
         setLoading(false);
         const parsed = parseServerError(err, 'register');
