@@ -901,6 +901,10 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
         {Api.isSuperAdmin && Api.isSuperAdmin() && isOnline && (
           <>
             <div className="nav-section-title">🔑 Super Admin</div>
+            <NavLink to="/super-admin/add-tenant" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <i className="fa-solid fa-plus-circle nav-icon"></i>
+              <span>إضافة متجر جديد</span>
+            </NavLink>
             <NavLink to="/super-admin/subscriptions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <i className="fa-solid fa-crown nav-icon"></i>
               <span>الاشتراكات و الدفع اليدوي</span>

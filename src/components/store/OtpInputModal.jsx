@@ -8,7 +8,7 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
   const [canResend, setCanResend] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [lastChannel, setLastChannel] = useState('whatsapp');
+  const [lastChannel, setLastChannel] = useState('sms');
   const [step, setStep] = useState('choose_channel'); // 'choose_channel' or 'enter_otp'
   const inputRefs = useRef([]);
   // No auto-send on mount
@@ -25,7 +25,7 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  const sendOtp = async (channel = 'whatsapp') => {
+  const sendOtp = async (channel = 'sms') => {
     try {
       setError('');
       setCanResend(false);
@@ -149,6 +149,7 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
             {error && <div className="otp-error-banner">{error}</div>}
             
             <div className="channel-buttons">
+              {/*
               <button 
                 className="btn-channel whatsapp" 
                 onClick={() => sendOtp('whatsapp')}
@@ -157,7 +158,7 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
                 <i className="fab fa-whatsapp"></i>
                 إرسال عبر واتساب (أسرع)
               </button>
-              {/*
+              */}
               <button 
                 className="btn-channel sms" 
                 onClick={() => sendOtp('sms')}
@@ -166,7 +167,6 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
                 <i className="fas fa-sms"></i>
                 إرسال عبر رسالة نصية (SMS)
               </button>
-              */}
             </div>
           </div>
         ) : (
@@ -213,14 +213,14 @@ const OtpInputModal = ({ phone, onVerify, onCancel }) => {
         <div className="otp-footer">
           {canResend ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/*
               <button className="otp-resend-btn" onClick={() => sendOtp('whatsapp')} disabled={loading}>
                 إعادة إرسال عبر الواتساب
               </button>
-              {/*
-              <button className="otp-resend-btn alt-resend-btn" onClick={() => sendOtp('sms')} disabled={loading}>
+              */}
+              <button className="otp-resend-btn alt-resend-btn" onClick={() => sendOtp('sms')} disabled={loading} style={{ color: 'var(--metro-blue)', textDecoration: 'underline' }}>
                 إرسال عبر رسالة نصية (SMS)
               </button>
-              */}
             </div>
           ) : (
             <p className="otp-timer">
