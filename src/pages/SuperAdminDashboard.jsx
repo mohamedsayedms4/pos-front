@@ -8,6 +8,16 @@ const SuperAdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, tenant: null, password: '', mode: 'soft' });
+    const [addTenantModal, setAddTenantModal] = useState({
+        isOpen: false,
+        businessName: '',
+        slug: '',
+        adminName: '',
+        adminEmail: '',
+        password: '',
+        phone: '',
+        saving: false,
+    });
     const { toast: showToast, confirm: showConfirm } = useGlobalUI();
 
     const fetchData = async () => {
@@ -68,6 +78,52 @@ const SuperAdminDashboard = () => {
         }
     };
 
+    // ── Manual Tenant Creation ──
+    const generateSlug = (name) => {
+        return name
+            .trim()
+            .toLowerCase()
+            .replace(/[^\u0621-\u064Aa-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .substring(0, 40);
+    };
+
+    const handleAddTenantChange = (field, value) => {
+        setAddTenantModal(prev => {
+            const updated = { ...prev, [field]: value };
+            // Auto-generate slug from business name
+            if (field === 'businessName') {
+                updated.slug = generateSlug(value);
+            }
+            return updated;
+        });
+    };
+
+    const handleAddTenantSubmit = async (e) => {
+        e.preventDefault();
+        setAddTenantModal(prev => ({ ...prev, saving: true }));
+        try {
+            await Api.createTenantManual({
+                businessName: addTenantModal.businessName,
+                slug: addTenantModal.slug,
+                adminName: addTenantModal.adminName,
+                adminEmail: addTenantModal.adminEmail,
+                password: addTenantModal.password,
+                phone: addTenantModal.phone,
+            });
+            showToast('تم إنشاء المتجر بنجاح بدون OTP ✅', 'success');
+            setAddTenantModal({
+                isOpen: false, businessName: '', slug: '', adminName: '',
+                adminEmail: '', password: '', phone: '', saving: false,
+            });
+            fetchData();
+        } catch (error) {
+            showToast(error.message || 'فشل في إنشاء المتجر', 'error');
+            setAddTenantModal(prev => ({ ...prev, saving: false }));
+        }
+    };
+
     if (loading && !tenants.length) return <div className="loading-container">جاري التحميل...</div>;
 
     return (
@@ -92,6 +148,29 @@ const SuperAdminDashboard = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Add Tenant Button */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 20px 15px', gap: '10px' }}>
+                <button
+                    className="btn btn-primary"
+                    onClick={() => setAddTenantModal(prev => ({ ...prev, isOpen: true }))}
+                    style={{
+                        background: 'var(--primary, #0078D4)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 24px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}
+                >
+                    <i className="fas fa-plus"></i>
+                    إضافة متجر يدوي (بدون OTP)
+                </button>
+            </div>
 
             <section className="sa-content">
                 <div className="sa-table-container">
@@ -178,6 +257,7 @@ const SuperAdminDashboard = () => {
                 </div>
             </section>
 
+            {/* Delete Modal */}
             {deleteModalState.isOpen && (
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '400px' }}>
@@ -232,8 +312,124 @@ const SuperAdminDashboard = () => {
                     </div>
                 </div>
             )}
+
+            {/* Add Tenant Manual Modal */}
+            {addTenantModal.isOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '520px' }}>
+                        <h2 style={{ marginBottom: '5px' }}>
+                            <i className="fas fa-store" style={{ marginLeft: '8px' }}></i>
+                            إضافة متجر يدوي
+                        </h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '20px' }}>
+                            سيتم إنشاء المتجر مباشرةً بدون الحاجة لتحقق OTP
+                        </p>
+                        <form onSubmit={handleAddTenantSubmit}>
+                            <div className="form-group" style={{ marginBottom: '12px' }}>
+                                <label>اسم النشاط التجاري *</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    required
+                                    value={addTenantModal.businessName}
+                                    onChange={(e) => handleAddTenantChange('businessName', e.target.value)}
+                                    placeholder="مثال: سوبر ماركت النور"
+                                    style={{ textAlign: 'right' }}
+                                />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '12px' }}>
+                                <label>الرابط (Slug) *</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    required
+                                    value={addTenantModal.slug}
+                                    onChange={(e) => handleAddTenantChange('slug', e.target.value)}
+                                    placeholder="super-market-alnour"
+                                    dir="ltr"
+                                    style={{ textAlign: 'left', fontFamily: 'monospace' }}
+                                />
+                                <small style={{ color: 'var(--text-muted)' }}>سيتم إنشاء subdomain بناءً على هذا الرابط</small>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '12px' }}>
+                                <label>اسم المسؤول *</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    required
+                                    value={addTenantModal.adminName}
+                                    onChange={(e) => handleAddTenantChange('adminName', e.target.value)}
+                                    placeholder="أحمد محمد"
+                                    style={{ textAlign: 'right' }}
+                                />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '12px' }}>
+                                <label>البريد الإلكتروني *</label>
+                                <input
+                                    type="email"
+                                    className="form-control"
+                                    required
+                                    value={addTenantModal.adminEmail}
+                                    onChange={(e) => handleAddTenantChange('adminEmail', e.target.value)}
+                                    placeholder="admin@example.com"
+                                    dir="ltr"
+                                    style={{ textAlign: 'left' }}
+                                />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '12px' }}>
+                                <label>كلمة المرور *</label>
+                                <input
+                                    type="password"
+                                    className="form-control"
+                                    required
+                                    minLength={6}
+                                    value={addTenantModal.password}
+                                    onChange={(e) => handleAddTenantChange('password', e.target.value)}
+                                    placeholder="كلمة مرور المسؤول (6 أحرف على الأقل)"
+                                />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                                <label>رقم الجوال *</label>
+                                <input
+                                    type="tel"
+                                    className="form-control"
+                                    required
+                                    value={addTenantModal.phone}
+                                    onChange={(e) => handleAddTenantChange('phone', e.target.value)}
+                                    placeholder="01xxxxxxxxx"
+                                    dir="ltr"
+                                    style={{ textAlign: 'left' }}
+                                />
+                                <small style={{ color: 'var(--text-muted)' }}>رقم مصري (مثال: 01012345678)</small>
+                            </div>
+                            <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setAddTenantModal({
+                                        isOpen: false, businessName: '', slug: '', adminName: '',
+                                        adminEmail: '', password: '', phone: '', saving: false,
+                                    })}
+                                    disabled={addTenantModal.saving}
+                                >
+                                    إلغاء
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={addTenantModal.saving}
+                                    style={{ background: 'var(--primary, #0078D4)', color: '#fff', border: 'none', fontWeight: 'bold' }}
+                                >
+                                    {addTenantModal.saving ? 'جاري الإنشاء...' : '✅ إنشاء المتجر'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default SuperAdminDashboard;
+

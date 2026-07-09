@@ -8,7 +8,12 @@ import { useGlobalUI } from '../common/GlobalUI';
 import FooterInfoBar from './FooterInfoBar';
 
 const MainLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    return window.innerWidth > 1024;
+  });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar_collapsed') === 'true';
+  });
   const [isIdle, setIsIdle] = useState(false);
   const idleTimer = useRef(null);
   const isIdleRef = useRef(false);
@@ -248,8 +253,25 @@ const MainLayout = () => {
     showToast('🔓 تم إزالة رمز PIN بنجاح.', 'success');
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(prev => {
+      const val = !prev;
+      localStorage.setItem('sidebar_collapsed', val.toString());
+      return val;
+    });
+  };
+
+  const handleMenuToggle = () => {
+    if (window.innerWidth > 1024) {
+      if (sidebarOpen) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+        setIsSidebarCollapsed(false);
+      }
+    } else {
+      setSidebarOpen(!sidebarOpen);
+    }
   };
 
   const [impersonationBackup, setImpersonationBackup] = useState(null);
@@ -281,8 +303,15 @@ const MainLayout = () => {
   };
 
   return (
-    <div className={`app-layout ${isOnboarding ? 'onboarding-mode' : ''}`}>
-      {!isOnboarding && <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+    <div className={`app-layout ${isOnboarding ? 'onboarding-mode' : ''} ${!sidebarOpen ? 'sidebar-hidden' : ''} ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {!isOnboarding && (
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+        />
+      )}
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {impersonationBackup && (
           <div style={{
@@ -319,7 +348,7 @@ const MainLayout = () => {
           </div>
         )}
         <Topbar 
-          onMenuToggle={toggleSidebar} 
+          onMenuToggle={handleMenuToggle} 
           prevInfo={location.pathname !== '/dashboard' ? prevRouteRef.current : null} 
         />
         <div style={{ flex: '1 0 auto' }}>

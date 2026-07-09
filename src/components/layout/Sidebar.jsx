@@ -5,7 +5,7 @@ import logoSidebarLight from '../../assets/img/logo-sidebar-light.png';
 import logoSidebarDark from '../../assets/img/logo-sidebar-dark.png';
 import { useTheme } from '../common/ThemeContext';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const { theme } = useTheme();
   const [user, setUser] = useState(Api._getUser() || { name: 'Admin', role: 'مدير النظام' });
   const [config, setConfig] = useState(null);
@@ -100,7 +100,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <img
             src={currentLogo}
             alt="Logo"
-            style={{ width: '80px', height: '32px', objectFit: 'contain' }}
+            style={{ width: isCollapsed ? '32px' : '80px', height: '32px', objectFit: 'contain', transition: 'width 0.3s' }}
             onError={() => setLogoError(true)}
           />
         </NavLink>
@@ -114,29 +114,46 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
             <div
               className={`nav-item ${isSettingsPageActive ? 'active' : ''}`}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', paddingRight: '16px' }}
-              onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
+              style={{
+                display: 'flex',
+                justifyContent: isCollapsed ? 'center' : 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+                paddingRight: isCollapsed ? '0' : '16px',
+                paddingLeft: isCollapsed ? '0' : '16px'
+              }}
+              onClick={() => !isCollapsed && setSettingsMenuOpen(!settingsMenuOpen)}
             >
               <div
-                style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, color: 'inherit', padding: '11px 0' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: isCollapsed ? '0' : '14px',
+                  flex: 1,
+                  color: 'inherit',
+                  padding: '11px 0',
+                  justifyContent: isCollapsed ? 'center' : 'flex-start'
+                }}
               >
                 <span className="nav-icon"><i className="fa-solid fa-gear"></i></span>
                 <span>إعدادات المتجر</span>
               </div>
-              <span
-                style={{
-                  fontSize: '0.8rem',
-                  transition: 'transform 0.2s',
-                  transform: settingsMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                  padding: '4px 10px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-muted)'
-                }}
-              >
-                ◀
-              </span>
+              {!isCollapsed && (
+                <span
+                  style={{
+                    fontSize: '0.8rem',
+                    transition: 'transform 0.2s',
+                    transform: settingsMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                    padding: '4px 10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)'
+                  }}
+                >
+                  ◀
+                </span>
+              )}
             </div>
 
             {settingsMenuOpen && (
@@ -232,14 +249,30 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
             <div
               className={`nav-item ${isProductsPageActive ? 'active' : ''}`}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', paddingRight: '16px' }}
-              onClick={() => setProductsMenuOpen(!productsMenuOpen)}
+              style={{
+                display: 'flex',
+                justifyContent: isCollapsed ? 'center' : 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+                paddingRight: isCollapsed ? '0' : '16px',
+                paddingLeft: isCollapsed ? '0' : '16px'
+              }}
+              onClick={() => !isCollapsed && setProductsMenuOpen(!productsMenuOpen)}
             >
               <NavLink
                 to="/products"
                 end
                 className="nav-item-link"
-                style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, color: 'inherit', textDecoration: 'none', padding: '11px 0' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: isCollapsed ? '0' : '14px',
+                  flex: 1,
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  padding: '11px 0',
+                  justifyContent: isCollapsed ? 'center' : 'flex-start'
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setProductsMenuOpen(true);
@@ -249,25 +282,27 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span className="nav-icon"><i className="fa-solid fa-box-open"></i></span>
                 <span>المنتجات</span>
               </NavLink>
-              <span
-                style={{
-                  fontSize: '0.8rem',
-                  transition: 'transform 0.2s',
-                  transform: productsMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                  padding: '4px 10px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setProductsMenuOpen(!productsMenuOpen);
-                }}
-              >
-                ◀
-              </span>
+              {!isCollapsed && (
+                <span
+                  style={{
+                    fontSize: '0.8rem',
+                    transition: 'transform 0.2s',
+                    transform: productsMenuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                    padding: '4px 10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProductsMenuOpen(!productsMenuOpen);
+                  }}
+                >
+                  ◀
+                </span>
+              )}
             </div>
 
             {productsMenuOpen && (
@@ -384,39 +419,57 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="nav-dropdown-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
             <div
               className={`nav-item ${location.pathname.startsWith('/manufacturing') ? 'active' : ''}`}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', paddingRight: '16px' }}
+              style={{
+                display: 'flex',
+                justifyContent: isCollapsed ? 'center' : 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+                paddingRight: isCollapsed ? '0' : '16px',
+                paddingLeft: isCollapsed ? '0' : '16px'
+              }}
               onClick={() => {
+                if (isCollapsed) return;
                 const current = document.getElementById('manufacturing-menu-open');
                 if (current) current.click();
               }}
             >
               <div
-                style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, color: 'inherit', padding: '11px 0' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: isCollapsed ? '0' : '14px',
+                  flex: 1,
+                  color: 'inherit',
+                  padding: '11px 0',
+                  justifyContent: isCollapsed ? 'center' : 'flex-start'
+                }}
               >
                 <span className="nav-icon"><i className="fa-solid fa-industry"></i></span>
                 <span>التصنيع والإنتاج</span>
               </div>
-              <span
-                id="manufacturing-menu-open"
-                style={{
-                  fontSize: '0.8rem',
-                  transition: 'transform 0.2s',
-                  transform: location.pathname.startsWith('/manufacturing') ? 'rotate(90deg)' : 'rotate(0deg)',
-                  padding: '4px 10px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-muted)'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.target.style.transform = e.target.style.transform === 'rotate(90deg)' ? 'rotate(0deg)' : 'rotate(90deg)';
-                  const subItems = document.getElementById('manufacturing-sub-items');
-                  if (subItems) subItems.style.display = subItems.style.display === 'none' ? 'flex' : 'none';
-                }}
-              >
-                ◀
-              </span>
+              {!isCollapsed && (
+                <span
+                  id="manufacturing-menu-open"
+                  style={{
+                    fontSize: '0.8rem',
+                    transition: 'transform 0.2s',
+                    transform: location.pathname.startsWith('/manufacturing') ? 'rotate(90deg)' : 'rotate(0deg)',
+                    padding: '4px 10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.target.style.transform = e.target.style.transform === 'rotate(90deg)' ? 'rotate(0deg)' : 'rotate(90deg)';
+                    const subItems = document.getElementById('manufacturing-sub-items');
+                    if (subItems) subItems.style.display = subItems.style.display === 'none' ? 'flex' : 'none';
+                  }}
+                >
+                  ◀
+                </span>
+              )}
             </div>
 
             <div
@@ -503,6 +556,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         )}
 
         {/* ────────────────── المتجر الإلكتروني ────────────────── */}
+        {/*
         {isOnline && (
           <>
             <div className="nav-section-title">المتجر الإلكتروني</div>
@@ -541,6 +595,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             )}
           </>
         )}
+        */}
 
         {/* ────────────────── الحسابات والتقارير المتقدمة ────────────────── */}
         {(Api.can('TREASURY_READ') || Api.can('FIXED_ASSET_READ') || Api.can('PAYROLL_READ') || Api.can('PROFIT_LOSS_READ') || isAdmin || Api.can('CUSTOMER_READ')) && isOnline && (
@@ -771,6 +826,16 @@ const Sidebar = ({ isOpen, onClose }) => {
         */}
 
         <div className="nav-divider"></div>
+        {/* Toggle Collapse Button for Desktop */}
+        <button 
+          className="sidebar-toggle-btn-desktop" 
+          onClick={onToggleCollapse}
+          title={isCollapsed ? 'توسيع القائمة' : 'تصغير القائمة'}
+        >
+          <i className={`fa-solid ${isCollapsed ? 'fa-chevron-left' : 'fa-chevron-right'}`}></i>
+          <span>طي القائمة</span>
+        </button>
+
         <NavLink to="/download-desktop-app" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-icon"><i className="fa-solid fa-laptop-code"></i></span>
           <span>تنزيل البرنامج</span>

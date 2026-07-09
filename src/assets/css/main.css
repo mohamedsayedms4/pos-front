@@ -4781,5 +4781,138 @@ body[dir="rtl"] .metro-tilt-br:active {
 
 }
 
+/* ============================================
+   COLLAPSIBLE SIDEBAR & DESKTOP TOGGLE STYLES
+   ============================================ */
+
+/* Desktop only collapse behaviour */
+@media (min-width: 1025px) {
+  /* Ensure menu-toggle (hamburger) button in Topbar is visible on desktop */
+  .menu-toggle {
+    display: flex !important;
+  }
+
+  /* Transition on layout sidebar and main content */
+  .sidebar {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease !important;
+  }
+
+  .main-content {
+    transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  /* When sidebar is hidden completely */
+  .app-layout.sidebar-hidden .sidebar {
+    width: 0 !important;
+    border-left: none !important;
+    padding: 0 !important;
+  }
+
+  .app-layout.sidebar-hidden .main-content {
+    margin-right: 0 !important;
+  }
+
+  /* When sidebar is collapsed */
+  .app-layout.sidebar-collapsed .sidebar {
+    width: 64px !important;
+  }
+
+  .app-layout.sidebar-collapsed .main-content {
+    margin-right: 64px !important;
+  }
+
+  /* Hide texts, section titles, submenu wrappers when collapsed */
+  .app-layout.sidebar-collapsed .sidebar .brand-text,
+  .app-layout.sidebar-collapsed .sidebar .nav-section-title,
+  .app-layout.sidebar-collapsed .sidebar .nav-item span:not(.nav-icon),
+  .app-layout.sidebar-collapsed .sidebar .user-info,
+  .app-layout.sidebar-collapsed .sidebar .nav-sub-items,
+  .app-layout.sidebar-collapsed .sidebar .sidebar-toggle-btn-desktop span {
+    opacity: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    pointer-events: none !important;
+    display: none !important; /* Force hide to prevent layout shift */
+  }
+
+  /* Center items when collapsed */
+  .app-layout.sidebar-collapsed .sidebar .sidebar-header {
+    justify-content: center !important;
+    padding: 16px 0 !important;
+  }
+
+  .app-layout.sidebar-collapsed .sidebar .nav-item {
+    justify-content: center !important;
+    padding: 12px 0 !important;
+    margin: 4px 8px !important;
+    border-radius: 8px !important;
+    gap: 0 !important;
+  }
+
+  .app-layout.sidebar-collapsed .sidebar .nav-item .nav-icon {
+    margin: 0 !important;
+  }
+
+  .app-layout.sidebar-collapsed .sidebar .sidebar-user {
+    justify-content: center !important;
+  }
+
+  .app-layout.sidebar-collapsed .sidebar .sidebar-footer {
+    padding: 12px 0 !important;
+  }
+
+  /* Hide active curve indicator in RTL when collapsed to keep icons centered */
+  body[dir="rtl"] .app-layout.sidebar-collapsed .sidebar .nav-item.active::before,
+  body[dir="rtl"] .app-layout.sidebar-collapsed .sidebar .nav-item.active::after {
+    display: none !important;
+  }
+}
+
+/* Beautiful Sidebar Toggle Button inside Sidebar */
+.sidebar-toggle-btn-desktop {
+  display: none; /* Hide on mobile/tablet */
+}
+
+@media (min-width: 1025px) {
+  .sidebar-toggle-btn-desktop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--border-main);
+    color: var(--text-light);
+    font-size: 0.875rem;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .sidebar-toggle-btn-desktop:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-white);
+  }
+
+  .sidebar-toggle-btn-desktop i {
+    font-size: 1rem;
+    width: 24px;
+    text-align: center;
+    transition: transform 0.3s ease;
+  }
+
+  .app-layout.sidebar-collapsed .sidebar-toggle-btn-desktop {
+    justify-content: center !important;
+    padding: 12px 0 !important;
+  }
+}
+
 
 

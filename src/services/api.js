@@ -2443,6 +2443,14 @@ const Api = {
     return res.data || [];
   },
 
+  async createTenantManual(data) {
+    const res = await this._request('/super-admin/tenants/manual', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
   async getSuperAdminTenantsPaged(page = 0, size = 10, search = '', status = 'all') {
     const params = new URLSearchParams({ page, size, status });
     if (search) params.append('search', search);
