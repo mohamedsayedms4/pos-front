@@ -1016,7 +1016,8 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
-      </div> {/* end activeTab === 'details' wrapper div */}
+      </div>
+      )} {/* end activeTab === 'details' wrapper div */}
 
       {/* Stock Management Modal */}
       {showStockModal && ReactDOM.createPortal(
@@ -1320,7 +1321,6 @@ const ProductDetails = () => {
         </div>,
         document.body
       )}
-      )} {/* end activeTab === 'details' */}
     </div>
   );
 };
