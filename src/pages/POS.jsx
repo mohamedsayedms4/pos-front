@@ -82,6 +82,7 @@ const POS = () => {
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const customerDropdownRef = useRef(null);
   const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState('FIXED');
   const [paidAmount, setPaidAmount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -147,7 +148,7 @@ const POS = () => {
             } catch(e){}
         }
         
-        if (onboarding && (onboarding.hasInvoice || onboarding.isCompleted || onboarding.completed)) {
+        if (onboarding && (onboarding.isCompleted || onboarding.completed)) {
             return;
         }
 
@@ -171,11 +172,6 @@ const POS = () => {
           // Confetti for completing onboarding!
           const onboardingStr = localStorage.getItem('onboardingStatus');
           if (onboardingStr) {
-             try {
-                let statusObj = JSON.parse(onboardingStr);
-                statusObj.hasInvoice = true;
-                localStorage.setItem('onboardingStatus', JSON.stringify(statusObj));
-             } catch (e) {}
              toast('🎉 رائع! لقد أنهيت الجولة الإرشادية لنقطة البيع. اصنع فاتورتك الأولى الآن!', 'success');
           }
       }
@@ -617,8 +613,32 @@ const POS = () => {
     return () => client.deactivate();
   }, [addToCart]);
 
-  const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
-  const total = subtotal - discount;
+  const subtotal = cart.reduce((s, i) => {
+    let base = i.price * i.qty;
+    let disc = 0;
+    if (i.discountValue && i.discountValue > 0) {
+       if (i.discountType === 'PERCENTAGE') {
+           disc = base * (i.discountValue / 100);
+       } else {
+           disc = i.discountValue;
+       }
+    }
+    let finalItemTotal = base - disc;
+    if (finalItemTotal < 0) finalItemTotal = 0;
+    return s + finalItemTotal;
+  }, 0);
+
+  let invoiceDisc = 0;
+  if (discount > 0) {
+      if (discountType === 'PERCENTAGE') {
+          invoiceDisc = subtotal * (discount / 100);
+      } else {
+          invoiceDisc = discount;
+      }
+  }
+
+  let total = subtotal - invoiceDisc;
+  if (total < 0) total = 0;
   const change = paidAmount - total;
 
   useEffect(() => {
@@ -643,13 +663,16 @@ const POS = () => {
       const saleData = {
         customerId: selectedCustomerId || null,
         discount,
+        discountType,
         paidAmount,
         branchId: selectedBranchId,
         items: cart.map(i => ({ 
           productId: i.id, 
           quantity: i.qty, 
           unitPrice: i.price,
-          unitId: i.selectedUnitId || null
+          unitId: i.selectedUnitId || null,
+          discount: i.discountValue || 0,
+          discountType: i.discountType || 'FIXED'
         }))
       };
 
@@ -693,7 +716,7 @@ const POS = () => {
           });
         }
 
-        setCart([]); setDiscount(0); setPaidAmount(0);
+        setCart([]); setDiscount(0); setDiscountType('FIXED'); setPaidAmount(0);
         loadBrowsePage(0, browseSearch, false, selectedBranchId, selectedCategoryId);
       } catch (e) {
         console.error("Checkout Error:", e);
@@ -1057,7 +1080,45 @@ const POS = () => {
                     <input type="number" value={item.qty} onChange={e => updateQty(item.id, parseFloat(e.target.value) || 0)} />
                     <button onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
                   </div>
-                  <div className="item-total">{(Number(item.price * item.qty) || 0).toFixed(2)}</div>
+                  
+                  <div className="item-discount-input" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                     <input 
+                        type="number" 
+                        placeholder="خصم" 
+                        value={item.discountValue || ''} 
+                        onChange={e => {
+                            let val = parseFloat(e.target.value) || 0;
+                            setCart(prev => prev.map(i => i.id === item.id ? { ...i, discountValue: val } : i));
+                        }} 
+                        style={{ width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.8rem' }}
+                     />
+                     <select 
+                        value={item.discountType || 'FIXED'} 
+                        onChange={e => {
+                            setCart(prev => prev.map(i => i.id === item.id ? { ...i, discountType: e.target.value } : i));
+                        }}
+                        style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.8rem' }}
+                     >
+                        <option value="FIXED">$</option>
+                        <option value="PERCENTAGE">%</option>
+                     </select>
+                  </div>
+
+                  <div className="item-total">
+                     {(() => {
+                         let base = item.price * item.qty;
+                         let d = 0;
+                         if (item.discountValue > 0) {
+                             if ((item.discountType || 'FIXED') === 'PERCENTAGE') {
+                                 d = base * (item.discountValue / 100);
+                             } else {
+                                 d = item.discountValue;
+                             }
+                         }
+                         let t = base - d;
+                         return (t > 0 ? t : 0).toFixed(2);
+                     })()}
+                  </div>
                   <button className="remove-btn" onClick={() => removeFromCart(item.id)}>✕</button>
                 </div>
               </div>
@@ -1072,8 +1133,12 @@ const POS = () => {
           </div>
           <div className="summary-row highlight">
             <span>الخصم</span>
-            <div className="discount-input">
-              <input type="number" value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} />
+            <div className="discount-input" style={{ display: 'flex', gap: '8px' }}>
+              <input type="number" value={discount || ''} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} style={{ width: '80px' }} />
+              <select value={discountType} onChange={e => setDiscountType(e.target.value)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)' }}>
+                 <option value="FIXED">مبلغ ثابت ($)</option>
+                 <option value="PERCENTAGE">نسبة مئوية (%)</option>
+              </select>
             </div>
           </div>
           <div className="summary-total">

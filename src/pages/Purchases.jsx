@@ -123,9 +123,7 @@ const Purchases = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
   const [invoiceForm, setInvoiceForm] = useState({
-    supplierId: '',
-    invoiceDate: new Date().toISOString().split('T')[0],
-    paidAmount: 0
+    supplierId: '', invoiceDate: new Date().toISOString().split('T')[0], paidAmount: 0, discount: 0, discountType: 'FIXED'
   });
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
@@ -162,10 +160,7 @@ const Purchases = () => {
 
   // Item form — includes unit selection
   const [itemForm, setItemForm] = useState({
-    productId: '',
-    unitId: '',       // '' = base unit
-    quantity: 1,
-    unitPrice: 0
+    productId: '', unitId: '', quantity: 1, unitPrice: 0, discountValue: 0, discountType: 'FIXED'
   });
   const [availableUnits, setAvailableUnits] = useState([]); // units of selected product
   const [loadingUnits, setLoadingUnits] = useState(false);
@@ -327,7 +322,7 @@ const Purchases = () => {
         setSelectedWarehouseId('');
       }
 
-      setInvoiceForm({ supplierId: '', invoiceDate: new Date().toISOString().split('T')[0], paidAmount: 0 });
+      setInvoiceForm({ supplierId: '', invoiceDate: new Date().toISOString().split('T')[0], paidAmount: 0, discount: 0, discountType: 'FIXED' });
       setInvoiceItems([]);
       setItemForm({ productId: '', unitId: '', quantity: 1, unitPrice: 0 });
       setAvailableUnits([]);
@@ -447,7 +442,7 @@ const Purchases = () => {
     if (!prod && selectedProductObj?.id == productId) prod = selectedProductObj;
 
     if (!productId || !prod) {
-      setItemForm({ productId: '', unitId: '', quantity: 1, unitPrice: 0 });
+      setItemForm({ productId: '', unitId: '', quantity: 1, unitPrice: 0, discountValue: 0, discountType: 'FIXED' });
       setAvailableUnits([]);
       setSelectedProductObj(null);
       return;
@@ -512,6 +507,17 @@ const Purchases = () => {
       ? `${unit.unitName} (تحتوي على ${unit.conversionFactor} ${product?.unitName || 'قطعة'})`
       : (product?.unitName || 'الوحدة الأساسية');
 
+    let baseTotal = qtyInBase * price;
+    let itemDiscVal = parseFloat(itemForm.discountValue) || 0;
+    let itemDiscType = itemForm.discountType || 'FIXED';
+    let itemDiscAmount = 0;
+    if (itemDiscVal > 0) {
+        if (itemDiscType === 'PERCENTAGE') itemDiscAmount = baseTotal * (itemDiscVal / 100);
+        else itemDiscAmount = itemDiscVal;
+    }
+    let finalItemTotal = baseTotal - itemDiscAmount;
+    if (finalItemTotal < 0) finalItemTotal = 0;
+
     setInvoiceItems(prev => [...prev, {
       productId: parseInt(itemForm.productId),
       unitId: itemForm.unitId ? parseInt(itemForm.unitId) : null,
@@ -523,11 +529,14 @@ const Purchases = () => {
       factor,
       qtyInBase,
       unitPrice: price,
-      totalPrice: qtyInBase * price
+      discountValue: itemDiscVal,
+      discountType: itemDiscType,
+      discountAmount: itemDiscAmount,
+      totalPrice: finalItemTotal
     }]);
 
     // Reset item form but keep product for quick multi-unit entry
-    setItemForm(prev => ({ ...prev, quantity: 1 }));
+    setItemForm(prev => ({ ...prev, quantity: 1, discountValue: 0, discountType: 'FIXED' }));
   };
 
   const handleRemoveItem = (index) => {
@@ -553,12 +562,16 @@ const Purchases = () => {
       branchId: parseInt(formSelectedBranchId),
       warehouseId: parseInt(selectedWarehouseId),
       invoiceDate: new Date(invoiceForm.invoiceDate).toISOString(),
+      discount: parseFloat(invoiceForm.discount) || 0,
+      discountType: invoiceForm.discountType || 'FIXED',
       paidAmount: parseFloat(invoiceForm.paidAmount) || 0,
       items: invoiceItems.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        unitId: item.unitId || null
+        unitId: item.unitId || null,
+        discount: item.discountValue || 0,
+        discountType: item.discountType || 'FIXED'
       }))
     };
 
@@ -607,7 +620,16 @@ const Purchases = () => {
     }
   };
 
-  const invoiceTotal = invoiceItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const subtotal = invoiceItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const discountVal = parseFloat(invoiceForm.discount) || 0;
+  const discountType = invoiceForm.discountType || 'FIXED';
+  let invoiceDiscAmount = 0;
+  if (discountVal > 0) {
+      if (discountType === 'PERCENTAGE') invoiceDiscAmount = subtotal * (discountVal / 100);
+      else invoiceDiscAmount = discountVal;
+  }
+  let invoiceTotal = subtotal - invoiceDiscAmount;
+  if (invoiceTotal < 0) invoiceTotal = 0;
   const items = data;
   const filteredSuppliers = suppliers || [];
 
@@ -1191,6 +1213,29 @@ const Purchases = () => {
                       />
                       {formErrors.paidAmount && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.paidAmount}</span>}
                     </div>
+                    <div className="form-group">
+                      <label>الخصم</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          className="form-control"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={invoiceForm.discount}
+                          onChange={(e) => setInvoiceForm({ ...invoiceForm, discount: e.target.value })}
+                          style={{ flex: 1 }}
+                        />
+                        <select 
+                          className="form-control" 
+                          value={invoiceForm.discountType} 
+                          onChange={e => setInvoiceForm({...invoiceForm, discountType: e.target.value})} 
+                          style={{ flex: 1 }}
+                        >
+                           <option value="FIXED">مبلغ ثابت</option>
+                           <option value="PERCENTAGE">نسبة مئوية</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Items section */}
@@ -1323,6 +1368,31 @@ const Purchases = () => {
                         <small style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>سعر الوحدة الأساسية</small>
                       </div>
 
+                      {/* Discount */}
+                      <div className="form-group" style={{ flex: 1.2 }}>
+                        <label>الخصم</label>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <input
+                            className="form-control"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={itemForm.discountValue}
+                            onChange={(e) => setItemForm({ ...itemForm, discountValue: e.target.value })}
+                            style={{ padding: '6px' }}
+                          />
+                          <select
+                            className="form-control"
+                            value={itemForm.discountType}
+                            onChange={e => setItemForm({ ...itemForm, discountType: e.target.value })}
+                            style={{ padding: '6px', width: '45px' }}
+                          >
+                             <option value="FIXED">$</option>
+                             <option value="PERCENTAGE">%</option>
+                          </select>
+                        </div>
+                      </div>
+
                       <div className="form-group" style={{ flex: 'none' }}>
                         <button
                           type="button"
@@ -1364,7 +1434,8 @@ const Purchases = () => {
                             <th>الوحدة</th>
                             <th>الكمية</th>
                             <th>= عدد القطع</th>
-                            <th>سعر القطعة</th>
+                            <th>السعر</th>
+                            <th>الخصم</th>
                             <th>الإجمالي</th>
                             <th></th>
                           </tr>
@@ -1379,6 +1450,11 @@ const Purchases = () => {
                               <td>{item.quantity}</td>
                               <td>{item.qtyInBase} {item.unitName}</td>
                               <td>{item.unitPrice.toFixed(2)}</td>
+                              <td>
+                                 {item.discountValue > 0 ? (
+                                    item.discountType === 'PERCENTAGE' ? `${item.discountValue}%` : item.discountValue
+                                 ) : '-'}
+                              </td>
                               <td style={{ fontWeight: 600 }}>{item.totalPrice.toFixed(2)}</td>
                               <td>
                                 <button type="button" className="btn btn-icon btn-ghost" onClick={() => handleRemoveItem(idx)}>🗑️</button>
@@ -1388,8 +1464,20 @@ const Purchases = () => {
                         </tbody>
                         <tfoot>
                           <tr style={{ background: 'var(--bg-elevated)', fontWeight: 800 }}>
-                            <td colSpan="5" style={{ textAlign: 'left' }}>إجمالي الفاتورة:</td>
-                            <td style={{ color: 'var(--metro-blue)', fontSize: '1.1rem' }}>{invoiceTotal.toFixed(2)}</td>
+                            <td colSpan="6" style={{ textAlign: 'left' }}>الإجمالي قبل الخصم:</td>
+                            <td style={{ color: 'var(--metro-blue)', fontSize: '1.1rem' }}>{subtotal.toFixed(2)}</td>
+                            <td></td>
+                          </tr>
+                          {discountVal > 0 && (
+                            <tr style={{ background: 'var(--bg-elevated)', fontWeight: 800 }}>
+                              <td colSpan="6" style={{ textAlign: 'left' }}>الخصم ({discountType === 'PERCENTAGE' ? `${discountVal}%` : `$${discountVal}`}):</td>
+                              <td style={{ color: 'var(--metro-red)', fontSize: '1.1rem' }}>- {invoiceDiscAmount.toFixed(2)}</td>
+                              <td></td>
+                            </tr>
+                          )}
+                          <tr style={{ background: 'var(--bg-elevated)', fontWeight: 800 }}>
+                            <td colSpan="6" style={{ textAlign: 'left' }}>الصافي:</td>
+                            <td style={{ color: 'var(--accent-emerald)', fontSize: '1.2rem' }}>{invoiceTotal.toFixed(2)}</td>
                             <td></td>
                           </tr>
                         </tfoot>

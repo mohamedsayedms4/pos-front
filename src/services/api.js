@@ -1064,7 +1064,72 @@ const Api = {
     await this._request(`/v2/products/${id}`, { method: 'DELETE' });
   },
 
-  // â”€â”€â”€ Printer Config â”€â”€â”€
+  // ─── Product Variants ───
+  async getProductVariants(productId) {
+    const res = await this._request(`/products/${productId}/variants`);
+    return res.data;
+  },
+
+  async getActiveProductVariants(productId) {
+    const res = await this._request(`/products/${productId}/variants/active`);
+    return res.data;
+  },
+
+  async createProductVariant(productId, data) {
+    const res = await this._request(`/products/${productId}/variants`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateProductVariant(productId, variantId, data) {
+    const res = await this._request(`/products/${productId}/variants/${variantId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updateVariantStock(productId, variantId, stock) {
+    const res = await this._request(`/products/${productId}/variants/${variantId}/stock`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stock })
+    });
+    return res.data;
+  },
+
+  async deleteProductVariant(productId, variantId) {
+    await this._request(`/products/${productId}/variants/${variantId}`, { method: 'DELETE' });
+  },
+
+  // ─── Attribute Templates (المقاس، اللون ...) ───
+  async getAttributeTemplates() {
+    const res = await this._request('/attribute-templates');
+    return res.data;
+  },
+
+  async createAttributeTemplate(name, values) {
+    const res = await this._request('/attribute-templates', {
+      method: 'POST',
+      body: JSON.stringify({ name, values })
+    });
+    return res.data;
+  },
+
+  async addAttributeValue(templateId, value) {
+    const res = await this._request(`/attribute-templates/${templateId}/values`, {
+      method: 'POST',
+      body: JSON.stringify({ value })
+    });
+    return res.data;
+  },
+
+  async deleteAttributeTemplate(templateId) {
+    await this._request(`/attribute-templates/${templateId}`, { method: 'DELETE' });
+  },
+
+  // ─── Printer Config ───
   async getPrinterConfig() {
     const res = await this._request('/printer-config');
     return res.data;

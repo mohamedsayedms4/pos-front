@@ -42,7 +42,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
   const steps = [
     {
       id: 1,
-      title: 'أضف بيانات الشركة (10%)',
+      title: 'أضف بيانات الشركة (33%)',
       desc: 'أدخل معلومات متجرك الأساسية',
       completed: status.hasCompanyDetails,
       action: () => navigate('/settings'),
@@ -51,7 +51,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
     },
     {
       id: 2,
-      title: 'أضف أول فرع (25%)',
+      title: 'أضف أول فرع (66%)',
       desc: 'قم بإنشاء فرعك الأول لبدء العمل',
       completed: status.hasBranch,
       action: () => navigate('/branches'),
@@ -60,7 +60,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
     },
     {
       id: 3,
-      title: 'أضف أول منتج (50%)',
+      title: 'أضف أول منتج (100%)',
       desc: 'أضف منتجاتك لبيعها',
       completed: status.hasProduct,
       action: () => navigate('/products'),
@@ -69,15 +69,6 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
     },
     {
       id: 4,
-      title: 'اعمل أول فاتورة (75%)',
-      desc: 'سجل أول عملية بيع لك',
-      completed: status.hasInvoice,
-      action: () => navigate('/pos'),
-      icon: '🧾',
-      isLocked: !status.hasCompanyDetails || !status.hasBranch || !status.hasProduct,
-    },
-    {
-      id: 5,
       title: 'مبروك، أنت جاهز للبيع! 🎉 (100%)',
       desc: 'اكتملت جميع الخطوات',
       completed: status.completed,

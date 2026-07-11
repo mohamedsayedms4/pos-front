@@ -8,6 +8,7 @@ import html2pdf from 'html2pdf.js';
 import SingleProductPdf from '../components/pdf/SingleProductPdf';
 import ReactDOM from 'react-dom';
 import ModalContainer from '../components/common/ModalContainer';
+import ProductVariantsTab from '../components/products/ProductVariantsTab';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -21,6 +22,7 @@ const ProductDetails = () => {
   const pdfRef = React.useRef(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'variants'
 
   // ─── Print Quantity Modal State ──────────────────────────────────────────────
   const [printQtyModalOpen, setPrintQtyModalOpen] = useState(false);
@@ -712,8 +714,48 @@ const ProductDetails = () => {
         </div>
       </div>
 
+      {/* ═══ Tab Navigation ══════════════════════════════════════════════════════ */}
+      <div style={{ display: 'flex', gap: '4px', marginTop: '24px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
+        {[
+          { key: 'details', label: '📋 تفاصيل المخزون والفروع' },
+          { key: 'variants', label: '🎨 المتغيرات (مقاسات / ألوان)' },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              padding: '10px 22px',
+              border: 'none',
+              borderBottom: activeTab === tab.key ? '3px solid #6366f1' : '3px solid transparent',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: '14px',
+              fontWeight: activeTab === tab.key ? '700' : '500',
+              color: activeTab === tab.key ? '#6366f1' : 'var(--text-muted)',
+              transition: 'all 0.2s',
+              marginBottom: '-2px'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'variants' && (
+        <div style={{ marginTop: '20px' }}>
+          <ProductVariantsTab
+            productId={id}
+            productSalePrice={currentSalePrice}
+            productPurchasePrice={currentPurchasePrice}
+          />
+        </div>
+      )}
+
+      {activeTab === 'details' && (
+      <div style={{ marginTop: '20px' }}>
       {/* ═══ Branch Inventories Section ══════════════════════════════════════════ */}
-      <div className="card" style={{ marginTop: '20px' }}>
+      <div className="card">
         <div className="card-header">
           <h3>📍 أسعار ومخزون الفروع التفصيلية</h3>
         </div>
@@ -974,6 +1016,7 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
+      </div> {/* end activeTab === 'details' wrapper div */}
 
       {/* Stock Management Modal */}
       {showStockModal && ReactDOM.createPortal(
@@ -1277,6 +1320,7 @@ const ProductDetails = () => {
         </div>,
         document.body
       )}
+      )} {/* end activeTab === 'details' */}
     </div>
   );
 };

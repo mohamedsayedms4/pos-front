@@ -7,6 +7,7 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import { useBranch } from '../context/BranchContext';
 import { useExport } from '../utils/useExport';
 import ExportProgressModal from '../components/ExportProgressModal';
+import AddSaleModal from '../components/sales/AddSaleModal';
 
 const Sales = () => {
     const { toast, confirm } = useGlobalUI();
@@ -19,6 +20,7 @@ const Sales = () => {
     const [returnItems, setReturnItems] = useState([]);
     const [returnNotes, setReturnNotes] = useState('');
     const [formErrors, setFormErrors] = useState({});
+    const [showAddModal, setShowAddModal] = useState(false);
 
     const fileInputRef = React.useRef(null);
     const [importingExcel, setImportingExcel] = useState(false);
@@ -237,6 +239,15 @@ const Sales = () => {
                               accept=".xlsx, .xls" 
                               style={{ display: 'none' }} 
                             />
+
+                            {Api.can('SALE_WRITE') && (
+                              <button
+                                className="btn btn-primary"
+                                onClick={() => setShowAddModal(true)}
+                              >
+                                ➕ فاتورة جديدة
+                              </button>
+                            )}
 
                             {Api.can('SALE_READ') && (
                               <button
@@ -557,6 +568,19 @@ const Sales = () => {
             </div>,
             document.body
         )}
+
+        {showAddModal && (
+          <AddSaleModal 
+            onClose={() => setShowAddModal(false)}
+            onSuccess={() => {
+              setShowAddModal(false);
+              loadSales();
+            }}
+            initialBranchId={selectedBranchId}
+            availableBranches={branches}
+          />
+        )}
+
         <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
     </div>
 );

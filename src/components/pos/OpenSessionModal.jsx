@@ -26,7 +26,7 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
     if (onboardingStr) {
         try {
             const statusObj = JSON.parse(onboardingStr);
-            if (statusObj.hasProduct && !statusObj.hasInvoice && !localStorage.getItem('tour_open_session_v3')) {
+            if (statusObj.hasProduct && !localStorage.getItem('tour_open_session_v3')) {
                 setTimeout(() => {
                     setRunTour(true);
                     localStorage.setItem('tour_open_session_v3', 'true');
