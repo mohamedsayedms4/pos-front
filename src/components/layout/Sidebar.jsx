@@ -627,6 +627,11 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                 <span>الأرباح والخسائر</span>
               </NavLink>
             )}
+            {/* uncommented Partners */}
+            <NavLink to="/partners" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon"><i className="fa-solid fa-handshake"></i></span>
+              <span>الشركاء</span>
+            </NavLink>
             {/*
             <NavLink to="/trial-balance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">⚖️</span>
@@ -639,10 +644,6 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <NavLink to="/financial-analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
               <span className="nav-icon">📊</span>
               <span>التحليل المالي الموحد</span>
-            </NavLink>
-            <NavLink to="/partners" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">🤝</span>
-              <span>الشركاء</span>
             </NavLink>
             */}
             {Api.can('CUSTOMER_READ') && (
