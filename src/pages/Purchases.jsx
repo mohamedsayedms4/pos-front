@@ -60,6 +60,13 @@ const Purchases = () => {
 
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    Api.getCategories()
+      .then(res => setCategories(res || []))
+      .catch(err => console.error('Failed to load categories', err));
+  }, []);
 
   // Debounce search
   useEffect(() => {
@@ -134,7 +141,7 @@ const Purchases = () => {
   const [savingQuickSupplier, setSavingQuickSupplier] = useState(false);
 
   const [showQuickAddProduct, setShowQuickAddProduct] = useState(false);
-  const [quickProductForm, setQuickProductForm] = useState({ name: '', purchasePrice: 0, salePrice: 0 });
+  const [quickProductForm, setQuickProductForm] = useState({ name: '', purchasePrice: 0, salePrice: 0, productCode: '', categoryId: '', unitName: 'قطعة' });
   const [savingQuickProduct, setSavingQuickProduct] = useState(false);
 
   // Product Search/Pagination State
@@ -419,6 +426,9 @@ const Purchases = () => {
         name: quickProductForm.name,
         price: quickProductForm.salePrice,
         purchasePrice: quickProductForm.purchasePrice,
+        productCode: quickProductForm.productCode,
+        categoryId: quickProductForm.categoryId ? parseInt(quickProductForm.categoryId) : null,
+        unitName: quickProductForm.unitName || 'قطعة',
         type: 'STANDARD',
         status: 'ACTIVE',
         trackStock: true
@@ -428,7 +438,7 @@ const Purchases = () => {
       setProducts(prev => [newProduct, ...prev]);
       handleProductChange(newProduct.id, newProduct);
       setShowQuickAddProduct(false);
-      setQuickProductForm({ name: '', purchasePrice: 0, salePrice: 0 });
+      setQuickProductForm({ name: '', purchasePrice: 0, salePrice: 0, productCode: '', categoryId: '', unitName: 'قطعة' });
     } catch (err) {
       toast(err.message || 'فشل إضافة المنتج', 'error');
     } finally {
@@ -491,21 +501,60 @@ const Purchases = () => {
   };
 
   // ─── Add Item to Invoice ───────────────────────────────────────────────────
-  const handleAddItem = () => {
-    if (!itemForm.productId) { toast('يرجى اختيار المنتج', 'warning'); return; }
+  const handleAddItem = async () => {
+    let finalProductId = itemForm.productId;
+    let finalProductObj = products.find(p => p.id == itemForm.productId) || selectedProductObj;
+    
+    if (showQuickAddProduct && quickProductForm.name) {
+      if (!quickProductForm.unitName) { toast('الوحدة الأساسية للمنتج السريع مطلوبة', 'warning'); return; }
+      try {
+        const data = {
+          name: quickProductForm.name,
+          description: '',
+          salePrice: quickProductForm.salePrice ? parseFloat(quickProductForm.salePrice) : 0.01,
+          purchasePrice: quickProductForm.purchasePrice ? parseFloat(quickProductForm.purchasePrice) : 0,
+          productCode: quickProductForm.productCode || '',
+          categoryId: quickProductForm.categoryId ? parseInt(quickProductForm.categoryId) : null,
+          unitName: quickProductForm.unitName || 'قطعة',
+          type: 'STANDARD',
+          status: 'ACTIVE',
+          trackStock: true,
+          stock: 0,
+          showInStore: true,
+          isRawMaterial: false,
+          units: []
+        };
+        const newProduct = await Api.createProduct(data, null, formSelectedBranchId);
+        finalProductId = newProduct.id;
+        finalProductObj = newProduct;
+        setProducts(prev => [newProduct, ...prev]);
+        setShowQuickAddProduct(false);
+        setQuickProductForm({ name: '', purchasePrice: 0, salePrice: 0, productCode: '', categoryId: '', unitName: 'قطعة' });
+      } catch (err) {
+        toast('فشل إنشاء المنتج: ' + (err.message || ''), 'error');
+        return;
+      }
+    }
+
+    if (!finalProductId) { toast('يرجى اختيار المنتج أو إضافة بيانات منتج جديد', 'warning'); return; }
+
     const qty = parseFloat(itemForm.quantity);
-    const price = parseFloat(itemForm.unitPrice);
+    let price = parseFloat(itemForm.unitPrice);
+    
+    if (finalProductObj && (isNaN(price) || price === 0)) {
+       price = parseFloat(finalProductObj.purchasePrice || 0);
+    }
+
     if (isNaN(qty) || qty <= 0) { toast('الكمية غير صحيحة', 'warning'); return; }
     if (isNaN(price) || price < 0) { toast('السعر غير صحيح', 'warning'); return; }
 
-    const product = products.find(p => p.id == itemForm.productId) || selectedProductObj;
     const unit = availableUnits.find(u => u.id == itemForm.unitId);
     const factor = unit ? parseFloat(unit.conversionFactor) : 1;
     const qtyInBase = qty * factor;
 
     const unitLabel = unit
-      ? `${unit.unitName} (تحتوي على ${unit.conversionFactor} ${product?.unitName || 'قطعة'})`
-      : (product?.unitName || 'الوحدة الأساسية');
+      ? `${unit.unitName} (تحتوي على ${unit.conversionFactor} ${finalProductObj?.unitName || 'قطعة'})`
+      : (finalProductObj?.unitName || 'الوحدة الأساسية');
 
     let baseTotal = qtyInBase * price;
     let itemDiscVal = parseFloat(itemForm.discountValue) || 0;
@@ -519,12 +568,12 @@ const Purchases = () => {
     if (finalItemTotal < 0) finalItemTotal = 0;
 
     setInvoiceItems(prev => [...prev, {
-      productId: parseInt(itemForm.productId),
+      productId: parseInt(finalProductId),
       unitId: itemForm.unitId ? parseInt(itemForm.unitId) : null,
-      name: product?.name,
+      name: finalProductObj?.name,
       unitLabel,
-      unitName: product?.unitName || 'قطعة',
-      packagingDesc: unit ? `1 ${unit.unitName} = ${unit.conversionFactor} ${product?.unitName || 'قطعة'}` : 'قطاعي',
+      unitName: finalProductObj?.unitName || 'قطعة',
+      packagingDesc: unit ? `1 ${unit.unitName} = ${unit.conversionFactor} ${finalProductObj?.unitName || 'قطعة'}` : 'قطاعي',
       quantity: qty,
       factor,
       qtyInBase,
@@ -546,8 +595,26 @@ const Purchases = () => {
   // ─── Save Invoice ──────────────────────────────────────────────────────────
   const handleSaveInvoice = async (e) => {
     e.preventDefault();
-    if (!invoiceForm.supplierId) { toast('يرجى اختيار المورد', 'warning'); return; }
-    if (invoiceItems.length === 0) { toast('يجب إضافة منتج واحد على الأقل', 'warning'); return; }
+    setSaving(true);
+    setFormErrors({});
+
+    let finalSupplierId = invoiceForm.supplierId;
+    
+    if (showQuickAddSupplier && quickSupplierForm.name) {
+       try {
+         const newSupplier = await Api.createSupplier(quickSupplierForm);
+         finalSupplierId = newSupplier.id;
+         setShowQuickAddSupplier(false);
+         setQuickSupplierForm({ name: '', phone: '', address: '' });
+       } catch (err) {
+         toast('فشل إنشاء المورد الجديد', 'error');
+         setSaving(false);
+         return;
+       }
+    }
+
+    if (!finalSupplierId) { toast('يرجى اختيار المورد أو تعبئة بيانات مورد جديد', 'warning'); setSaving(false); return; }
+    if (invoiceItems.length === 0) { toast('يجب إضافة منتج واحد على الأقل', 'warning'); setSaving(false); return; }
 
     if (!formSelectedBranchId || !selectedWarehouseId) {
       toast('يرجى اختيار الفرع والمخزن', 'warning');
@@ -555,10 +622,8 @@ const Purchases = () => {
       return;
     }
 
-    setSaving(true);
-    setFormErrors({});
     const payload = {
-      supplierId: parseInt(invoiceForm.supplierId),
+      supplierId: parseInt(finalSupplierId),
       branchId: parseInt(formSelectedBranchId),
       warehouseId: parseInt(selectedWarehouseId),
       invoiceDate: new Date(invoiceForm.invoiceDate).toISOString(),
@@ -1190,6 +1255,25 @@ const Purchases = () => {
                       </div>
                       {formErrors.supplierId && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.supplierId}</span>}
                     </div>
+                    {showQuickAddSupplier && (
+                      <div style={{ gridColumn: '1 / -1', marginTop: '10px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border-color)', width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                          <h4 style={{ margin: 0, fontSize: '1rem' }}>➕ مورد جديد (سريع) <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal', marginRight: '5px' }}>(يُحفظ تلقائياً مع الفاتورة)</span></h4>
+                          <button type="button" className="btn btn-icon btn-ghost" onClick={() => setShowQuickAddSupplier(false)}>✕</button>
+                        </div>
+                        <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                          <div className="form-group mb-0">
+                            <input className="form-control" type="text" placeholder="اسم المورد *" value={quickSupplierForm.name} onChange={e => setQuickSupplierForm({...quickSupplierForm, name: e.target.value})} />
+                          </div>
+                          <div className="form-group mb-0">
+                            <input className="form-control" type="text" placeholder="رقم الهاتف" value={quickSupplierForm.phone} onChange={e => setQuickSupplierForm({...quickSupplierForm, phone: e.target.value})} />
+                          </div>
+                          <div className="form-group mb-0">
+                            <input className="form-control" type="text" placeholder="العنوان" value={quickSupplierForm.address} onChange={e => setQuickSupplierForm({...quickSupplierForm, address: e.target.value})} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="form-group">
                       <label>تاريخ الفاتورة *</label>
                       <input
@@ -1241,9 +1325,51 @@ const Purchases = () => {
                   {/* Items section */}
                   <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
                     <h4 style={{ marginBottom: '15px' }}>📦 إضافة منتجات للفاتورة</h4>
+                    
+                    {/* Quick Add Product Inline Form */}
+                    {showQuickAddProduct && (
+                      <div style={{ marginTop: '10px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '15px', width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                          <h4 style={{ margin: 0, fontSize: '1rem' }}>➕ منتج جديد (سريع) <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal', marginRight: '5px' }}>(يُحفظ تلقائياً عند النقر على + إضافة)</span></h4>
+                          <button type="button" className="btn btn-icon btn-ghost" onClick={() => setShowQuickAddProduct(false)}>✕</button>
+                        </div>
+                        <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                          <div className="form-group mb-0">
+                            <label>اسم المنتج *</label>
+                            <input className="form-control" type="text" placeholder="اسم المنتج *" value={quickProductForm.name} onChange={e => setQuickProductForm({...quickProductForm, name: e.target.value})} />
+                          </div>
+                          <div className="form-group mb-0">
+                            <label>سعر الشراء *</label>
+                            <input className="form-control" type="number" step="0.01" placeholder="سعر الشراء *" value={quickProductForm.purchasePrice || ''} onChange={e => setQuickProductForm({...quickProductForm, purchasePrice: e.target.value})} />
+                          </div>
+                          <div className="form-group mb-0">
+                            <label>سعر البيع *</label>
+                            <input className="form-control" type="number" step="0.01" placeholder="سعر البيع *" value={quickProductForm.salePrice || ''} onChange={e => setQuickProductForm({...quickProductForm, salePrice: e.target.value})} />
+                          </div>
+                        </div>
+                        <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+                          <div className="form-group mb-0">
+                            <label>الباركود</label>
+                            <input className="form-control" type="text" placeholder="الباركود (اختياري)" value={quickProductForm.productCode} onChange={e => setQuickProductForm({...quickProductForm, productCode: e.target.value})} />
+                          </div>
+                          <div className="form-group mb-0">
+                            <label>الوحدة الأساسية *</label>
+                            <input className="form-control" type="text" placeholder="الوحدة الأساسية *" value={quickProductForm.unitName} onChange={e => setQuickProductForm({...quickProductForm, unitName: e.target.value})} />
+                          </div>
+                          <div className="form-group mb-0">
+                            <label>التصنيف</label>
+                            <select className="form-control" value={quickProductForm.categoryId} onChange={e => setQuickProductForm({...quickProductForm, categoryId: e.target.value})}>
+                              <option value="">بدون تصنيف</option>
+                              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
 
                     {/* Item add row */}
-                    <div className="form-row" style={{ alignItems: 'flex-end', gap: '10px' }}>
+                    <div className="form-row" style={{ alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
 
                       {/* Product */}
                       <div className="form-group" style={{ flex: 2 }}>
@@ -1309,7 +1435,7 @@ const Purchases = () => {
                             className="btn btn-outline-primary" 
                             style={{ padding: '0 15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="إضافة منتج سريع"
-                            onClick={() => setShowQuickAddProduct(true)}
+                            onClick={() => setShowQuickAddProduct(!showQuickAddProduct)}
                           >
                             +
                           </button>
@@ -1615,79 +1741,6 @@ const Purchases = () => {
         </ModalContainer>
       )}
 
-      {/* ═══ Modal: Quick Add Supplier ═══════════════════════════════════════ */}
-      {showQuickAddSupplier && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddSupplier(false); }}>
-            <div className="modal" style={{ maxWidth: '400px' }}>
-              <div className="modal-header">
-                <h3>➕ مورد جديد (سريع)</h3>
-                <button className="modal-close" onClick={() => setShowQuickAddSupplier(false)}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="quickSupplierForm" onSubmit={handleSaveQuickSupplier}>
-                  <div className="form-group mb-3">
-                    <label>اسم المورد *</label>
-                    <input className="form-control" type="text" value={quickSupplierForm.name} onChange={e => setQuickSupplierForm({...quickSupplierForm, name: e.target.value})} required />
-                  </div>
-                  <div className="form-group mb-3">
-                    <label>رقم الهاتف</label>
-                    <input className="form-control" type="text" value={quickSupplierForm.phone} onChange={e => setQuickSupplierForm({...quickSupplierForm, phone: e.target.value})} />
-                  </div>
-                  <div className="form-group mb-3">
-                    <label>العنوان</label>
-                    <input className="form-control" type="text" value={quickSupplierForm.address} onChange={e => setQuickSupplierForm({...quickSupplierForm, address: e.target.value})} />
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowQuickAddSupplier(false)}>إلغاء</button>
-                <button type="submit" form="quickSupplierForm" className="btn btn-primary" disabled={savingQuickSupplier}>
-                  {savingQuickSupplier ? 'جاري الحفظ...' : 'حفظ'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
-
-      {/* ═══ Modal: Quick Add Product ════════════════════════════════════════ */}
-      {showQuickAddProduct && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddProduct(false); }}>
-            <div className="modal" style={{ maxWidth: '400px' }}>
-              <div className="modal-header">
-                <h3>➕ منتج جديد (سريع)</h3>
-                <button className="modal-close" onClick={() => setShowQuickAddProduct(false)}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="quickProductForm" onSubmit={handleSaveQuickProduct}>
-                  <div className="form-group mb-3">
-                    <label>اسم المنتج *</label>
-                    <input className="form-control" type="text" value={quickProductForm.name} onChange={e => setQuickProductForm({...quickProductForm, name: e.target.value})} required />
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group mb-3">
-                      <label>سعر التكلفة (الشراء) *</label>
-                      <input className="form-control" type="number" step="0.01" value={quickProductForm.purchasePrice} onChange={e => setQuickProductForm({...quickProductForm, purchasePrice: e.target.value})} required />
-                    </div>
-                    <div className="form-group mb-3">
-                      <label>سعر البيع *</label>
-                      <input className="form-control" type="number" step="0.01" value={quickProductForm.salePrice} onChange={e => setQuickProductForm({...quickProductForm, salePrice: e.target.value})} required />
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowQuickAddProduct(false)}>إلغاء</button>
-                <button type="submit" form="quickProductForm" className="btn btn-primary" disabled={savingQuickProduct}>
-                  {savingQuickProduct ? 'جاري الحفظ...' : 'حفظ'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
       <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
     </>
   );
