@@ -58,27 +58,27 @@ const ForgotPassword = () => {
             )}
           </Link>
           <h1>نسيت كلمة المرور</h1>
-          <p>أدخل بريدك الإلكتروني لإرسال رابط التعيين</p>
+          <p>أدخل بريدك الإلكتروني أو رقم الهاتف لإرسال رمز التعيين</p>
         </div>
 
         {success ? (
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <div style={{ color: 'var(--metro-green)', fontSize: '1.1rem', marginBottom: '15px' }}>
-              <i className="fa-solid fa-check"></i> تم إرسال رابط إعادة تعيين كلمة المرور بنجاح إلى بريدك الإلكتروني.
+              <i className="fa-solid fa-check"></i> تم إرسال رمز التعيين بنجاح.
             </div>
             <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>
-              الرجاء التحقق من رسائلك والنقر على الرابط لتغيير كلمة المرور.
+              الرجاء التحقق من رسائلك لاستكمال عملية استعادة كلمة المرور.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSend} autoComplete="off">
             <div className="form-group">
-              <label htmlFor="identifierInput">البريد الإلكتروني</label>
+              <label htmlFor="identifierInput">البريد الإلكتروني أو رقم الهاتف</label>
               <input
                 className="form-control"
                 id="identifierInput"
-                type="email"
-                placeholder="أدخل بريدك الإلكتروني"
+                type="text"
+                placeholder="example@domain.com أو رقم الهاتف"
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
@@ -93,7 +93,7 @@ const ForgotPassword = () => {
             )}
 
             <button className="btn btn-primary btn-lg btn-block" type="submit" disabled={loading}>
-              {loading ? 'جاري الإرسال...' : 'إرسال رابط التعيين'}
+              {loading ? 'جاري الإرسال...' : 'إرسال الرابط'}
             </button>
           </form>
         )}

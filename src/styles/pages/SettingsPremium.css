@@ -864,7 +864,7 @@
 .unsaved-actions,
 .upload-actions {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
 }
 
@@ -880,6 +880,7 @@
   font-weight: 750;
   font-size: 13px;
   font-family: 'Cairo', sans-serif;
+  white-space: nowrap;
   transition: all 160ms ease;
   cursor: pointer;
 }
@@ -1453,6 +1454,27 @@
 }
 
 @media (max-width: 620px) {
+  .settings-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    height: auto;
+  }
+  .header-buttons,
+  .unsaved-actions,
+  .upload-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 10px;
+  }
+  .header-buttons button,
+  .unsaved-actions button,
+  .upload-actions button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -1897,7 +1919,7 @@
 
 
 /* ============================================================
-   DARK MODE — Settings & Print Pages
+   DARK MODE â€” Settings & Print Pages
    Overrides all hardcoded light colors with theme variables
    ============================================================ */
 
@@ -2112,7 +2134,7 @@
 [data-theme='dark'] .modal-footer-box { background: var(--bg-elevated); border-color: var(--border-input); }
 
 /* ---------------------------------------------------
-   @media print � Test Print from Settings page
+   @media print — Test Print from Settings page
    --------------------------------------------------- */
 @media print {
   body.printing-test-preview * {

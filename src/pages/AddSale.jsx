@@ -67,7 +67,7 @@ const AddSale = () => {
   const addQuickProductForm = () => {
     setQuickProductForms(prev => [
       ...prev,
-      { id: Date.now() + Math.random(), name: '', salePrice: 0, salePrice: 0, productCode: '', categoryId: '', unitName: 'قطعة' }
+      { id: Date.now() + Math.random(), name: '', salePrice: 0, productCode: '', categoryId: '', unitName: 'قطعة' }
     ]);
   };
   const updateQuickProductForm = (id, field, value) => {
