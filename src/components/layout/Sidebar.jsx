@@ -95,7 +95,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   return (
     <aside className={`sidebar ${isOpen ? 'open' : ''}`} id="sidebar">
       <div className="sidebar-header">
-        <button className="sidebar-close-btn" onClick={onClose}>✕</button>
+        <button className="sidebar-close-btn" onClick={onClose}><i className="fa-solid fa-times"></i></button>
         <NavLink to="/dashboard" className="logo-mark" style={{ margin: '0 auto', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }} onClick={onClose}>
           <img
             src={currentLogo}
@@ -408,7 +408,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
         {/* 13. سجل الشيكات
         {Api.can('TREASURY_READ') && (
           <NavLink to="/checks" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-            <span className="nav-icon">📑</span>
+            <span className="nav-icon"><i className="fa-solid fa-file-invoice"></i></span>
             <span>سجل الشيكات</span>
           </NavLink>
         )}
@@ -634,15 +634,15 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             </NavLink>
             {/*
             <NavLink to="/trial-balance" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">⚖️</span>
+              <span className="nav-icon"><i className="fa-solid fa-scale-balanced"></i>️</span>
               <span>ميزان المراجعة (GL)</span>
             </NavLink>
             <NavLink to="/financial-accounts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">🏦</span>
+              <span className="nav-icon"><i className="fa-solid fa-building-columns"></i></span>
               <span>إدارة البنوك والحسابات</span>
             </NavLink>
             <NavLink to="/financial-analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">📊</span>
+              <span className="nav-icon"><i className="fa-solid fa-chart-column"></i></span>
               <span>التحليل المالي الموحد</span>
             </NavLink>
             */}
@@ -655,7 +655,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             {/*
             {isAdmin && (
               <NavLink to="/facebook-ads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">🔵</span>
+                <span className="nav-icon"><i className="fa-solid fa-circle" style={{color: "#3b82f6"}}></i></span>
                 <span>تقارير إعلانات فيسبوك</span>
               </NavLink>
             )}
@@ -669,7 +669,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             {/*
             {Api.can('PAYROLL_READ') && (
               <NavLink to="/payroll" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">💸</span>
+                <span className="nav-icon"><i className="fa-solid fa-money-bill-wave"></i></span>
                 <span>مسير الرواتب</span>
               </NavLink>
             )}
@@ -684,7 +684,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             <div className="nav-section-title">الموظفين والموارد البشرية</div>
             {Api.can('EMPLOYEE_READ') && (
               <NavLink to="/employees" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">👥</span>
+                <span className="nav-icon"><i className="fa-solid fa-users"></i></span>
                 <span>قائمة الموظفين</span>
               </NavLink>
             )}
@@ -706,7 +706,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
                       onClose();
                     }}
                   >
-                    <span className="nav-icon">📅</span>
+                    <span className="nav-icon"><i className="fa-solid fa-calendar-days"></i></span>
                     <span>الحضور والانصراف</span>
                   </NavLink>
                   <span
@@ -790,35 +790,35 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             )}
             {Api.can('LEAVE_READ') && (
               <NavLink to="/leave-requests" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">🏖️</span>
+                <span className="nav-icon"><i className="fa-solid fa-umbrella-beach"></i>️</span>
                 <span>إدارة الإجازات</span>
               </NavLink>
             )}
             {isAdmin && (
               <NavLink to="/leave-types" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">⚙️</span>
+                <span className="nav-icon"><i className="fa-solid fa-gear"></i></span>
                 <span>إعدادات الإجازات</span>
               </NavLink>
             )}
             {Api.can('USER_READ') && (
               <NavLink to="/custody" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">🛡️</span>
+                <span className="nav-icon"><i className="fa-solid fa-shield-halved"></i>️</span>
                 <span>العهد الشخصية</span>
               </NavLink>
             )}
             {Api.can('SHIFT_MANAGE') && (
               <NavLink to="/shifts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">🕒</span>
+                <span className="nav-icon"><i className="fa-solid fa-clock"></i></span>
                 <span>إدارة الورديات</span>
               </NavLink>
             )}
             <NavLink to="/messages" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <span className="nav-icon">💬</span>
+              <span className="nav-icon"><i className="fa-solid fa-comment-dots"></i></span>
               <span>الرسائل</span>
             </NavLink>
             {isAdmin && (
               <NavLink to="/campaigns" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-                <span className="nav-icon">📣</span>
+                <span className="nav-icon"><i className="fa-solid fa-bullhorn"></i></span>
                 <span>الحملات الترويجية</span>
               </NavLink>
             )}
@@ -901,25 +901,25 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
         {/* ────────────────── Super Admin ────────────────── */}
         {Api.isSuperAdmin && Api.isSuperAdmin() && isOnline && (
           <>
-            <div className="nav-section-title">🔑 Super Admin</div>
+            <div className="nav-section-title"><i className="fa-solid fa-key"></i> Super Admin</div>
             <NavLink to="/super-admin/add-tenant" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <i className="fa-solid fa-plus-circle nav-icon"></i>
+              <span className="nav-icon"><i className="fa-solid fa-plus-circle"></i></span>
               <span>إضافة متجر جديد</span>
             </NavLink>
             <NavLink to="/super-admin/subscriptions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <i className="fa-solid fa-crown nav-icon"></i>
+              <span className="nav-icon"><i className="fa-solid fa-crown"></i></span>
               <span>الاشتراكات و الدفع اليدوي</span>
             </NavLink>
             <NavLink to="/super-admin/leads" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <i className="fa-solid fa-users-viewfinder nav-icon"></i>
+              <span className="nav-icon"><i className="fa-solid fa-users-viewfinder"></i></span>
               <span>العملاء المحتملين (Leads)</span>
             </NavLink>
             <NavLink to="/super-admin/calendar" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <i className="fa-solid fa-calendar-days nav-icon"></i>
+              <span className="nav-icon"><i className="fa-solid fa-calendar-days"></i></span>
               <span>المواعيد والتقويم</span>
             </NavLink>
             <NavLink to="/super-admin/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-              <i className="fa-solid fa-gear nav-icon"></i>
+              <span className="nav-icon"><i className="fa-solid fa-gear"></i></span>
               <span>إعدادات النظام العامة</span>
             </NavLink>
             <NavLink to="/super-admin/articles" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>

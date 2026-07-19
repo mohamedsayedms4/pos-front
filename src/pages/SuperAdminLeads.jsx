@@ -99,7 +99,7 @@ const SuperAdminLeads = () => {
     setSubmitting(true);
     try {
       await Api.addSuperAdminLead(form);
-      toast('تم تسجيل العميل المحتمل بنجاح ✅', 'success');
+      toast('تم تسجيل العميل المحتمل بنجاح ', 'success');
       setIsAddModalOpen(false);
       setForm({ name: '', phone: '', email: '', notes: '' });
       loadData(0);
@@ -118,7 +118,7 @@ const SuperAdminLeads = () => {
     try {
       toast('جاري تجهيز ملف الإكسيل...', 'info');
       await Api.downloadSuperAdminLeadsExport();
-      toast('تم التصدير بنجاح ✅', 'success');
+      toast('تم التصدير بنجاح ', 'success');
     } catch (err) {
       toast(err.message || 'فشل التصدير', 'error');
     }
@@ -138,7 +138,7 @@ const SuperAdminLeads = () => {
     setImporting(true);
     try {
       const result = await Api.importSuperAdminLeads(importFile);
-      toast(result.message || 'تم الاستيراد بنجاح ✅', 'success');
+      toast(result.message || 'تم الاستيراد بنجاح ', 'success');
       setIsImportModalOpen(false);
       setImportFile(null);
       loadData(0);
@@ -167,7 +167,7 @@ const SuperAdminLeads = () => {
 
       <div className="card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3>👥 العملاء المحتملين</h3>
+          <h3><i className="fa-solid fa-users"></i> العملاء المحتملين</h3>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
               + إضافة عميل محتمل
@@ -198,7 +198,7 @@ const SuperAdminLeads = () => {
             <Loader message="جاري التحميل..." />
           ) : leads.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px' }}>
-              <div className="empty-icon" style={{ fontSize: '3rem', marginBottom: '10px' }}>📋</div>
+              <div className="empty-icon" style={{ fontSize: '3rem', marginBottom: '10px' }}><i className="fa-solid fa-clipboard-list"></i></div>
               <h4>لا يوجد عملاء محتملين</h4>
               <p>لم يتم تسجيل أي عملاء محتملين مطابقين لبحثك.</p>
             </div>
@@ -277,7 +277,7 @@ const SuperAdminLeads = () => {
             <div className="modal">
               <div className="modal-header">
                 <h3>إضافة عميل محتمل جديد</h3>
-                <button className="modal-close" onClick={() => setIsAddModalOpen(false)}>✕</button>
+                <button className="modal-close" onClick={() => setIsAddModalOpen(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="addLeadForm" onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -343,14 +343,14 @@ const SuperAdminLeads = () => {
               </div>
               <div className="modal-body">
                 <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: 'var(--bg-light)', borderRadius: '10px', fontSize: '0.95rem', color: 'var(--text-muted)' }}>
-                  <p style={{ margin: '0 0 10px 0' }}>💡 <strong>تعليمات الاستيراد:</strong></p>
+                  <p style={{ margin: '0 0 10px 0' }}><i className="fa-solid fa-lightbulb"></i> <strong>تعليمات الاستيراد:</strong></p>
                   <ul style={{ paddingRight: '20px', margin: 0 }}>
                     <li>قم بتحميل قالب الإكسيل الفارغ من الزر بالأسفل.</li>
                     <li>قم بتعبئة البيانات. (الاسم ورقم الهاتف حقول إجبارية).</li>
                     <li>النظام سيتجاهل تلقائياً الأرقام المسجلة مسبقاً (سواء في المشتركين أو العملاء المحتملين).</li>
                   </ul>
                   <button type="button" className="btn btn-link" onClick={handleDownloadTemplate} style={{ marginTop: '10px', padding: 0 }}>
-                    📥 تحميل قالب الإكسيل الفارغ
+                    <i className="fa-solid fa-inbox"></i> تحميل قالب الإكسيل الفارغ
                   </button>
                 </div>
                 <form onSubmit={handleImportSubmit}>

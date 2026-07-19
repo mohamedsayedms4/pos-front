@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import '../styles/pages/SettingsPremium.css';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 import StatTile from '../components/common/StatTile';
@@ -120,14 +121,14 @@ const Partners = () => {
             id="partners_total_capital"
             label="إجمالي رأس المال المودع"
             value={`${businessStats.totalCapital.toLocaleString()} ج.م`}
-            icon="🏛️"
+            icon={<i className="fa-solid fa-calculator"></i>}
             defaults={{ color: 'emerald', size: 'tile-wd-sm' }}
           />
           <StatTile
             id="partners_net_profit"
             label="صافي ربح الصيدلية (الشهر)"
             value={`${businessStats.netProfit.toLocaleString()} ج.م`}
-            icon={businessStats.netProfit >= 0 ? '📈' : '📉'}
+            icon={businessStats.netProfit >= 0 ? '' : ''}
             defaults={{ color: businessStats.netProfit >= 0 ? 'blue' : 'rose', size: 'tile-wd-sm' }}
             onClick={() => navigate('/profit-loss')}
           />
@@ -135,7 +136,7 @@ const Partners = () => {
             id="partners_withdrawals"
             label="إجمالي مسحوبات الشركاء"
             value={`${businessStats.totalWithdrawals.toLocaleString()} ج.م`}
-            icon="💸"
+            icon={<i className="fa-solid fa-calculator"></i>}
             defaults={{ color: 'amber', size: 'tile-wd-sm' }}
           />
         </div>
@@ -143,8 +144,8 @@ const Partners = () => {
 
       <div className="card">
         <div className="card-header">
-          <h3>👥 إدارة الشركاء والمساهمين</h3>
-          <div className="toolbar">
+          <h3><i className="fa-solid fa-users"></i> إدارة الشركاء والمساهمين</h3>
+          <div className="toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button className="btn btn-secondary" onClick={loadPartners}>تحديث</button>
               <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
@@ -155,7 +156,7 @@ const Partners = () => {
         </div>
 
         <div className="card-body no-padding">
-          <div className="table-wrapper">
+          <div className="table-responsive" style={{ width: "100%", overflowX: "auto" }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -173,7 +174,7 @@ const Partners = () => {
                   <tr><td colSpan="7" style={{ padding: '80px 0' }}><Loader message="جاري تحليل بيانات الشركاء والأرباح..." /></td></tr>
                 ) : partners.length === 0 ? (
                   <tr><td colSpan="7" style={{ padding: '100px 0', textAlign: 'center' }}>
-                    <div style={{ fontSize: '3rem', opacity: 0.2 }}>👥</div>
+                    <div style={{ fontSize: '3rem', opacity: 0.2 }}><i className="fa-solid fa-users"></i></div>
                     <div style={{ color: 'var(--text-muted)', marginTop: '10px' }}>لا يوجد شركاء مسجلين حتى الآن</div>
                     <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={() => setShowAddModal(true)}>إضافة شريك جديد</button>
                   </td></tr>
@@ -208,14 +209,14 @@ const Partners = () => {
                             style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                             onClick={() => setShowActionModal({ show: true, partnerId: p.id, type: 'CAPITAL' })}
                           >
-                            ➕ إيداع
+                            <i className="fa-solid fa-plus"></i> إيداع
                           </button>
                           <button 
                             className="btn btn-sm" 
                             style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                             onClick={() => setShowActionModal({ show: true, partnerId: p.id, type: 'WITHDRAW' })}
                           >
-                            ➖ سحب
+                            <i className="fa-solid fa-minus"></i> سحب
                           </button>
                         </div>
                       </td>
@@ -249,7 +250,7 @@ const Partners = () => {
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%', background: 'var(--bg-elevated)', border: '1px solid var(--border-input)' }}>
             <div className="modal-header">
               <h2>إضافة شريك جديد</h2>
-              <button className="close-btn" onClick={() => setShowAddModal(false)}>✕</button>
+              <button className="close-btn" onClick={() => setShowAddModal(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <form onSubmit={handleAddPartner}>
               <div className="modal-body">
@@ -305,7 +306,7 @@ const Partners = () => {
           <div className="modal-content" style={{ maxWidth: '400px', width: '90%', background: 'var(--bg-elevated)', border: '1px solid var(--border-input)' }}>
             <div className="modal-header">
               <h2>{showActionModal.type === 'CAPITAL' ? 'إيداع رأس مال' : 'سحب أموال'}</h2>
-              <button className="close-btn" onClick={() => setShowActionModal({ show: false, partnerId: null, type: 'CAPITAL' })}>✕</button>
+              <button className="close-btn" onClick={() => setShowActionModal({ show: false, partnerId: null, type: 'CAPITAL' })}><i className="fa-solid fa-times"></i></button>
             </div>
             <form onSubmit={handlePartnerAction}>
               <div className="modal-body">

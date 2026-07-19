@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import StoreApi from '../services/storeApi';
 import Api, { SERVER_URL } from '../services/api';
@@ -11,51 +12,433 @@ import A4Receipt from '../components/common/A4Receipt';
 import ThermalReceipt from '../components/common/ThermalReceipt';
 import ChatService from '../services/ChatService';
 import CommunicationApi from '../services/CommunicationApi';
-import { Joyride, STATUS } from 'react-joyride';
 
-const StartTourBeacon = ({ beaconProps }) => {
-    return (
+import '../styles/pages/SettingsPremium.css';
+
+// SVG Icons
+const IconStore = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7"/><path d="M18 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7"/><path d="M14 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7"/><path d="M10 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7"/><path d="M6 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7"/></svg>
+);
+const IconPalette = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.63 1.86-1.54l.32-1.78a2 2 0 0 1 1.97-1.68H18c2.2 0 4-1.8 4-4 0-4.97-4.5-9-10-9z"/></svg>
+);
+const IconPhone = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+);
+const IconCreditCard = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+);
+const IconLink = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+);
+const IconMessage = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+);
+const IconShieldCheck = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+);
+const IconUploadCloud = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+);
+const IconImagePlus = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg>
+);
+const IconTrash = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+);
+const IconRotateCcw = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+);
+const IconSave = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-5-5z"/><path d="M14 2v4a1 1 0 0 0 1 1h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+);
+const IconLoader = () => (
+  <svg width="18" height="18" className="spin-anim" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+);
+const IconCheck = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+);
+const IconChevronDown = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+);
+const IconGlobe = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+);
+const IconPrinter = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+);
+const IconBarcode = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>
+);
+const IconMaximize = () => (
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></svg>
+);
+const IconTestTube = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5h0c-1.4 0-2.5-1.1-2.5-2.5V2"/><path d="M8.5 2h7"/><path d="M14.5 16h-6"/></svg>
+);
+const IconFileText = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a1 1 0 0 0 1 1h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+);
+const IconSliders = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+);
+const IconX = () => (
+  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+);
+
+const sectionsList = [
+  { id: "general", label: "المعلومات الأساسية", icon: IconStore },
+  { id: "identity", label: "الهوية والشعار", icon: IconPalette },
+  { id: "contact", label: "بيانات التواصل", icon: IconPhone },
+  { id: "sales", label: "البيع والأسعار", icon: IconCreditCard },
+  { id: "integrations", label: "الروابط والتكاملات", icon: IconLink },
+  { id: "chat", label: "المحادثات", icon: IconMessage }
+];
+
+const printSections = [
+  { id: "invoice-format", label: "الفاتورة", icon: IconFileText },
+  { id: "print-behavior", label: "سلوك الطباعة", icon: IconSliders },
+  { id: "barcode-settings", label: "ملصق الباركود", icon: IconBarcode }
+];
+
+const paperOptions = [
+  { value: "80", title: "كاشير حرارية 80mm", description: "الأفضل لمعظم نقاط البيع", width: "80 مم" },
+  { value: "58", title: "كاشير حرارية 58mm", description: "للطابعات الصغيرة", width: "58 مم" },
+  { value: "A4", title: "فاتورة A4", description: "للفواتير التفصيلية", width: "210 مم" }
+];
+
+const templateOptions = [
+  { value: "classic", title: "قياسي", description: "تفاصيل كاملة مع الباركود", icon: "▤" },
+  { value: "compact", title: "مختصر", description: "يوفّر الورق ويعرض الأساسيات", icon: "▥" },
+  { value: "detailed", title: "تفصيلي", description: "ضرائب وخصومات وبيانات موسعة", icon: "▦" }
+];
+
+const barcodeTemplateOptions = [
+  { value: "classic", title: "قالب 1 — تقليدي", description: "تفاصيل كاملة والاسم والباركود والسعر", icon: "" },
+  { value: "price-focus", title: "قالب 2 — السعر بارز", description: "تركيز وإبراز خط السعر بشكل عريض", icon: "" },
+  { value: "minimal", title: "قالب 3 — مختصر", description: "تصميم بسيط وموجز يوفر المساحة", icon: "️" }
+];
+
+function TextField({ label, name, value, onChange, type = "text", placeholder = "", error, required = false, dir, full = false, hint, inputMode }) {
+  return (
+    <div className={`field ${full ? "field--full" : ""}`}>
+      <label htmlFor={name}>{label}{required && <span className="required">*</span>}</label>
+      <input
+        id={name} name={name} value={value || ''} onChange={onChange} type={type} placeholder={placeholder}
+        aria-invalid={Boolean(error)} className={error ? "input-error" : ""} dir={dir} inputMode={inputMode}
+      />
+      {error ? <p className="field-error">{error}</p> : hint ? <p className="field-hint">{hint}</p> : null}
+    </div>
+  );
+}
+
+function SelectField({ label, name, value, onChange, options }) {
+  return (
+    <div className="field">
+      <label htmlFor={name}>{label}</label>
+      <div className="select-wrap">
+        <select id={name} name={name} value={value || 'EGP'} onChange={onChange}>
+          {options.map((option) => (
+            <option value={option.value} key={option.value}>{option.label}</option>
+          ))}
+        </select>
+        <IconChevronDown />
+      </div>
+    </div>
+  );
+}
+
+function SwitchRow({ checked, onChange, title, description, icon: Icon }) {
+  return (
+    <div className="switch-row">
+      <div className="switch-copy">
+        <span className="switch-icon"><Icon /></span>
+        <div>
+          <strong>{title}</strong>
+          <p>{description}</p>
+        </div>
+      </div>
+      <button type="button" role="switch" aria-checked={checked} className={`switch-btn ${checked ? "switch-btn--active" : ""}`} onClick={() => onChange(!checked)}>
+        <span />
+      </button>
+    </div>
+  );
+}
+
+function SectionCard({ id, title, description, icon: Icon, children }) {
+  return (
+    <section className="settings-card" id={id}>
+      <div className="card-heading">
+        <span className="card-icon"><Icon /></span>
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+      </div>
+      <div className="card-body">{children}</div>
+    </section>
+  );
+}
+
+function RadioCards({ value, onChange, options, compact = false }) {
+  return (
+    <div className={`radio-cards ${compact ? "radio-cards--compact" : ""}`}>
+      {options.map((option) => (
+        <button
+          key={option.value} type="button" className={`radio-card ${value === option.value ? "active" : ""}`}
+          onClick={() => onChange(option.value)} aria-pressed={value === option.value}
+        >
+          <span className="radio-dot">{value === option.value && <span />}</span>
+          {option.icon && <span className="template-icon">{option.icon}</span>}
+          <span className="radio-copy">
+            <strong>{option.title}</strong>
+            <small>{option.description}</small>
+          </span>
+          {option.width && <span className="paper-width">{option.width}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function NumberInput({ label, value, onChange, min, max, unit, hint }) {
+  const update = (next) => onChange(Math.min(max, Math.max(min, Number(next) || min)));
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <div className="number-control">
+        <button type="button" onClick={() => update(value - 1)}>−</button>
+        <input type="number" value={value} min={min} max={max} onChange={(e) => update(e.target.value)} dir="ltr" />
+        <span>{unit}</span>
+        <button type="button" onClick={() => update(value + 1)}>+</button>
+      </div>
+      {hint && <p className="field-hint">{hint}</p>}
+    </div>
+  );
+}
+
+function RealBarcodeGenerator({ barcodeValue = "123456789", height = 36, width = 1.5 }) {
+  const barcodeRef = useRef(null);
+
+  useEffect(() => {
+    if (barcodeRef.current) {
+      try {
+        JsBarcode(barcodeRef.current, String(barcodeValue), {
+          format: "CODE128",
+          width: width,
+          height: height,
+          displayValue: false,
+          margin: 0,
+          background: "#ffffff",
+          lineColor: "#000000"
+        });
+      } catch (err) {
+        console.error("JsBarcode error:", err);
+      }
+    }
+  }, [barcodeValue, height, width]);
+
+  return <svg ref={barcodeRef} style={{ maxWidth: '100%', height: `${height}px` }}></svg>;
+}
+
+function ReceiptPreview({ settings, storeName = "MeDo Group", full = false }) {
+  const dummyInvoice = {
+    id: "INV-PREVIEW-1052",
+    invoiceNumber: "123456789",
+    invoiceDate: new Date().toISOString(),
+    status: "PAID",
+    createdBy: "أحمد محمد",
+    customerName: "عميل نقدي",
+    tenantName: storeName,
+    branchName: 'الفرع الرئيسي',
+    totalAmount: 150.00,
+    paidAmount: 150.00,
+    remainingAmount: 0,
+    discount: 10.00,
+    items: [
+      { id: 1, productName: 'منتج تجريبي 1', barcode: '1000123', quantity: 2, unitPrice: 50.00, unitName: 'قطعة' },
+      { id: 2, productName: 'منتج تجريبي 2', barcode: '1000124', quantity: 1, unitPrice: 50.00, unitName: 'قطعة' }
+    ]
+  };
+
+  const isA4 = settings.paperSize === "A4";
+  const mappedTemplate = settings.invoiceTemplate === 'detailed'
+    ? (isA4 ? 'modern' : 'standard')
+    : settings.invoiceTemplate === 'compact'
+      ? (isA4 ? 'barcode_only' : 'compact')
+      : 'standard';
+
+  return (
+    <div style={{ transform: full ? 'scale(1)' : isA4 ? 'scale(0.68)' : 'scale(0.88)', transformOrigin: 'top center', margin: '0 auto' }}>
+      {isA4 ? (
+        <A4Receipt invoice={dummyInvoice} template={mappedTemplate === 'standard' ? 'classic' : mappedTemplate} isPreview={true} />
+      ) : (
+        <ThermalReceipt invoice={dummyInvoice} template={mappedTemplate} isPreview={true} />
+      )}
+    </div>
+  );
+}
+
+function BarcodePreview({ settings, storeName = "MeDo Group" }) {
+  const t = settings.barcodeTemplate || 'classic';
+  const nameStr = settings.showProductName ? "سماعة بلوتوث لاسلكية" : null;
+  const priceStr = settings.showPrice ? "EGP 150.00" : null;
+  const skuStr = settings.showSku ? "SKU: 123456789" : null;
+
+  return (
+    <div
+      className={`barcode-label barcode-label--${t}`}
+      style={{
+        "--label-width": `${Math.max(165, (settings.barcodeWidth || 32) * 5.2)}px`,
+        "--label-height": `${Math.max(105, (settings.barcodeHeight || 20) * 5)}px`,
+        "--barcode-font-size": `${settings.barcodeFontSize || 10}px`
+      }}
+    >
+      {t === 'price-focus' ? (
         <>
-            <style dangerouslySetInnerHTML={{__html: `
-                @keyframes pulseBeacon {
-                    0% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
-                    50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.7); }
-                    100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
-                }
-            `}} />
-            <button 
-                {...beaconProps}
-                style={{
-                    background: '#0B1354',
-                    color: '#ffffff',
-                    border: '2px solid #3B82F6',
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                    borderRadius: '30px',
-                    fontFamily: 'Cairo, sans-serif',
-                    fontWeight: '800',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    whiteSpace: 'nowrap',
-                    position: 'relative',
-                    zIndex: 9999,
-                    animation: 'pulseBeacon 2s infinite ease-in-out',
-                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)'
-                }}
-            >
-                ابدأ الجولة الإرشادية للنظام
-            </button>
+          <div className="barcode-store-tag">{storeName}</div>
+          {nameStr && <strong className="barcode-title">{nameStr}</strong>}
+          {priceStr && <div className="barcode-price-focused">{priceStr}</div>}
+          <RealBarcodeGenerator barcodeValue="123456789" height={32} width={1.4} />
+          {skuStr && <small className="barcode-sku">{skuStr}</small>}
         </>
-    );
-};
+      ) : t === 'minimal' ? (
+        <>
+          <div className="barcode-compact-head">
+            {nameStr && <strong>{nameStr}</strong>}
+            {priceStr && <b>{priceStr}</b>}
+          </div>
+          <RealBarcodeGenerator barcodeValue="123456789" height={30} width={1.3} />
+          {skuStr && <small>{skuStr}</small>}
+        </>
+      ) : (
+        /* classic template */
+        <>
+          <div className="barcode-store-tag">{storeName}</div>
+          {nameStr && <strong>{nameStr}</strong>}
+          <RealBarcodeGenerator barcodeValue="123456789" height={34} width={1.5} />
+          {skuStr && <small>{skuStr}</small>}
+          {priceStr && <b className="barcode-price-classic">{priceStr}</b>}
+        </>
+      )}
+    </div>
+  );
+}
 
+function PreviewPanel({ settings, storeName, onOpenFull, onTestPrint }) {
+  const [tab, setTab] = useState("invoice");
 
+  return (
+    <aside className="preview-panel">
+      <div className="preview-head">
+        <div>
+          <span className="preview-status"><i /> معاينة مباشرة</span>
+          <h2>شكل الطباعة</h2>
+        </div>
+        <button className="btn-seggele btn-seggele--ghost" type="button" onClick={onOpenFull} title="تكبير المعاينة">
+          <IconMaximize />
+        </button>
+      </div>
 
-import { useRef } from 'react';
+      <div className="preview-tabs">
+        <button type="button" className={tab === "invoice" ? "active" : ""} onClick={() => setTab("invoice")}>
+          الفاتورة
+        </button>
+        <button type="button" className={tab === "barcode" ? "active" : ""} onClick={() => setTab("barcode")}>
+          الباركود
+        </button>
+      </div>
+
+      <div className={`preview-stage ${tab === "barcode" ? "preview-stage--barcode" : ""}`}>
+        {tab === "invoice" ? (
+          <ReceiptPreview settings={settings} storeName={storeName} />
+        ) : (
+          <BarcodePreview settings={settings} storeName={storeName} />
+        )}
+      </div>
+
+      <div className="preview-actions">
+        <button className="btn-seggele btn-seggele--secondary" onClick={onOpenFull}>
+          <IconMaximize /> معاينة كاملة
+        </button>
+        <button className="btn-seggele btn-seggele--primary" onClick={onTestPrint}>
+          <IconTestTube /> طباعة تجريبية
+        </button>
+      </div>
+
+      <p className="preview-note">
+        المعاينة تقريبية وقد تختلف الهوامش قليلًا حسب تعريف الطابعة.
+      </p>
+    </aside>
+  );
+}
+
+function PreviewModal({ open, onClose, settings, storeName, onPrint }) {
+  if (!open) return null;
+  return createPortal(
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <div className="modal-stage-box" onMouseDown={(e) => e.stopPropagation()}>
+        <header className="modal-head-box">
+          <h2><i className="fa-solid fa-eye"></i>️ معاينة الطباعة الكاملة</h2>
+          <button className="btn-seggele btn-seggele--ghost" type="button" onClick={onClose}><IconX /></button>
+        </header>
+
+        <div className="modal-content-stage">
+          <ReceiptPreview settings={settings} storeName={storeName} full />
+        </div>
+
+        <footer className="modal-footer-box">
+          <button className="btn-seggele btn-seggele--secondary" type="button" onClick={onClose}>إغلاق</button>
+          <button className="btn-seggele btn-seggele--primary" type="button" onClick={onPrint}>
+            <IconPrinter /> طباعة الفاتورة
+          </button>
+        </footer>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function LogoUploader({ value, onUpload, onDelete, uploading }) {
+  const inputRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+
+  return (
+    <div
+      className={`logo-uploader ${dragging ? "logo-uploader--dragging" : ""}`}
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => { e.preventDefault(); setDragging(false); onUpload(e.dataTransfer.files[0]); }}
+    >
+      <div className="logo-preview">
+        {value ? <img src={value} alt="شعار المتجر" /> : (
+          <div className="brand-preview"><span className="brand-mark">S</span><span>eggele</span></div>
+        )}
+      </div>
+
+      <div className="upload-copy">
+        <span className="upload-icon"><IconUploadCloud /></span>
+        <div>
+          <strong>اسحب الشعار هنا أو اختر صورة</strong>
+          <p>PNG أو JPG أو SVG، بحد أقصى 2MB. سيتم تطبيق المقاسات تلقائيًا عبر النظام.</p>
+          <div className="upload-actions">
+            <button className="btn-seggele btn-seggele--secondary" type="button" onClick={() => inputRef.current?.click()} disabled={uploading}>
+              <IconImagePlus />
+              {uploading ? "جاري الرفع..." : value ? "استبدال الشعار" : "اختيار صورة"}
+            </button>
+            {value && (
+              <button className="btn-seggele btn-seggele--danger-ghost" type="button" onClick={onDelete} disabled={uploading}>
+                <IconTrash /> حذف
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/jpg" hidden onChange={(e) => onUpload(e.target.files[0])} />
+    </div>
+  );
+}
 
 const Settings = () => {
     const location = useLocation();
@@ -68,99 +451,77 @@ const Settings = () => {
     const isBanner = location.pathname === '/settings/banner';
 
     const [info, setInfo] = useState({
-        aboutUs: '', currency: 'جنيه', logoUrl: '', facebookPixelId: '',
-        facebookAdAccountId: '', facebookAccessToken: '', enableWholesale: false
+        name: '', currency: 'EGP', logoUrl: '', phone1: '', phone2: '', address: '', email: '', whatsappNumber: '', facebookUrl: '', instagramUrl: '', tiktokUrl: '', aboutUs: '', facebookPixelId: '', facebookAdAccountId: '', facebookAccessToken: '', enableWholesale: false
     });
+    const [savedInfo, setSavedInfo] = useState(null);
+    const [interBranchChatEnabled, setInterBranchChatEnabled] = useState(true);
+    const [savedInterBranchChat, setSavedInterBranchChat] = useState(true);
+
+    // Print & Barcode Settings State
+    const [printSettings, setPrintSettings] = useState({
+        paperSize: localStorage.getItem('print_format') === 'A4' ? 'A4' : localStorage.getItem('print_format') === '58mm' ? '58' : '80',
+        invoiceTemplate: localStorage.getItem('print_template') || 'classic',
+        autoOpenPrintWindow: localStorage.getItem('print_auto_trigger') === 'true',
+        previewBeforePrint: localStorage.getItem('pos_print_preview') !== 'false',
+        autoPrintAfterSale: localStorage.getItem('auto_print_sale') === 'true',
+        printCustomerCopy: localStorage.getItem('print_customer_copy') !== 'false',
+        barcodeWidth: 32,
+        barcodeHeight: 20,
+        barcodeFontSize: 10,
+        barcodeTemplate: localStorage.getItem('pos_barcode_template') || 'classic',
+        showProductName: localStorage.getItem('barcode_show_name') !== 'false',
+        showPrice: localStorage.getItem('barcode_show_price') !== 'false',
+        showSku: localStorage.getItem('barcode_show_sku') !== 'false'
+    });
+    const [savedPrintSettings, setSavedPrintSettings] = useState(null);
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [interBranchChatEnabled, setInterBranchChatEnabled] = useState(true);
+    const [toastMessage, setToastMessage] = useState('');
 
-    // Tour State
-    const [runTour, setRunTour] = useState(false);
-    
-    useEffect(() => {
-        if (loading || !isIdentity) return;
-        const checkTour = async () => {
-            let onboarding = null;
-            const onboardingStr = localStorage.getItem('onboardingStatus');
-            if (onboardingStr) {
-                try { onboarding = JSON.parse(onboardingStr); } catch(e){}
-            }
-            
-            if (!onboarding) {
-                try {
-                    const res = await Api.get('/onboarding/status');
-                    onboarding = res.data || res;
-                    if (onboarding) {
-                        localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
-                    }
-                } catch(e){}
-            }
-            
-            if (onboarding && (onboarding.hasCompanyDetails || onboarding.isCompleted || onboarding.completed)) {
-                return;
-            }
+    const [activeSection, setActiveSection] = useState(isPrint ? "invoice-format" : "general");
+    const [previewOpen, setPreviewOpen] = useState(false);
 
-            if (!localStorage.getItem('tour_settings_v3')) {
-                setTimeout(() => {
-                    setRunTour(true);
-                }, 300);
-            }
-        };
-        checkTour();
-    }, [loading, isIdentity]);
-
-    const handleJoyrideCallback = (data) => {
-        const { status, type } = data;
-        const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
-        
-        if (finishedStatuses.includes(status) || type === 'tour:end') {
-            setRunTour(false);
-            localStorage.setItem('tour_settings_v3', 'true');
+    // Track Dirty Form State
+    const dirty = useMemo(() => {
+        if (isIdentity) {
+            if (!savedInfo) return false;
+            const infoChanged = JSON.stringify(info) !== JSON.stringify(savedInfo);
+            const chatChanged = interBranchChatEnabled !== savedInterBranchChat;
+            return infoChanged || chatChanged;
+        } else if (isPrint) {
+            if (!savedPrintSettings) return false;
+            return JSON.stringify(printSettings) !== JSON.stringify(savedPrintSettings);
         }
+        return false;
+    }, [isIdentity, isPrint, info, savedInfo, interBranchChatEnabled, savedInterBranchChat, printSettings, savedPrintSettings]);
+
+    // Active Section Observer for ScrollSpy
+    useEffect(() => {
+        const sectionsToObserve = isPrint ? printSections : sectionsList;
+        const observers = sectionsToObserve.map(({ id }) => {
+            const element = document.getElementById(id);
+            if (!element) return null;
+
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.isIntersecting) setActiveSection(id);
+                },
+                { rootMargin: "-20% 0px -60% 0px", threshold: 0.01 }
+            );
+
+            observer.observe(element);
+            return observer;
+        });
+
+        return () => observers.forEach((obs) => obs?.disconnect());
+    }, [isIdentity, isPrint, loading]);
+
+    const scrollToSection = (id) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setActiveSection(id);
     };
-
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === '2') {
-                e.preventDefault();
-                setRunTour(false);
-                localStorage.setItem('tour_settings_v3', 'true');
-                toast('تم تخطي الجولة الإرشادية للنظام', 'info');
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [toast]);
-
-    const tourSteps = [
-        {
-            target: '.tour-logo-upload',
-            content: 'نبدأ بإضافة شعار متجرك ليعكس هويتك، ارفع صورة مناسبة.',
-            placement: 'bottom',
-        },
-        {
-            target: '.tour-store-name',
-            content: 'أدخل اسم متجرك كما سيظهر للعملاء في الفواتير والنظام.',
-            placement: 'bottom',
-        },
-        {
-            target: '.tour-currency',
-            content: 'حدد العملة التي ستستخدمها في مبيعاتك (مثال: جنيه، ريال، دولار).',
-            placement: 'bottom',
-        },
-        {
-            target: '.tour-contact',
-            content: 'أضف أرقام التواصل الخاصة بك لتظهر بوضوح في الفواتير.',
-            placement: 'top',
-        },
-        {
-            target: '.tour-save-button',
-            content: 'أخيراً، اضغط هنا لحفظ التعديلات والبدء بالبيع بنجاح! 🎉',
-            placement: 'bottom',
-        }
-    ];
 
     // SMTP Config
     const [smtpConfig, setSmtpConfig] = useState({
@@ -168,80 +529,6 @@ const Settings = () => {
         authEnabled: true, tlsEnabled: true, fromEmail: '', fromName: ''
     });
     const [savingSmtp, setSavingSmtp] = useState(false);
-
-    // Print Settings State
-    const [printFormat, setPrintFormat] = useState(() => localStorage.getItem('print_format') || '80mm');
-    const [printTemplate, setPrintTemplate] = useState(() => localStorage.getItem('print_template') || 'standard');
-    const [printAutoTrigger, setPrintAutoTrigger] = useState(() => localStorage.getItem('print_auto_trigger') === 'true');
-    const [posPrintPreview, setPosPrintPreview] = useState(() => localStorage.getItem('pos_print_preview') !== 'false');
-    const [showInvoicePreviewModal, setShowInvoicePreviewModal] = useState(false);
-
-    const dummyInvoice = {
-        id: "INV-PREVIEW-001",
-        invoiceNumber: "123456789",
-        invoiceDate: new Date().toISOString(),
-        status: "PAID",
-        createdBy: "أحمد محمد (تجريبي)",
-        customerName: "عميل نقدي",
-        tenantName: info?.name || 'اسم المتجر',
-        branchName: 'الفرع الرئيسي',
-        totalAmount: 150.00,
-        paidAmount: 150.00,
-        remainingAmount: 0,
-        discount: 10.00,
-        items: [
-            { id: 1, productName: 'منتج تجريبي 1', barcode: '1000123', quantity: 2, unitPrice: 50.00, unitName: 'قطعة' },
-            { id: 2, productName: 'منتج تجريبي 2', barcode: '1000124', quantity: 1, unitPrice: 50.00, unitName: 'قطعة' }
-        ]
-    };
-
-    // Barcode Settings State
-    const [barcodeConfig, setBarcodeConfig] = useState({ labelWidthMm: 40, labelHeightMm: 30 });
-    const [barcodeTemplate, setBarcodeTemplate] = useState(() => localStorage.getItem('pos_barcode_template') || '1');
-    const [barcodeDataUrl, setBarcodeDataUrl] = useState('');
-
-    useEffect(() => {
-        if (!isPrint) return;
-        try {
-            const canvas = document.createElement('canvas');
-            JsBarcode(canvas, '123456789', {
-                format: "CODE128",
-                displayValue: false,
-                margin: 0,
-                width: 1.5,
-                height: 35
-            });
-            setBarcodeDataUrl(canvas.toDataURL('image/png'));
-        } catch (e) {
-            console.error('Barcode preview error', e);
-        }
-    }, [isPrint]);
-
-    // Sync template default when format changes
-    useEffect(() => {
-        const savedFormat = localStorage.getItem('print_format') || '80mm';
-        const savedTemplate = localStorage.getItem('print_template');
-        if (printFormat !== savedFormat || !savedTemplate) {
-            const defaultTemplate = printFormat === 'A4' ? 'classic' : 'standard';
-            setPrintTemplate(defaultTemplate);
-            localStorage.setItem('print_template', defaultTemplate);
-        }
-    }, [printFormat]);
-
-    const handleSavePrintSettings = async (e) => {
-        e.preventDefault();
-        try {
-            await Api.updatePrinterConfig(barcodeConfig);
-            localStorage.setItem('print_format', printFormat);
-            localStorage.setItem('print_template', printTemplate);
-            localStorage.setItem('print_auto_trigger', String(printAutoTrigger));
-            localStorage.setItem('pos_print_preview', String(posPrintPreview));
-            localStorage.setItem('pos_barcode_template', barcodeTemplate);
-            toast('تم حفظ إعدادات الطباعة بنجاح على هذا الجهاز 🖨️', 'success');
-        } catch (err) {
-            toast('فشل حفظ إعدادات طابعة الباركود', 'error');
-        }
-    };
 
     useEffect(() => {
         loadInfo();
@@ -251,11 +538,15 @@ const Settings = () => {
         setLoading(true);
         try {
             const res = await StoreApi.getStoreInfoAdmin();
-            if (res.success) setInfo(res.data);
+            if (res.success) {
+                setInfo(res.data);
+                setSavedInfo(res.data);
+            }
 
             try {
                 const chatSetting = await ChatService.getInterBranchSetting();
                 setInterBranchChatEnabled(chatSetting);
+                setSavedInterBranchChat(chatSetting);
             } catch (e) {
                 console.warn('Could not load chat settings');
             }
@@ -269,9 +560,22 @@ const Settings = () => {
 
             try {
                 const bConfig = await Api.getPrinterConfig();
-                if (bConfig) setBarcodeConfig(bConfig);
+                if (bConfig) {
+                    setPrintSettings(prev => {
+                        const updated = {
+                            ...prev,
+                            barcodeWidth: bConfig.labelWidthMm || prev.barcodeWidth,
+                            barcodeHeight: bConfig.labelHeightMm || prev.barcodeHeight
+                        };
+                        setSavedPrintSettings(updated);
+                        return updated;
+                    });
+                } else {
+                    setSavedPrintSettings(printSettings);
+                }
             } catch (e) {
-                console.warn('Could not load barcode config');
+                console.warn('Could not load printer config');
+                setSavedPrintSettings(printSettings);
             }
         } catch (e) {
             toast('خطأ في تحميل الإعدادات', 'error');
@@ -280,34 +584,31 @@ const Settings = () => {
         }
     };
 
-    const handleSave = async (e) => {
-        e.preventDefault();
+    const handleSaveStoreInfo = async () => {
+        if (!info.name || !info.name.trim()) {
+            toast('اسم المتجر مطلوب للحفظ', 'error');
+            scrollToSection('general');
+            return;
+        }
+
         setSaving(true);
         try {
             const res = await StoreApi.updateStoreInfoAdmin(info);
             try {
                 await ChatService.setInterBranchSetting(interBranchChatEnabled);
+                setSavedInterBranchChat(interBranchChatEnabled);
             } catch (e) {
                 console.warn('Could not save chat settings');
             }
 
             if (res.success) {
-                toast('تم حفظ الإعدادات بنجاح ✅', 'success');
+                toast('تم حفظ الإعدادات بنجاح ', 'success');
+                setToastMessage('تم حفظ الإعدادات بنجاح.');
+                setTimeout(() => setToastMessage(''), 3000);
                 setInfo(res.data);
-                // Redirect back to dashboard if they are in onboarding phase
-                try {
-                    const onboardingStr = localStorage.getItem('onboardingStatus');
-                    if (onboardingStr) {
-                        const obs = JSON.parse(onboardingStr);
-                        if (!obs.completed) {
-                            navigate('/dashboard');
-                        }
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
+                setSavedInfo(res.data);
             } else {
-                toast(res.message, 'error');
+                toast(res.message || 'فشل الحفظ', 'error');
             }
         } catch (e) {
             toast('خطأ في الاتصال بالسيرفر', 'error');
@@ -316,14 +617,66 @@ const Settings = () => {
         }
     };
 
-    const handleLogoUpload = async (e) => {
-        const file = e.target.files[0];
+    const handleSavePrintSettings = async () => {
+        setSaving(true);
+        try {
+            const formatVal = printSettings.paperSize === 'A4' ? 'A4' : printSettings.paperSize === '58' ? '58mm' : '80mm';
+            localStorage.setItem('print_format', formatVal);
+            localStorage.setItem('print_template', printSettings.invoiceTemplate);
+            localStorage.setItem('print_auto_trigger', String(printSettings.autoOpenPrintWindow));
+            localStorage.setItem('pos_print_preview', String(printSettings.previewBeforePrint));
+            localStorage.setItem('auto_print_sale', String(printSettings.autoPrintAfterSale));
+            localStorage.setItem('print_customer_copy', String(printSettings.printCustomerCopy));
+            localStorage.setItem('pos_barcode_template', printSettings.barcodeTemplate);
+            localStorage.setItem('barcode_show_name', String(printSettings.showProductName));
+            localStorage.setItem('barcode_show_price', String(printSettings.showPrice));
+            localStorage.setItem('barcode_show_sku', String(printSettings.showSku));
+
+            await Api.updatePrinterConfig({
+                labelWidthMm: printSettings.barcodeWidth,
+                labelHeightMm: printSettings.barcodeHeight
+            });
+
+            setSavedPrintSettings(printSettings);
+            toast('تم حفظ إعدادات الطباعة بنجاح ️', 'success');
+            setToastMessage('تم حفظ إعدادات الطباعة والباركود بنجاح.');
+            setTimeout(() => setToastMessage(''), 3000);
+        } catch (err) {
+            toast('فشل حفظ إعدادات الطباعة والباركود', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDiscard = () => {
+        if (isIdentity) {
+            if (savedInfo) setInfo(savedInfo);
+            setInterBranchChatEnabled(savedInterBranchChat);
+        } else if (isPrint) {
+            if (savedPrintSettings) setPrintSettings(savedPrintSettings);
+        }
+        setToastMessage('تم تجاهل التعديلات.');
+        setTimeout(() => setToastMessage(''), 2500);
+    };
+
+    const setPrintProp = (key, value) => {
+        setPrintSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleTestPrint = () => {
+        // فتح صفحة React كاملة للطباعة التجريبية — نفس منطق PrintInvoice.jsx
+        // هذا هو الحل الجذري: الصفحة الجديدة تحمل كل CSS بشكل طبيعي ولا تعتمد على iframe أو popup فارغ
+        window.open('/print-test?auto=true', '_blank', 'width=900,height=700,noopener');
+        toast('جاري فتح نافذة الطباعة التجريبية...', 'info');
+    };
+
+    const handleLogoUpload = async (file) => {
         if (!file) return;
         setUploading(true);
         try {
             const res = await StoreApi.uploadLogo(file);
             if (res.success) {
-                toast('تم تحديث اللوجو بنجاح', 'success');
+                toast('تم تحديث الشعار بنجاح', 'success');
                 setInfo(prev => ({ ...prev, logoUrl: res.data }));
             } else {
                 toast(res.message, 'error');
@@ -333,6 +686,10 @@ const Settings = () => {
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleLogoDelete = () => {
+        setInfo(prev => ({ ...prev, logoUrl: '' }));
     };
 
     const handleSaveSmtp = async (e) => {
@@ -348,617 +705,251 @@ const Settings = () => {
         }
     };
 
-    if (loading) return <Loader />;
+    if (loading) return <Loader message="جاري تحميل الإعدادات..." />;
 
-    const logoPreview = StoreApi.getImageUrl(info.logoUrl);
-
-
+    const logoPreview = info.logoUrl ? StoreApi.getImageUrl(info.logoUrl) : '';
 
     return (
-        <div className="page-section settings-page-wrapper" style={{ direction: 'rtl' }}>
-            <Joyride
-                steps={tourSteps}
-                run={runTour}
-                beaconComponent={StartTourBeacon}
-                continuous={true}
-                showProgress={true}
-                showSkipButton={true}
-                disableOverlayClose={true}
-                spotlightClicks={true}
-                callback={handleJoyrideCallback}
-                styles={{
-                    options: {
-                        primaryColor: '#3B82F6',
-                        backgroundColor: '#0B1354',
-                        textColor: '#ffffff',
-                        arrowColor: '#0B1354',
-                        zIndex: 1000,
-                    },
-                    tooltipContainer: {
-                        textAlign: 'right',
-                    },
-                    buttonNext: {
-                        outline: 'none',
-                        backgroundColor: '#3B82F6',
-                        color: '#ffffff',
-                        fontFamily: 'Cairo, sans-serif', 
-                        fontWeight: 'bold',
-                        padding: '6px 16px', 
-                        borderRadius: '6px'
-                    },
-                    buttonBack: {
-                        marginLeft: 15,
-                        marginRight: 0,
-                        outline: 'none',
-                        fontFamily: 'Cairo, sans-serif', 
-                        color: '#a0aec0'
-                    }
-                }}
-                locale={{
-                    back: 'السابق',
-                    close: 'إغلاق',
-                    last: 'إنهاء',
-                    next: 'التالي',
-                    skip: 'تخطي'
-                }}
-            />
-            <style>{`
-                .settings-responsive-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 20px;
-                }
-                .settings-logo-section {
-                    display: flex;
-                    align-items: center;
-                    gap: 20px;
-                    grid-column: 1 / -1;
-                    background: var(--bg-elevated);
-                    padding: 20px;
-                    border-radius: 8px;
-                    border: 1px solid var(--border-color);
-                }
-                .settings-ads-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 15px;
-                    margin-top: 10px;
-                }
-                .settings-checkbox-group {
-                    grid-column: 1 / -1;
-                    display: flex;
-                    gap: 20px;
-                }
-                @media (max-width: 768px) {
-                    .settings-logo-section {
-                        flex-direction: column;
-                        text-align: center;
-                    }
-                    .settings-logo-section .logo-info-text {
-                        text-align: center;
-                    }
-                    .settings-ads-grid {
-                        grid-template-columns: 1fr;
-                    }
-                    .settings-checkbox-group {
-                        flex-direction: column;
-                        gap: 10px;
-                    }
-                    .settings-toolbar-mobile {
-                        width: 100%;
-                    }
-                    .settings-toolbar-mobile button {
-                        width: 100%;
-                    }
-                }
-            `}</style>
+        <div className="page-section settings-page-wrapper" style={{ direction: 'rtl', padding: '24px' }}>
             {isIdentity && (
-                <div className="card" style={{ marginBottom: '20px' }}>
-                    <div className="card-header" style={{ flexWrap: 'wrap' }}>
-                        <h3>⚙️ إعدادات المتجر والهوية</h3>
-                        <div className="toolbar settings-toolbar-mobile" style={{ display: 'flex', gap: '10px' }}>
-                            <button
-                                type="submit"
-                                form="settingsForm"
-                                className="btn btn-primary tour-save-button"
-                                disabled={saving}
-                            >
-                                {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                <>
+                    {/* Header */}
+                    <div className="settings-page-header">
+                        <div>
+                            <span className="settings-eyebrow">إدارة المتجر</span>
+                            <h1>إعدادات المتجر والهوية</h1>
+                            <p>حدّث بيانات متجرك والهوية وطرق التواصل وإعدادات البيع.</p>
+                        </div>
+
+                        <div className="header-buttons">
+                            <button className="btn-seggele btn-seggele--secondary" type="button" onClick={handleDiscard} disabled={!dirty || saving}>
+                                <IconRotateCcw /> تجاهل
+                            </button>
+                            <button className="btn-seggele btn-seggele--primary" type="button" onClick={handleSaveStoreInfo} disabled={!dirty || saving}>
+                                {saving ? <IconLoader /> : <IconSave />}
+                                {saving ? "جارٍ الحفظ..." : "حفظ التغييرات"}
                             </button>
                         </div>
                     </div>
 
-                    <div className="card-body">
-                        <form id="settingsForm" onSubmit={handleSave}>
-                            <div className="settings-responsive-grid">
+                    {/* Main Settings Grid Layout */}
+                    <div className="settings-layout">
+                        <aside className="settings-nav">
+                            <nav>
+                                {sectionsList.map(({ id, label, icon: Icon }) => (
+                                    <button
+                                        type="button" key={id}
+                                        className={activeSection === id ? "section-link active" : "section-link"}
+                                        onClick={() => scrollToSection(id)}
+                                    >
+                                        <Icon /><span>{label}</span>
+                                        {activeSection === id && <span className="active-dot" />}
+                                    </button>
+                                ))}
+                            </nav>
 
-                                {/* Logo Section */}
-                                <div className="form-group settings-logo-section tour-logo-upload">
-                                    <div style={{
-                                        width: '100px', height: '100px',
-                                        background: 'var(--bg-card)', borderRadius: '8px',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        border: '1px dashed var(--border-color)', overflow: 'hidden',
-                                        position: 'relative', flexShrink: 0
-                                    }}>
-                                        {logoPreview ? (
-                                            <img src={logoPreview} alt="Logo" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
-                                        ) : (
-                                            <span style={{ fontSize: '2rem', opacity: 0.3 }}>🖼️</span>
-                                        )}
-                                        {uploading && (
-                                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                                                ...
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="logo-info-text">
-                                        <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: 'var(--text-main)' }}>شعار المتجر (اللوجو)</h4>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                                            يفضل استخدام صورة PNG شفافة أو SVG. المقاسات المستخدمة في النظام:
-                                        </p>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', background: 'var(--bg-card)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                                            <span>• الجانبية والفوتر: 32px × 32px</span>
-                                            <span>• صفحة تسجيل الدخول: 64px × 64px</span>
-                                            <span>• صفحة الهبوط: 44px × 44px</span>
-                                            <span>• أيقونة المتصفح: 16px × 16px</span>
-                                        </div>
-                                        <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', display: 'inline-block' }}>
-                                            رفع صورة جديدة
-                                            <input type="file" className="hidden" onChange={handleLogoUpload} disabled={uploading} accept="image/*" />
-                                        </label>
-                                    </div>
+                            <div className="security-note">
+                                <IconShieldCheck />
+                                <div>
+                                    <strong>بياناتك محمية</strong>
+                                    <p>يتم حفظ التغييرات بشكل آمن وتشفير البيانات بالنظام.</p>
                                 </div>
-
-                                {/* Basic Info */}
-                                <div className="form-group tour-store-name">
-                                    <label>اسم المتجر</label>
-                                    <input type="text" className="form-control" value={info.name} onChange={e => setInfo({ ...info, name: e.target.value })} required />
-                                </div>
-                                <div className="form-group">
-                                    <label>العنوان</label>
-                                    <input type="text" className="form-control" value={info.address || ''} onChange={e => setInfo({ ...info, address: e.target.value })} />
-                                </div>
-                                <div className="form-group tour-currency">
-                                    <label>العملة</label>
-                                    <input type="text" className="form-control" value={info.currency} onChange={e => setInfo({ ...info, currency: e.target.value })} />
-                                </div>
-                                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px' }}>
-                                    <input 
-                                        type="checkbox" 
-                                        id="enableWholesaleToggle"
-                                        checked={info.enableWholesale || false} 
-                                        onChange={e => setInfo({ ...info, enableWholesale: e.target.checked })}
-                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                    />
-                                    <label htmlFor="enableWholesaleToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>تفعيل البيع بأسعار الجملة</label>
-                                </div>
-
-                                {/* Contact Info */}
-                                <div className="form-group tour-contact">
-                                    <label>رقم الهاتف الأساسي</label>
-                                    <input type="text" className="form-control" value={info.phone1} onChange={e => setInfo({ ...info, phone1: e.target.value })} required />
-                                </div>
-                                <div className="form-group">
-                                    <label>رقم هاتف إضافي</label>
-                                    <input type="text" className="form-control" value={info.phone2 || ''} onChange={e => setInfo({ ...info, phone2: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label>رقم الواتساب</label>
-                                    <input type="text" className="form-control" value={info.whatsappNumber || ''} onChange={e => setInfo({ ...info, whatsappNumber: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label>البريد الإلكتروني</label>
-                                    <input type="email" className="form-control" value={info.email || ''} onChange={e => setInfo({ ...info, email: e.target.value })} />
-                                </div>
-
-                                {/* Social Links */}
-                                <div className="form-group">
-                                    <label>رابط فيسبوك</label>
-                                    <input type="text" className="form-control" value={info.facebookUrl || ''} onChange={e => setInfo({ ...info, facebookUrl: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label>رابط انستجرام</label>
-                                    <input type="text" className="form-control" value={info.instagramUrl || ''} onChange={e => setInfo({ ...info, instagramUrl: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label>رابط تيك توك</label>
-                                    <input type="text" className="form-control" value={info.tiktokUrl || ''} onChange={e => setInfo({ ...info, tiktokUrl: e.target.value })} />
-                                </div>
-
-                                {/* Facebook Pixel */}
-                                {/* <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                        <span style={{ fontSize: '1.2rem' }}>📊</span>
-                                        <strong>Facebook Pixel ID</strong>
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>(اختياري — لتتبع إعلانات فيسبوك)</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={info.facebookPixelId || ''}
-                                        onChange={e => setInfo({ ...info, facebookPixelId: e.target.value })}
-                                        placeholder="مثال: 1234567890123456"
-                                        style={{ fontFamily: 'monospace', letterSpacing: '1px' }}
-                                    />
-                                    <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
-                                        ستجد الـ Pixel ID في <a href="https://business.facebook.com/events_manager" target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>Facebook Events Manager</a> → Data Sources → Pixel
-                                    </small>
-                                </div> */}
-
-                                {/* Facebook Ads Insights Config */}
-                                {/* <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                        <span style={{ fontSize: '1.2rem' }}>📈</span>
-                                        <strong>إعدادات تقارير الإعلانات (Facebook Ads Reports)</strong>
-                                    </label>
-
-                                    <div className="settings-ads-grid">
-                                        <div className="form-group">
-                                            <label style={{ fontSize: '0.85rem' }}>Ad Account ID</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                value={info.facebookAdAccountId || ''}
-                                                onChange={e => setInfo({ ...info, facebookAdAccountId: e.target.value })}
-                                                placeholder="مثال: 1234567890"
-                                                style={{ fontFamily: 'monospace' }}
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label style={{ fontSize: '0.85rem' }}>System User Access Token</label>
-                                            <input
-                                                type="password"
-                                                className="form-control"
-                                                value={info.facebookAccessToken || ''}
-                                                onChange={e => setInfo({ ...info, facebookAccessToken: e.target.value })}
-                                                placeholder="EAAB..."
-                                            />
-                                        </div>
-                                    </div>
-                                    <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
-                                        للحصول على الـ Token والـ ID، اتبع دليل <a href="https://developers.facebook.com/docs/marketing-api/get-started" target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>Marketing API Get Started</a>. يجب أن يحتوي الـ Token على صلاحية <code>ads_read</code>.
-                                    </small>
-                                </div> */}
-
-                                {/* Chat Settings */}
-                                <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                        <span style={{ fontSize: '1.2rem' }}>💬</span>
-                                        <strong>إعدادات المحادثات (Chat)</strong>
-                                    </label>
-
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                                        <input
-                                            type="checkbox"
-                                            id="interBranchChatToggle"
-                                            checked={interBranchChatEnabled}
-                                            onChange={e => setInterBranchChatEnabled(e.target.checked)}
-                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                        />
-                                        <label htmlFor="interBranchChatToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
-                                            السماح للموظفين بالمحادثة بين الأفرع المختلفة (Inter-branch Chat)
-                                        </label>
-                                    </div>
-                                    <small style={{ color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
-                                        عند إيقاف هذا الخيار، سيتمكن الموظفون فقط من مراسلة زملائهم في نفس الفرع. (المدراء مستثنون دائماً من هذا القيد).
-                                    </small>
-                                </div>
-
-                                {/* About Us */}
-                                {/* <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                                    <label>نبذة عن المتجر (تظهر في تذييل الموقع)</label>
-                                    <textarea className="form-control" rows={3} value={info.aboutUs || ''} onChange={e => setInfo({ ...info, aboutUs: e.target.value })} />
-                                </div> */}
                             </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        </aside>
 
-            {/* SMTP Settings Card */}
-            {isSmtp && (
-                <div className="card" style={{ marginBottom: '20px' }}>
-                    <div className="card-header">
-                        <h3>📧 إعدادات خادم البريد (SMTP)</h3>
-                        <div className="toolbar" style={{ display: 'flex', gap: '10px' }}>
-                            <button
-                                type="submit"
-                                form="smtpForm"
-                                className="btn btn-primary"
-                                disabled={savingSmtp}
-                            >
-                                {savingSmtp ? 'جاري الحفظ...' : 'حفظ إعدادات البريد'}
-                            </button>
+                        <div className="settings-content">
+                            <SectionCard id="general" title="المعلومات الأساسية" description="البيانات التي تظهر في الفواتير وتقارير المتجر الرسمية." icon={IconStore}>
+                                <div className="form-grid">
+                                    <TextField label="اسم المتجر" name="name" value={info.name} onChange={(e) => setInfo({ ...info, name: e.target.value })} required placeholder="مثال: MeDo Group" />
+                                    <SelectField label="العملة" name="currency" value={info.currency} onChange={(e) => setInfo({ ...info, currency: e.target.value })} options={[
+                                        { value: "EGP", label: "جنيه مصري (EGP)" },
+                                        { value: "SAR", label: "ريال سعودي (SAR)" },
+                                        { value: "AED", label: "درهم إماراتي (AED)" },
+                                        { value: "USD", label: "دولار أمريكي (USD)" }
+                                    ]} />
+                                    <TextField label="رقم الهاتف الأساسي" name="phone1" value={info.phone1} onChange={(e) => setInfo({ ...info, phone1: e.target.value })} required dir="ltr" inputMode="tel" placeholder="010 0000 0000" />
+                                    <TextField label="رقم هاتف إضافي" name="phone2" value={info.phone2} onChange={(e) => setInfo({ ...info, phone2: e.target.value })} dir="ltr" inputMode="tel" placeholder="اختياري" />
+                                    <TextField label="العنوان" name="address" value={info.address} onChange={(e) => setInfo({ ...info, address: e.target.value })} placeholder="المدينة، المنطقة، الشارع" full />
+                                </div>
+                            </SectionCard>
+
+                            <SectionCard id="identity" title="الهوية والشعار" description="استخدم شعارًا واضحًا بخلفية شفافة للحصول على أفضل نتيجة بالفواتير والـ Header." icon={IconPalette}>
+                                <LogoUploader value={logoPreview} onUpload={handleLogoUpload} onDelete={handleLogoDelete} uploading={uploading} />
+                            </SectionCard>
+
+                            <SectionCard id="contact" title="بيانات التواصل" description="وسائل التواصل التي تظهر للعملاء في التذييل والفواتير المطبوعة." icon={IconPhone}>
+                                <div className="form-grid">
+                                    <TextField label="البريد الإلكتروني" name="email" value={info.email} onChange={(e) => setInfo({ ...info, email: e.target.value })} type="email" dir="ltr" placeholder="hello@example.com" />
+                                    <TextField label="رقم واتساب" name="whatsappNumber" value={info.whatsappNumber} onChange={(e) => setInfo({ ...info, whatsappNumber: e.target.value })} dir="ltr" inputMode="tel" placeholder="+20 100 000 0000" />
+                                </div>
+                            </SectionCard>
+
+                            <SectionCard id="sales" title="البيع والأسعار" description="تحكم في خيارات سياسة الأسعار والبيع لفريق الكاشير والمبيعات." icon={IconCreditCard}>
+                                <SwitchRow checked={Boolean(info.enableWholesale)} onChange={(checked) => setInfo({ ...info, enableWholesale: checked })} title="تفعيل البيع بأسعار الجملة" description="إتاحة سعر جملة منفصل للمنتجات في شاشات المبيعات والمستخدمين المصرح لهم." icon={IconCreditCard} />
+                            </SectionCard>
+
+                            <SectionCard id="integrations" title="الروابط والتكاملات" description="روابط الصفحات الخارجية وحسابات وسائل التواصل الاجتماعي." icon={IconLink}>
+                                <div className="form-grid">
+                                    <TextField label="رابط فيسبوك" name="facebookUrl" value={info.facebookUrl} onChange={(e) => setInfo({ ...info, facebookUrl: e.target.value })} dir="ltr" placeholder="https://facebook.com/..." />
+                                    <TextField label="رابط إنستجرام" name="instagramUrl" value={info.instagramUrl} onChange={(e) => setInfo({ ...info, instagramUrl: e.target.value })} dir="ltr" placeholder="https://instagram.com/..." />
+                                    <TextField label="رابط تيك توك" name="tiktokUrl" value={info.tiktokUrl} onChange={(e) => setInfo({ ...info, tiktokUrl: e.target.value })} dir="ltr" placeholder="https://tiktok.com/@..." full />
+                                </div>
+                                <div className="integration-tip"><IconGlobe /><span>يتم التحقق من الروابط وإظهارها للعملاء في منصات البيع.</span></div>
+                            </SectionCard>
+
+                            <SectionCard id="chat" title="المحادثات" description="تحديد نطاق مراسلة وتواصل الموظفين داخل شاشة المحادثات الداخلية." icon={IconMessage}>
+                                <SwitchRow checked={interBranchChatEnabled} onChange={(checked) => setInterBranchChatEnabled(checked)} title="السماح بالمحادثة بين الفروع" description="عند الإيقاف، يتمكن الموظفون من مراسلة زملائهم في نفس الفرع فقط. (المدراء مستثنون دائماً)." icon={IconMessage} />
+                            </SectionCard>
                         </div>
                     </div>
-
-                    <div className="card-body">
-                        <form id="smtpForm" onSubmit={handleSaveSmtp}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                                <div className="form-group">
-                                    <label>الخادم (Host)</label>
-                                    <input type="text" className="form-control" value={smtpConfig.host || ''} onChange={e => setSmtpConfig({ ...smtpConfig, host: e.target.value })} placeholder="smtp.gmail.com" required />
-                                </div>
-                                <div className="form-group">
-                                    <label>المنفذ (Port)</label>
-                                    <input type="number" className="form-control" value={smtpConfig.port || ''} onChange={e => setSmtpConfig({ ...smtpConfig, port: e.target.value })} placeholder="587" required />
-                                </div>
-                                <div className="form-group">
-                                    <label>اسم المستخدم (Email)</label>
-                                    <input type="text" className="form-control" value={smtpConfig.username || ''} onChange={e => setSmtpConfig({ ...smtpConfig, username: e.target.value })} placeholder="example@gmail.com" required />
-                                </div>
-                                <div className="form-group">
-                                    <label>كلمة المرور (App Password)</label>
-                                    <input type="password" className="form-control" value={smtpConfig.password || ''} onChange={e => setSmtpConfig({ ...smtpConfig, password: e.target.value })} placeholder="اترك فارغاً إن لم ترغب بتغييره" />
-                                </div>
-                                <div className="form-group">
-                                    <label>إيميل المرسل (From Email)</label>
-                                    <input type="email" className="form-control" value={smtpConfig.fromEmail || ''} onChange={e => setSmtpConfig({ ...smtpConfig, fromEmail: e.target.value })} placeholder="info@mystore.com" />
-                                </div>
-                                <div className="form-group">
-                                    <label>اسم المرسل (From Name)</label>
-                                    <input type="text" className="form-control" value={smtpConfig.fromName || ''} onChange={e => setSmtpConfig({ ...smtpConfig, fromName: e.target.value })} placeholder="اسم المتجر" />
-                                </div>
-                                <div className="form-group settings-checkbox-group">
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <input type="checkbox" checked={smtpConfig.authEnabled} onChange={e => setSmtpConfig({ ...smtpConfig, authEnabled: e.target.checked })} />
-                                        تفعيل المصادقة (Auth Enabled)
-                                    </label>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <input type="checkbox" checked={smtpConfig.tlsEnabled} onChange={e => setSmtpConfig({ ...smtpConfig, tlsEnabled: e.target.checked })} />
-                                        تفعيل التشفير (TLS Enabled)
-                                    </label>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                </>
             )}
 
-            {/* Print & Templates Settings Card */}
+            {/* Print & Templates Sub-Page */}
             {isPrint && (
-                <div className="card" style={{ marginBottom: '20px' }}>
-                    <div className="card-header">
-                        <h3>🖨️ إعدادات الطباعة والقوالب (للجهاز الحالي)</h3>
-                        <div className="toolbar" style={{ display: 'flex', gap: '10px' }}>
-                            <button
-                                type="button"
-                                onClick={handleSavePrintSettings}
-                                className="btn btn-primary"
-                            >
-                                حفظ إعدادات الطباعة
+                <>
+                    {/* Header */}
+                    <div className="settings-page-header">
+                        <div>
+                            <span className="settings-eyebrow">إعدادات الجهاز الحالي</span>
+                            <h1>الطباعة وقوالب الفواتير</h1>
+                            <p>اضبط شكل الفاتورة وسلوك الطباعة وملصقات الباركود من مكان واحد.</p>
+                        </div>
+
+                        <div className="header-buttons">
+                            <button className="btn-seggele btn-seggele--secondary" type="button" onClick={handleDiscard} disabled={!dirty || saving}>
+                                <IconRotateCcw /> تجاهل
+                            </button>
+                            <button className="btn-seggele btn-seggele--primary" type="button" onClick={handleSavePrintSettings} disabled={!dirty || saving}>
+                                {saving ? <IconLoader /> : <IconSave />}
+                                {saving ? "جارٍ الحفظ..." : "حفظ التغييرات"}
                             </button>
                         </div>
                     </div>
 
-                    <div className="card-body print-settings-layout">
-                        <style>{`
-                        .print-settings-layout {
-                            display: grid;
-                            grid-template-columns: 1fr 350px;
-                            gap: 20px;
-                            align-items: start;
-                        }
-                        @media (max-width: 900px) {
-                            .print-settings-layout {
-                                grid-template-columns: 1fr;
-                            }
-                        }
-                    `}</style>
-                        <div className="print-settings-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                            <div className="form-group">
-                                <label>تنسيق وحجم ورق الفاتورة</label>
-                                <select
-                                    className="form-control"
-                                    value={printFormat}
-                                    onChange={e => setPrintFormat(e.target.value)}
-                                >
-                                    <option value="80mm">📄 فاتورة كاشير حرارية (80mm)</option>
-                                    <option value="A4">📝 فاتورة مبيعات كاملة (A4)</option>
-                                </select>
-                            </div>
 
-                            <div className="form-group">
-                                <label>قالب تصميم الفاتورة</label>
-                                <select
-                                    className="form-control"
-                                    value={printTemplate}
-                                    onChange={e => setPrintTemplate(e.target.value)}
-                                >
-                                    {printFormat === 'A4' ? (
-                                        <>
-                                            <option value="classic">🏛️ كلاسيكي (جدول ممتد تقليدي)</option>
-                                            <option value="modern">⚡ عصري / بريميوم (ملون ومقاطع أنيقة)</option>
-                                            <option value="barcode_only">🏷️ باركود فقط (بدون اسم)</option>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <option value="standard">🧾 قياسي (التفاصيل الكاملة والباركود)</option>
-                                            <option value="compact">✂️ موفر / مبسط (توفير في طول الورق)</option>
-                                            <option value="barcode_only">🏷️ باركود فقط (بدون اسم)</option>
-                                        </>
-                                    )}
-                                </select>
-                            </div>
 
-                            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', gridColumn: '1 / -1' }}>
-                                <input
-                                    type="checkbox"
-                                    id="printAutoTriggerToggle"
-                                    checked={printAutoTrigger}
-                                    onChange={e => setPrintAutoTrigger(e.target.checked)}
-                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                />
-                                <label htmlFor="printAutoTriggerToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
-                                    فتح نافذة الطباعة تلقائياً عند فتح الفاتورة
-                                </label>
-                            </div>
+                    {/* Print Workspace Grid */}
+                    <div className="settings-layout workspace-print">
+                        <div className="settings-content">
+                            {/* Card 1: Format */}
+                            <SectionCard id="invoice-format" title="تنسيق الفاتورة" description="اختر حجم الورق والقالب المناسب لطبيعة نشاطك." icon={IconFileText}>
+                                <div className="subsection">
+                                    <div className="subsection-head">
+                                        <div><h3>حجم الورق</h3><p>تأكد من مطابقة الحجم لتعريف الطابعة.</p></div>
+                                    </div>
+                                    <RadioCards value={printSettings.paperSize} onChange={(val) => setPrintProp("paperSize", val)} options={paperOptions} />
+                                </div>
 
-                            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', gridColumn: '1 / -1' }}>
-                                <input
-                                    type="checkbox"
-                                    id="posPrintPreviewToggle"
-                                    checked={posPrintPreview}
-                                    onChange={e => setPosPrintPreview(e.target.checked)}
-                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--metro-blue)' }}
-                                />
-                                <label htmlFor="posPrintPreviewToggle" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
-                                    معاينة الفاتورة قبل الطباعة من شاشة الكاشير (عند إلغاء التفعيل سيتم الطباعة مباشرة)
-                                </label>
-                            </div>
+                                <div className="divider" />
 
-                            <div style={{ gridColumn: '1 / -1', margin: '15px 0' }}>
-                                <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)' }} />
-                                <h4 style={{ marginTop: '15px', color: 'var(--text-main)' }}>🏷️ إعدادات طابعة الباركود</h4>
-                            </div>
+                                <div className="subsection">
+                                    <div className="subsection-head">
+                                        <div><h3>قالب تصميم الفاتورة</h3><p>يمكن تغيير القالب دون التأثير على البيانات.</p></div>
+                                    </div>
+                                    <RadioCards value={printSettings.invoiceTemplate} onChange={(val) => setPrintProp("invoiceTemplate", val)} options={templateOptions} compact />
+                                </div>
+                            </SectionCard>
 
-                            <div className="form-group">
-                                <label>العرض (مم)</label>
-                                <input
-                                    className="form-control"
-                                    type="number"
-                                    step="0.1"
-                                    value={barcodeConfig.labelWidthMm}
-                                    onChange={(e) => setBarcodeConfig({ ...barcodeConfig, labelWidthMm: parseFloat(e.target.value) })}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>الطول (مم)</label>
-                                <input
-                                    className="form-control"
-                                    type="number"
-                                    step="0.1"
-                                    value={barcodeConfig.labelHeightMm}
-                                    onChange={(e) => setBarcodeConfig({ ...barcodeConfig, labelHeightMm: parseFloat(e.target.value) })}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                                <label>قالب تصميم الباركود</label>
-                                <select
-                                    className="form-control"
-                                    value={barcodeTemplate}
-                                    onChange={(e) => setBarcodeTemplate(e.target.value)}
-                                >
-                                    <option value="1">قالب 1 (التقليدي)</option>
-                                    <option value="2">قالب 2 (نظام ERP)</option>
-                                    <option value="3">قالب 3 (الخط الفاصل)</option>
-                                    <option value="4">قالب 4 (المتباعد)</option>
-                                    <option value="5">قالب 5 (التاج 🏷️)</option>
-                                    <option value="6">قالب 6 (SKU)</option>
-                                </select>
-                            </div>
+                            {/* Card 2: Behavior */}
+                            <SectionCard id="print-behavior" title="سلوك الطباعة" description="حدد ما يحدث بعد إنشاء أو فتح الفاتورة." icon={IconSliders}>
+                                <div className="switch-list">
+                                    <SwitchRow checked={printSettings.previewBeforePrint} onChange={(val) => setPrintProp("previewBeforePrint", val)} title="معاينة الفاتورة قبل الطباعة" description="عرض الفاتورة للتأكد منها قبل إرسالها إلى الطابعة." icon={IconMaximize} />
+                                    <SwitchRow checked={printSettings.autoOpenPrintWindow} onChange={(val) => setPrintProp("autoOpenPrintWindow", val)} title="فتح نافذة الطباعة تلقائيًا" description="فتح مربع حوار الطباعة فور فتح الفاتورة." icon={IconPrinter} />
+
+                                </div>
+                            </SectionCard>
+
+                            {/* Card 3: Barcode Settings */}
+                            <SectionCard id="barcode-settings" title="إعدادات ملصق الباركود" description="اضبط المقاس والمعلومات التي ستظهر على الملصق." icon={IconBarcode}>
+                                <div className="dimensions">
+                                    <NumberInput label="العرض" value={printSettings.barcodeWidth} onChange={(val) => setPrintProp("barcodeWidth", val)} min={20} max={100} unit="مم" hint="20–100 مم" />
+                                    <NumberInput label="الطول" value={printSettings.barcodeHeight} onChange={(val) => setPrintProp("barcodeHeight", val)} min={15} max={80} unit="مم" hint="15–80 مم" />
+                                    <NumberInput label="حجم النص" value={printSettings.barcodeFontSize} onChange={(val) => setPrintProp("barcodeFontSize", val)} min={8} max={18} unit="px" hint="8–18 بكسل" />
+                                </div>
+
+                                <div className="divider" />
+
+                                <div className="subsection">
+                                    <div className="subsection-head">
+                                        <div><h3>قالب الملصق</h3><p>ترتيب المعلومات داخل ملصق الباركود.</p></div>
+                                    </div>
+                                    <RadioCards
+                                        value={printSettings.barcodeTemplate}
+                                        onChange={(val) => setPrintProp("barcodeTemplate", val)}
+                                        options={barcodeTemplateOptions}
+                                        compact
+                                    />
+                                </div>
+
+                                <div className="label-options">
+                                    <label>
+                                        <input type="checkbox" checked={printSettings.showProductName} onChange={(e) => setPrintProp("showProductName", e.target.checked)} />
+                                        <span><b>اسم المنتج</b><small>إظهار اسم الصنف أعلى الباركود</small></span>
+                                    </label>
+                                    <label>
+                                        <input type="checkbox" checked={printSettings.showPrice} onChange={(e) => setPrintProp("showPrice", e.target.checked)} />
+                                        <span><b>السعر</b><small>طباعة سعر البيع على الملصق</small></span>
+                                    </label>
+                                    <label>
+                                        <input type="checkbox" checked={printSettings.showSku} onChange={(e) => setPrintProp("showSku", e.target.checked)} />
+                                        <span><b>كود الصنف</b><small>إظهار SKU أسفل الباركود</small></span>
+                                    </label>
+                                </div>
+                            </SectionCard>
                         </div>
 
-                        {/* Live Preview Panel */}
-                        <div className="preview-panel" style={{ background: 'var(--bg-hover)', padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <h4>👁️ معاينة الفاتورة</h4>
-                            <div className="invoice-preview-container" style={{ display: 'flex', justifyContent: 'center' }}>
-                                <button
-                                    className="btn btn-primary"
-                                    style={{ width: '100%' }}
-                                    onClick={() => setShowInvoicePreviewModal(true)}
-                                >
-                                    👁️ معاينة الفاتورة كاملة
+                        {/* Interactive Right Live Preview Panel */}
+                        <PreviewPanel
+                            settings={printSettings}
+                            storeName={info.name || "MeDo Group"}
+                            onOpenFull={() => setPreviewOpen(true)}
+                            onTestPrint={handleTestPrint}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* SMTP Settings Sub-Page */}
+            {isSmtp && (
+                <div className="settings-card" style={{ marginBottom: '20px' }}>
+                    <div className="card-heading">
+                        <span className="card-icon"><IconPhone /></span>
+                        <div>
+                            <h2><i className="fa-solid fa-envelope-open-text"></i> إعدادات خادم البريد (SMTP)</h2>
+                            <p>تكوين إعدادات إرسال البريد الإلكتروني والإشعارات.</p>
+                        </div>
+                    </div>
+                    <div className="card-body">
+                        <form onSubmit={handleSaveSmtp}>
+                            <div className="form-grid">
+                                <TextField label="الخادم (Host)" name="host" value={smtpConfig.host} onChange={(e) => setSmtpConfig({ ...smtpConfig, host: e.target.value })} placeholder="smtp.gmail.com" required />
+                                <TextField label="المنفذ (Port)" name="port" value={smtpConfig.port} onChange={(e) => setSmtpConfig({ ...smtpConfig, port: parseInt(e.target.value) })} placeholder="587" required type="number" />
+                                <TextField label="اسم المستخدم (Email)" name="username" value={smtpConfig.username} onChange={(e) => setSmtpConfig({ ...smtpConfig, username: e.target.value })} placeholder="example@gmail.com" required />
+                                <TextField label="كلمة المرور (App Password)" name="password" value={smtpConfig.password} onChange={(e) => setSmtpConfig({ ...smtpConfig, password: e.target.value })} placeholder="••••••••" type="password" />
+                                <TextField label="إيميل المرسل (From Email)" name="fromEmail" value={smtpConfig.fromEmail} onChange={(e) => setSmtpConfig({ ...smtpConfig, fromEmail: e.target.value })} placeholder="info@mystore.com" />
+                                <TextField label="اسم المرسل (From Name)" name="fromName" value={smtpConfig.fromName} onChange={(e) => setSmtpConfig({ ...smtpConfig, fromName: e.target.value })} placeholder="اسم المتجر" />
+                            </div>
+                            <div style={{ marginTop: '20px' }}>
+                                <button className="btn-seggele btn-seggele--primary" type="submit" disabled={savingSmtp}>
+                                    {savingSmtp ? <IconLoader /> : <IconSave />}
+                                    {savingSmtp ? 'جاري الحفظ...' : 'حفظ إعدادات البريد'}
                                 </button>
                             </div>
-
-                            <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)' }} />
-                            <h4>👁️ معاينة الباركود</h4>
-                            <div className="barcode-preview-container" style={{ background: '#fff', color: '#000', padding: '15px', borderRadius: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'center', overflow: 'auto' }}>
-                                {(() => {
-                                    if (!barcodeDataUrl) return null;
-                                    const tenantName = info?.name || Api._getUser()?.tenantName || 'اسم المتجر';
-                                    const priceStr = '15.00 EGP';
-                                    const codeStr = '123456789';
-                                    const nameStr = 'اسم المنتج التجريبي';
-
-                                    let templateHtml = '';
-                                    if (barcodeTemplate === '2') {
-                                        templateHtml = `
-                                    <div style="margin-bottom: 2px;">${tenantName}</div>
-                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
-                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
-                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
-                                    <div style="font-size: 8px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
-                                    <div style="font-size: 13px; font-weight: bold; margin-top: 2px;">${priceStr}</div>
-                                    `;
-                                    } else if (barcodeTemplate === '3') {
-                                        templateHtml = `
-                                    <div style="font-size: 10px; font-weight: bold;">${tenantName}</div>
-                                    <hr style="width: 80%; border: 0; border-top: 1px solid #000; margin: 2px 0;" />
-                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
-                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
-                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
-                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
-                                    `;
-                                    } else if (barcodeTemplate === '4') {
-                                        templateHtml = `
-                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
-                                    <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">${priceStr}</div>
-                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
-                                    <div style="font-size: 9px; margin-top: 4px; letter-spacing: 1px;">${codeStr}</div>
-                                    <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
-                                    `;
-                                    } else if (barcodeTemplate === '5') {
-                                        templateHtml = `
-                                    <div style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
-                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
-                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
-                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
-                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
-                                    `;
-                                    } else if (barcodeTemplate === '6') {
-                                        templateHtml = `
-                                    <div style="font-size: 10px; font-weight: bold;">${tenantName}</div>
-                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
-                                    <div style="font-size: 9px; margin-bottom: 2px; letter-spacing: 1px;">SKU: ${codeStr}</div>
-                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
-                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
-                                    `;
-                                    } else {
-                                        templateHtml = `
-                                    <div style="font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; line-height: 1.1; margin-bottom: 2px;">${nameStr}</div>
-                                    <div style="font-size: 13px; font-weight: bold;">${priceStr}</div>
-                                    <img src="${barcodeDataUrl}" style="max-width:100%; max-height:14mm; display:block; object-fit:contain;" />
-                                    <div style="font-size: 9px; margin-top: 2px; letter-spacing: 1px;">${codeStr}</div>
-                                    <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
-                                    `;
-                                    }
-
-                                    return (
-                                        <div style={{
-                                            width: `${barcodeConfig.labelWidthMm}mm`,
-                                            height: `${barcodeConfig.labelHeightMm}mm`,
-                                            background: '#fff',
-                                            color: '#000',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            padding: '1mm',
-                                            boxSizing: 'border-box',
-                                            textAlign: 'center',
-                                            border: '1px dashed #ccc',
-                                            overflow: 'hidden',
-                                            fontFamily: 'sans-serif',
-                                            lineHeight: 1,
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                        }} dangerouslySetInnerHTML={{ __html: templateHtml }} />
-                                    );
-                                })()}
-                            </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
             )}
 
+            {/* Banner Section */}
             {isBanner && (
-                <div className="card">
-                    <div className="card-header">
-                        <h3>🖼️ الـ Banner الإعلاني (Hero Sections)</h3>
+                <div className="settings-card">
+                    <div className="card-heading">
+                        <span className="card-icon"><IconPalette /></span>
+                        <div>
+                            <h2><i className="fa-solid fa-image"></i>️ الـ Banner الإعلاني (Hero Sections)</h2>
+                            <p>إدارة لافتات واجهة المتجر والصور الترويجية.</p>
+                        </div>
                     </div>
                     <div className="card-body">
                         <HeroSectionManager />
@@ -966,30 +957,44 @@ const Settings = () => {
                 </div>
             )}
 
-            {/* Invoice Preview Modal */}
-            {showInvoicePreviewModal && (
-                <ModalContainer>
-                    <div className="modal-overlay active" style={{ zIndex: 999999 }} onClick={() => setShowInvoicePreviewModal(false)}>
-                        <div className="modal" style={{ maxWidth: '800px', width: '90%', padding: 0 }} onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h3 style={{ margin: 0 }}>👁️ معاينة الفاتورة</h3>
-                                <button className="btn-close" onClick={() => setShowInvoicePreviewModal(false)}>✕</button>
-                            </div>
-                            <div className="modal-body" style={{ padding: '20px', background: '#e2e8f0', maxHeight: '70vh', overflowY: 'auto' }}>
-                                {printFormat === 'A4' ? (
-                                    <div style={{ background: '#fff', margin: '0 auto', width: 'fit-content', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
-                                        <A4Receipt invoice={dummyInvoice} template={printTemplate} isPreview={true} />
-                                    </div>
-                                ) : (
-                                    <div style={{ background: '#fff', margin: '0 auto', width: 'fit-content', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
-                                        <ThermalReceipt invoice={dummyInvoice} template={printTemplate} isPreview={true} />
-                                    </div>
-                                )}
-                            </div>
+            {/* Floating Unsaved Action Bar */}
+            {dirty && (
+                <div className="unsaved-bar" role="status">
+                    <div className="unsaved-copy">
+                        <span className="unsaved-indicator" />
+                        <div>
+                            <strong>لديك تغييرات غير محفوظة</strong>
+                            <p>احفظ الإعدادات قبل مغادرة الصفحة لتطبيقها على النظام.</p>
                         </div>
                     </div>
-                </ModalContainer>
+                    <div className="unsaved-actions">
+                        <button className="btn-seggele btn-seggele--ghost" type="button" onClick={handleDiscard} disabled={saving}>
+                            تجاهل
+                        </button>
+                        <button className="btn-seggele btn-seggele--primary" type="button" onClick={isIdentity ? handleSaveStoreInfo : handleSavePrintSettings} disabled={saving}>
+                            {saving ? <IconLoader /> : <IconSave />}
+                            {saving ? "جارٍ الحفظ..." : "حفظ التغييرات"}
+                        </button>
+                    </div>
+                </div>
             )}
+
+            {/* Toast Notification */}
+            {toastMessage && (
+                <div className="toast-popup" role="alert">
+                    <span className="toast-popup-icon"><IconCheck /></span>
+                    {toastMessage}
+                </div>
+            )}
+
+            {/* Full Receipt Modal */}
+            <PreviewModal
+                open={previewOpen}
+                onClose={() => setPreviewOpen(false)}
+                settings={printSettings}
+                storeName={info.name || "MeDo Group"}
+                onPrint={handleTestPrint}
+            />
         </div>
     );
 };

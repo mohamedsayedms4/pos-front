@@ -316,28 +316,28 @@ const Employees = () => {
           id="emp_count"
           label="إجمالي الموظفين"
           value={totalElements}
-          icon="👥"
+          icon={<i className="fa-solid fa-user-tie"></i>}
           defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile
           id="emp_titles"
           label="المسميات الوظيفية"
           value={jobTitles.length}
-          icon="👔"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'teal', size: 'tile-sq-sm', order: 2 }}
         />
         <StatTile
           id="emp_admins"
           label="مسؤولين"
           value={data.filter(u => (u.roles || []).includes('ROLE_ADMIN')).length}
-          icon="🛡️"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 3 }}
         />
       </div>
 
       <div className="card">
         <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>👤 إدارة شؤون الموظفين</h3>
+          <h3 style={{ margin: 0 }}><i className="fa-solid fa-user"></i> إدارة شؤون الموظفين</h3>
           <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', flex: '1 1 100%', justifyContent: 'flex-end', alignItems: 'center' }}>
             {isAdmin && (
               <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
@@ -356,7 +356,7 @@ const Employees = () => {
             </div>
             <div style={{ display: 'flex', gap: '15px', flex: '1 1 100%' }}>
               <button className="btn btn-secondary" style={{ flex: 1, margin: '0 2px' }} onClick={() => setShowJobTitlesModal(true)}>
-                👔 المسميات الوظيفية
+                <i className="fa-solid fa-user-tie"></i> المسميات الوظيفية
               </button>
               <button className="btn btn-primary" style={{ flex: 1, margin: '0 2px' }} onClick={() => openForm()}>
                 <span>+</span> إضافة موظف جديد
@@ -420,11 +420,11 @@ const Employees = () => {
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn btn-icon btn-ghost" title="عرض التفاصيل والماليات" onClick={() => navigate(`/employees/${u.id}`)}>👁️</button>
-                          <button className="btn btn-icon btn-ghost" title="تعديل سريع (الراتب/الوردية)" onClick={() => { openForm(u); setActiveTab('financial_edit'); }}>💰</button>
-                          <button className="btn btn-icon btn-ghost" title="سجل حضور/انصراف" onClick={() => navigate(`/employees/${u.id}?tab=attendance`)}>📅</button>
-                          <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openForm(u)}>✏️</button>
-                          <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}>🗑️</button>
+                          <button className="btn btn-icon btn-ghost" title="عرض التفاصيل والماليات" onClick={() => navigate(`/employees/${u.id}`)}><i className="fa-solid fa-eye"></i>️</button>
+                          <button className="btn btn-icon btn-ghost" title="تعديل سريع (الراتب/الوردية)" onClick={() => { openForm(u); setActiveTab('financial_edit'); }}><i className="fa-solid fa-sack-dollar"></i></button>
+                          <button className="btn btn-icon btn-ghost" title="سجل حضور/انصراف" onClick={() => navigate(`/employees/${u.id}?tab=attendance`)}><i className="fa-solid fa-calendar-days"></i></button>
+                          <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openForm(u)}><i className="fa-solid fa-pencil"></i></button>
+                          <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(u.id, u.name)}><i className="fa-solid fa-trash"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -442,7 +442,7 @@ const Employees = () => {
             <div className="modal modal-xl">
               <div className="modal-header">
                 <h3>{activeUser ? `تعديل موظف: ${activeUser.name}` : 'إضافة موظف جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
 
               <div className="modal-tabs" style={{ display: 'flex', background: '#222', borderBottom: '1px solid #333', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
@@ -450,7 +450,7 @@ const Employees = () => {
                 <button className={`tab-btn ${activeTab === 'personal' ? 'active' : ''}`} onClick={() => setActiveTab('personal')}>البيانات الشخصية</button>
                 <button className={`tab-btn ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => setActiveTab('contact')}>الاتصال</button>
                 <button className={`tab-btn ${activeTab === 'identity' ? 'active' : ''}`} onClick={() => setActiveTab('identity')}>الهوية</button>
-                <button className={`tab-btn ${activeTab === 'financial_edit' ? 'active' : ''}`} onClick={() => setActiveTab('financial_edit')}>الراتب والوردية ⭐</button>
+                <button className={`tab-btn ${activeTab === 'financial_edit' ? 'active' : ''}`} onClick={() => setActiveTab('financial_edit')}>الراتب والوردية <i className="fa-solid fa-star"></i></button>
                 <button className={`tab-btn ${activeTab === 'address' ? 'active' : ''}`} onClick={() => setActiveTab('address')}>العناوين</button>
                 <button className={`tab-btn ${activeTab === 'bank' ? 'active' : ''}`} onClick={() => setActiveTab('bank')}>البنك والضرائب</button>
               </div>
@@ -739,8 +739,8 @@ const Employees = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowJobTitlesModal(false); }}>
             <div className="modal" style={{ maxWidth: '800px' }}>
               <div className="modal-header">
-                <h3>👔 إدارة المسميات الوظيفية</h3>
-                <button className="modal-close" onClick={() => setShowJobTitlesModal(false)}>✕</button>
+                <h3><i className="fa-solid fa-user-tie"></i> إدارة المسميات الوظيفية</h3>
+                <button className="modal-close" onClick={() => setShowJobTitlesModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
@@ -771,7 +771,7 @@ const Employees = () => {
                         </div>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                           <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={jtSaving}>
-                            {jtSaving ? '⏳ جاري الحفظ...' : (editJobTitle ? 'حفظ التعديلات' : 'إضافة المسمى')}
+                            {jtSaving ? ' جاري الحفظ...' : (editJobTitle ? 'حفظ التعديلات' : 'إضافة المسمى')}
                           </button>
                           {editJobTitle && (
                             <button type="button" className="btn btn-ghost" onClick={() => { setEditJobTitle(null); setJtFormData({ name: '', description: '' }); }}>إلغاء</button>
@@ -801,8 +801,8 @@ const Employees = () => {
                               </td>
                               <td>
                                 <div className="table-actions">
-                                  <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => { setEditJobTitle(jt); setJtFormData({ name: jt.name, description: jt.description || '' }); }}>✏️</button>
-                                  <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDeleteJobTitle(jt.id, jt.name)}>🗑️</button>
+                                  <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => { setEditJobTitle(jt); setJtFormData({ name: jt.name, description: jt.description || '' }); }}><i className="fa-solid fa-pencil"></i></button>
+                                  <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDeleteJobTitle(jt.id, jt.name)}><i className="fa-solid fa-trash"></i></button>
                                 </div>
                               </td>
                             </tr>

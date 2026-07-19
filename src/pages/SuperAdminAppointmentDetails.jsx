@@ -46,7 +46,7 @@ const SuperAdminAppointmentDetails = () => {
     return (
       <div className="page-section">
         <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '20px' }}>لم يتم العثور على الموعد 😕</h2>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '20px' }}>لم يتم العثور على الموعد <i className="fa-solid fa-face-frown"></i></h2>
           <button onClick={() => navigate('/super-admin/calendar')} className="btn btn-primary">العودة للتقويم</button>
         </div>
       </div>
@@ -104,9 +104,9 @@ const SuperAdminAppointmentDetails = () => {
               <div style={{ marginBottom: '25px' }}>
                 <h4 style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 10px 0' }}>نوع الموعد</h4>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 15px', backgroundColor: '#e2e8f0', borderRadius: '8px', fontWeight: 'bold', color: '#334155' }}>
-                  {appointment.type === 'CALL' ? '📞 مكالمة هاتفية' : 
-                   appointment.type === 'ONLINE_MEETING' ? '💻 اجتماع أونلاين' : 
-                   '👥 اجتماع فريق'}
+                  {appointment.type === 'CALL' ? ' مكالمة هاتفية' : 
+                   appointment.type === 'ONLINE_MEETING' ? ' اجتماع أونلاين' : 
+                   ' اجتماع فريق'}
                 </div>
               </div>
 
@@ -199,14 +199,14 @@ const SuperAdminAppointmentDetails = () => {
                     className="btn btn-success"
                     style={{ width: '100%', padding: '10px', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'var(--metro-green)', borderColor: 'var(--metro-green)', color: '#fff' }}
                   >
-                    ✓ تحديد كمكتمل
+                    <i className="fa-solid fa-check"></i> تحديد كمكتمل
                   </button>
                   <button 
                     onClick={() => updateStatus('CANCELED')}
                     className="btn btn-danger"
                     style={{ width: '100%', padding: '10px', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'var(--metro-red)', borderColor: 'var(--metro-red)', color: '#fff' }}
                   >
-                    ✕ إلغاء الموعد
+                    <i className="fa-solid fa-times"></i> إلغاء الموعد
                   </button>
                 </div>
               </div>

@@ -108,7 +108,7 @@ const SuperAdminSettings = () => {
     setSavingSettings(true);
     try {
       await Api.updateGlobalConfig(settings);
-      toast('تم حفظ إعدادات النظام بنجاح ✅', 'success');
+      toast('تم حفظ إعدادات النظام بنجاح ', 'success');
       loadSettings();
     } catch (err) {
       toast(err.message || 'فشل في حفظ إعدادات النظام', 'error');
@@ -131,7 +131,7 @@ const SuperAdminSettings = () => {
     <div className="page-section">
       <div className="card">
         <div className="card-header">
-          <h3>⚙️ إعدادات النظام العامة وشريط المعلومات السفلي (الفوتر)</h3>
+          <h3><i className="fa-solid fa-gear"></i> إعدادات النظام العامة وشريط المعلومات السفلي (الفوتر)</h3>
         </div>
 
         <div className="card-body" style={{ padding: '30px' }}>
@@ -146,7 +146,7 @@ const SuperAdminSettings = () => {
               {/* Logo Uploads Grid with Light / Dark Mode support */}
               <div className="sa-sub-form-group" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '850', marginBottom: '4px', fontSize: '1.1rem' }}>
-                  🖼️ إدارة شعارات النظام المتعددة (الوضع الداكن / الفاتح):
+                  <i className="fa-solid fa-image"></i>️ إدارة شعارات النظام المتعددة (الوضع الداكن / الفاتح):
                 </label>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
@@ -154,7 +154,7 @@ const SuperAdminSettings = () => {
                   {/* 1. Sidebar Logo Card */}
                   <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>📱 القائمة الجانبية (Sidebar)</strong>
+                      <strong style={{ fontSize: '0.95rem' }}><i className="fa-solid fa-mobile-screen"></i> القائمة الجانبية (Sidebar)</strong>
                       <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>32 × 32 px - Icon فقط</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -164,7 +164,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
                           {logoSidebarLightPreview
                             ? <img src={logoSidebarLightPreview} alt="Sidebar Light" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -179,7 +179,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
                           {logoSidebarDarkPreview
                             ? <img src={logoSidebarDarkPreview} alt="Sidebar Dark" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -194,7 +194,7 @@ const SuperAdminSettings = () => {
                   {/* 2. Footer Logo Card */}
                   <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>👣 شريط الفوتر (Footer)</strong>
+                      <strong style={{ fontSize: '0.95rem' }}><i className="fa-solid fa-shoe-prints"></i> شريط الفوتر (Footer)</strong>
                       <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>32 × 32 px - Icon فقط</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -204,7 +204,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
                           {logoFooterLightPreview
                             ? <img src={logoFooterLightPreview} alt="Footer Light" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -219,7 +219,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
                           {logoFooterDarkPreview
                             ? <img src={logoFooterDarkPreview} alt="Footer Dark" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -234,7 +234,7 @@ const SuperAdminSettings = () => {
                   {/* 3. Login Page Logo Card */}
                   <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🔑 تسجيل الدخول (Login Page)</strong>
+                      <strong style={{ fontSize: '0.95rem' }}><i className="fa-solid fa-key"></i> تسجيل الدخول (Login Page)</strong>
                       <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>64 × 64 px - أيقونة أو لوجو</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -244,7 +244,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
                           {logoLoginLightPreview
                             ? <img src={logoLoginLightPreview} alt="Login Light" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -259,7 +259,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
                           {logoLoginDarkPreview
                             ? <img src={logoLoginDarkPreview} alt="Login Dark" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -274,7 +274,7 @@ const SuperAdminSettings = () => {
                   {/* 4. Landing Page Header Logo Card */}
                   <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🌐 صفحة الهبوط (Landing Page)</strong>
+                      <strong style={{ fontSize: '0.95rem' }}><i className="fa-solid fa-globe"></i> صفحة الهبوط (Landing Page)</strong>
                       <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>44 × 44 px - أيقونة ونص</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -284,7 +284,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', overflow: 'hidden' }}>
                           {logoLandingLightPreview
                             ? <img src={logoLandingLightPreview} alt="Landing Light" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -299,7 +299,7 @@ const SuperAdminSettings = () => {
                         <div style={{ width: '100%', height: '50px', borderRadius: '6px', border: '1px solid var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', overflow: 'hidden' }}>
                           {logoLandingDarkPreview
                             ? <img src={logoLandingDarkPreview} alt="Landing Dark" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}>🖼️</span>
+                            : <span style={{ fontSize: '1rem', opacity: 0.2 }}><i className="fa-solid fa-image"></i>️</span>
                           }
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -314,14 +314,14 @@ const SuperAdminSettings = () => {
                   {/* 5. Favicon Card */}
                   <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🎯 أيقونة المتصفح (Favicon)</strong>
+                      <strong style={{ fontSize: '0.95rem' }}><i className="fa-solid fa-bullseye"></i> أيقونة المتصفح (Favicon)</strong>
                       <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>16x16 / 32x32 px</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
                       <div style={{ width: '60px', height: '60px', borderRadius: '8px', border: '2px dashed var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
                         {logoFaviconPreview
                           ? <img src={logoFaviconPreview} alt="Favicon Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🎯</span>
+                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}><i className="fa-solid fa-bullseye"></i></span>
                         }
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
@@ -338,14 +338,14 @@ const SuperAdminSettings = () => {
                   {/* 6. Default Fallback Card */}
                   <div style={{ background: 'var(--sa-sub-bg)', padding: '20px', borderRadius: '14px', border: '1px solid var(--sa-sub-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--sa-sub-border)', paddingBottom: '8px' }}>
-                      <strong style={{ fontSize: '0.95rem' }}>🖼️ الشعار الاحتياطي العام (Fallback)</strong>
+                      <strong style={{ fontSize: '0.95rem' }}><i className="fa-solid fa-image"></i>️ الشعار الاحتياطي العام (Fallback)</strong>
                       <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 'bold' }}>شعار افتراضي شامل</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
                       <div style={{ width: '60px', height: '60px', borderRadius: '8px', border: '2px dashed var(--sa-sub-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', overflow: 'hidden', flexShrink: 0 }}>
                         {logoPreview
                           ? <img src={logoPreview} alt="Default Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
-                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}>🖼️</span>
+                          : <span style={{ fontSize: '1.2rem', opacity: 0.3 }}><i className="fa-solid fa-image"></i>️</span>
                         }
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
@@ -364,7 +364,7 @@ const SuperAdminSettings = () => {
 
               <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🏢 اسم البرنامج / العلامة التجارية:
+                  <i className="fa-solid fa-building"></i> اسم البرنامج / العلامة التجارية:
                 </label>
                 <input
                   type="text"
@@ -379,7 +379,7 @@ const SuperAdminSettings = () => {
 
               <div className="sa-sub-form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  📞 رقم الدعم الفني للواتساب / الاتصال:
+                  <i className="fa-solid fa-phone"></i> رقم الدعم الفني للواتساب / الاتصال:
                 </label>
                 <input
                   type="text"
@@ -394,7 +394,7 @@ const SuperAdminSettings = () => {
 
               <div className="sa-sub-form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🔵 رابط صفحة فيسبوك (Facebook URL):
+                  <i className="fa-solid fa-circle" style={{color: "#3b82f6"}}></i> رابط صفحة فيسبوك (Facebook URL):
                 </label>
                 <input
                   type="url"
@@ -408,7 +408,7 @@ const SuperAdminSettings = () => {
 
               <div className="sa-sub-form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🔗 رابط لينكد إن (LinkedIn URL):
+                  <i className="fa-solid fa-link"></i> رابط لينكد إن (LinkedIn URL):
                 </label>
                 <input
                   type="url"
@@ -422,7 +422,7 @@ const SuperAdminSettings = () => {
 
               <div className="sa-sub-form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  🔴 رابط قناة يوتيوب (YouTube URL):
+                  <i className="fa-solid fa-circle" style={{color: "#ef4444"}}></i> رابط قناة يوتيوب (YouTube URL):
                 </label>
                 <input
                   type="url"
@@ -437,7 +437,7 @@ const SuperAdminSettings = () => {
               {/* ─── Payment Methods ─────────────────────────────────────── */}
               <div className="sa-sub-form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  💳 رقم فودافون كاش للدفع:
+                  <i className="fa-solid fa-credit-card"></i> رقم فودافون كاش للدفع:
                 </label>
                 <input
                   type="text"
@@ -451,7 +451,7 @@ const SuperAdminSettings = () => {
 
               <div className="sa-sub-form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  ⚡ عنوان إنستا باي (Instapay Address):
+                  <i className="fa-solid fa-bolt"></i> عنوان إنستا باي (Instapay Address):
                 </label>
                 <input
                   type="text"
@@ -466,7 +466,7 @@ const SuperAdminSettings = () => {
               {/* ─── Notifications ─────────────────────────────────────── */}
               <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  📱 أرقام واتساب لإشعارات المشتركين الجدد (مفصولة بفاصلة):
+                  <i className="fa-solid fa-mobile-screen"></i> أرقام واتساب لإشعارات المشتركين الجدد (مفصولة بفاصلة):
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -495,7 +495,7 @@ const SuperAdminSettings = () => {
               {/* ─── Facebook Pixel ID ─────────────────────────────────────── */}
               <div className="sa-sub-form-group" style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', marginBottom: '8px' }}>
-                  📊 Facebook Pixel ID (معرّف بيكسل فيسبوك للإعلانات):
+                  <i className="fa-solid fa-chart-column"></i> Facebook Pixel ID (معرّف بيكسل فيسبوك للإعلانات):
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -528,11 +528,11 @@ const SuperAdminSettings = () => {
                       color: '#1877f2',
                       fontWeight: 'bold',
                       pointerEvents: 'none'
-                    }}>✓ Pixel ID محدد</span>
+                    }}><i className="fa-solid fa-check"></i> Pixel ID محدد</span>
                   )}
                 </div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--sa-sub-text-secondary)', marginTop: '6px', lineHeight: '1.5' }}>
-                  🔍 ستجد الـ Pixel ID في: <strong>Meta Business Suite → Events Manager → اختار البيكسل → Settings</strong>
+                  <i className="fa-solid fa-magnifying-glass"></i> ستجد الـ Pixel ID في: <strong>Meta Business Suite → Events Manager → اختار البيكسل → Settings</strong>
                   <br />بعد الحفظ، سيُفعَّل البيكسل تلقائياً في Landing Page وصفحة التسجيل.
                 </p>
               </div>
@@ -559,7 +559,7 @@ const SuperAdminSettings = () => {
                   }}
                 >
                   {savingSettings && <span className="sa-sub-spinner"></span>}
-                  {savingSettings ? 'جاري حفظ الإعدادات...' : '💾 حفظ الإعدادات'}
+                  {savingSettings ? 'جاري حفظ الإعدادات...' : ' حفظ الإعدادات'}
                 </button>
               </div>
 

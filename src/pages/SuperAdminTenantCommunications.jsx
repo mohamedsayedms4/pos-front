@@ -67,7 +67,7 @@ const SuperAdminTenantCommunications = () => {
       const newLog = await Api.addTenantCommunication(id, form);
       setLogs([newLog, ...logs]);
       setForm({ contactMethod: 'PHONE', notes: '', clientStatus: 'INTERESTED', nextFollowUpDate: '' });
-      toast('تمت إضافة سجل التواصل بنجاح ✅', 'success');
+      toast('تمت إضافة سجل التواصل بنجاح ', 'success');
       
       if (scheduleAfterSubmit) {
         setShowAppointmentModal(true);
@@ -91,7 +91,7 @@ const SuperAdminTenantCommunications = () => {
           >
             <i className="fa-solid fa-arrow-right"></i>
           </button>
-          <h3 style={{ margin: 0 }}>📞 سجل تواصل المتجر: {tenantName}</h3>
+          <h3 style={{ margin: 0 }}><i className="fa-solid fa-phone"></i> سجل تواصل المتجر: {tenantName}</h3>
         </div>
       </div>
 
@@ -169,7 +169,7 @@ const SuperAdminTenantCommunications = () => {
                   style={{ padding: '10px 24px', backgroundColor: '#e2e8f0', color: '#1e293b' }}
                   onClick={() => setScheduleAfterSubmit(true)}
                 >
-                  ➕ إضافة وحجز موعد متابعة
+                  <i className="fa-solid fa-plus"></i> إضافة وحجز موعد متابعة
                 </button>
               </div>
             </form>
@@ -185,7 +185,7 @@ const SuperAdminTenantCommunications = () => {
               <Loader message="جاري التحميل..." />
             ) : logs.length === 0 ? (
               <div className="empty-state" style={{ padding: '40px' }}>
-                <div className="empty-icon" style={{ fontSize: '3rem', marginBottom: '10px' }}>📝</div>
+                <div className="empty-icon" style={{ fontSize: '3rem', marginBottom: '10px' }}><i className="fa-solid fa-file-pen"></i></div>
                 <h4>لا توجد سجلات</h4>
                 <p>لم يتم تسجيل أي تواصل مسبق مع هذا العميل.</p>
               </div>
@@ -231,7 +231,7 @@ const SuperAdminTenantCommunications = () => {
         onClose={(success) => {
           setShowAppointmentModal(false);
           if (success === true) {
-            toast('تم حجز الموعد بنجاح 📅', 'success');
+            toast('تم حجز الموعد بنجاح ', 'success');
           }
         }}
         entityType="TENANT"

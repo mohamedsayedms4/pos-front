@@ -46,7 +46,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       desc: 'أدخل معلومات متجرك الأساسية',
       completed: status.hasCompanyDetails,
       action: () => navigate('/settings'),
-      icon: '🏢',
+      icon: '',
       isLocked: false,
     },
     {
@@ -55,7 +55,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       desc: 'قم بإنشاء فرعك الأول لبدء العمل',
       completed: status.hasBranch,
       action: () => navigate('/branches'),
-      icon: '🏪',
+      icon: '',
       isLocked: !status.hasCompanyDetails,
     },
     {
@@ -64,16 +64,16 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       desc: 'أضف منتجاتك لبيعها',
       completed: status.hasProduct,
       action: () => navigate('/products'),
-      icon: '📦',
+      icon: '',
       isLocked: !status.hasCompanyDetails || !status.hasBranch,
     },
     {
       id: 4,
-      title: 'مبروك، أنت جاهز للبيع! 🎉 (100%)',
+      title: 'مبروك، أنت جاهز للبيع!  (100%)',
       desc: 'اكتملت جميع الخطوات',
       completed: status.completed,
       action: null,
-      icon: '🎉',
+      icon: '',
       isLocked: true,
     }
   ];
@@ -83,7 +83,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
       {showConfetti && <Confetti width={windowDimensions.width} height={windowDimensions.height} />}
       <div className="onboarding-card">
         <div className="onboarding-header">
-          <h2>مرحباً بك! دعنا نجهز متجرك للعمل 🚀</h2>
+          <h2>مرحباً بك! دعنا نجهز متجرك للعمل <i className="fa-solid fa-rocket"></i></h2>
           <p>أكمل الخطوات التالية لتبدأ البيع بنجاح.</p>
         </div>
 
@@ -124,7 +124,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
                   disabled={step.isLocked}
                   style={step.isLocked ? { background: '#e2e8f0', color: '#94a3b8', cursor: 'not-allowed', border: 'none' } : {}}
                 >
-                  {step.isLocked ? '🔒 مغلق' : 'ابدأ الآن'}
+                  {step.isLocked ? ' مغلق' : 'ابدأ الآن'}
                 </button>
               )}
               {step.id === 2 && !step.completed && (
@@ -138,7 +138,7 @@ const OnboardingDashboard = ({ status, reloadStatus }) => {
                     disabled={step.isLocked}
                     style={step.isLocked ? { background: '#e2e8f0', color: '#94a3b8', cursor: 'not-allowed', border: 'none' } : {}}
                   >
-                    {step.isLocked ? '🔒 مغلق' : 'إضافة فرع آخر'}
+                    {step.isLocked ? ' مغلق' : 'إضافة فرع آخر'}
                   </button>
                   {!step.isLocked && (
                     <button className="step-action-btn" disabled={isSkippingBranch} style={{ background: 'transparent', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }} onClick={async (e) => { 

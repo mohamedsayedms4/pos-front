@@ -116,7 +116,7 @@ export const StoreProvider = ({ children }) => {
     });
     StoreApi.trackInteraction(product.id, 'CART');
     fbPixel.trackAddToCart(product);
-    showToast(`تمت إضافة ${product.name} للسلة ✅`);
+    showToast(`تمت إضافة ${product.name} للسلة `);
   };
 
   const updateQty = (id, qty) => {
@@ -134,12 +134,12 @@ export const StoreProvider = ({ children }) => {
     setWishlist(prev => {
       const isFav = prev.includes(productId);
       if (isFav) {
-        showToast("تمت الإزالة من المفضلة 🤍");
+        showToast("تمت الإزالة من المفضلة ");
         return prev.filter(id => id !== productId);
       } else {
         StoreApi.trackInteraction(productId, 'FAVORITE');
         fbPixel.trackAddToWishlist({ id: productId });
-        showToast("تمت الإضافة للمفضلة ❤️");
+        showToast("تمت الإضافة للمفضلة ️");
         return [...prev, productId];
       }
     });

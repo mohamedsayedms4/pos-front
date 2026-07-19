@@ -144,7 +144,7 @@ const SubscriptionHistory = () => {
         
         {requests.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '15px', opacity: 0.5 }}>📭</div>
+            <div style={{ fontSize: '3rem', marginBottom: '15px', opacity: 0.5 }}><i className="fa-solid fa-mailbox"></i></div>
             لا توجد أي طلبات اشتراك سابقة حتى الآن.
           </div>
         ) : (
@@ -197,7 +197,7 @@ const SubscriptionHistory = () => {
                       <tr style={{ background: '#fff1f2' }}>
                         <td colSpan="5" style={{ padding: '12px 20px', borderBottom: '1px solid var(--border-color)' }}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <span style={{ color: '#e11d48' }}>⚠️</span>
+                            <span style={{ color: '#e11d48' }}><i className="fa-solid fa-triangle-exclamation"></i></span>
                             <div>
                               <strong style={{ color: '#be123c', fontSize: '0.85rem', display: 'block', marginBottom: '2px' }}>سبب الرفض:</strong>
                               <span style={{ color: '#9f1239', fontSize: '0.9rem' }}>{req.rejectReason}</span>

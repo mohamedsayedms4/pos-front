@@ -188,7 +188,7 @@ const RecurringInvoices = () => {
                         <div className="rec-modal-card" onClick={e => e.stopPropagation()}>
                             <div className="rec-modal-header">
                                 <h3>إنشاء نموذج فاتورة دورية</h3>
-                                <button className="rec-close-btn" onClick={() => setShowModal(false)}>✕</button>
+                                <button className="rec-close-btn" onClick={() => setShowModal(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             
                             <form onSubmit={handleSubmit}>

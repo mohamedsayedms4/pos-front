@@ -10,3 +10,7 @@
   color: var(--metro-blue) !important;
   text-decoration: underline;
 }
+
+* {
+  border-radius: 0 !important;
+}

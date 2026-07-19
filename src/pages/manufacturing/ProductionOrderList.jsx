@@ -55,7 +55,7 @@ const ProductionOrderList = () => {
         <div className="page-section">
             <div className="card">
                 <div className="card-header">
-                    <h3>🏭 أوامر الإنتاج</h3>
+                    <h3><i className="fa-solid fa-industry"></i> أوامر الإنتاج</h3>
                     <div className="toolbar">
                         <div className="toolbar-actions">
                             <button className="btn btn-primary" onClick={() => navigate('/manufacturing/production-orders/new')}>
@@ -91,16 +91,16 @@ const ProductionOrderList = () => {
                                             <div className="table-actions" style={{ justifyContent: 'center' }}>
                                                 {order.status === 'PLANNED' && (
                                                     <button className="btn btn-icon btn-ghost" onClick={() => startOrder(order.id)} title="بدء الإنتاج">
-                                                        ▶️
+                                                        <i className="fa-solid fa-play"></i>️
                                                     </button>
                                                 )}
                                                 {order.status === 'IN_PROGRESS' && (
                                                     <button className="btn btn-icon btn-ghost" onClick={() => completeOrder(order.id)} title="إكمال الإنتاج">
-                                                        ✅
+                                                        <i className="fa-solid fa-check"></i>
                                                     </button>
                                                 )}
                                                 <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/manufacturing/production-orders/${order.id}/cost-report`)} title="تقرير التكلفة">
-                                                    📊
+                                                    <i className="fa-solid fa-chart-column"></i>
                                                 </button>
                                             </div>
                                         </td>

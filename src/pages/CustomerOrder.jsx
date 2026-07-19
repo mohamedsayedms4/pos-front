@@ -24,7 +24,7 @@ const CustomerProductCard = ({ product, onSelect }) => {
         {imageUrl ? (
           <img src={imageUrl} alt={product.name} />
         ) : (
-          <div className="placeholder">📦</div>
+          <div className="placeholder"><i className="fa-solid fa-box"></i></div>
         )}
       </div>
       <div className="product-details">
@@ -112,7 +112,7 @@ const CustomerOrder = () => {
 
     // Send selection to backend
     socketClientRef.current.publish({
-      destination: '/app/customer-select',
+      destination: '/customer-select',
       body: JSON.stringify(product)
     });
 

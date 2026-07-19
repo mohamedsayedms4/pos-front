@@ -31,7 +31,7 @@ const TrialBalance = () => {
         <div className="page-section">
             <div className="card">
                 <div className="card-header">
-                    <h3>⚖️ ميزان المراجعة (Trial Balance)</h3>
+                    <h3><i className="fa-solid fa-scale-balanced"></i>️ ميزان المراجعة (Trial Balance)</h3>
                     <p style={{ color: 'var(--text-muted)' }}>حالة الحسابات حتى تاريخه - بناءً على اليومية الأمريكية</p>
                 </div>
                 <div className="card-body no-padding">
@@ -60,7 +60,7 @@ const TrialBalance = () => {
                                                 {acc.currentBalance.toLocaleString()}
                                             </td>
                                             <td>
-                                                {acc.currentBalance === 0 ? '∅ فارغ' : '⚡ نشط'}
+                                                {acc.currentBalance === 0 ? '∅ فارغ' : ' نشط'}
                                             </td>
                                         </tr>
                                     ))}

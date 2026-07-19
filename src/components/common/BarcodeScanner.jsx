@@ -39,7 +39,7 @@ const BarcodeScanner = ({
                     decoderRef.current = new window.BarcodeDetector({
                         formats: needed.filter(f => formats.includes(f))
                     });
-                    console.log('[Scanner] Using native BarcodeDetector API ✅');
+                    console.log('[Scanner] Using native BarcodeDetector API ');
                     return;
                 }
             } catch (e) {
@@ -51,7 +51,7 @@ const BarcodeScanner = ({
         try {
             const zxing = await import('zxing-wasm');
             zxingRef.current = zxing;
-            console.log('[Scanner] Using zxing-wasm fallback ✅');
+            console.log('[Scanner] Using zxing-wasm fallback ');
         } catch (e) {
             console.error('[Scanner] No client-side decoder available:', e);
         }
@@ -147,10 +147,10 @@ const BarcodeScanner = ({
         try {
             console.log(`[Scanner] Trying camera: ${label}...`);
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            console.log(`[Scanner] ✅ Camera started: ${label}`);
+            console.log(`[Scanner]  Camera started: ${label}`);
             return stream;
         } catch (err) {
-            console.warn(`[Scanner] ❌ Camera failed (${label}):`, err.name, err.message);
+            console.warn(`[Scanner]  Camera failed (${label}):`, err.name, err.message);
             return null;
         }
     };
@@ -386,7 +386,7 @@ const BarcodeScanner = ({
                     }}
                     title={torchOn ? 'إيقاف الفلاش' : 'تشغيل الفلاش'}
                 >
-                    {torchOn ? '🔦' : '💡'}
+                    {torchOn ? '' : ''}
                 </button>
             )}
 
@@ -432,7 +432,7 @@ const BarcodeScanner = ({
                         جاري التحليل...
                     </>
                 ) : (
-                    <>📸 التقاط وتحليل</>
+                    <><i className="fa-solid fa-camera"></i> التقاط وتحليل</>
                 )}
             </button>
 

@@ -68,8 +68,7 @@ const Suppliers = () => {
   const [modalType, setModalType] = useState(null); // 'form', 'payment', null
   const [activeSupplier, setActiveSupplier] = useState(null);
 
-  // Form state
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', taxNumber: '', branchIds: [] });
+  // Form state removed, using dedicated page
 
   // Payment state
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -171,30 +170,11 @@ const Suppliers = () => {
 
   // Server-side filtering is now handled in loadData
 
-  const openForm = async (supplier = null) => {
-    setActiveSupplier(supplier);
-    setFormErrors({});
+  const openForm = (supplier = null) => {
     if (supplier) {
-      setLoading(true);
-      try {
-        const fullSupplier = await Api.getSupplier(supplier.id);
-        setFormData({
-          name: fullSupplier.name || '',
-          phone: fullSupplier.phone || '',
-          email: fullSupplier.email || '',
-          address: fullSupplier.address || '',
-          taxNumber: fullSupplier.taxNumber || '',
-          branchIds: fullSupplier.branches ? fullSupplier.branches.map(b => b.id) : []
-        });
-        setModalType('form');
-      } catch (err) {
-        toast(err.message || 'فشل في جلب بيانات المورد', 'error');
-      } finally {
-        setLoading(false);
-      }
+      navigate(`/suppliers/edit/${supplier.id}`);
     } else {
-      setFormData({ name: '', phone: '', email: '', address: '', taxNumber: '', branchIds: [] });
-      setModalType('form');
+      navigate('/suppliers/add');
     }
   };
 
@@ -211,35 +191,7 @@ const Suppliers = () => {
     setFormErrors({});
   };
 
-  const handleSaveForm = async (e) => {
-    e.preventDefault();
-    setFormErrors({});
-    if (!formData.name) {
-      toast('يرجى إدخال اسم المورد', 'warning');
-      return;
-    }
 
-    setSaving(true);
-    try {
-      if (activeSupplier) {
-        await Api.updateSupplier(activeSupplier.id, formData);
-      } else {
-        await Api.createSupplier(formData, selectedBranchId);
-      }
-      toast(activeSupplier ? 'تم تحديث المورد بنجاح' : 'تم إضافة المورد بنجاح', 'success');
-      closeModal();
-      loadData();
-    } catch (err) {
-      if (err.errors) {
-        setFormErrors(err.errors);
-        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
-      } else {
-        toast(err.message, 'error');
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleSavePayment = async (e) => {
     e.preventDefault();
@@ -368,28 +320,28 @@ const Suppliers = () => {
             id="supp_total"
             label="إجمالي الموردين"
             value={totalElements}
-            icon="🏭"
+            icon={<i className="fa-solid fa-truck-field"></i>}
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
           <StatTile
             id="supp_balance"
             label={data.reduce((sum, s) => sum + Number(s.balance || 0), 0) >= 0 ? "إجمالي المستحقات لنا" : "إجمالي المديونيات علينا"}
             value={Math.abs(data.reduce((sum, s) => sum + Number(s.balance || 0), 0)).toLocaleString()}
-            icon="💳"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
           />
           <StatTile
             id="supp_debt"
             label="عليهم مديونية"
             value={data.filter(s => Number(s.balance || 0) < 0).length}
-            icon="⚠️"
+            icon={<i className="fa-solid fa-hand-holding-dollar"></i>}
             defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
           />
           <StatTile
             id="supp_credit"
             label="لهم مستحقات"
             value={data.filter(s => Number(s.balance || 0) > 0).length}
-            icon="🔔"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 4 }}
           />
         </div>
@@ -397,7 +349,7 @@ const Suppliers = () => {
         {/* Daily Supplier Stats Chart */}
         <div className="card" style={{ marginBottom: '24px' }}>
           <div className="card-header">
-            <h3>📊 حركة الموردين اليومية (أخر 7 أيام)</h3>
+            <h3><i className="fa-solid fa-chart-column"></i> حركة الموردين اليومية (أخر 7 أيام)</h3>
           </div>
           <div className="card-body" style={{ minHeight: '350px', height: 'auto', width: '100%', padding: '20px' }}>
             {dailyStats.length > 0 ? (
@@ -440,7 +392,7 @@ const Suppliers = () => {
 
         <div className="card">
           <div className="card-header">
-            <h3>🏭 إدارة الموردين</h3>
+            <h3><i className="fa-solid fa-industry"></i> إدارة الموردين</h3>
             <div className="toolbar">
               <select 
                 className="form-control" 
@@ -481,10 +433,10 @@ const Suppliers = () => {
                 <option value="balance,desc">موردين عليهم مديونيات (الرصيد الموجب)</option>
                 <option value="createdAt,desc">الأحدث تسجيلًا 🆕</option>
                 <option value="createdAt,asc">الأقدم تسجيلًا</option>
-                <option value="purchasesCount,desc">الأكثر توريداً (عدد فواتير) 📈</option>
-                <option value="purchasesCount,asc">الأقل توريداً (عدد فواتير) 📉</option>
-                <option value="purchasesTotalValue,desc">الأكثر توريداً (قيمة مالية) 💰</option>
-                <option value="purchasesTotalValue,asc">الأقل توريداً (قيمة مالية) 💵</option>
+                <option value="purchasesCount,desc">الأكثر توريداً (عدد فواتير) <i className="fa-solid fa-arrow-trend-up"></i></option>
+                <option value="purchasesCount,asc">الأقل توريداً (عدد فواتير) <i className="fa-solid fa-arrow-trend-down"></i></option>
+                <option value="purchasesTotalValue,desc">الأكثر توريداً (قيمة مالية) <i className="fa-solid fa-sack-dollar"></i></option>
+                <option value="purchasesTotalValue,asc">الأقل توريداً (قيمة مالية) <i className="fa-solid fa-money-bill"></i></option>
               </select>
 
               <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -527,7 +479,7 @@ const Suppliers = () => {
                          }}
                          disabled={importingExcel}
                        >
-                         {importingExcel ? '⏳ جاري الاستيراد...' : '📥 استيراد'}
+                         {importingExcel ? ' جاري الاستيراد...' : ' استيراد'}
                        </button>
                        <div 
                          id="importSuppliersDropdownMenu" 
@@ -571,7 +523,7 @@ const Suppliers = () => {
                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover-tile, #2a2a2a)'}
                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                          >
-                           <span style={{ fontSize: '1.1rem' }}>📂</span>
+                           <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-folder-open"></i></span>
                            <span style={{ color: 'var(--text-main, #ffffff)' }}>رفع ملف إكسيل</span>
                          </button>
                          <button 
@@ -583,7 +535,7 @@ const Suppliers = () => {
                            }}
                            style={{ color: 'var(--text-white, #fff)', padding: '12px 16px', textDecoration: 'none', display: 'block', width: '100%', border: 'none', background: 'none', textAlign: 'right', fontSize: '0.85rem', cursor: 'pointer', borderTop: '1px solid var(--border-color, #333)' }}
                          >
-                           📋 تحميل نموذج فارغ
+                           <i className="fa-solid fa-clipboard-list"></i> تحميل نموذج فارغ
                          </button>
                        </div>
                     </div>
@@ -602,7 +554,7 @@ const Suppliers = () => {
                 <Loader message="جاري تحميل الموردين..." />
               ) : items.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">🏭</div>
+                  <div className="empty-icon"><i className="fa-solid fa-industry"></i></div>
                   <h4>لا يوجد موردين</h4>
                   <p>قم بإضافة موردين جدد</p>
                 </div>
@@ -645,15 +597,15 @@ const Suppliers = () => {
                           <td className={balanceClass} style={{ fontWeight: 700 }}>{balance.toFixed(2)}</td>
                           <td>
                             <div className="table-actions">
-                              <button className="btn btn-icon btn-ghost" title="ملف المورد والإحصائيات" onClick={() => navigate(`/suppliers/${s.id}`)}>📊</button>
-                              <button className="btn btn-icon btn-ghost" title="عرض الفواتير" onClick={() => navigate(`/purchases/${encodeURIComponent(s.name)}`)}>🛒</button>
+                              <button className="btn btn-icon btn-ghost" title="ملف المورد والإحصائيات" onClick={() => navigate(`/suppliers/${s.id}`)}><i className="fa-solid fa-chart-column"></i></button>
+                              <button className="btn btn-icon btn-ghost" title="عرض الفواتير" onClick={() => navigate(`/purchases/${encodeURIComponent(s.name)}`)}><i className="fa-solid fa-cart-shopping"></i></button>
                               {Api.can('SUPPLIER_WRITE') && (
                                 <>
-                                  <button className="btn btn-icon btn-ghost" title="دفع" onClick={() => openPayment(s)}>💰</button>
-                                  <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(s)}>✏️</button>
+                                  <button className="btn btn-icon btn-ghost" title="دفع" onClick={() => openPayment(s)}><i className="fa-solid fa-sack-dollar"></i></button>
+                                  <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(s)}><i className="fa-solid fa-pencil"></i></button>
                                 </>
                               )}
-                              {Api.can('SUPPLIER_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(s.id, s.name)}>🗑️</button>}
+                              {Api.can('SUPPLIER_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(s.id, s.name)}><i className="fa-solid fa-trash"></i></button>}
                             </div>
                           </td>
                         </tr>
@@ -690,64 +642,13 @@ const Suppliers = () => {
       </div>
       <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
 
-      {modalType === 'form' && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
-            <div className="modal">
-              <div className="modal-header">
-                <h3>{activeSupplier ? 'تعديل مورد' : 'إضافة مورد جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
-              </div>
-              <div className="modal-body">
-                <form id="supplierForm" onSubmit={handleSaveForm}>
-                  <div className="form-group">
-                    <label>اسم المورد *</label>
-                    <input className="form-control" name="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
-                    {formErrors.name && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.name}</span>}
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>الهاتف</label>
-                      <input className="form-control" name="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-                      {formErrors.phone && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
-                    </div>
-                    <div className="form-group">
-                      <label>البريد الإلكتروني</label>
-                      <input className="form-control" name="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                      {formErrors.email && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.email}</span>}
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>العنوان</label>
-                    <input className="form-control" name="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-                    {formErrors.address && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.address}</span>}
-                  </div>
-                  <div className="form-group">
-                    <label>الرقم الضريبي</label>
-                    <input className="form-control" name="taxNumber" value={formData.taxNumber} onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })} />
-                    {formErrors.taxNumber && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.taxNumber}</span>}
-                  </div>
-
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
-                <button type="submit" form="supplierForm" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'جاري الحفظ...' : (activeSupplier ? 'حفظ التعديلات' : 'إضافة المورد')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
-
       {modalType === 'payment' && (
         <ModalContainer>
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
             <div className="modal" style={{ maxWidth: '450px' }}>
               <div className="modal-header">
                 <h3>دفع للمورد — {activeSupplier.name}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="paymentForm" onSubmit={handleSavePayment}>

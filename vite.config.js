@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [react()],
   server: {
     port: 5173,
@@ -21,7 +22,27 @@ export default defineConfig({
     }
   },
   build: {
-    chunkSizeWarningLimit: 800
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React — الحزم الأساسية
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Charts — Recharts ثقيلة، تُحمَّل فقط عند الحاجة
+          'charts': ['recharts'],
+          // Calendar — react-big-calendar
+          'calendar': ['react-big-calendar', 'moment'],
+          // Animations — GSAP
+          'gsap': ['gsap'],
+          // Maps
+          'leaflet': ['leaflet', 'react-leaflet'],
+          // Barcode / QR
+          'barcode': ['jsbarcode', 'html5-qrcode', 'zxing-wasm'],
+          // PDF
+          'pdf': ['html2pdf.js'],
+        }
+      }
+    }
   }
 }) // Trigger Vite restart
 

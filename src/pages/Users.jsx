@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import Loader from '../components/common/Loader';
@@ -7,6 +8,7 @@ import StatTile from '../components/common/StatTile';
 import { translatePermission, translateRole } from '../utils/permissionTranslations';
 
 const Users = () => {
+  const navigate = useNavigate();
   const { toast, confirm } = useGlobalUI();
   const [data, setData] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -246,7 +248,7 @@ const Users = () => {
                 />
               </div>
               {Api.can('USER_WRITE') && (
-                <button className="btn btn-primary" onClick={openForm}>
+                <button className="btn btn-primary" onClick={() => navigate('/users/add')}>
                   <span><i className="fa-solid fa-plus"></i></span> إضافة مستخدم
                 </button>
               )}
@@ -306,7 +308,7 @@ const Users = () => {
                         </td>
                         <td>
                           <div className="table-actions">
-                            {Api.can('USER_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => openEditForm(u)}><i className="fa-solid fa-pen"></i></button>}
+                            {Api.can('USER_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل البيانات" onClick={() => navigate(`/users/edit/${u.id}`)}><i className="fa-solid fa-pen"></i></button>}
                             {Api.can('USER_WRITE') && (
                               <button className="btn btn-icon btn-ghost" title={u.enabled ? 'تعطيل' : 'تفعيل'} onClick={() => toggleEnabled(u.id, !u.enabled)}>
                                 {u.enabled ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-lock-open"></i>}
@@ -354,7 +356,7 @@ const Users = () => {
             <div className="modal">
               <div className="modal-header">
                 <h3>{activeUser ? 'تعديل بيانات المستخدم' : 'إضافة مستخدم جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}></button>
               </div>
               <div className="modal-body">
                 <form id="userForm" onSubmit={handleSubmit}>
@@ -437,7 +439,7 @@ const Users = () => {
             <div className="modal">
               <div className="modal-header">
                 <h3>صلاحيات — {activeUser.name}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}></button>
               </div>
               <div className="modal-body">
                 <form id="accessForm" onSubmit={handleUpdateAccess}>

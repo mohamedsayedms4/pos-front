@@ -21,7 +21,7 @@ const AttendanceViolationsLog = () => {
           background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '1.5rem', boxShadow: '0 8px 24px rgba(239,68,68,0.35)'
-        }}>🚨</div>
+        }}><i className="fa-solid fa-siren-on"></i></div>
         <div>
           <h1 className="page-title" style={{ margin: 0, fontSize: '1.6rem' }}>سجل محاولات التلاعب</h1>
           <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-dim)' }}>
@@ -40,7 +40,7 @@ const AttendanceViolationsLog = () => {
              <Loader />
           ) : violations.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dim)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '10px', opacity: 0.5 }}>🛡️</div>
+              <div style={{ fontSize: '3rem', marginBottom: '10px', opacity: 0.5 }}><i className="fa-solid fa-shield-halved"></i>️</div>
               <h4 style={{ margin: '0 0 8px' }}>لا توجد مخالفات مسجلة</h4>
               <p style={{ margin: 0, fontSize: '0.9rem' }}>النظام يعمل بشكل آمن والموظفون يلتزمون بالنطاق الجغرافي.</p>
             </div>
@@ -56,7 +56,7 @@ const AttendanceViolationsLog = () => {
                   
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: '250px' }}>
                     <div style={{ fontSize: '1.6rem', marginTop: '-4px' }}>
-                      {v.type === 'GEO_VIOLATION' ? '📍' : '🌐'}
+                      {v.type === 'GEO_VIOLATION' ? '' : ''}
                     </div>
                     <div>
                       <h4 style={{ margin: '0 0 6px', color: 'var(--text-primary)', fontSize: '0.95rem' }}>
@@ -66,7 +66,7 @@ const AttendanceViolationsLog = () => {
                         {v.message}
                       </p>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        🕒 {v.timestamp ? new Date(v.timestamp).toLocaleString('ar') : 'تاريخ غير معروف'}
+                        <i className="fa-solid fa-clock"></i> {v.timestamp ? new Date(v.timestamp).toLocaleString('ar') : 'تاريخ غير معروف'}
                       </span>
                     </div>
                   </div>
@@ -77,7 +77,7 @@ const AttendanceViolationsLog = () => {
                       onClick={() => navigate(v.actionUrl)}
                       style={{ height: '38px', padding: '0 16px', borderRadius: '8px', fontSize: '0.85rem' }}
                     >
-                      🗺️ عرض الموقع على الخريطة
+                      <i className="fa-solid fa-map"></i>️ عرض الموقع على الخريطة
                     </button>
                   )}
 

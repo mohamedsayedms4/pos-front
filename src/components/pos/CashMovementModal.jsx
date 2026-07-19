@@ -28,7 +28,7 @@ const CashMovementModal = ({ onClose }) => {
       <div className="session-modal-content">
         <div className="session-modal-header">
           <h2 className="session-modal-title" style={{ margin: 0 }}>إضافة حركة نقدية</h2>
-          <button onClick={onClose} className="session-modal-close-btn">✕</button>
+          <button onClick={onClose} className="session-modal-close-btn"><i className="fa-solid fa-times"></i></button>
         </div>
         
         <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>

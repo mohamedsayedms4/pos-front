@@ -39,7 +39,7 @@ const AuditDetails = () => {
   if (!log) {
     return (
       <div className="page-section empty-state">
-        <div className="empty-icon">📂</div>
+        <div className="empty-icon"><i className="fa-solid fa-folder-open"></i></div>
         <h4>لم يتم العثور على السجل</h4>
         <button className="btn btn-primary" onClick={() => navigate('/audit')}>العودة للسجلات</button>
       </div>
@@ -47,10 +47,10 @@ const AuditDetails = () => {
   }
 
   const actionIcons = {
-    CREATE: '🟢',
-    UPDATE: '🔵',
-    DELETE: '🔴',
-    LOGIN: '🟡',
+    CREATE: '',
+    UPDATE: '',
+    DELETE: '',
+    LOGIN: '',
   };
 
   return (
@@ -62,7 +62,7 @@ const AuditDetails = () => {
       <div className="card">
         <div className="card-header">
           <h3>
-            {actionIcons[log.action] || '⚪'} تفاصيل عملية {log.action}
+            {actionIcons[log.action] || ''} تفاصيل عملية {log.action}
           </h3>
           <span className={`badge ${log.action === 'CREATE' ? 'badge-success' : log.action === 'DELETE' ? 'badge-danger' : log.action === 'UPDATE' ? 'badge-info' : 'badge-warning'}`}>
             {log.action}

@@ -86,7 +86,7 @@ const StatTile = ({ id, label, value, subtitle, icon, defaults = {}, onClick, to
       
       {isEditMode && (
         <div className="edit-badge" style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '0.8rem', zIndex: 10 }}>
-          ⚙️
+          <i className="fa-solid fa-gear"></i>
         </div>
       )}
     </div>

@@ -53,11 +53,11 @@ const EmployeeQrScan = () => {
             
             if (actionType === 'checkIn') {
                 await Api.checkInEmployee(user.id, token, pos.latitude, pos.longitude);
-                setMessage('تم تسجيل الحضور بنجاح ✅');
+                setMessage('تم تسجيل الحضور بنجاح ');
                 toast('تم تسجيل الحضور', 'success');
             } else {
                 await Api.checkOutEmployee(user.id, token, pos.latitude, pos.longitude);
-                setMessage('تم تسجيل الانصراف بنجاح ✅');
+                setMessage('تم تسجيل الانصراف بنجاح ');
                 toast('تم تسجيل الانصراف', 'success');
             }
             setStatus('success');
@@ -70,9 +70,9 @@ const EmployeeQrScan = () => {
             const msg = err.message || 'حدث خطأ غير متوقع';
             // التحقق من نوع الخطأ بناءً على محتوى الرسالة
             if (msg.includes('IP')) {
-                setMessage('🌐 غير مسموح بتسجيل الحضور من هذه الشبكة (تأكد أنك متصل بواي فاي الفرع). ' + msg);
+                setMessage(' غير مسموح بتسجيل الحضور من هذه الشبكة (تأكد أنك متصل بواي فاي الفرع). ' + msg);
             } else if (msg.includes('النطاق الجغرافي') || msg.includes('الإحداثيات')) {
-                setMessage('📍 ' + msg);
+                setMessage(' ' + msg);
             } else if (msg.includes('QR')) {
                 setMessage('الرمز منتهي الصلاحية. يرجى مسح الـ QR الجديد من شاشة الفرع.');
             } else {
@@ -102,7 +102,7 @@ const EmployeeQrScan = () => {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '2.5rem'
                 }}>
-                    📱
+                    <i className="fa-solid fa-mobile-screen"></i>
                 </div>
 
                 <h2 style={{ marginBottom: '8px', fontSize: '1.4rem' }}>أهلاً، {user.name}</h2>
@@ -137,14 +137,14 @@ const EmployeeQrScan = () => {
                                     style={{ height: '54px', fontSize: '1.1rem', borderRadius: '14px', gap: '8px' }}
                                     onClick={() => handleAction('checkIn')}
                                 >
-                                    📍 تسجيل الحضور
+                                    <i className="fa-solid fa-location-dot"></i> تسجيل الحضور
                                 </button>
                                 <button 
                                     className="btn btn-danger" 
                                     style={{ height: '54px', fontSize: '1.1rem', borderRadius: '14px', gap: '8px' }}
                                     onClick={() => handleAction('checkOut')}
                                 >
-                                    🏃 تسجيل الانصراف
+                                    <i className="fa-solid fa-person-running"></i> تسجيل الانصراف
                                 </button>
                             </>
                         )}

@@ -4,10 +4,10 @@ import { useNotifications } from '../services/useNotifications';
 import Loader from '../components/common/Loader';
 
 const typeIcon = {
-  INFO: '🔵',
-  WARNING: '🟡',
-  ERROR: '🔴',
-  SUCCESS: '🟢',
+  INFO: '',
+  WARNING: '',
+  ERROR: '',
+  SUCCESS: '',
 };
 
 const Notifications = () => {
@@ -28,7 +28,7 @@ const Notifications = () => {
       <div className="card">
         <div className="card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h3>🔔 الإشعارات</h3>
+            <h3><i className="fa-solid fa-bell"></i> الإشعارات</h3>
             {connected ? (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: '5px',
@@ -54,10 +54,10 @@ const Notifications = () => {
           <div style={{ display: 'flex', gap: '8px' }}>
             {unreadCount > 0 && (
               <button className="btn btn-ghost btn-sm" onClick={markAllRead}>
-                ✓ تحديد الكل كمقروء ({unreadCount})
+                <i className="fa-solid fa-check"></i> تحديد الكل كمقروء ({unreadCount})
               </button>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={refresh}>🔄 تحديث</button>
+            <button className="btn btn-ghost btn-sm" onClick={refresh}><i className="fa-solid fa-rotate"></i> تحديث</button>
           </div>
         </div>
         <div className="card-body">
@@ -65,7 +65,7 @@ const Notifications = () => {
              <Loader message="جاري تحميل الإشعارات..." />
           ) : notifications.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">🔔</div>
+              <div className="empty-icon"><i className="fa-solid fa-bell"></i></div>
               <h4>لا توجد إشعارات</h4>
               <p>أنت على اطلاع بكل شيء!</p>
             </div>
@@ -86,7 +86,7 @@ const Notifications = () => {
                   onClick={() => handleNotificationClick(n)}
                 >
                   <div style={{ fontSize: '1.2rem', marginTop: '2px', flexShrink: 0 }}>
-                    {typeIcon[n.type] || '🔵'}
+                    {typeIcon[n.type] || ''}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: n.read ? 400 : 600, color: 'var(--text-primary)', marginBottom: '4px' }}>

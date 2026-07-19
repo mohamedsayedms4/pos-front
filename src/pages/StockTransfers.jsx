@@ -24,17 +24,17 @@ const EMPTY_TRANSFER = {
 const EMPTY_ITEM = { productId: '', productName: '', quantity: '', unitName: '' };
 
 const STATUS_CONFIG = {
-  PENDING:    { label: 'بانتظار الاعتماد', badge: 'badge-warning',  icon: '🕒' },
-  IN_TRANSIT: { label: 'قيد النقل',        badge: 'badge-info',     icon: '🚚' },
-  RECEIVED:   { label: 'مستلم',            badge: 'badge-success',  icon: '✅' },
-  CANCELLED:  { label: 'ملغي',             badge: 'badge-danger',   icon: '🚫' },
+  PENDING:    { label: 'بانتظار الاعتماد', badge: 'badge-warning',  icon: '' },
+  IN_TRANSIT: { label: 'قيد النقل',        badge: 'badge-info',     icon: '' },
+  RECEIVED:   { label: 'مستلم',            badge: 'badge-success',  icon: '' },
+  CANCELLED:  { label: 'ملغي',             badge: 'badge-danger',   icon: '' },
 };
 
 const TRANSFER_TYPE_CONFIG = {
-  WAREHOUSE_TO_WAREHOUSE: { label: 'مخزن → مخزن',  icon: '📦→📦' },
-  BRANCH_TO_BRANCH:       { label: 'فرع → فرع',    icon: '🏪→🏪' },
-  WAREHOUSE_TO_BRANCH:    { label: 'مخزن → فرع',   icon: '📦→🏪' },
-  BRANCH_TO_WAREHOUSE:    { label: 'فرع → مخزن',   icon: '🏪→📦' },
+  WAREHOUSE_TO_WAREHOUSE: { label: 'مخزن → مخزن',  icon: '→' },
+  BRANCH_TO_BRANCH:       { label: 'فرع → فرع',    icon: '→' },
+  WAREHOUSE_TO_BRANCH:    { label: 'مخزن → فرع',   icon: '→' },
+  BRANCH_TO_WAREHOUSE:    { label: 'فرع → مخزن',   icon: '→' },
 };
 
 /** استخراج branchId للبحث عن المنتجات بناءً على نوع النقل */
@@ -183,12 +183,12 @@ const StockTransfers = () => {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
   const getStatusBadge = (status) => {
-    const cfg = STATUS_CONFIG[status] || { label: status, badge: 'badge', icon: '❓' };
+    const cfg = STATUS_CONFIG[status] || { label: status, badge: 'badge', icon: '' };
     return <span className={`badge ${cfg.badge}`}>{cfg.icon} {cfg.label}</span>;
   };
 
   const getTransferTypeBadge = (type) => {
-    const cfg = TRANSFER_TYPE_CONFIG[type] || { label: type, icon: '🔀' };
+    const cfg = TRANSFER_TYPE_CONFIG[type] || { label: type, icon: '' };
     return (
       <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
         {cfg.icon} {cfg.label}
@@ -200,15 +200,15 @@ const StockTransfers = () => {
 
   /** اسم المصدر للعرض في الجدول */
   const getSourceLabel = (t) => {
-    if (t.fromBranchName) return `🏪 ${t.fromBranchName}`;
-    if (t.fromWarehouseName) return `📦 ${t.fromWarehouseName}`;
+    if (t.fromBranchName) return ` ${t.fromBranchName}`;
+    if (t.fromWarehouseName) return ` ${t.fromWarehouseName}`;
     return '—';
   };
 
   /** اسم الوجهة للعرض في الجدول */
   const getDestLabel = (t) => {
-    if (t.toBranchName) return `🏪 ${t.toBranchName}`;
-    if (t.toWarehouseName) return `📦 ${t.toWarehouseName}`;
+    if (t.toBranchName) return ` ${t.toBranchName}`;
+    if (t.toWarehouseName) return ` ${t.toWarehouseName}`;
     return '—';
   };
 
@@ -450,7 +450,7 @@ const StockTransfers = () => {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="page-header" style={{ marginBottom: '20px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>🔀 نقل البضاعة بين الفروع والمخازن</h2>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}><i className="fa-solid fa-shuffle"></i> نقل البضاعة بين الفروع والمخازن</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
             إدارة طلبات نقل الأصناف بين الفروع والمخازن مع تتبع الحالة في كل مرحلة
           </p>
@@ -467,7 +467,7 @@ const StockTransfers = () => {
               {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           )}
-          <button className="btn btn-secondary" onClick={loadTransfers}>🔄 تحديث</button>
+          <button className="btn btn-secondary" onClick={loadTransfers}><i className="fa-solid fa-rotate"></i> تحديث</button>
           {Api.can('STOCK_TRANSFER_WRITE') || isAdmin ? (
             <button className="btn btn-primary" onClick={openCreateModal}>
               ＋ طلب نقل جديد
@@ -478,23 +478,23 @@ const StockTransfers = () => {
 
       {/* ── Stats ──────────────────────────────────────────────────────────── */}
       <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px' }}>
-        <StatTile id="st_pending"    label="بانتظار الاعتماد" value={`${stats.pending} طلب`}   icon="🕒" defaults={{ color: 'amber',   size: 'tile-wd-sm', order: 1 }} />
-        <StatTile id="st_transit"   label="قيد النقل"        value={`${stats.inTransit} طلب`} icon="🚚" defaults={{ color: 'blue',    size: 'tile-wd-sm', order: 2 }} />
-        <StatTile id="st_received"  label="مستلمة"           value={`${stats.received} طلب`}  icon="✅" defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 3 }} />
-        <StatTile id="st_cancelled" label="ملغاة"            value={`${stats.cancelled} طلب`} icon="🚫" defaults={{ color: 'red',     size: 'tile-wd-sm', order: 4 }} />
+        <StatTile id="st_pending"    label="بانتظار الاعتماد" value={`${stats.pending} طلب`}   icon={<i className="fa-solid fa-hourglass-half"></i>} defaults={{ color: 'amber',   size: 'tile-wd-sm', order: 1 }} />
+        <StatTile id="st_transit"   label="قيد النقل"        value={`${stats.inTransit} طلب`} icon={<i className="fa-solid fa-truck"></i>} defaults={{ color: 'blue',    size: 'tile-wd-sm', order: 2 }} />
+        <StatTile id="st_received"  label="مستلمة"           value={`${stats.received} طلب`}  icon={<i className="fa-solid fa-box-open"></i>} defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 3 }} />
+        <StatTile id="st_cancelled" label="ملغاة"            value={`${stats.cancelled} طلب`} icon={<i className="fa-solid fa-xmark"></i>} defaults={{ color: 'red',     size: 'tile-wd-sm', order: 4 }} />
       </div>
 
       {/* ── Flow indicator ──────────────────────────────────────────────────── */}
       <div className="card mb-4" style={{ padding: '14px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
           <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>مسار التحويل:</span>
-          <span className="badge badge-warning">🕒 انتظار الاعتماد</span>
+          <span className="badge badge-warning"><i className="fa-solid fa-clock"></i> انتظار الاعتماد</span>
           <span>→</span>
-          <span className="badge badge-info">🚚 قيد النقل (خصم من المصدر)</span>
+          <span className="badge badge-info"><i className="fa-solid fa-truck"></i> قيد النقل (خصم من المصدر)</span>
           <span>→</span>
-          <span className="badge badge-success">✅ مستلم (إضافة للوجهة)</span>
+          <span className="badge badge-success"><i className="fa-solid fa-check"></i> مستلم (إضافة للوجهة)</span>
           <span style={{ marginRight: 'auto', color: 'var(--metro-red)', fontSize: '0.8rem' }}>
-            ⚠️ الإلغاء في حالة "قيد النقل" يُعيد الكميات للمصدر تلقائياً
+            <i className="fa-solid fa-triangle-exclamation"></i> الإلغاء في حالة "قيد النقل" يُعيد الكميات للمصدر تلقائياً
           </span>
         </div>
       </div>
@@ -502,7 +502,7 @@ const StockTransfers = () => {
       {/* ── Table ──────────────────────────────────────────────────────────── */}
       <div className="card">
         <div className="card-header">
-          <h3>📋 قائمة طلبات النقل</h3>
+          <h3><i className="fa-solid fa-clipboard-list"></i> قائمة طلبات النقل</h3>
         </div>
         <div className="card-body no-padding">
           <div className="table-wrapper">
@@ -510,7 +510,7 @@ const StockTransfers = () => {
               <Loader message="جاري تحميل طلبات النقل..." />
             ) : transfers.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">🔀</div>
+                <div className="empty-icon"><i className="fa-solid fa-shuffle"></i></div>
                 <h4>لا توجد طلبات نقل حتى الآن</h4>
                 <p>أنشئ طلب نقل جديد لنقل البضاعة بين الفروع والمخازن</p>
                 {(Api.can('STOCK_TRANSFER_WRITE') || isAdmin) && (
@@ -553,24 +553,24 @@ const StockTransfers = () => {
                       </td>
                       <td>
                         <div className="table-actions" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                          <button className="btn btn-icon btn-ghost" title="عرض التفاصيل" onClick={() => openDetails(t)}>👁️</button>
+                          <button className="btn btn-icon btn-ghost" title="عرض التفاصيل" onClick={() => openDetails(t)}><i className="fa-solid fa-eye"></i>️</button>
 
                           {t.status === 'PENDING' && (Api.can('STOCK_TRANSFER_APPROVE') || isAdmin) && (
                             <button className="btn btn-sm btn-primary" onClick={() => handleApprove(t)}>
-                              ✔ اعتماد
+                              <i className="fa-solid fa-check"></i> اعتماد
                             </button>
                           )}
 
                           {t.status === 'IN_TRANSIT' && (Api.can('STOCK_TRANSFER_RECEIVE') || isAdmin) && (
                             <button className="btn btn-sm btn-success" onClick={() => handleReceive(t)}>
-                              📥 استلام
+                              <i className="fa-solid fa-inbox"></i> استلام
                             </button>
                           )}
 
                           {(t.status === 'PENDING' || t.status === 'IN_TRANSIT') &&
                             (Api.can('STOCK_TRANSFER_WRITE') || isAdmin) && (
                             <button className="btn btn-sm btn-danger" onClick={() => handleCancel(t)}>
-                              ✕ إلغاء
+                              <i className="fa-solid fa-times"></i> إلغاء
                             </button>
                           )}
                         </div>
@@ -590,8 +590,8 @@ const StockTransfers = () => {
           <div className="modal-overlay active" onClick={e => { if (e.target.classList.contains('modal-overlay')) closeCreateModal(); }}>
             <div className="modal" style={{ maxWidth: '780px' }}>
               <div className="modal-header">
-                <h3>🔀 إنشاء طلب نقل بضاعة</h3>
-                <button className="modal-close" onClick={closeCreateModal}>✕</button>
+                <h3><i className="fa-solid fa-shuffle"></i> إنشاء طلب نقل بضاعة</h3>
+                <button className="modal-close" onClick={closeCreateModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
 
@@ -661,7 +661,7 @@ const StockTransfers = () => {
 
                 {/* ── Add items ─────────────────────────────────────────────── */}
                 <div className="card" style={{ padding: '14px', marginBottom: '14px', background: 'var(--bg-elevated)', overflow: 'visible' }}>
-                  <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>➕ إضافة صنف</h4>
+                  <h4 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: 'var(--text-secondary)' }}><i className="fa-solid fa-plus"></i> إضافة صنف</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '10px', alignItems: 'end', overflow: 'visible' }}>
                     <div className="form-group" style={{ margin: 0, position: 'relative' }}>
                       <label className="form-label" style={{ fontSize: '0.8rem' }}>المنتج <span style={{ color: 'var(--metro-red)' }}>*</span></label>
@@ -683,7 +683,7 @@ const StockTransfers = () => {
                           <span
                             style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text-dim, #888)', fontWeight: 'bold', zIndex: 5 }}
                             onClick={() => { setProductSearch(''); setFormItem(prev => ({ ...prev, productId: '' })); }}
-                          >✕</span>
+                          ><i className="fa-solid fa-times"></i></span>
                         )}
                         {showProductDropdown && productSearch.trim() && (
                           <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-elevated, #1a1a1a)', border: '1px solid var(--border-color, #333)', borderRadius: '8px', maxHeight: '220px', overflowY: 'auto', zIndex: 1000, marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
@@ -764,7 +764,7 @@ const StockTransfers = () => {
                           <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>{item.quantity}</td>
                           <td style={{ color: 'var(--text-dim)' }}>{item.unitName || '—'}</td>
                           <td>
-                            <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => removeItem(idx)} title="حذف">🗑️</button>
+                            <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => removeItem(idx)} title="حذف"><i className="fa-solid fa-trash"></i></button>
                           </td>
                         </tr>
                       ))}
@@ -784,7 +784,7 @@ const StockTransfers = () => {
                   onClick={handleCreateSubmit}
                   disabled={submitting || form.items.length === 0}
                 >
-                  {submitting ? '⏳ جاري الإنشاء...' : '✔ إنشاء طلب النقل'}
+                  {submitting ? ' جاري الإنشاء...' : ' إنشاء طلب النقل'}
                 </button>
               </div>
             </div>
@@ -798,8 +798,8 @@ const StockTransfers = () => {
           <div className="modal-overlay active" onClick={e => { if (e.target.classList.contains('modal-overlay')) { setDetailsModalOpen(false); setSelectedTransfer(null); } }}>
             <div className="modal" style={{ maxWidth: '700px' }}>
               <div className="modal-header">
-                <h3>🔀 تفاصيل التحويل: {selectedTransfer.transferNumber}</h3>
-                <button className="modal-close" onClick={() => { setDetailsModalOpen(false); setSelectedTransfer(null); }}>✕</button>
+                <h3><i className="fa-solid fa-shuffle"></i> تفاصيل التحويل: {selectedTransfer.transferNumber}</h3>
+                <button className="modal-close" onClick={() => { setDetailsModalOpen(false); setSelectedTransfer(null); }}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
 
@@ -831,7 +831,7 @@ const StockTransfers = () => {
                   {selectedTransfer.approvedBy && (
                     <div>
                       <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>معتمد بواسطة</span>
-                      <div style={{ fontWeight: 600, marginTop: '3px' }}>👤 {selectedTransfer.approvedBy}</div>
+                      <div style={{ fontWeight: 600, marginTop: '3px' }}><i className="fa-solid fa-user"></i> {selectedTransfer.approvedBy}</div>
                     </div>
                   )}
                   {selectedTransfer.notes && (
@@ -872,12 +872,12 @@ const StockTransfers = () => {
               <div className="modal-footer">
                 {selectedTransfer.status === 'PENDING' && (Api.can('STOCK_TRANSFER_APPROVE') || isAdmin) && (
                   <button className="btn btn-primary" onClick={() => { setDetailsModalOpen(false); handleApprove(selectedTransfer); }}>
-                    ✔ اعتماد وشحن
+                    <i className="fa-solid fa-check"></i> اعتماد وشحن
                   </button>
                 )}
                 {selectedTransfer.status === 'IN_TRANSIT' && (Api.can('STOCK_TRANSFER_RECEIVE') || isAdmin) && (
                   <button className="btn btn-success" onClick={() => { setDetailsModalOpen(false); handleReceive(selectedTransfer); }}>
-                    📥 تأكيد الاستلام
+                    <i className="fa-solid fa-inbox"></i> تأكيد الاستلام
                   </button>
                 )}
                 <button className="btn btn-ghost" onClick={() => { setDetailsModalOpen(false); setSelectedTransfer(null); }}>إغلاق</button>

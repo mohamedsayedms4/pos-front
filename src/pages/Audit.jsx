@@ -34,19 +34,19 @@ const Audit = () => {
   const handleRefresh = () => loadData(currentPage);
 
   const actionIcons = {
-    CREATE: '🟢',
-    UPDATE: '🔵',
-    DELETE: '🔴',
-    LOGIN: '🟡',
+    CREATE: '',
+    UPDATE: '',
+    DELETE: '',
+    LOGIN: '',
   };
 
   return (
     <div className="page-section">
       <div className="card">
         <div className="card-header">
-          <h3>📋 سجل المراجعة</h3>
+          <h3><i className="fa-solid fa-clipboard-list"></i> سجل المراجعة</h3>
           <div className="toolbar">
-            <button className="btn btn-ghost btn-sm" onClick={handleRefresh}>🔄 تحديث</button>
+            <button className="btn btn-ghost btn-sm" onClick={handleRefresh}><i className="fa-solid fa-rotate"></i> تحديث</button>
           </div>
         </div>
         <div className="card-body no-padding">
@@ -55,7 +55,7 @@ const Audit = () => {
               <Loader message="جاري تحميل سجل المراجعة..." />
             ) : data.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📋</div>
+                <div className="empty-icon"><i className="fa-solid fa-clipboard-list"></i></div>
                 <h4>لا توجد سجلات</h4>
                 <p>سجل المراجعة فارغ حالياً</p>
               </div>
@@ -83,7 +83,7 @@ const Audit = () => {
                         <td style={{ fontWeight: 600 }}>{log.username || '—'}</td>
                         <td>
                           <span className={`badge ${log.action === 'CREATE' ? 'badge-success' : log.action === 'DELETE' ? 'badge-danger' : log.action === 'UPDATE' ? 'badge-info' : 'badge-warning'}`}>
-                            {actionIcons[log.action] || '⚪'} {log.action}
+                            {actionIcons[log.action] || ''} {log.action}
                           </span>
                         </td>
                         <td>
@@ -96,7 +96,7 @@ const Audit = () => {
                         <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{log.ipAddress || '—'}</td>
                         <td>
                           <div className="table-actions" style={{ justifyContent: 'center' }}>
-                            <button className="btn btn-icon btn-ghost" title="عرض التفاصيل الكاملة" onClick={() => navigate(`/audit/${log.id}`, { state: { log } })}>👁️</button>
+                            <button className="btn btn-icon btn-ghost" title="عرض التفاصيل الكاملة" onClick={() => navigate(`/audit/${log.id}`, { state: { log } })}><i className="fa-solid fa-eye"></i>️</button>
                           </div>
                         </td>
                       </tr>

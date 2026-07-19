@@ -997,7 +997,7 @@ const Api = {
     const res = await fetch(`${SERVER_URL}/api/v2/products/${id}/barcode/label`, {
       headers: { 'Authorization': `Bearer ${this._getToken()}` }
     });
-    if (!res.ok) throw new Error("ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ ØµÙˆØ±Ø© Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±");
+    if (!res.ok) throw new Error("ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ ØµÙˆØ±Ø Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±");
     const blob = await res.blob();
     return window.URL.createObjectURL(blob);
   },
@@ -1152,7 +1152,7 @@ const Api = {
       },
       body: JSON.stringify(config)
     });
-    if (!res.ok) throw new Error("Ù Ø´Ù„ Ø§Ø®ØªØ¨Ø§Ø± Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©");
+    if (!res.ok) throw new Error("Ù Ø´Ù„ Ø§ØØªØ¨Ø§Ø± Ø§Ù„Ø·Ø¨Ø§Ø¹Ø");
     const blob = await res.blob();
     return window.URL.createObjectURL(blob);
   },
@@ -2148,7 +2148,7 @@ const Api = {
   },
 
   // â”€â”€â”€ Attendance â”€â”€â”€
-  /** ÙŠØ¬Ù„Ø¨ ØµÙˆØ±Ø© QR Code Ø§Ù„Ø­Ø§Ù„ÙŠØ© Ù„Ù„Ø­Ø¶ÙˆØ± (ØªØªØºÙŠØ± ÙƒÙ„ 60 Ø«Ø§Ù†ÙŠØ©) */
+  /** ÙŠØ¬Ù„Ø¨ ØµÙˆØ±Ø QR Code Ø§Ù„Ø­Ø§Ù„ÙŠØ Ù„Ù„Ø­Ø¶ÙˆØ± (ØªØªØºÙŠØ± ÙƒÙ„ 60 Ø«Ø§Ù†ÙŠØ) */
   async getAttendanceQr() {
     const baseUrl = window.location.origin;
     const res = await this._request('/attendance/qr?baseUrl=' + encodeURIComponent(baseUrl));
@@ -2251,6 +2251,11 @@ const Api = {
 
   async getBranchesSummary() {
     const res = await this._request('/branches/summary');
+    return res.data;
+  },
+
+  async getBranchById(id) {
+    const res = await this._request(`/branches/${id}`);
     return res.data;
   },
 
@@ -2454,7 +2459,7 @@ const Api = {
     await this._request(`/fixed-assets/${id}`, { method: 'DELETE' });
   },
 
-  // â”€â”€â”€ Employee Custody (Ø§Ù„Ø¹Ù‡Ø¯ Ø§Ù„Ø´Ø®ØµÙŠØ©) â”€â”€â”€
+  // â”€â”€â”€ Employee Custody (Ø§Ù„Ø¹Ù‡Ø¯ Ø§Ù„Ø´ØØµÙŠØ) â”€â”€â”€
   async getCustody(page = 0, size = 10, query = '') {
     const res = await this._request(`/custody?page=${page}&size=${size}&query=${encodeURIComponent(query)}`);
     return res.data;
@@ -2729,7 +2734,7 @@ const Api = {
 
   async getPublicFeaturedArticles() {
     const res = await fetch(`${API_BASE}/public/articles/featured`);
-    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù‚Ø§Ù„Ø§Øª Ø§Ù„Ù…Ù…ÙŠØ²Ø©');
+    if (!res.ok) throw new Error('ÙØ´Ù„ ÙÙŠ Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù‚Ø§Ù„Ø§Øª Ø§Ù„Ù…Ù…ÙŠØ²Ø<i className="fa-regular fa-copyright"></i>');
     const json = await res.json();
     return json.data;
   },
@@ -2902,6 +2907,81 @@ const Api = {
   async getDebtsCount(branchId = null) {
     const params = branchId ? `?branchId=${branchId}` : '';
     const res = await this._request(`/debts/count${params}`);
+    return res.data;
+  },
+
+  // ——————————————————————————————————————————————————————————————————————————
+  // Branch Dashboard API
+  // ——————————————————————————————————————————————————————————————————————————
+  async getBranchDashboardKpis(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/kpis?${params.toString()}`);
+    return res.data;
+  },
+
+  async getBranchDashboardTable(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/table?${params.toString()}`);
+    return res.data;
+  },
+
+  async getBranchDashboardAlerts(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/alerts?${params.toString()}`);
+    return res.data;
+  },
+
+  async getBranchDashboardCharts(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/charts?${params.toString()}`);
+    return res.data;
+  },
+
+  async getLatestTransactions(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/latest-transactions?${params.toString()}`);
+    return res.data;
+  },
+
+  async getTopProducts(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/top-products?${params.toString()}`);
+    return res.data;
+  },
+
+  async getTopCustomers(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/top-customers?${params.toString()}`);
+    return res.data;
+  },
+
+  async getDueInvoices(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/due-invoices?${params.toString()}`);
+    return res.data;
+  },
+
+  async getLowStock(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const res = await this._request(`/dashboard/branches/low-stock?${params.toString()}`);
     return res.data;
   }
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
@@ -6,6 +7,7 @@ import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
 
 const Warehouses = () => {
+  const navigate = useNavigate();
   const { toast, confirm } = useGlobalUI();
   const [data, setData] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -151,23 +153,23 @@ const Warehouses = () => {
           id="wh_count"
           label="إجمالي المخازن"
           value={data.length}
-          icon="📦"
+          icon={<i className="fa-solid fa-warehouse"></i>}
           defaults={{ color: 'amber', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile
           id="wh_main"
           label="مخازن افتراضية"
           value={data.filter(w => w.isDefault).length}
-          icon="⭐"
+          icon={<i className="fa-solid fa-box"></i>}
           defaults={{ color: 'blue', size: 'tile-sq-sm', order: 2 }}
         />
       </div>
 
       <div className="card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>📦 إدارة المخازن</h3>
+          <h3 style={{ margin: 0 }}><i className="fa-solid fa-box"></i> إدارة المخازن</h3>
         {Api.can('WAREHOUSE_WRITE') && (
-          <button className="btn btn-primary" onClick={() => openForm()}>
+          <button className="btn btn-primary" onClick={() => navigate('/warehouses/add')}>
             <span>+</span> إضافة مخزن جديد
           </button>
         )}
@@ -208,8 +210,8 @@ const Warehouses = () => {
                       </td>
                       <td>
                         <div className="table-actions">
-                          {Api.can('STOCK_WRITE') && <button className="btn btn-icon btn-ghost" title="إدارة المخزون" onClick={() => openStockModal(w)}>📦</button>}
-                          {Api.can('WAREHOUSE_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(w)}>✏️</button>}
+                          {Api.can('STOCK_WRITE') && <button className="btn btn-icon btn-ghost" title="إدارة المخزون" onClick={() => openStockModal(w)}><i className="fa-solid fa-box"></i></button>}
+                          {Api.can('WAREHOUSE_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => navigate(`/warehouses/edit/${w.id}`)}><i className="fa-solid fa-pencil"></i></button>}
                         </div>
                       </td>
                     </tr>
@@ -227,7 +229,7 @@ const Warehouses = () => {
             <div className="modal">
               <div className="modal-header">
                 <h3>{activeWarehouse ? 'تعديل بيانات المخزن' : 'إضافة مخزن جديد'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="warehouseForm" onSubmit={handleSave}>
@@ -284,7 +286,7 @@ const Warehouses = () => {
             <div className="modal" style={{ maxWidth: '800px', width: '90%' }}>
               <div className="modal-header">
                 <h3>إدارة بضاعة مخزن: {activeWarehouse?.name}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <div className="search-box" style={{ marginBottom: '20px' }}>
@@ -332,7 +334,7 @@ const Warehouses = () => {
                                             )}
                                         </td>
                                         <td>
-                                            <button className="btn btn-sm btn-ghost" onClick={() => setEditingStock({ productId: p.id, quantity: p.stock })}>🔢</button>
+                                            <button className="btn btn-sm btn-ghost" onClick={() => setEditingStock({ productId: p.id, quantity: p.stock })}><i className="fa-solid fa-calculator"></i></button>
                                         </td>
                                     </tr>
                                 ))}
@@ -346,7 +348,7 @@ const Warehouses = () => {
                 
                 <div style={{ marginTop: '20px', padding: '15px', background: 'var(--bg-hover)', borderRadius: '8px' }}>
                     <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                        💡 <strong>نصيحة:</strong> لإضافة منتج جديد غير موجود في القائمة أعلاه، يرجى التوجه لصفحة "استلام المخزون" لعمل توريد رسمي، أو استخدم صفحة المنتجات.
+                        <i className="fa-solid fa-lightbulb"></i> <strong>نصيحة:</strong> لإضافة منتج جديد غير موجود في القائمة أعلاه، يرجى التوجه لصفحة "استلام المخزون" لعمل توريد رسمي، أو استخدم صفحة المنتجات.
                     </p>
                 </div>
               </div>

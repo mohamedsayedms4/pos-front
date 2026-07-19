@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Api from '../../services/api';
 import { useGlobalUI } from '../common/GlobalUI';
-import { Joyride, STATUS } from 'react-joyride';
 
 const AutoStartBeacon = () => {
     const beaconRef = React.useRef(null);
@@ -17,10 +16,6 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
   const [openingCash, setOpeningCash] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useGlobalUI();
-
-  // Tour State
-  const [runTour, setRunTour] = useState(false);
-
   React.useEffect(() => {
     const onboardingStr = localStorage.getItem('onboardingStatus');
     if (onboardingStr) {
@@ -35,31 +30,6 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
         } catch(e) {}
     }
   }, []);
-
-  const handleJoyrideCallback = (data) => {
-      const { status, type } = data;
-      const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
-      
-      if (finishedStatuses.includes(status) || type === 'tour:end') {
-          setRunTour(false);
-          localStorage.setItem('tour_open_session_v3', 'true');
-      }
-  };
-
-  const tourSteps = [
-      {
-          target: '.tour-session-input',
-          content: 'قبل البدء في البيع، يجب عليك فتح وردية جديدة. أدخل المبلغ المالي الموجود في الدرج حالياً (العهدة).',
-          disableBeacon: true,
-          placement: 'bottom',
-      },
-      {
-          target: '.tour-session-btn',
-          content: 'بعد إدخال المبلغ، اضغط هنا لفتح الدرج وبدء العمل.',
-          placement: 'bottom',
-      }
-  ];
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -75,33 +45,7 @@ const OpenSessionModal = ({ onOpenSuccess }) => {
   };
 
   return (
-    <div className="session-modal-overlay">
-      {runTour && (
-        <Joyride
-            steps={tourSteps}
-            run={runTour}
-            beaconComponent={AutoStartBeacon}
-            continuous={true}
-            showProgress={true}
-            showSkipButton={true}
-            disableOverlayClose={true}
-            callback={handleJoyrideCallback}
-            styles={{
-                options: {
-                    primaryColor: '#6A00FF',
-                    backgroundColor: 'var(--bg-card, #ffffff)',
-                    textColor: 'var(--text-main, #333333)',
-                    arrowColor: 'var(--bg-card, #ffffff)',
-                    zIndex: 9999999,
-                },
-                tooltipContainer: { textAlign: 'right' },
-                buttonNext: { outline: 'none', fontFamily: 'Cairo, sans-serif', padding: '6px 16px', borderRadius: '6px' },
-                buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: 'var(--text-muted, #666)' }
-            }}
-            locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
-        />
-      )}
-      <div className="session-modal-content">
+    <div className="session-modal-overlay">      <div className="session-modal-content">
         <h2 className="session-modal-title">فتح الوردية (الدرج)</h2>
         <p className="session-modal-desc">
           يرجى إدخال مبلغ العهدة الافتتاحية الموجودة في الدرج الآن لبدء البيع.

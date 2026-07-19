@@ -177,7 +177,7 @@ const RawMaterials = () => {
               `;
         } else if (templateId === '5') {
           templateHtml = `
-                <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
+                <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;"> ${tenantName}</div>
                 <div class="product-name">${nameStr}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
@@ -596,35 +596,35 @@ const RawMaterials = () => {
             id="prod_total"
             label="إجمالي المنتجات"
             value={stats?.totalProducts || 0}
-            icon="📦"
+            icon=""
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
           <StatTile
             id="prod_capital"
             label="قيمة المخزون (ج.م)"
             value={(stats?.totalInventoryCapital || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            icon="💰"
+            icon=""
             defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
           />
           <StatTile
             id="prod_profit"
             label="الأرباح المتوقعة"
             value={(stats?.totalExpectedProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            icon="📈"
+            icon=""
             defaults={{ color: 'purple', size: 'tile-wd-sm', order: 3 }}
           />
           <StatTile
             id="prod_sales"
             label="إجمالي المبيعات"
             value={(stats?.totalRealizedSales || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            icon="🛒"
+            icon=""
             defaults={{ color: 'amber', size: 'tile-wd-sm', order: 4 }}
           />
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h3>🧱 إدارة المواد الخام</h3>
+            <h3><i className="fa-solid fa-layer-group"></i> إدارة المواد الخام</h3>
             <div className="toolbar">
               <div className="search-input">
 
@@ -648,8 +648,8 @@ const RawMaterials = () => {
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                   style={{ width: '180px', height: '40px', padding: '0 10px' }}
                 >
-                  <option value="">🏢 كل الفروع</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>📍 {b.name}</option>)}
+                  <option value=""><i className="fa-solid fa-building"></i> كل الفروع</option>
+                  {branches.map(b => <option key={b.id} value={b.id}><i className="fa-solid fa-location-dot"></i> {b.name}</option>)}
                 </select>
               )}
 
@@ -681,13 +681,13 @@ const RawMaterials = () => {
 
               <div className="toolbar-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportingExcel || data.length === 0}>
-                  {exportingExcel ? '⏳' : '📊'} إكسيل
+                  {exportingExcel ? '' : ''} إكسيل
                 </button>
                 <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportingPdf || data.length === 0}>
-                  {exportingPdf ? '⏳' : '📄'} PDF
+                  {exportingPdf ? '' : ''} PDF
                 </button>
                 <button className="btn btn-secondary" onClick={() => navigate('/settings/print')} title="إعدادات الطباعة والقوالب">
-                  ⚙️
+                  <i className="fa-solid fa-gear"></i>
                 </button>
                 {Api.can('PRODUCT_WRITE') && (
                   <button className="btn btn-primary" onClick={() => navigate('/products/add?isRawMaterial=true')}>
@@ -704,7 +704,7 @@ const RawMaterials = () => {
                 <Loader message="جاري تحميل المنتجات..." />
               ) : filteredItems.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">🧱</div>
+                  <div className="empty-icon"><i className="fa-solid fa-layer-group"></i></div>
                   <h4>لا توجد مواد خام</h4>
                   <p>قم بإضافة مواد خام جديدة للبدء</p>
                 </div>
@@ -733,7 +733,7 @@ const RawMaterials = () => {
                             {getImageUrl(p) ? (
                               <img src={getImageUrl(p)} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
                             ) : (
-                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📦</div>
+                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}><i className="fa-solid fa-box"></i></div>
                             )}
                           </Link>
                         </td>
@@ -771,10 +771,10 @@ const RawMaterials = () => {
                                 <rect x="19" y="5" width="3" height="14" />
                               </svg>
                             </button>
-                            <button className="btn btn-icon btn-ghost" onClick={() => handleDownloadSinglePdf(p)} title="تنزيل كـ PDF">📄</button>
-                            <button className="btn btn-icon btn-ghost" onClick={() => openStockModal(p)} title="توزيع المخزون">🏭</button>
-                            {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/products/edit/${p.id}`)} title="تعديل">✏️</button>}
-                            {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" onClick={() => handleDelete(p.id, p.name)} title="حذف">🗑️</button>}
+                            <button className="btn btn-icon btn-ghost" onClick={() => handleDownloadSinglePdf(p)} title="تنزيل كـ PDF"><i className="fa-solid fa-file-lines"></i></button>
+                            <button className="btn btn-icon btn-ghost" onClick={() => openStockModal(p)} title="توزيع المخزون"><i className="fa-solid fa-industry"></i></button>
+                            {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/products/edit/${p.id}`)} title="تعديل"><i className="fa-solid fa-pencil"></i></button>}
+                            {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" onClick={() => handleDelete(p.id, p.name)} title="حذف"><i className="fa-solid fa-trash"></i></button>}
                           </div>
                         </td>
                       </tr>
@@ -841,8 +841,8 @@ const RawMaterials = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowStockModal(false); }}>
             <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
-                <h3>📦 توزيع المنتج: {stockProduct?.name}</h3>
-                <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
+                <h3><i className="fa-solid fa-box"></i> توزيع المنتج: {stockProduct?.name}</h3>
+                <button className="modal-close" onClick={() => setShowStockModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="stockForm" onSubmit={handleUpdateStock}>
@@ -887,8 +887,8 @@ const RawMaterials = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrintQtyModalOpen(false); }}>
             <div className="modal" style={{ maxWidth: '400px' }}>
               <div className="modal-header">
-                <h3>🖨️ طباعة ملصقات الباركود</h3>
-                <button className="modal-close" onClick={() => setPrintQtyModalOpen(false)}>✕</button>
+                <h3><i className="fa-solid fa-print"></i>️ طباعة ملصقات الباركود</h3>
+                <button className="modal-close" onClick={() => setPrintQtyModalOpen(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="printQtyForm" onSubmit={executePrint}>

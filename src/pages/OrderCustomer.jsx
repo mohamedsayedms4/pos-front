@@ -39,7 +39,7 @@ const OrderCustomer = () => {
                     const statusData = JSON.parse(msg.body);
                     if (statusData.status === 'COMPLETED') {
                         setSelections([]);
-                        toast('تم إتمام طلبك بنجاح. شكراً لك! ✓', 'success');
+                        toast('تم إتمام طلبك بنجاح. شكراً لك! ', 'success');
                     }
                 });
             },
@@ -86,7 +86,7 @@ const OrderCustomer = () => {
             return;
         }
         socketClientRef.current.publish({
-            destination: '/app/customer-select',
+            destination: '/customer-select',
             body: JSON.stringify(product)
         });
         // أضف للسجل المحلي
@@ -114,7 +114,7 @@ const OrderCustomer = () => {
             {/* ──────── HEADER ──────── */}
             <header className="oc-header">
                 <div className="oc-brand">
-                    <span className="oc-brand-icon">🛍️</span>
+                    <span className="oc-brand-icon"><i className="fa-solid fa-bag-shopping"></i>️</span>
                     <span>اختر منتجاتك</span>
                 </div>
                 <div className="oc-search-wrap">
@@ -136,7 +136,7 @@ const OrderCustomer = () => {
                             return (
                                 <div key={p.id} className="oc-card" onClick={() => handleSelect(p)}>
                                     <div className="oc-card-img">
-                                        {img ? <img src={img} alt={p.name} /> : <div className="oc-card-ph">📦</div>}
+                                        {img ? <img src={img} alt={p.name} /> : <div className="oc-card-ph"><i className="fa-solid fa-box"></i></div>}
                                     </div>
                                     <div className="oc-card-body">
                                         <div className="oc-card-name">{p.name}</div>
@@ -154,13 +154,13 @@ const OrderCustomer = () => {
                 {/* ──────── SELECTIONS PANEL ──────── */}
                 <aside className="oc-panel">
                     <div className="oc-panel-head">
-                        <h2>🧾 اختياراتك</h2>
+                        <h2><i className="fa-solid fa-receipt"></i> اختياراتك</h2>
                         <span className="oc-panel-count">{selections.length}</span>
                     </div>
 
                     {selections.length === 0 ? (
                         <div className="oc-panel-empty">
-                            <div className="oc-panel-empty-icon">👆</div>
+                            <div className="oc-panel-empty-icon"><i className="fa-solid fa-hand-point-up"></i></div>
                             <p>اضغط على أي منتج لإضافته</p>
                         </div>
                     ) : (
@@ -168,13 +168,13 @@ const OrderCustomer = () => {
                             {selections.map(item => (
                                 <div key={item._id} className="oc-sel-item">
                                     <div className="oc-sel-img">
-                                        {getImg(item) ? <img src={getImg(item)} alt="" /> : <span>📦</span>}
+                                        {getImg(item) ? <img src={getImg(item)} alt="" /> : <span><i className="fa-solid fa-box"></i></span>}
                                     </div>
                                     <div className="oc-sel-info">
                                         <div className="oc-sel-name">{item.name}</div>
                                         <div className="oc-sel-price">{Number(item.salePrice).toFixed(2)} ج.م</div>
                                     </div>
-                                    <button className="oc-sel-del" onClick={() => removeSelection(item._id)}>✕</button>
+                                    <button className="oc-sel-del" onClick={() => removeSelection(item._id)}><i className="fa-solid fa-times"></i></button>
                                 </div>
                             ))}
                         </div>

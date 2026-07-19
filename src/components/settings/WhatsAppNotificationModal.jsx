@@ -99,7 +99,7 @@ const WhatsAppNotificationModal = ({ onClose }) => {
                     onClick={onClose} 
                     style={{ position: 'absolute', top: '15px', left: '15px', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)' }}
                 >
-                    ✕
+                    <i className="fa-solid fa-times"></i>
                 </button>
                 
                 <h2 className="whatsapp-modal-header">

@@ -36,7 +36,7 @@ const FacebookAdsDashboard = () => {
         return (
             <div className="page-section" style={{ textAlign: 'center', marginTop: '100px' }}>
                 <div className="card" style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
-                    <span style={{ fontSize: '3rem' }}>📊</span>
+                    <span style={{ fontSize: '3rem' }}><i className="fa-solid fa-chart-column"></i></span>
                     <h2 style={{ marginTop: '20px' }}>بيانات إعلانات فيسبوك غير متوفرة</h2>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
                         يرجى التأكد من إعداد (Ad Account ID) و (Access Token) في صفحة الإعدادات.
@@ -60,8 +60,8 @@ const FacebookAdsDashboard = () => {
     return (
         <div className="page-section" style={{ direction: 'rtl' }}>
             <div className="row-premium" style={{ marginBottom: '20px', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ margin: 0 }}>📊 تقارير إعلانات فيسبوك (آخر 30 يوم)</h2>
-                <button className="btn btn-secondary btn-sm" onClick={loadData}>تحديث البيانات 🔄</button>
+                <h2 style={{ margin: 0 }}><i className="fa-solid fa-chart-column"></i> تقارير إعلانات فيسبوك (آخر 30 يوم)</h2>
+                <button className="btn btn-secondary btn-sm" onClick={loadData}>تحديث البيانات <i className="fa-solid fa-rotate"></i></button>
             </div>
 
             {/* Top Metrics Cards */}
@@ -91,7 +91,7 @@ const FacebookAdsDashboard = () => {
             {/* Daily Trend Chart */}
             <div className="card" style={{ marginBottom: '25px' }}>
                 <div className="card-header">
-                    <h3>📈 أداء الإنفاق والنقرات اليومي</h3>
+                    <h3><i className="fa-solid fa-arrow-trend-up"></i> أداء الإنفاق والنقرات اليومي</h3>
                 </div>
                 <div className="card-body" style={{ height: '400px' }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -120,7 +120,7 @@ const FacebookAdsDashboard = () => {
             {/* Campaigns Table */}
             <div className="card">
                 <div className="card-header">
-                    <h3>📂 أداء الحملات الإعلانية</h3>
+                    <h3><i className="fa-solid fa-folder-open"></i> أداء الحملات الإعلانية</h3>
                 </div>
                 <div className="card-body no-padding">
                     <div style={{ overflowX: 'auto' }}>

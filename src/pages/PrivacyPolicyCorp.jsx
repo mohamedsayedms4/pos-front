@@ -145,7 +145,7 @@ const PrivacyPolicyCorp = () => {
                 </p>
                 <div className="contact-card-grid" style={{ gridTemplateColumns: '1fr', maxWidth: '400px', margin: '24px auto 0 auto' }}>
                   <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="contact-card">
-                    <span className="icon" style={{ color: '#25D366' }}>💬</span>
+                    <span className="icon" style={{ color: '#25D366' }}><i className="fa-solid fa-comment-dots"></i></span>
                     <span className="title">واتساب الدعم المباشر</span>
                     <span className="value" style={{ direction: 'ltr' }}>{whatsappNumber}</span>
                   </a>
@@ -200,7 +200,7 @@ const PrivacyPolicyCorp = () => {
           </div>
         </div>
         <div className="footer-copyright-bar">
-          <p>جميع الحقوق محفوظة لدى Remotly © {new Date().getFullYear()}</p>
+          <p>جميع الحقوق محفوظة لدى Remotly <i className="fa-regular fa-copyright"></i> {new Date().getFullYear()}</p>
         </div>
       </footer>
 

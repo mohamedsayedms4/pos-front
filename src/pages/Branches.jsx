@@ -47,28 +47,28 @@ const Branches = () => {
           id="br_count"
           label="إجمالي الفروع"
           value={data.length}
-          icon="🏢"
+          icon={<i className="fa-solid fa-building"></i>}
           defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile
           id="br_retail"
           label="فروع تجزئة"
           value={data.filter(b => b.type === 'RETAIL').length}
-          icon="🏪"
+          icon={<i className="fa-solid fa-store"></i>}
           defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
         />
         <StatTile
           id="br_online"
           label="المتجر الإلكتروني"
           value={data.filter(b => b.type === 'ONLINE').length}
-          icon="🌐"
+          icon={<i className="fa-solid fa-globe"></i>}
           defaults={{ color: 'magenta', size: 'tile-sq-sm', order: 3 }}
         />
       </div>
 
       <div className="card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>🏢 إدارة الفروع</h3>
+          <h3 style={{ margin: 0 }}><i className="fa-solid fa-building"></i> إدارة الفروع</h3>
         {Api.can('BRANCH_WRITE') && (
           <button className="btn btn-primary" onClick={() => navigate('/branches/add')}>
             <span>+</span> إضافة فرع جديد
@@ -100,7 +100,13 @@ const Branches = () => {
                   {data.map((b, i) => (
                     <tr key={b.id}>
                       <td>{i + 1}</td>
-                      <td style={{ fontWeight: 600 }}>{b.name}</td>
+                      <td 
+                        style={{ fontWeight: 600, cursor: 'pointer', color: '#2596be', textDecoration: 'underline' }} 
+                        onClick={() => navigate(`/branches/${b.id}/manage`)}
+                        title="عرض تفاصيل وإحصائيات الفرع"
+                      >
+                        {b.name}
+                      </td>
                       <td>
                         <span className={`badge ${b.type === 'ONLINE' ? 'badge-info' : 'badge-secondary'}`}>
                           {b.type === 'ONLINE' ? 'متجر إلكتروني' : b.type === 'WAREHOUSE_ONLY' ? 'مخزن فقط' : 'فرع تجزئة'}
@@ -115,9 +121,9 @@ const Branches = () => {
                       </td>
                       <td>
                         <div className="table-actions">
-                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="إدارة الفرع" onClick={() => navigate(`/branches/${b.id}/manage`)}>⚙️</button>}
-                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => navigate(`/branches/edit/${b.id}`)}>✏️</button>}
-                          {Api.can('BRANCH_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(b.id, b.name)}>🗑️</button>}
+                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="إدارة الفرع" onClick={() => navigate(`/branches/${b.id}/manage`)}><i className="fa-solid fa-gear"></i></button>}
+                          {Api.can('BRANCH_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => navigate(`/branches/edit/${b.id}`)}><i className="fa-solid fa-pencil"></i></button>}
+                          {Api.can('BRANCH_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(b.id, b.name)}><i className="fa-solid fa-trash"></i></button>}
                         </div>
                       </td>
                     </tr>

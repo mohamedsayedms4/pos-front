@@ -99,7 +99,7 @@ class ChatService {
 
     const user = Api._getUser();
     this.client.publish({
-      destination: '/app/chat',
+      destination: '/chat',
       body: JSON.stringify({
         senderId: user.id,
         recipientId: recipientId,

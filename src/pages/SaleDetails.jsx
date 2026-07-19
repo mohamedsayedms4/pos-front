@@ -45,7 +45,7 @@ const SaleDetails = () => {
   if (error || !data) {
     return (
       <div className="page-section empty-state" style={{ padding: '40px', textAlign: 'center' }}>
-        <div className="empty-icon">⚠️</div>
+        <div className="empty-icon"><i className="fa-solid fa-triangle-exclamation"></i></div>
         <h4>حدث خطأ</h4>
         <p>{error || 'لم يتم العثور على الفاتورة المطلوبة'}</p>
         <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={() => navigate('/sales')}>
@@ -147,7 +147,7 @@ const SaleDetails = () => {
         <div className="card-header" style={{ justifyContent: 'space-between', padding: '20px', flexWrap: 'wrap', gap: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <button className="btn btn-ghost" style={{ padding: '6px 14px', gap: '8px' }} onClick={() => navigate('/sales')}>
-              <span style={{ fontSize: '1.2rem' }}>⬅️</span> العودة للمبيعات
+              <span style={{ fontSize: '1.2rem' }}><i className="fa-solid fa-arrow-left"></i>️</span> العودة للمبيعات
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <div style={{ 
@@ -161,7 +161,7 @@ const SaleDetails = () => {
                 fontSize: '1.5rem',
                 color: '#fff'
               }}>
-                📄
+                <i className="fa-solid fa-file-lines"></i>
               </div>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-white)' }}>
@@ -201,7 +201,7 @@ const SaleDetails = () => {
             )}
             {data.customerId && (
               <Link to={`/customers`} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                👤 عرض حساب العميل
+                <i className="fa-solid fa-user"></i> عرض حساب العميل
               </Link>
             )}
             <ShareInvoice invoice={data} btnClassName="btn-ghost" />
@@ -216,7 +216,7 @@ const SaleDetails = () => {
           label="إجمالي قيمة الفاتورة"
           value={`${Number(data.totalAmount).toLocaleString()} ج.م`}
           subtitle={`الخصم المطبق: ${Number(data.discount || 0).toLocaleString()} ج.م`}
-          icon="📥"
+          icon={<i className="fa-solid fa-coins"></i>}
           defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile 
@@ -224,7 +224,7 @@ const SaleDetails = () => {
           label="المبلغ المسدد"
           value={`${Number(data.paidAmount).toLocaleString()} ج.م`}
           subtitle="المستلم نقداً من العميل"
-          icon="🟢"
+          icon={<i className="fa-solid fa-money-bill"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
         />
         <StatTile 
@@ -232,7 +232,7 @@ const SaleDetails = () => {
           label="المبلغ المتبقي"
           value={`${Number(data.remainingAmount).toLocaleString()} ج.م`}
           subtitle="القيمة المتبقية كمديونية"
-          icon="🔴"
+          icon={<i className="fa-solid fa-money-bill"></i>}
           defaults={{ color: '#ff6b6b', size: 'tile-wd-sm', order: 3 }}
         />
       </div>
@@ -242,7 +242,7 @@ const SaleDetails = () => {
         {/* Info Card */}
         <div className="card">
           <div className="card-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: '700' }}>📋 تفاصيل الفاتورة</h3>
+            <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: '700' }}><i className="fa-solid fa-clipboard-list"></i> تفاصيل الفاتورة</h3>
           </div>
           <div className="card-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div style={infoRowStyle}>
@@ -258,30 +258,30 @@ const SaleDetails = () => {
               <span style={valueStyle}>
                 {data.customerId ? (
                   <span style={{ color: 'var(--text-white)', fontWeight: 600 }}>
-                    👤 {data.customerName}
+                    <i className="fa-solid fa-user"></i> {data.customerName}
                   </span>
                 ) : data.customerName}
               </span>
             </div>
             <div style={infoRowStyle}>
               <span style={labelStyle}>الفرع:</span>
-              <span style={valueStyle}>🏢 {data.branchName || '—'}</span>
+              <span style={valueStyle}><i className="fa-solid fa-building"></i> {data.branchName || '—'}</span>
             </div>
             <div style={infoRowStyle}>
               <span style={labelStyle}>بواسطة (الكاشير):</span>
-              <span style={valueStyle}>👤 {data.createdBy || '—'}</span>
+              <span style={valueStyle}><i className="fa-solid fa-user"></i> {data.createdBy || '—'}</span>
             </div>
             <div style={infoRowStyle}>
               <span style={labelStyle}>تاريخ الإنشاء:</span>
-              <span style={valueStyle}>📅 {data.createdAt ? new Date(data.createdAt).toLocaleString('ar-EG') : '—'}</span>
+              <span style={valueStyle}><i className="fa-solid fa-calendar-days"></i> {data.createdAt ? new Date(data.createdAt).toLocaleString('ar-EG') : '—'}</span>
             </div>
             <div style={infoRowStyle}>
               <span style={labelStyle}>آخر تعديل بواسطة:</span>
-              <span style={valueStyle}>👤 {data.lastModifiedBy || '—'}</span>
+              <span style={valueStyle}><i className="fa-solid fa-user"></i> {data.lastModifiedBy || '—'}</span>
             </div>
             <div style={infoRowStyle}>
               <span style={labelStyle}>تاريخ التعديل:</span>
-              <span style={valueStyle}>📅 {data.lastModifiedAt ? new Date(data.lastModifiedAt).toLocaleString('ar-EG') : '—'}</span>
+              <span style={valueStyle}><i className="fa-solid fa-calendar-days"></i> {data.lastModifiedAt ? new Date(data.lastModifiedAt).toLocaleString('ar-EG') : '—'}</span>
             </div>
           </div>
         </div>
@@ -289,7 +289,7 @@ const SaleDetails = () => {
         {/* Items Table Card */}
         <div className="card">
           <div className="card-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: '700' }}>📦 المنتجات المباعة</h3>
+            <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: '700' }}><i className="fa-solid fa-box"></i> المنتجات المباعة</h3>
           </div>
           <div className="card-body" style={{ padding: '0' }}>
             <div className="table-wrapper">
@@ -335,7 +335,7 @@ const SaleDetails = () => {
             <div className="modal" style={{ maxWidth: '650px' }}>
               <div className="modal-header">
                 <h3>تفاصيل المرتجع: {activeReturn.returnNumber}</h3>
-                <button className="modal-close" onClick={() => setShowReturnDetails(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowReturnDetails(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body no-padding">
                 <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', marginBottom: '15px' }}>

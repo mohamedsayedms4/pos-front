@@ -68,7 +68,7 @@ const QualityControlBoard = () => {
         <div className="page-section">
             <div className="card mb-4">
                 <div className="card-header">
-                    <h3>🔍 تسجيل فحص جودة جديد</h3>
+                    <h3><i className="fa-solid fa-magnifying-glass"></i> تسجيل فحص جودة جديد</h3>
                 </div>
                 <div className="card-body">
                     <form onSubmit={handleSave}>
@@ -108,7 +108,7 @@ const QualityControlBoard = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3>📋 سجل فحوصات الجودة</h3>
+                    <h3><i className="fa-solid fa-clipboard-list"></i> سجل فحوصات الجودة</h3>
                 </div>
                 <div className="card-body no-padding">
                     <div className="table-wrapper" style={{ overflowX: 'auto' }}>

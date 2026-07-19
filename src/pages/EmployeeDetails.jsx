@@ -186,7 +186,7 @@ const EmployeeDetails = () => {
     if (loading) return <Loader message="جاري جلب ملف الموظف..." />;
     if (!employee) return (
         <div className="page-section empty-state">
-            <div className="empty-icon">👤</div>
+            <div className="empty-icon"><i className="fa-solid fa-user"></i></div>
             <h3>الموظف غير موجود أو تم حذفه</h3>
             <button className="btn btn-primary" onClick={() => navigate('/employees')}>العودة للقائمة الرئيسية</button>
         </div>
@@ -198,7 +198,7 @@ const EmployeeDetails = () => {
         <div className="details-grid-container anim-fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
             <div className="card" style={{ borderTop: '4px solid var(--metro-blue)' }}>
                 <div className="card-header" style={{ padding: '20px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff' }}>💼 بيانات العمل والحساب</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff' }}><i className="fa-solid fa-briefcase"></i> بيانات العمل والحساب</h3>
                 </div>
                 <div className="card-body" style={{ padding: '25px' }}>
                     <div className="detail-item">
@@ -226,7 +226,7 @@ const EmployeeDetails = () => {
 
             <div className="card" style={{ borderTop: '4px solid var(--metro-purple)' }}>
                 <div className="card-header" style={{ padding: '20px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff' }}>👤 البيانات الشخصية</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff' }}><i className="fa-solid fa-user"></i> البيانات الشخصية</h3>
                 </div>
                 <div className="card-body" style={{ padding: '25px' }}>
                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -249,7 +249,7 @@ const EmployeeDetails = () => {
                    </div>
                    {profile.nationalIdImage && (
                     <button className="btn btn-sm btn-ghost" style={{ marginTop: '15px', width: '100%' }} onClick={() => setShowIdModal(true)}>
-                        🔍 عرض صورة الهوية (الرقم القومي)
+                        <i className="fa-solid fa-magnifying-glass"></i> عرض صورة الهوية (الرقم القومي)
                     </button>
                    )}
                 </div>
@@ -257,7 +257,7 @@ const EmployeeDetails = () => {
 
             <div className="card" style={{ borderTop: '4px solid var(--metro-green)' }}>
                 <div className="card-header" style={{ padding: '20px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff' }}>📞 بيانات الاتصال</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff' }}><i className="fa-solid fa-phone"></i> بيانات الاتصال</h3>
                 </div>
                 <div className="card-body" style={{ padding: '25px' }}>
                     <div className="detail-item">
@@ -276,7 +276,7 @@ const EmployeeDetails = () => {
     const renderFinancialTab = () => (
         <div className="card anim-slide-in" style={{ maxWidth: '700px', margin: '0 auto', borderTop: '4px solid var(--metro-teal)' }}>
             <div className="card-header" style={{ padding: '25px' }}>
-                <h3 style={{ margin: 0 }}>⚙️ إعدادات الراتب والوردية</h3>
+                <h3 style={{ margin: 0 }}><i className="fa-solid fa-gear"></i> إعدادات الراتب والوردية</h3>
                 <p className="text-dim" style={{ fontSize: '0.9rem', marginTop: '5px' }}>تعديل الراتب الأساسي وتخصيص وردية العمل للموظف</p>
             </div>
             <div className="card-body" style={{ padding: '30px' }}>
@@ -297,7 +297,7 @@ const EmployeeDetails = () => {
                             </select>
                         </div>
                    </div>
-                   <button type="submit" className="btn btn-primary" style={{ height: '50px', width: '100%' }}>💾 حفظ التعديلات المالية</button>
+                   <button type="submit" className="btn btn-primary" style={{ height: '50px', width: '100%' }}><i className="fa-solid fa-floppy-disk"></i> حفظ التعديلات المالية</button>
                 </form>
             </div>
         </div>
@@ -307,7 +307,7 @@ const EmployeeDetails = () => {
         <div className="anim-slide-in">
             <div className="card" style={{ marginBottom: '20px', background: 'rgba(16, 124, 16, 0.05)', border: '1px solid rgba(16, 124, 16, 0.2)' }}>
                 <div className="card-body" style={{ padding: '20px' }}>
-                    <h4 style={{ marginBottom: '15px', color: 'var(--metro-green)' }}>🎁 إضافة مكافأة سريعة</h4>
+                    <h4 style={{ marginBottom: '15px', color: 'var(--metro-green)' }}><i className="fa-solid fa-gift"></i> إضافة مكافأة سريعة</h4>
                     <form onSubmit={handleAddBonus} style={{ display: 'grid', gridTemplateColumns: '150px 180px 1fr auto', gap: '15px', alignItems: 'flex-end' }}>
                         <div className="form-group" style={{ marginBottom: 0 }}>
                             <label style={{ fontSize: '0.75rem' }}>المبلغ</label>
@@ -355,7 +355,7 @@ const EmployeeDetails = () => {
         <div className="anim-slide-in">
             <div className="card" style={{ marginBottom: '20px', background: 'rgba(216, 59, 1, 0.05)', border: '1px solid rgba(216, 59, 1, 0.2)' }}>
                 <div className="card-body" style={{ padding: '20px' }}>
-                    <h4 style={{ marginBottom: '15px', color: 'var(--metro-red)' }}>📉 إضافة خصم أو سلفة</h4>
+                    <h4 style={{ marginBottom: '15px', color: 'var(--metro-red)' }}><i className="fa-solid fa-arrow-trend-down"></i> إضافة خصم أو سلفة</h4>
                     <form onSubmit={handleAddDeduction} style={{ display: 'grid', gridTemplateColumns: '150px 180px 1fr auto', gap: '15px', alignItems: 'flex-end' }}>
                          <div className="form-group" style={{ marginBottom: 0 }}>
                             <label style={{ fontSize: '0.75rem' }}>المبلغ</label>
@@ -395,8 +395,8 @@ const EmployeeDetails = () => {
     const renderAttendanceTab = () => (
         <div className="anim-slide-in">
             <div className="toolbar" style={{ marginBottom: '25px', display: 'flex', gap: '15px' }}>
-                <button className="btn btn-success" onClick={handleCheckIn} style={{ height: '48px', flex: 1 }}>📍 تسجيل حضور اليوم</button>
-                <button className="btn btn-danger" onClick={handleCheckOut} style={{ height: '48px', flex: 1 }}>🏃 تسجيل انصراف اليوم</button>
+                <button className="btn btn-success" onClick={handleCheckIn} style={{ height: '48px', flex: 1 }}><i className="fa-solid fa-location-dot"></i> تسجيل حضور اليوم</button>
+                <button className="btn btn-danger" onClick={handleCheckOut} style={{ height: '48px', flex: 1 }}><i className="fa-solid fa-person-running"></i> تسجيل انصراف اليوم</button>
             </div>
             <div className="card">
                 <table className="data-table">
@@ -422,7 +422,7 @@ const EmployeeDetails = () => {
         <div className="anim-slide-in">
             <div className="toolbar" style={{ marginBottom: '25px' }}>
                 <button className="btn btn-primary" onClick={handleGeneratePayroll} style={{ height: '50px', width: '100%', background: 'var(--metro-purple)', borderColor: 'var(--metro-purple)' }}>
-                    📝 توليد أو تحديث كشف المرتب لهذا الشهر
+                    <i className="fa-solid fa-file-pen"></i> توليد أو تحديث كشف المرتب لهذا الشهر
                 </button>
             </div>
             <div className="card">
@@ -451,9 +451,9 @@ const EmployeeDetails = () => {
                 <button className="btn btn-ghost" onClick={() => navigate('/employees')} style={{ padding: '0 20px', height: '42px' }}>← عودة للموظفين</button>
                 <div style={{ flex: 1 }}></div>
                 <button className="btn btn-ghost" onClick={toggleStatus} style={{ height: '42px' }}>
-                    {employee.enabled ? '🔒 تعطيل الحساب' : '🔓 تفعيل الحساب'}
+                    {employee.enabled ? ' تعطيل الحساب' : ' تفعيل الحساب'}
                 </button>
-                <button className="btn btn-danger" onClick={handleDelete} style={{ height: '42px' }}>🗑️ حذف الملف</button>
+                <button className="btn btn-danger" onClick={handleDelete} style={{ height: '42px' }}><i className="fa-solid fa-trash"></i> حذف الملف</button>
             </div>
 
             <div className="card profile-header-card-premium" style={{ marginBottom: '30px', padding: 0, overflow: 'hidden', position: 'relative' }}>
@@ -495,12 +495,12 @@ const EmployeeDetails = () => {
 
                 <div className="tabs-navigation-premium" style={{ borderTop: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', display: 'flex', padding: '0 40px' }}>
                     {[
-                        { id: 'profile', label: '👤 البروفايل' },
-                        { id: 'financial', label: '💰 المرتب' },
-                        { id: 'bonuses', label: '🎁 المكافآت' },
-                        { id: 'deductions', label: '🛑 الخصومات' },
-                        { id: 'attendance', label: '📅 الحضور' },
-                        { id: 'payrolls', label: '📝 الرواتب' }
+                        { id: 'profile', label: ' البروفايل' },
+                        { id: 'financial', label: ' المرتب' },
+                        { id: 'bonuses', label: ' المكافآت' },
+                        { id: 'deductions', label: ' الخصومات' },
+                        { id: 'attendance', label: ' الحضور' },
+                        { id: 'payrolls', label: ' الرواتب' }
                     ].map(tab => (
                         <button key={tab.id} className={`nav-tab-btn ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
                             {tab.label}
@@ -522,7 +522,7 @@ const EmployeeDetails = () => {
                 <div className="modal-overlay active" onClick={() => setShowIdModal(false)}>
                     <div className="modal modal-xl anim-scale-in" onClick={e => e.stopPropagation()} style={{ background: 'transparent', boxShadow: 'none' }}>
                         <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-                           <button className="btn btn-ghost" onClick={() => setShowIdModal(false)}>✕ إغلاق المعاينة</button>
+                           <button className="btn btn-ghost" onClick={() => setShowIdModal(false)}><i className="fa-solid fa-times"></i> إغلاق المعاينة</button>
                         </div>
                         <img src={`${API_IMAGE_BASE}/${profile.nationalIdImage}`} style={{ width: '100%', borderRadius: '15px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }} alt="National ID" />
                     </div>

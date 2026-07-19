@@ -67,7 +67,7 @@ const TreasuryManagement = () => {
           id="total_liquidity"
           label="إجمالي السيولة النقدية"
           value={totalBalance.toLocaleString()}
-          icon="💰"
+          icon={<i className="fa-solid fa-money-bill-wave"></i>}
           subtitle="في جميع الفروع والمركزية"
           defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 1 }}
         />
@@ -75,23 +75,23 @@ const TreasuryManagement = () => {
           id="central_bal"
           label="رصيد الخزينة المركزية"
           value={centralTreasury?.balance?.toLocaleString() || '0'}
-          icon="🏛️"
+          icon={<i className="fa-solid fa-vault"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
         />
         <StatTile
           id="branches_bal"
           label="رصيد خزائن الفروع"
           value={branchTreasuries.reduce((sum, t) => sum + (t.balance || 0), 0).toLocaleString()}
-          icon="🏦"
+          icon={<i className="fa-solid fa-vault"></i>}
           defaults={{ color: 'magenta', size: 'tile-wd-sm', order: 3 }}
         />
       </div>
 
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>🏛️ إدارة الخزينة المركزية والفروع</h3>
+          <h3 style={{ margin: 0 }}><i className="fa-solid fa-building-columns"></i>️ إدارة الخزينة المركزية والفروع</h3>
           <button className="btn btn-primary" onClick={() => setShowTransferModal(true)}>
-            🔄 تحويل مبالغ للمركزية
+            <i className="fa-solid fa-rotate"></i> تحويل مبالغ للمركزية
           </button>
         </div>
         <div className="card-body no-padding">
@@ -110,7 +110,7 @@ const TreasuryManagement = () => {
                 {/* Central Safe First */}
                 {centralTreasury && (
                   <tr style={{ background: 'rgba(16, 185, 129, 0.05)' }}>
-                    <td style={{ fontWeight: 700, color: 'var(--accent-emerald)' }}>⭐ {centralTreasury.name}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--accent-emerald)' }}><i className="fa-solid fa-star"></i> {centralTreasury.name}</td>
                     <td>— (مركزية)</td>
                     <td>—</td>
                     <td style={{ fontWeight: 800 }}>{Number(centralTreasury.balance).toFixed(2)} ج.م</td>
@@ -148,8 +148,8 @@ const TreasuryManagement = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowTransferModal(false); }}>
             <div className="modal" style={{ maxWidth: '450px' }}>
               <div className="modal-header">
-                <h3>🔄 تحويل نقدية للخزينة المركزية</h3>
-                <button className="modal-close" onClick={() => setShowTransferModal(false)}>✕</button>
+                <h3><i className="fa-solid fa-rotate"></i> تحويل نقدية للخزينة المركزية</h3>
+                <button className="modal-close" onClick={() => setShowTransferModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="transferForm" onSubmit={handleTransfer}>

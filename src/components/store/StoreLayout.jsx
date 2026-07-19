@@ -260,7 +260,7 @@ const StoreLayout = ({ children, hideHeader = false }) => {
           <div className="ec-footer-container">
             <div className="ec-footer-bottom-inner" style={{display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center'}}>
               <div className="ec-copyright">
-                © {new Date().getFullYear()} {storeInfo?.name || STORE_NAME}. جميع الحقوق محفوظة.
+                <i className="fa-regular fa-copyright"></i> {new Date().getFullYear()} {storeInfo?.name || STORE_NAME}. جميع الحقوق محفوظة.
               </div>
               <div className="ec-dev-credit">
                 تم التطوير بواسطة <span style={{ color: 'var(--ec-primary)', fontWeight: 700 }}>{platformName}</span>

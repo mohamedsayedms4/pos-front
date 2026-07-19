@@ -122,10 +122,10 @@ const AttendanceDashboard = () => {
 
       if (action === 'checkIn') {
         await Api.checkInEmployee(userId, qrToken, lat, lng);
-        toast('✅ تم تسجيل الحضور بنجاح', 'success');
+        toast(' تم تسجيل الحضور بنجاح', 'success');
       } else if (action === 'checkOut') {
         await Api.checkOutEmployee(userId, qrToken, lat, lng);
-        toast('✅ تم تسجيل الانصراف بنجاح', 'success');
+        toast(' تم تسجيل الانصراف بنجاح', 'success');
       } else if (action === 'absent') {
         await Api.markEmployeeAbsent(userId, date);
         toast('تم تسجيل الغياب', 'warning');
@@ -134,12 +134,12 @@ const AttendanceDashboard = () => {
     } catch (err) {
       const msg = err.message || 'حدث خطأ غير متوقع';
       if (msg.includes('IP')) {
-        toast('🔒 ' + msg, 'error');
+        toast(' ' + msg, 'error');
       } else if (msg.includes('QR') || msg.includes('رمز')) {
-        toast('🔄 ' + msg + ' — جارٍ تحديث الـ QR...', 'error');
+        toast(' ' + msg + ' — جارٍ تحديث الـ QR...', 'error');
         fetchQr(); // تحديث فوري
       } else if (msg.includes('جغرافي') || msg.includes('نطاق')) {
-        toast('📍 ' + msg, 'error');
+        toast(' ' + msg, 'error');
       } else if (msg.includes('سجل حضوره')) {
         toast('ℹ️ ' + msg, 'info');
       } else {
@@ -180,7 +180,7 @@ const AttendanceDashboard = () => {
 
   const getStatusInfo = (emp) => {
     // في الواقع يُجلب من attendance records
-    return { label: 'لم يُسجَّل بعد', color: 'var(--text-dim)', dot: '⚪' };
+    return { label: 'لم يُسجَّل بعد', color: 'var(--text-dim)', dot: '' };
   };
 
   // ─── شريط تقدم العد التنازلي ───────────────────────────────────────────
@@ -200,7 +200,7 @@ const AttendanceDashboard = () => {
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '1.5rem', boxShadow: '0 8px 24px rgba(99,102,241,0.35)'
-            }}>📅</div>
+            }}><i className="fa-solid fa-calendar-days"></i></div>
             <h1 className="page-title" style={{ margin: 0, fontSize: '1.8rem' }}>
               نظام الحضور والانصراف الذكي
             </h1>
@@ -255,7 +255,7 @@ const AttendanceDashboard = () => {
             borderBottom: '1px solid var(--border-subtle)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '1.3rem' }}>🔐</span>
+              <span style={{ fontSize: '1.3rem' }}><i className="fa-solid fa-user-lock"></i></span>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', color: '#fff' }}>
                 QR Code الحضور
               </h3>
@@ -274,7 +274,7 @@ const AttendanceDashboard = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 animation: 'pulse 1.5s infinite'
               }}>
-                <div style={{ fontSize: '3rem', opacity: 0.3 }}>⏳</div>
+                <div style={{ fontSize: '3rem', opacity: 0.3 }}><i className="fa-solid fa-hourglass-half"></i></div>
               </div>
             ) : qrData?.qrImage ? (
               <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -298,7 +298,7 @@ const AttendanceDashboard = () => {
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     color: '#ef4444', fontWeight: '700', fontSize: '1.5rem'
                   }}>
-                    <span style={{ fontSize: '2.5rem' }}>🔄</span>
+                    <span style={{ fontSize: '2.5rem' }}><i className="fa-solid fa-rotate"></i></span>
                     <span>جارٍ التجديد...</span>
                   </div>
                 )}
@@ -310,7 +310,7 @@ const AttendanceDashboard = () => {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 gap: '12px', color: 'var(--text-dim)'
               }}>
-                <span style={{ fontSize: '2.5rem' }}>⚠️</span>
+                <span style={{ fontSize: '2.5rem' }}><i className="fa-solid fa-triangle-exclamation"></i></span>
                 <span style={{ fontSize: '0.85rem' }}>تعذّر تحميل الـ QR</span>
                 <button className="btn btn-sm btn-primary" onClick={fetchQr}>إعادة المحاولة</button>
               </div>
@@ -320,7 +320,7 @@ const AttendanceDashboard = () => {
             <div style={{ marginTop: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                  ⏱ يتجدد بعد
+                  <i className="fa-solid fa-stopwatch"></i> يتجدد بعد
                 </span>
                 <span style={{
                   fontSize: '1rem', fontWeight: '800', fontFamily: 'monospace',
@@ -347,7 +347,7 @@ const AttendanceDashboard = () => {
               onClick={() => { fetchQr(); toast('تم تحديث الـ QR', 'info'); }}
               disabled={qrLoading}
             >
-              🔄 تحديث الآن
+              <i className="fa-solid fa-rotate"></i> تحديث الآن
             </button>
           </div>
 
@@ -358,7 +358,7 @@ const AttendanceDashboard = () => {
             borderTop: '1px solid var(--border-subtle)'
           }}>
             <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.7' }}>
-              📱 <strong style={{ color: 'var(--text-main)' }}>كيفية الاستخدام:</strong><br />
+              <i className="fa-solid fa-mobile-screen"></i> <strong style={{ color: 'var(--text-main)' }}>كيفية الاستخدام:</strong><br />
               1. اعرض هذا الـ QR على شاشة الفرع<br />
               2. يمسح الموظف الـ QR بتطبيقه<br />
               3. يُرسَل الـ Token + GPS تلقائياً<br />
@@ -376,7 +376,7 @@ const AttendanceDashboard = () => {
               padding: '80px 40px', textAlign: 'center',
               borderRadius: '20px', background: 'var(--bg-dark)'
             }}>
-              <div style={{ fontSize: '4rem', marginBottom: '16px' }}>👥</div>
+              <div style={{ fontSize: '4rem', marginBottom: '16px' }}><i className="fa-solid fa-users"></i></div>
               <h3 style={{ color: 'var(--text-dim)' }}>لا يوجد موظفون في هذه الوردية أو الفرع</h3>
             </div>
           ) : (
@@ -455,7 +455,7 @@ const EmployeeAttendanceCard = ({ emp, qrAvailable, onAction, loading, getAvatar
                 background: 'rgba(99,102,241,0.15)', color: '#a5b4fc',
                 border: '1px solid rgba(99,102,241,0.3)'
               }}>
-                🕒 {emp.profile.shift.name}
+                <i className="fa-solid fa-clock"></i> {emp.profile.shift.name}
               </span>
             )}
             {emp.branch?.name && (
@@ -464,7 +464,7 @@ const EmployeeAttendanceCard = ({ emp, qrAvailable, onAction, loading, getAvatar
                 background: 'rgba(34,197,94,0.1)', color: '#86efac',
                 border: '1px solid rgba(34,197,94,0.2)'
               }}>
-                🏢 {emp.branch.name}
+                <i className="fa-solid fa-building"></i> {emp.branch.name}
               </span>
             )}
           </div>
@@ -485,7 +485,7 @@ const EmployeeAttendanceCard = ({ emp, qrAvailable, onAction, loading, getAvatar
           disabled={anyLoading || !qrAvailable}
           title={!qrAvailable ? 'انتظر تحميل QR Code' : ''}
         >
-          {isLoadingIn ? '...' : '📍 حضور'}
+          {isLoadingIn ? '...' : ' حضور'}
         </button>
 
         <button
@@ -494,7 +494,7 @@ const EmployeeAttendanceCard = ({ emp, qrAvailable, onAction, loading, getAvatar
           onClick={() => onAction(emp.id, 'checkOut')}
           disabled={anyLoading || !qrAvailable}
         >
-          {isLoadingOut ? '...' : '🏃 انصراف'}
+          {isLoadingOut ? '...' : ' انصراف'}
         </button>
 
         <button
@@ -504,7 +504,7 @@ const EmployeeAttendanceCard = ({ emp, qrAvailable, onAction, loading, getAvatar
           disabled={anyLoading}
           title="تسجيل غياب"
         >
-          {isLoadingAbs ? '...' : '❌'}
+          {isLoadingAbs ? '...' : ''}
         </button>
       </div>
     </div>

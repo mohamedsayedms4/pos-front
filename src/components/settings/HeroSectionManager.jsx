@@ -163,7 +163,7 @@ const HeroSectionManager = () => {
                                         <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*" />
                                     </label>
                                     <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                                        💡 المقاس الموصى به: <strong>1280 × 440 بكسل</strong> (أو نسبة عرض إلى ارتفاع تقارب 3:1).
+                                        <i className="fa-solid fa-lightbulb"></i> المقاس الموصى به: <strong>1280 × 440 بكسل</strong> (أو نسبة عرض إلى ارتفاع تقارب 3:1).
                                     </small>
                                 </div>
                             </div>
@@ -220,8 +220,8 @@ const HeroSectionManager = () => {
                                         </td>
                                         <td>
                                             <div className="table-actions" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => handleEdit(s)}>✏️</button>
-                                                <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(s.id)}>🗑️</button>
+                                                <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => handleEdit(s)}><i className="fa-solid fa-pencil"></i></button>
+                                                <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(s.id)}><i className="fa-solid fa-trash"></i></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -230,7 +230,7 @@ const HeroSectionManager = () => {
                                     <tr>
                                         <td colSpan="5">
                                             <div className="empty-state">
-                                              <div className="empty-icon">🖼️</div>
+                                              <div className="empty-icon"><i className="fa-solid fa-image"></i>️</div>
                                               <h4>لا توجد بيانات</h4>
                                               <p>قم بإضافة بانرات جديدة للبدء</p>
                                             </div>

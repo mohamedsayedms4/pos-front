@@ -107,7 +107,7 @@ const InventoryChecks = () => {
         <div className="page-section" dir="rtl">
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3>📝 عمليات الجرد والتسوية (Reconciliation)</h3>
+                    <h3><i className="fa-solid fa-file-pen"></i> عمليات الجرد والتسوية (Reconciliation)</h3>
                     <div className="toolbar" style={{ display: 'flex', gap: '10px' }}>
                         <div className="search-input" style={{ position: 'relative' }}>
                             <input 
@@ -182,7 +182,7 @@ const InventoryChecks = () => {
                         <div className="modal">
                             <div className="modal-header">
                                 <h3>بدء عملية جرد جديدة</h3>
-                                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+                                <button className="modal-close" onClick={() => setShowModal(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <form onSubmit={handleCreate}>

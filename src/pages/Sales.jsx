@@ -7,7 +7,6 @@ import { useGlobalUI } from '../components/common/GlobalUI';
 import { useBranch } from '../context/BranchContext';
 import { useExport } from '../utils/useExport';
 import ExportProgressModal from '../components/ExportProgressModal';
-import AddSaleModal from '../components/sales/AddSaleModal';
 
 const Sales = () => {
     const { toast, confirm } = useGlobalUI();
@@ -20,7 +19,6 @@ const Sales = () => {
     const [returnItems, setReturnItems] = useState([]);
     const [returnNotes, setReturnNotes] = useState('');
     const [formErrors, setFormErrors] = useState({});
-    const [showAddModal, setShowAddModal] = useState(false);
 
     const fileInputRef = React.useRef(null);
     const [importingExcel, setImportingExcel] = useState(false);
@@ -205,7 +203,7 @@ const Sales = () => {
         <div className="page-section" style={{ direction: 'rtl' }}>
             <div className="card">
                 <div className="card-header">
-                    <h3>🧾 سجل فواتير المبيعات</h3>
+                    <h3><i className="fa-solid fa-receipt"></i> سجل فواتير المبيعات</h3>
                     <div className="toolbar">
                         <div className="search-input">
                             <input
@@ -243,9 +241,9 @@ const Sales = () => {
                             {Api.can('SALE_WRITE') && (
                               <button
                                 className="btn btn-primary"
-                                onClick={() => setShowAddModal(true)}
+                                onClick={() => navigate('/sales/add')}
                               >
-                                ➕ فاتورة جديدة
+                                <i className="fa-solid fa-plus"></i> فاتورة جديدة
                               </button>
                             )}
 
@@ -270,7 +268,7 @@ const Sales = () => {
                                    }}
                                    disabled={importingExcel}
                                  >
-                                   {importingExcel ? '⏳ جاري الاستيراد...' : '📥 استيراد'}
+                                   {importingExcel ? ' جاري الاستيراد...' : ' استيراد'}
                                  </button>
                                  <div 
                                    id="importSalesDropdownMenu" 
@@ -314,7 +312,7 @@ const Sales = () => {
                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover-tile, #2a2a2a)'}
                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                    >
-                                     <span style={{ fontSize: '1.1rem' }}>📂</span>
+                                     <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-folder-open"></i></span>
                                      <span style={{ color: 'var(--text-main, #ffffff)' }}>رفع ملف إكسيل</span>
                                    </button>
                                    <button 
@@ -344,7 +342,7 @@ const Sales = () => {
                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover-tile, #2a2a2a)'}
                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                    >
-                                     <span style={{ fontSize: '1.1rem' }}>📋</span>
+                                     <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-clipboard-list"></i></span>
                                      <span style={{ color: 'var(--text-main, #ffffff)' }}>تحميل نموذج فارغ</span>
                                    </button>
                                  </div>
@@ -355,7 +353,7 @@ const Sales = () => {
                                 className="btn btn-secondary"
                                 onClick={() => navigate('/sales/analytics')}
                             >
-                                📊 إحصائيات المبيعات
+                                <i className="fa-solid fa-chart-column"></i> إحصائيات المبيعات
                             </button>
                         </div>
                     </div>
@@ -448,7 +446,7 @@ const Sales = () => {
                 <div className="modal" style={{ width: '100%', maxWidth: '600px' }}>
                     <div className="modal-header">
                         <h2>تفاصيل الفاتورة: {activeSale.invoiceNumber}</h2>
-                        <button onClick={() => setShowDetails(false)}>✕</button>
+                        <button onClick={() => setShowDetails(false)}><i className="fa-solid fa-times"></i></button>
                     </div>
                     <div className="modal-body" style={{ padding: '15px' }}>
                         <div className="invoice-summary mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
@@ -490,7 +488,7 @@ const Sales = () => {
                                 navigate(`/sales/view/${activeSale.id}`);
                             }}
                         >
-                            عرض التفاصيل الكاملة 📄
+                            عرض التفاصيل الكاملة <i className="fa-solid fa-file-lines"></i>
                         </button>
                     </div>
                 </div>
@@ -504,7 +502,7 @@ const Sales = () => {
                 <div className="modal" style={{ width: '900px', maxWidth: '95vw' }}>
                     <div className="modal-header">
                         <h2>إجراء مرتجع مبيعات - فاتورة {activeSale.invoiceNumber}</h2>
-                        <button onClick={() => setShowReturnModal(false)}>✕</button>
+                        <button onClick={() => setShowReturnModal(false)}><i className="fa-solid fa-times"></i></button>
                     </div>
                     <div className="modal-body">
                         <div className="alert alert-info" style={{ marginBottom: '15px' }}>حدد الكميات المراد إرجاعها للمخزن من القائمة أدناه</div>
@@ -562,23 +560,11 @@ const Sales = () => {
                     </div>
                     <div className="modal-footer">
                         <button className="btn btn-secondary" onClick={() => setShowReturnModal(false)}>إلغاء</button>
-                        <button className="btn btn-danger" onClick={handleReturn}>📦 اتمام المرتجع</button>
+                        <button className="btn btn-danger" onClick={handleReturn}><i className="fa-solid fa-box"></i> اتمام المرتجع</button>
                     </div>
                 </div>
             </div>,
             document.body
-        )}
-
-        {showAddModal && (
-          <AddSaleModal 
-            onClose={() => setShowAddModal(false)}
-            onSuccess={() => {
-              setShowAddModal(false);
-              loadSales();
-            }}
-            initialBranchId={selectedBranchId}
-            availableBranches={branches}
-          />
         )}
 
         <ExportProgressModal exportState={exportState} onClose={closeExportModal} />

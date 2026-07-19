@@ -60,19 +60,19 @@ const CustomerOffers = () => {
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h3 style={{ margin: 0 }}>🎁 إدارة العروض الخاصة (Targeted Offers)</h3>
+                        <h3 style={{ margin: 0 }}><i className="fa-solid fa-gift"></i> إدارة العروض الخاصة (Targeted Offers)</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '5px' }}>
                             متابعة العروض المرسلة للعملاء وحالتها
                         </p>
                     </div>
-                    <button className="btn btn-secondary" onClick={() => loadOffers(page)}>🔄 تحديث</button>
+                    <button className="btn btn-secondary" onClick={() => loadOffers(page)}><i className="fa-solid fa-rotate"></i> تحديث</button>
                 </div>
                 <div className="card-body no-padding">
                     {loading ? (
                         <Loader message="جاري تحميل العروض..." />
                     ) : offers.length === 0 ? (
                         <div className="empty-state">
-                            <div className="empty-icon">🎁</div>
+                            <div className="empty-icon"><i className="fa-solid fa-gift"></i></div>
                             <h4>لا توجد عروض</h4>
                             <p>لم تقم بإرسال أي عروض مخصصة للعملاء بعد</p>
                         </div>

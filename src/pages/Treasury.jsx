@@ -108,7 +108,7 @@ const Treasury = () => {
           id="trs_balance"
           label="رصيد الخزنة الحالي"
           value={treasury ? `${treasury.balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م` : '0.00 ج.م'}
-          icon="💰"
+          icon={<i className="fa-solid fa-vault"></i>}
           defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile
@@ -129,7 +129,7 @@ const Treasury = () => {
 
       <div className="card">
         <div className="card-header">
-          <h3>🏦 سجل المعاملات المالية</h3>
+          <h3><i className="fa-solid fa-building-columns"></i> سجل المعاملات المالية</h3>
           <div className="toolbar">
             <select
               className="form-control"
@@ -156,7 +156,7 @@ const Treasury = () => {
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button className="btn btn-secondary" onClick={() => loadData()} disabled={loading}>
-                {loading ? '⏳' : '🔄'} تحديث
+                {loading ? '' : ''} تحديث
               </button>
             </div>
           </div>
@@ -183,7 +183,7 @@ const Treasury = () => {
                 ) : transactions.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="text-center" style={{ padding: '40px', color: 'var(--text-dim)' }}>
-                      <div style={{ fontSize: '3rem', marginBottom: '10px', opacity: 0.2 }}>🗃</div>
+                      <div style={{ fontSize: '3rem', marginBottom: '10px', opacity: 0.2 }}><i className="fa-solid fa-box-archive"></i></div>
                       لا يوجد حركات مالية مسجلة حالياً
                     </td>
                   </tr>

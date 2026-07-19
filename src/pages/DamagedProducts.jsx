@@ -144,21 +144,21 @@ const DamagedProducts = () => {
                     id="dmg_loss"
                     label="إجمالي خسائر التوالف (هذه الصفحة)"
                     value={`${Number(totalLossValue).toLocaleString()} ج.م`}
-                    icon="📉"
+                    icon={<i className="fa-solid fa-calculator"></i>}
                     defaults={{ color: 'crimson', size: 'tile-wd-sm', order: 1 }}
                 />
                 <StatTile
                     id="dmg_count"
                     label="عدد العمليات"
                     value={data.totalElements}
-                    icon="📋"
+                    icon={<i className="fa-solid fa-calculator"></i>}
                     defaults={{ color: 'deep-purple', size: 'tile-sq-sm', order: 2 }}
                 />
             </div>
 
             <div className="card">
                 <div className="card-header">
-                    <h3>🗑️ إدارة التوالف والهوالك</h3>
+                    <h3><i className="fa-solid fa-trash"></i> إدارة التوالف والهوالك</h3>
                     <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         {Api.isAdminOrBranchManager() && (
                             <select 
@@ -167,9 +167,9 @@ const DamagedProducts = () => {
                                 onChange={(e) => { setSelectedBranchId(e.target.value); setPage(0); }}
                                 style={{ width: '180px', height: '40px', padding: '0 10px', margin: 0 }}
                             >
-                                {Api.isAdmin() && <option value="">كل الفروع 🏢</option>}
+                                {Api.isAdmin() && <option value="">كل الفروع <i className="fa-solid fa-building"></i></option>}
                                 {branches.map(b => (
-                                    <option key={b.id} value={b.id.toString()}>🏢 {b.name}</option>
+                                    <option key={b.id} value={b.id.toString()}><i className="fa-solid fa-building"></i> {b.name}</option>
                                 ))}
                             </select>
                         )}
@@ -194,7 +194,7 @@ const DamagedProducts = () => {
                             <Loader message="جاري التحميل..." />
                         ) : data.items.length === 0 ? (
                             <div className="empty-state">
-                                <div className="empty-icon">🗑️</div>
+                                <div className="empty-icon"><i className="fa-solid fa-trash"></i></div>
                                 <h4>لا يوجد سجل لهوالك</h4>
                                 <p>اضغط على تسجيل هالك جديد لإضافة بيانات</p>
                             </div>
@@ -267,8 +267,8 @@ const DamagedProducts = () => {
                     <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setIsModalOpen(false); }}>
                         <div className="modal" style={{ maxWidth: '500px' }}>
                             <div className="modal-header">
-                                <h3>📦 تسجيل هالك / تالف</h3>
-                                <button className="modal-close" onClick={() => setIsModalOpen(false)}>✕</button>
+                                <h3><i className="fa-solid fa-box"></i> تسجيل هالك / تالف</h3>
+                                <button className="modal-close" onClick={() => setIsModalOpen(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <form id="damagedForm" onSubmit={handleSave}>
@@ -279,7 +279,7 @@ const DamagedProducts = () => {
                                                 type="text"
                                                 className="form-control"
                                                 style={{ paddingLeft: formData.productId ? '30px' : '10px' }}
-                                                placeholder="🔍 ابحث بالاسم أو كود المنتج..."
+                                                placeholder=" ابحث بالاسم أو كود المنتج..."
                                                 value={productSearch}
                                                 onChange={(e) => {
                                                     setProductSearch(e.target.value);
@@ -324,7 +324,7 @@ const DamagedProducts = () => {
                                                         setSelectedProductName('');
                                                     }}
                                                 >
-                                                    ✕
+                                                    <i className="fa-solid fa-times"></i>
                                                 </button>
                                             )}
                                             
@@ -479,7 +479,7 @@ const DamagedProducts = () => {
                                     </div>
                                     
                                     <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(231, 76, 60, 0.1)', borderRadius: '5px', borderRight: '3px solid var(--metro-red)', fontSize: '0.85rem' }}>
-                                        <b>⚠️ تنبيه:</b> سيتم خصم الكمية فوراً من المخزن وتسجيل حركة "سحب" من الخزنة بقيمة التكلفة.
+                                        <b><i className="fa-solid fa-triangle-exclamation"></i> تنبيه:</b> سيتم خصم الكمية فوراً من المخزن وتسجيل حركة "سحب" من الخزنة بقيمة التكلفة.
                                     </div>
                                 </form>
                             </div>

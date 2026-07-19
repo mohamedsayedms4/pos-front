@@ -208,7 +208,7 @@ const EmployeeCustody = () => {
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h3>🛡️ إدارة العهد الشخصية</h3>
+                        <h3><i className="fa-solid fa-shield-halved"></i>️ إدارة العهد الشخصية</h3>
                         <p className="text-muted">متابعة الممتلكات المسلمة للموظفين (أدوات، أجهزة، سيارات)</p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -258,10 +258,10 @@ const EmployeeCustody = () => {
                                             <td>
                                                 <div className="table-actions">
                                                     {r.status === 'ISSUED' && (
-                                                        <button className="btn btn-sm btn-ghost" onClick={() => handleReturn(r.id)}>🔄 إرجاع</button>
+                                                        <button className="btn btn-sm btn-ghost" onClick={() => handleReturn(r.id)}><i className="fa-solid fa-rotate"></i> إرجاع</button>
                                                     )}
-                                                    <button className="btn btn-sm btn-ghost" onClick={() => handlePrint(r)}>🖨️ طباعة</button>
-                                                    <button className="btn btn-sm btn-ghost text-danger" onClick={() => handleDelete(r.id)}>🗑️</button>
+                                                    <button className="btn btn-sm btn-ghost" onClick={() => handlePrint(r)}><i className="fa-solid fa-print"></i>️ طباعة</button>
+                                                    <button className="btn btn-sm btn-ghost text-danger" onClick={() => handleDelete(r.id)}><i className="fa-solid fa-trash"></i></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -284,12 +284,12 @@ const EmployeeCustody = () => {
                         <div className="modal" style={{ maxWidth: '600px' }}>
                             <div className="modal-header">
                                 <h3>إسناد عهدة جديدة لموظف</h3>
-                                <button className="modal-close" onClick={() => setShowForm(false)}>✕</button>
+                                <button className="modal-close" onClick={() => setShowForm(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <form id="custodyForm" onSubmit={handleIssue}>
                                     <div className="form-group" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
-                                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🔗 ربط بأصل ثابت (اختياري)</label>
+                                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}><i className="fa-solid fa-link"></i> ربط بأصل ثابت (اختياري)</label>
                                         <select className="form-control" onChange={handleAssetSelect} style={{ borderColor: '#cbd5e1' }}>
                                             <option value="">-- اختر من قائمة الأصول الثابتة --</option>
                                             {fixedAssets.map(a => <option key={a.id} value={a.id}>{a.name} ({a.assetCode || a.serialNumber})</option>)}
@@ -298,7 +298,7 @@ const EmployeeCustody = () => {
                                     </div>
                                     <div style={{ margin: '30px 0 20px 0', borderBottom: '1px solid #e2e8f0', position: 'relative' }}>
                                         <span style={{ position: 'absolute', top: '-10px', right: '15px', background: 'white', padding: '0 10px', fontSize: '12px', color: '#94a3b8', fontWeight: 'bold' }}>
-                                            تفاصيل العهدة (قابلة للتعديل يدوياً ✍️)
+                                            تفاصيل العهدة (قابلة للتعديل يدوياً <i className="fa-solid fa-pen-nib"></i>️)
                                         </span>
                                     </div>
                                     <div className="form-group">

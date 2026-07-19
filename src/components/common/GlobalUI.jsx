@@ -111,10 +111,10 @@ export const GlobalUIProvider = ({ children }) => {
                     {toasts.map(t => (
                         <div key={t.id} className={`toast ${t.type}`}>
                             <span className="toast-icon">
-                                {t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : t.type === 'warning' ? '⚠' : 'ℹ'}
+                                {t.type === 'success' ? '' : t.type === 'error' ? '' : t.type === 'warning' ? '' : 'ℹ'}
                             </span>
                             <span className="toast-msg">{t.message}</span>
-                            <button className="toast-close" onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}>✕</button>
+                            <button className="toast-close" onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}><i className="fa-solid fa-times"></i></button>
                         </div>
                     ))}
                 </div>,
@@ -127,11 +127,11 @@ export const GlobalUIProvider = ({ children }) => {
                     <div className="modal confirm-dialog" style={{ maxWidth: '400px' }}>
                         <div className="modal-header">
                             <h3>تأكيد</h3>
-                            <button className="modal-close" onClick={closeConfirm}>✕</button>
+                            <button className="modal-close" onClick={closeConfirm}><i className="fa-solid fa-times"></i></button>
                         </div>
                         <div className="modal-body" style={{ padding: '30px 24px' }}>
                             <div className="confirm-icon" style={{ borderRadius: '0', clipPath: 'none' }}>
-                                <span style={{ color: '#ffeb3b', fontSize: '1.5rem' }}>⚠</span>
+                                <span style={{ color: '#ffeb3b', fontSize: '1.5rem' }}><i className="fa-solid fa-triangle-exclamation"></i></span>
                             </div>
                             <h2 style={{ textAlign: 'center', marginBottom: '12px', fontSize: '1.75rem', fontWeight: '300' }}>هل أنت متأكد؟</h2>
                             <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.95rem' }}>{confirm.message}</p>

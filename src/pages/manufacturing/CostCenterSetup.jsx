@@ -34,7 +34,7 @@ const CostCenterSetup = () => {
         <div className="page-section">
             <div className="card mb-4">
                 <div className="card-header">
-                    <h3>➕ إضافة مركز تكلفة</h3>
+                    <h3><i className="fa-solid fa-plus"></i> إضافة مركز تكلفة</h3>
                 </div>
                 <div className="card-body">
                     <form onSubmit={handleSave}>
@@ -59,7 +59,7 @@ const CostCenterSetup = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3>🏭 مراكز التكلفة</h3>
+                    <h3><i className="fa-solid fa-industry"></i> مراكز التكلفة</h3>
                 </div>
                 <div className="card-body no-padding">
                     <div className="table-wrapper">

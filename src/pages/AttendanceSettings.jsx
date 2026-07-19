@@ -108,7 +108,7 @@ const AttendanceSettings = () => {
       await Api.addAttendanceAllowedIp(ip);
       setAllowedIps(prev => [...prev, ip]);
       setNewIp('');
-      toast(`✅ تم إضافة ${ip}`, 'success');
+      toast(` تم إضافة ${ip}`, 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -149,7 +149,7 @@ const AttendanceSettings = () => {
     try {
       await Api.setAttendanceGeofenceEnabled(newVal);
       setGeoEnabled(newVal);
-      toast(newVal ? '✅ تم تفعيل التحقق الجغرافي' : '⚠️ تم تعطيل التحقق الجغرافي', newVal ? 'success' : 'warning');
+      toast(newVal ? ' تم تفعيل التحقق الجغرافي' : ' تم تعطيل التحقق الجغرافي', newVal ? 'success' : 'warning');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -176,7 +176,7 @@ const AttendanceSettings = () => {
           geoLat: pos.coords.latitude.toFixed(6),
           geoLng: pos.coords.longitude.toFixed(6)
         }));
-        toast('✅ تم جلب موقعك الحالي كمركز للفرع', 'success');
+        toast(' تم جلب موقعك الحالي كمركز للفرع', 'success');
       },
       () => toast('تعذّر الحصول على الموقع', 'error'),
       { enableHighAccuracy: true }
@@ -201,7 +201,7 @@ const AttendanceSettings = () => {
           : b
       ));
       setEditingBranch(null);
-      toast('✅ تم حفظ النطاق الجغرافي للفرع', 'success');
+      toast(' تم حفظ النطاق الجغرافي للفرع', 'success');
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -237,7 +237,7 @@ const AttendanceSettings = () => {
             background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.5rem', boxShadow: '0 8px 24px rgba(244,63,94,0.35)'
-          }}>🔒</div>
+          }}><i className="fa-solid fa-lock"></i></div>
           <div>
             <h1 className="page-title" style={{ margin: 0, fontSize: '1.6rem' }}>إعدادات أمان الحضور</h1>
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-dim)' }}>
@@ -251,7 +251,7 @@ const AttendanceSettings = () => {
           onClick={() => window.location.href = '/attendance/violations-log'}
           style={{ height: '44px', padding: '0 20px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', color: '#ef4444' }}
         >
-          🚨 عرض سجل المخالفات
+          <i className="fa-solid fa-siren-on"></i> عرض سجل المخالفات
         </button>
       </div>
 
@@ -259,7 +259,7 @@ const AttendanceSettings = () => {
       <div className="card" style={{ borderRadius: '20px', marginBottom: '24px', background: 'var(--bg-dark)', border: '1px solid var(--border-subtle)' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.3rem' }}>🌐</span>
+            <span style={{ fontSize: '1.3rem' }}><i className="fa-solid fa-globe"></i></span>
             <div>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>قائمة IPs المسموح بها</h3>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-dim)' }}>
@@ -273,7 +273,7 @@ const AttendanceSettings = () => {
             color: allowedIps.length > 0 ? '#4ade80' : '#f87171',
             border: `1px solid ${allowedIps.length > 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`
           }}>
-            {allowedIps.length > 0 ? `${allowedIps.length} IP مسموح` : '⚠ لا توجد IPs — كل الطلبات مرفوضة'}
+            {allowedIps.length > 0 ? `${allowedIps.length} IP مسموح` : ' لا توجد IPs — كل الطلبات مرفوضة'}
           </span>
         </div>
 
@@ -287,7 +287,7 @@ const AttendanceSettings = () => {
                   background: 'rgba(239,68,68,0.05)', border: '1px dashed rgba(239,68,68,0.3)',
                   marginBottom: '20px'
                 }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>⛔</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}><i className="fa-solid fa-ban"></i></div>
                   <p style={{ margin: 0, color: 'var(--text-dim)', fontSize: '0.9rem' }}>
                     لا توجد IPs مُضافة — جميع طلبات الحضور ستُرفض تلقائياً
                   </p>
@@ -302,7 +302,7 @@ const AttendanceSettings = () => {
                       border: '1px solid rgba(34,197,94,0.2)'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1rem' }}>✅</span>
+                        <span style={{ fontSize: '1rem' }}><i className="fa-solid fa-check"></i></span>
                         <code style={{ fontSize: '0.95rem', color: '#4ade80', fontFamily: 'monospace' }}>{ip}</code>
                       </div>
                       <button
@@ -311,7 +311,7 @@ const AttendanceSettings = () => {
                         onClick={() => handleRemoveIp(ip)}
                         disabled={removingIp === ip}
                       >
-                        {removingIp === ip ? '...' : '🗑'}
+                        {removingIp === ip ? '...' : ''}
                       </button>
                     </div>
                   ))}
@@ -343,7 +343,7 @@ const AttendanceSettings = () => {
                     onClick={useCurrentIp}
                     title="جلب الـ IP الحالي"
                   >
-                    📡 IP الحالي
+                    <i className="fa-solid fa-satellite-dish"></i> IP الحالي
                   </button>
                   <button
                     className="btn btn-primary"
@@ -364,7 +364,7 @@ const AttendanceSettings = () => {
       <div className="card" style={{ borderRadius: '20px', marginBottom: '24px', background: 'var(--bg-dark)', border: '1px solid var(--border-subtle)' }}>
         <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.3rem' }}>📍</span>
+            <span style={{ fontSize: '1.3rem' }}><i className="fa-solid fa-location-dot"></i></span>
             <div>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>التحقق الجغرافي</h3>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-dim)' }}>
@@ -405,7 +405,7 @@ const AttendanceSettings = () => {
               background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)',
               fontSize: '0.83rem', color: '#86efac'
             }}>
-              ✅ التحقق الجغرافي مُفعَّل — سيتم إرسال إشعار للمدير إذا سجّل موظف من خارج النطاق
+              <i className="fa-solid fa-check"></i> التحقق الجغرافي مُفعَّل — سيتم إرسال إشعار للمدير إذا سجّل موظف من خارج النطاق
             </div>
           </div>
         )}
@@ -415,7 +415,7 @@ const AttendanceSettings = () => {
       <div className="card" style={{ borderRadius: '20px', background: 'var(--bg-dark)', border: '1px solid var(--border-subtle)' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.3rem' }}>🏢</span>
+            <span style={{ fontSize: '1.3rem' }}><i className="fa-solid fa-building"></i></span>
             <div>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700' }}>النطاق الجغرافي لكل فرع</h3>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-dim)' }}>
@@ -450,11 +450,11 @@ const AttendanceSettings = () => {
                       <strong style={{ fontSize: '0.95rem' }}>{branch.name}</strong>
                       {branch.geoLat ? (
                         <span style={{ fontSize: '0.72rem', color: '#86efac', background: 'rgba(34,197,94,0.1)', padding: '2px 8px', borderRadius: '99px' }}>
-                          ✅ نطاق محدد — {branch.geoRadiusMeters}م
+                          <i className="fa-solid fa-check"></i> نطاق محدد — {branch.geoRadiusMeters}م
                         </span>
                       ) : (
                         <span style={{ fontSize: '0.72rem', color: '#9ca3af', background: 'rgba(107,114,128,0.1)', padding: '2px 8px', borderRadius: '99px' }}>
-                          ⚪ بلا قيد جغرافي
+                          <i className="fa-regular fa-circle"></i> بلا قيد جغرافي
                         </span>
                       )}
                     </div>
@@ -464,7 +464,7 @@ const AttendanceSettings = () => {
                         style={{ height: '32px', padding: '0 14px', borderRadius: '8px', fontSize: '0.8rem' }}
                         onClick={() => editingBranch === branch.id ? setEditingBranch(null) : startEditBranch(branch)}
                       >
-                        {editingBranch === branch.id ? '✕ إلغاء' : '✏️ تعديل'}
+                        {editingBranch === branch.id ? ' إلغاء' : ' تعديل'}
                       </button>
                       {branch.geoLat && (
                         <button
@@ -473,7 +473,7 @@ const AttendanceSettings = () => {
                           onClick={() => handleClearBranchGeo(branch)}
                           disabled={branchSaving}
                         >
-                          🗑
+                          <i className="fa-solid fa-trash"></i>
                         </button>
                       )}
                     </div>
@@ -482,9 +482,9 @@ const AttendanceSettings = () => {
                   {/* معلومات جغرافية موجودة */}
                   {branch.geoLat && editingBranch !== branch.id && (
                     <div style={{ padding: '10px 18px 14px', display: 'flex', gap: '20px', fontSize: '0.82rem', color: 'var(--text-dim)' }}>
-                      <span>📌 lat: <code style={{ color: '#86efac' }}>{branch.geoLat}</code></span>
-                      <span>📌 lng: <code style={{ color: '#86efac' }}>{branch.geoLng}</code></span>
-                      <span>⭕ نصف القطر: <code style={{ color: '#86efac' }}>{branch.geoRadiusMeters}م</code></span>
+                      <span><i className="fa-solid fa-thumbtack"></i> lat: <code style={{ color: '#86efac' }}>{branch.geoLat}</code></span>
+                      <span><i className="fa-solid fa-thumbtack"></i> lng: <code style={{ color: '#86efac' }}>{branch.geoLng}</code></span>
+                      <span><i className="fa-solid fa-circle"></i> نصف القطر: <code style={{ color: '#86efac' }}>{branch.geoRadiusMeters}م</code></span>
                     </div>
                   )}
 
@@ -570,7 +570,7 @@ const AttendanceSettings = () => {
                           style={{ height: '40px', padding: '0 16px', fontSize: '0.85rem', flex: 1 }}
                           onClick={handleGetBranchLocation}
                         >
-                          📡 استخدم موقعي الحالي
+                          <i className="fa-solid fa-satellite-dish"></i> استخدم موقعي الحالي
                         </button>
                         <button
                           className="btn btn-success"
@@ -578,7 +578,7 @@ const AttendanceSettings = () => {
                           onClick={() => handleSaveBranchGeo(branch.id)}
                           disabled={branchSaving}
                         >
-                          {branchSaving ? 'جارٍ الحفظ...' : '💾 حفظ النطاق'}
+                          {branchSaving ? 'جارٍ الحفظ...' : ' حفظ النطاق'}
                         </button>
                       </div>
                     </div>

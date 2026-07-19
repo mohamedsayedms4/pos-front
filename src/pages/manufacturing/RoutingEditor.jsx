@@ -59,7 +59,7 @@ const RoutingEditor = () => {
         <div className="page-section">
             <div className="card mb-4">
                 <div className="card-header">
-                    <h3>🛤️ محرر مسارات التصنيع (Routing)</h3>
+                    <h3><i className="fa-solid fa-road"></i>️ محرر مسارات التصنيع (Routing)</h3>
                 </div>
                 <div className="card-body">
                     <div style={{ marginBottom: '20px' }}>
@@ -107,7 +107,7 @@ const RoutingEditor = () => {
             {selectedBomId && (
                 <div className="card">
                     <div className="card-header">
-                        <h3>📋 مسار التصنيع للقائمة المحددة</h3>
+                        <h3><i className="fa-solid fa-clipboard-list"></i> مسار التصنيع للقائمة المحددة</h3>
                     </div>
                     <div className="card-body no-padding">
                         <div className="table-wrapper">

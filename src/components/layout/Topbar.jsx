@@ -85,7 +85,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button className="menu-toggle" onClick={onMenuToggle}>☰</button>
+        <button className="menu-toggle" onClick={onMenuToggle}><i className="fa-solid fa-bars"></i></button>
         {prevInfo && prevInfo.path && (
           <button 
             className="btn-back-global" 
@@ -166,7 +166,7 @@ const Topbar = ({ onMenuToggle, prevInfo }) => {
           onClick={toggleTheme}
           style={{ fontSize: '1.2rem' }}
         >
-          {theme === 'dark' ? <i className="fa-solid fa-sun"></i> : <i className="fa-solid fa-moon"></i>}
+          {theme === 'dark' ? <i className="fa-regular fa-sun"></i> : <i className="fa-solid fa-moon"></i>}
         </button>
         <button className="btn-logout" onClick={handleLogout} title="تسجيل الخروج">
           <span><i className="fa-solid fa-power-off"></i></span>

@@ -152,7 +152,7 @@ const parseServerError = (err, step = 'register') => {
   if (step === 'login') {
     return {
       type: 'warning',
-      message: 'تم إنشاء حسابك بنجاح 🎉، لكن تعذّر تسجيل الدخول التلقائي. يرجى تسجيل الدخول يدوياً.',
+      message: 'تم إنشاء حسابك بنجاح ، لكن تعذّر تسجيل الدخول التلقائي. يرجى تسجيل الدخول يدوياً.',
       redirectToLogin: true,
     };
   }
@@ -350,6 +350,24 @@ const TenantRegister = () => {
         if (cfg?.facebookPixelId) initPixel(cfg.facebookPixelId);
       })
       .catch(() => {});
+  }, []);
+
+  // SEO: noindex لصفحة التسجيل — تطبيق داخلي لا تريد فهرسته
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = 'إنشاء حساب | سجل ERP — ابدأ مجاناً';
+    let meta = document.querySelector('meta[name="robots"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'robots';
+      document.head.appendChild(meta);
+    }
+    const prevRobots = meta.content;
+    meta.content = 'noindex, follow';
+    return () => {
+      document.title = prevTitle;
+      meta.content = prevRobots;
+    };
   }, []);
 
   const handleSubmit = async (e) => {

@@ -73,7 +73,7 @@ const FinancialAnalytics = () => {
             <div className="analytics-header card" style={{ marginBottom: '20px' }}>
                 <div className="card-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>📊 التحليل المالي الموحد</h2>
+                        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}> التحليل المالي الموحد</h2>
                         <p style={{ margin: '5px 0 0 0', color: 'var(--text-dim)', fontSize: '0.9rem' }}>تحليل حركة التدفقات النقدية والبنكية بشكل تفصيلي</p>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -110,7 +110,7 @@ const FinancialAnalytics = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3>📑 جدول التحليل التحليلي (Columnar Analysis)</h3>
+                    <h3> جدول التحليل التحليلي (Columnar Analysis)</h3>
                 </div>
                 <div className="card-body no-padding">
                     <div className="table-wrapper scroll-horizontal">
@@ -122,7 +122,7 @@ const FinancialAnalytics = () => {
                                         <th key={acc.id} style={{ textAlign: 'center' }}>
                                             {acc.name}
                                             <div style={{ fontSize: '0.7rem', fontWeight: 'normal', color: 'var(--text-dim)' }}>
-                                                {acc.accountType === 'BANK' ? '🏦 بنكي' : '💵 نقدي'}
+                                                {acc.accountType === 'BANK' ? '<i className="fa-solid fa-building-columns"></i> بنكي' : '<i className="fa-solid fa-money-bill"></i> نقدي'}
                                             </div>
                                         </th>
                                     ))}

@@ -153,28 +153,28 @@ const StockReceipts = () => {
           id="stk_pending"
           label="بانتظار المورد"
           value={`${analytics.pending} أمر`}
-          icon="🕒"
+          icon={<i className="fa-solid fa-truck-field"></i>}
           defaults={{ color: 'amber', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile 
           id="stk_received"
           label="استلام مؤقت (لم يرحل)"
           value={analytics.received}
-          icon="📦"
+          icon={<i className="fa-solid fa-box-open"></i>}
           defaults={{ color: 'blue', size: 'tile-wd-sm', order: 2 }}
         />
         <StatTile 
           id="stk_completed"
           label="تم التخزين"
           value={analytics.completed}
-          icon="✅"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 3 }}
         />
       </div>
 
       <div className="card mb-4">
         <div className="card-header no-border">
-          <h3>📊 اتجاه التوريد (آخر 15 يوم توريد)</h3>
+          <h3><i className="fa-solid fa-chart-column"></i> اتجاه التوريد (آخر 15 يوم توريد)</h3>
           {analyticsLoading && <small style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>جاري التحديث...</small>}
         </div>
         <div className="card-body" style={{ minHeight: '300px', height: '300px', padding: '15px', position: 'relative' }}>
@@ -199,7 +199,7 @@ const StockReceipts = () => {
 
       <div className="card">
         <div className="card-header">
-          <h3>📦 أذونات استلام المخزون</h3>
+          <h3><i className="fa-solid fa-box"></i> أذونات استلام المخزون</h3>
           <div className="toolbar">
             {isAdmin && (
               <select className="form-control" value={selectedBranchId} onChange={e => { setSelectedBranchId(e.target.value); setCurrentPage(0); }} style={{ width: '150px', height: '40px' }}>
@@ -230,7 +230,7 @@ const StockReceipts = () => {
               <Loader message="جاري تحميل أذونات الاستلام..." />
             ) : receipts.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📦</div>
+                <div className="empty-icon"><i className="fa-solid fa-box"></i></div>
                 <h4>لا توجد أذونات استلام</h4>
                 <p>تنشأ الأذونات تلقائياً عند تسجيل فواتير شراء جديدة</p>
               </div>
@@ -260,7 +260,7 @@ const StockReceipts = () => {
                       <td>{r.receivedBy || '—'}</td>
                       <td>
                         <div className="table-actions" style={{ display: 'flex', gap: '5px' }}>
-                          <button className="btn btn-icon btn-ghost" title="التفاصيل" onClick={() => openDetails(r)}>👁️</button>
+                          <button className="btn btn-icon btn-ghost" title="التفاصيل" onClick={() => openDetails(r)}><i className="fa-solid fa-eye"></i>️</button>
                           
                           {Api.can('STOCK_WRITE') && (
                             <>
@@ -270,7 +270,7 @@ const StockReceipts = () => {
                                 onClick={() => openDetails(r)}
                                 title={r.status === 'PENDING' ? "تسجيل الكميات المستلمة" : "تم تسجيل الاستلام"}
                               >
-                                📦 استلام
+                                <i className="fa-solid fa-box"></i> استلام
                               </button>
 
                               <button 
@@ -279,7 +279,7 @@ const StockReceipts = () => {
                                 onClick={() => handleCommitToInventory(r.id)}
                                 title={r.status === 'RECEIVED' ? "ترحيل الكميات للمخزن" : (r.status === 'COMPLETED' ? "تمت الإضافة للمخزن" : "انتظر الاستلام أولاً")}
                               >
-                                ➕ للمخزن
+                                <i className="fa-solid fa-plus"></i> للمخزن
                               </button>
                             </>
                           )}
@@ -322,7 +322,7 @@ const StockReceipts = () => {
             <div className="modal" style={{ maxWidth: '800px' }}>
               <div className="modal-header">
                 <h3>تفاصيل إذن الاستلام: {selectedReceipt.receiptNumber}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', padding: '10px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
@@ -377,10 +377,10 @@ const StockReceipts = () => {
               <div className="modal-footer">
                 <button className="btn btn-ghost" onClick={closeModal}>إغلاق</button>
                 {selectedReceipt.status === 'PENDING' && Api.can('STOCK_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => handleSaveQuantities(selectedReceipt.id, receivedQuantities)}>📦 تسجيل وحفظ الكميات</button>
+                  <button className="btn btn-primary" onClick={() => handleSaveQuantities(selectedReceipt.id, receivedQuantities)}><i className="fa-solid fa-box"></i> تسجيل وحفظ الكميات</button>
                 )}
                 {selectedReceipt.status === 'RECEIVED' && Api.can('STOCK_WRITE') && (
-                  <button className="btn btn-success" onClick={() => handleCommitToInventory(selectedReceipt.id)}>➕ إضافة للمخزن الآن</button>
+                  <button className="btn btn-success" onClick={() => handleCommitToInventory(selectedReceipt.id)}><i className="fa-solid fa-plus"></i> إضافة للمخزن الآن</button>
                 )}
               </div>
             </div>

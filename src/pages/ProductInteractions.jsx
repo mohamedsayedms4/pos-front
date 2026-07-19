@@ -40,8 +40,8 @@ const ProductInteractions = () => {
 
     const getTypeLabel = (type) => {
         switch (type) {
-            case 'CART': return <span className="badge badge-purple">🛒 إضافة للسلة</span>;
-            case 'FAVORITE': return <span className="badge badge-pink">❤️ إضافة للمفضلة</span>;
+            case 'CART': return <span className="badge badge-purple"><i className="fa-solid fa-cart-shopping"></i> إضافة للسلة</span>;
+            case 'FAVORITE': return <span className="badge badge-pink"><i className="fa-solid fa-heart"></i>️ إضافة للمفضلة</span>;
             default: return type;
         }
     };
@@ -79,19 +79,19 @@ const ProductInteractions = () => {
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <h3 style={{ margin: 0 }}>📊 تتبع تفاعلات العملاء</h3>
+                        <h3 style={{ margin: 0 }}><i className="fa-solid fa-chart-column"></i> تتبع تفاعلات العملاء</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '5px' }}>
                             سجل حي لعمليات الإضافة للسلة والمفضلة من المتجر الإلكتروني
                         </p>
                     </div>
-                    <button className="btn btn-secondary" onClick={() => loadInteractions()}>🔄 تحديث</button>
+                    <button className="btn btn-secondary" onClick={() => loadInteractions()}><i className="fa-solid fa-rotate"></i> تحديث</button>
                 </div>
                 <div className="card-body no-padding">
                     {loading ? (
                         <Loader message="جاري تحميل سجل التفاعلات..." />
                     ) : interactions.length === 0 ? (
                         <div className="empty-state">
-                            <div className="empty-icon">📈</div>
+                            <div className="empty-icon"><i className="fa-solid fa-arrow-trend-up"></i></div>
                             <h4>لا توجد تفاعلات بعد</h4>
                             <p>تفاعلات العملاء ستظهر هنا بمجرد حدوثها</p>
                         </div>
@@ -131,7 +131,7 @@ const ProductInteractions = () => {
                                                         <small style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{row.customerPhone}</small>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-muted">👤 زائر (Guest)</span>
+                                                    <span className="text-muted"><i className="fa-solid fa-user"></i> زائر (Guest)</span>
                                                 )}
                                             </td>
                                             <td>
@@ -148,7 +148,7 @@ const ProductInteractions = () => {
                                                             setOfferModalOpen(true);
                                                         }}
                                                     >
-                                                        🎁 إرسال عرض
+                                                        <i className="fa-solid fa-gift"></i> إرسال عرض
                                                     </button>
                                                 )}
                                             </td>
@@ -180,7 +180,7 @@ const ProductInteractions = () => {
                     <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setOfferModalOpen(false); }}>
                         <div className="modal" style={{ maxWidth: '500px' }}>
                             <div className="modal-header">
-                            <h3>🎁 إرسال عرض مخصص</h3>
+                            <h3><i className="fa-solid fa-gift"></i> إرسال عرض مخصص</h3>
                             <button className="btn-close" onClick={() => setOfferModalOpen(false)}>×</button>
                         </div>
                         <div className="modal-body">

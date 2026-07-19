@@ -446,7 +446,7 @@ const ProductDetails = () => {
   if (error || !product) {
     return (
       <div className="page-section empty-state">
-        <div className="empty-icon">⚠️</div>
+        <div className="empty-icon"><i className="fa-solid fa-triangle-exclamation"></i></div>
         <h4>{error ? 'حدث خطأ' : 'لم يتم العثور على المنتج'}</h4>
         <p>{error || 'رقم المنتج غير صحيح أو مفقود'}</p>
         <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={() => navigate('/products')}>العودة للمنتجات</button>
@@ -532,7 +532,7 @@ const ProductDetails = () => {
         <div style={{ flex: 1 }}></div>
         {Api.can('PRODUCT_WRITE') && (
           <button className="btn" style={{ background: 'var(--metro-orange)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(255,140,0,0.2)' }} onClick={() => navigate(`/products/edit/${id}`)}>
-            ✏️ تعديل المنتج
+            <i className="fa-solid fa-pencil"></i> تعديل المنتج
           </button>
         )}
         {onlineBranch && !isLinkedToOnline && (
@@ -549,7 +549,7 @@ const ProductDetails = () => {
             }}
             onClick={handleAddToStoreClick}
           >
-            🌐 إضافة إلى المتجر الإلكتروني
+            <i className="fa-solid fa-globe"></i> إضافة إلى المتجر الإلكتروني
           </button>
         )}
         <button className="btn" style={{ background: 'var(--metro-blue)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', border: 'none', boxShadow: '0 4px 10px rgba(59,130,246,0.2)' }} onClick={() => handlePrintClick('barcode')}>
@@ -593,7 +593,7 @@ const ProductDetails = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <span style={{ fontSize: '2.5rem' }}>🌐</span>
+            <span style={{ fontSize: '2.5rem' }}><i className="fa-solid fa-globe"></i></span>
             <div style={{ direction: 'rtl', textAlign: 'right' }}>
               <h4 style={{ margin: '0 0 5px 0', color: 'var(--text-primary)', fontSize: '1.1rem' }}>هذا المنتج غير معروض في المتجر الإلكتروني</h4>
               <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
@@ -617,7 +617,7 @@ const ProductDetails = () => {
           <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: (product.imageUrls && product.imageUrls.length > 1) ? '20px' : '0', minHeight: '300px', background: 'var(--bg-body)', borderRadius: '12px', padding: '16px', alignItems: 'center' }}>
             {mainImage
               ? <img src={mainImage} style={{ width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'contain', borderRadius: '8px' }} alt="Main Product" />
-              : <div style={{ fontSize: '80px', color: 'var(--text-dim)', opacity: 0.5 }}>📦</div>
+              : <div style={{ fontSize: '80px', color: 'var(--text-dim)', opacity: 0.5 }}><i className="fa-solid fa-box"></i></div>
             }
           </div>
           {product.imageUrls && product.imageUrls.length > 0 && (
@@ -658,7 +658,7 @@ const ProductDetails = () => {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {units.map(u => (
                       <span key={u.id} style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--metro-blue)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
-                        📦 {u.unitName} = {u.conversionFactor} {product.unitName || 'قطعة'}
+                        <i className="fa-solid fa-box"></i> {u.unitName} = {u.conversionFactor} {product.unitName || 'قطعة'}
                       </span>
                     ))}
                   </div>
@@ -717,8 +717,8 @@ const ProductDetails = () => {
       {/* ═══ Tab Navigation ══════════════════════════════════════════════════════ */}
       <div style={{ display: 'flex', gap: '4px', marginTop: '24px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
         {[
-          { key: 'details', label: '📋 تفاصيل المخزون والفروع' },
-          { key: 'variants', label: '🎨 المتغيرات (مقاسات / ألوان)' },
+          { key: 'details', label: ' تفاصيل المخزون والفروع' },
+          { key: 'variants', label: ' المتغيرات (مقاسات / ألوان)' },
         ].map(tab => (
           <button
             key={tab.key}
@@ -757,7 +757,7 @@ const ProductDetails = () => {
       {/* ═══ Branch Inventories Section ══════════════════════════════════════════ */}
       <div className="card">
         <div className="card-header">
-          <h3>📍 أسعار ومخزون الفروع التفصيلية</h3>
+          <h3><i className="fa-solid fa-location-dot"></i> أسعار ومخزون الفروع التفصيلية</h3>
         </div>
         <div className="card-body no-padding">
           <div className="table-wrapper">
@@ -785,7 +785,7 @@ const ProductDetails = () => {
                     return (
                       <tr key={bi.branchId} style={{ background: isCurrent ? 'var(--bg-hover)' : 'transparent', borderLeft: isCurrent ? '4px solid var(--metro-blue)' : 'none' }}>
                         <td style={{ fontWeight: 600 }}>
-                          📍 {bi.branchName} {isCurrent && <span style={{ fontSize: '0.75rem', color: 'var(--metro-blue)', marginRight: '5px' }}>(الفرع النشط الحالي)</span>}
+                          <i className="fa-solid fa-location-dot"></i> {bi.branchName} {isCurrent && <span style={{ fontSize: '0.75rem', color: 'var(--metro-blue)', marginRight: '5px' }}>(الفرع النشط الحالي)</span>}
                         </td>
                         <td>{Number(bi.purchasePrice).toFixed(2)} ج.م</td>
                         <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{Number(bi.salePrice).toFixed(2)} ج.م</td>
@@ -798,7 +798,7 @@ const ProductDetails = () => {
                         <td style={{ fontWeight: 600, color: 'var(--accent-amber)' }}>{Number(bi.realizedProfit).toFixed(2)} ج.م</td>
                         <td>
                           <span className={`badge ${bi.showInStore ? 'badge-success' : 'badge-secondary'}`}>
-                            {bi.showInStore ? '🌐 معروض أونلاين' : '🔒 مخفي'}
+                            {bi.showInStore ? ' معروض أونلاين' : ' مخفي'}
                           </span>
                         </td>
                         {Api.can('PRODUCT_WRITE') && (
@@ -808,7 +808,7 @@ const ProductDetails = () => {
                               title="تعديل السعر"
                               onClick={() => openEditBranchPriceModal(bi)}
                             >
-                              ✏️
+                              <i className="fa-solid fa-pencil"></i>
                             </button>
                             {Api.isAdmin() && (
                               <>
@@ -818,7 +818,7 @@ const ProductDetails = () => {
                                   style={{ color: 'var(--metro-red)' }}
                                   onClick={() => handleAdminDelete(bi)}
                                 >
-                                  🗑️
+                                  <i className="fa-solid fa-trash"></i>
                                 </button>
                                 <button
                                   className="btn btn-icon btn-ghost"
@@ -826,7 +826,7 @@ const ProductDetails = () => {
                                   style={{ color: 'var(--accent-purple)' }}
                                   onClick={() => openAdminTransfer(bi)}
                                 >
-                                  🚚
+                                  <i className="fa-solid fa-truck"></i>
                                 </button>
                               </>
                             )}
@@ -845,7 +845,7 @@ const ProductDetails = () => {
       {/* ═══ Unit Management Section ══════════════════════════════════════════ */}
       <div className="card" style={{ marginTop: '20px' }}>
         <div className="card-header">
-          <h3>📦 وحدات التغليف والكميات الجملة</h3>
+          <h3><i className="fa-solid fa-box"></i> وحدات التغليف والكميات الجملة</h3>
           <button className="btn btn-primary btn-sm" onClick={openAddUnit}>+ إضافة وحدة</button>
         </div>
         <div className="card-body">
@@ -937,12 +937,12 @@ const ProductDetails = () => {
                       <td>{u.purchasePrice ? Number(u.purchasePrice).toFixed(2) : '—'}</td>
                       <td>{u.salePrice ? Number(u.salePrice).toFixed(2) : '—'}</td>
                       <td>{u.wholesaleSalePrice ? Number(u.wholesaleSalePrice).toFixed(2) : '—'}</td>
-                      <td style={{ textAlign: 'center' }}>{u.isDefaultPurchase ? '✅' : '—'}</td>
-                      <td style={{ textAlign: 'center' }}>{u.isDefaultSale ? '✅' : '—'}</td>
+                      <td style={{ textAlign: 'center' }}>{u.isDefaultPurchase ? '' : '—'}</td>
+                      <td style={{ textAlign: 'center' }}>{u.isDefaultSale ? '' : '—'}</td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openEditUnit(u)}>✏️</button>
-                          <button className="btn btn-icon btn-ghost" title="حذف" style={{ color: 'var(--metro-red)' }} onClick={() => handleDeleteUnit(u.id)}>🗑️</button>
+                          <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openEditUnit(u)}><i className="fa-solid fa-pencil"></i></button>
+                          <button className="btn btn-icon btn-ghost" title="حذف" style={{ color: 'var(--metro-red)' }} onClick={() => handleDeleteUnit(u.id)}><i className="fa-solid fa-trash"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -956,7 +956,7 @@ const ProductDetails = () => {
       {/* ═══ Stock Distribution Section ══════════════════════════════════════════ */}
       <div className="card" style={{ marginTop: '20px' }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>🏭 توزيع المخزون على الفروع والمخازن</h3>
+          <h3 style={{ margin: 0 }}><i className="fa-solid fa-industry"></i> توزيع المخزون على الفروع والمخازن</h3>
           <button className="btn btn-primary btn-sm" onClick={() => {
             setStockForm({ warehouseId: '', quantity: '', minQuantity: '', maxQuantity: '' });
             setShowStockModal(true);
@@ -985,15 +985,15 @@ const ProductDetails = () => {
                     const isLow = item.minQuantity != null && Number(item.quantity) <= Number(item.minQuantity);
                     return (
                       <tr key={`${item.warehouseId}-${idx}`}>
-                        <td>📍 {item.branchName}</td>
-                        <td style={{ fontWeight: 600 }}>🏭 {item.warehouseName}</td>
+                        <td><i className="fa-solid fa-location-dot"></i> {item.branchName}</td>
+                        <td style={{ fontWeight: 600 }}><i className="fa-solid fa-industry"></i> {item.warehouseName}</td>
                         <td>{Number(item.quantity).toFixed(2)} {product.unitName || 'قطعة'}</td>
                         <td>{item.minQuantity != null ? Number(item.minQuantity).toFixed(2) : '—'}</td>
                         <td>
                           {isLow ? (
-                            <span className="badge badge-danger">⚠️ مخزون منخفض</span>
+                            <span className="badge badge-danger"><i className="fa-solid fa-triangle-exclamation"></i> مخزون منخفض</span>
                           ) : (
-                            <span className="badge badge-success">✅ متوفر</span>
+                            <span className="badge badge-success"><i className="fa-solid fa-check"></i> متوفر</span>
                           )}
                         </td>
                         <td>
@@ -1005,7 +1005,7 @@ const ProductDetails = () => {
                               maxQuantity: item.maxQuantity || ''
                             });
                             setShowStockModal(true);
-                          }}>✏️</button>
+                          }}><i className="fa-solid fa-pencil"></i></button>
                         </td>
                       </tr>
                     );
@@ -1025,7 +1025,7 @@ const ProductDetails = () => {
           <div className="modal" style={{ width: '100%', maxWidth: '500px' }}>
             <div className="modal-header">
               <h3>توزيع المخزون</h3>
-              <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowStockModal(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body">
               <form id="stockForm" onSubmit={handleUpdateStock}>
@@ -1084,8 +1084,8 @@ const ProductDetails = () => {
         <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div className="modal" style={{ width: '100%', maxWidth: '550px' }}>
             <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)' }}>
-              <h3>⚠️ تنبيه: مخزون متوفر في فروع أخرى</h3>
-              <button className="modal-close" onClick={() => setShowWarningModal(false)}>✕</button>
+              <h3><i className="fa-solid fa-triangle-exclamation"></i> تنبيه: مخزون متوفر في فروع أخرى</h3>
+              <button className="modal-close" onClick={() => setShowWarningModal(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right', padding: '20px' }}>
               <p style={{ fontSize: '1rem', lineHeight: 1.6, marginBottom: '15px', color: 'var(--text-primary)' }}>
@@ -1112,7 +1112,7 @@ const ProductDetails = () => {
                   setShowAddToStoreModal(true);
                 }}
               >
-                🌐 إضافة مباشرة (بمخزون 0)
+                <i className="fa-solid fa-globe"></i> إضافة مباشرة (بمخزون 0)
               </button>
               <button
                 className="btn"
@@ -1134,7 +1134,7 @@ const ProductDetails = () => {
                   });
                 }}
               >
-                🚚 طلب نقل مخزون
+                <i className="fa-solid fa-truck"></i> طلب نقل مخزون
               </button>
               <button className="btn btn-ghost" onClick={() => setShowWarningModal(false)}>إلغاء</button>
             </div>
@@ -1148,8 +1148,8 @@ const ProductDetails = () => {
         <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div className="modal" style={{ width: '100%', maxWidth: '450px' }}>
             <div className="modal-header">
-              <h3>🌐 إضافة المنتج للمتجر الإلكتروني</h3>
-              <button className="modal-close" onClick={() => setShowAddToStoreModal(false)}>✕</button>
+              <h3><i className="fa-solid fa-globe"></i> إضافة المنتج للمتجر الإلكتروني</h3>
+              <button className="modal-close" onClick={() => setShowAddToStoreModal(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right' }}>
               <form id="addToStoreForm" onSubmit={handleSaveToStore}>
@@ -1202,8 +1202,8 @@ const ProductDetails = () => {
         <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div className="modal" style={{ width: '100%', maxWidth: '450px' }}>
             <div className="modal-header">
-              <h3>✏️ تعديل سعر ومواصفات الفرع</h3>
-              <button className="modal-close" onClick={() => setShowEditBranchPriceModal(false)}>✕</button>
+              <h3><i className="fa-solid fa-pencil"></i> تعديل سعر ومواصفات الفرع</h3>
+              <button className="modal-close" onClick={() => setShowEditBranchPriceModal(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right' }}>
               <form id="branchPriceForm" onSubmit={handleUpdateBranchPrice}>
@@ -1265,8 +1265,8 @@ const ProductDetails = () => {
         <div className="modal-overlay active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
           <div className="modal" style={{ width: '100%', maxWidth: '450px' }}>
             <div className="modal-header">
-              <h3>🚚 طلب نقل منتج (صلاحية أدمن)</h3>
-              <button className="modal-close" onClick={() => setShowAdminTransferModal(false)}>✕</button>
+              <h3><i className="fa-solid fa-truck"></i> طلب نقل منتج (صلاحية أدمن)</h3>
+              <button className="modal-close" onClick={() => setShowAdminTransferModal(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body" style={{ direction: 'rtl', textAlign: 'right' }}>
               <form id="adminTransferForm" onSubmit={submitAdminTransfer}>

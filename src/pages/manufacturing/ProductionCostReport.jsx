@@ -26,7 +26,7 @@ const ProductionCostReport = () => {
         <div className="page-section">
             <div className="card">
                 <div className="card-header">
-                    <h3>💰 تقرير تكاليف التصنيع</h3>
+                    <h3><i className="fa-solid fa-sack-dollar"></i> تقرير تكاليف التصنيع</h3>
                 </div>
                 
                 <div style={{ padding: '15px 20px', background: 'rgba(var(--metro-blue-rgb), 0.05)', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>

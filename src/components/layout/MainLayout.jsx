@@ -6,6 +6,7 @@ import AlwaysOnDisplay from '../common/AlwaysOnDisplay';
 import ChatService from '../../services/ChatService';
 import { useGlobalUI } from '../common/GlobalUI';
 import FooterInfoBar from './FooterInfoBar';
+import FloatingAiChat from '../common/FloatingAiChat';
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -22,29 +23,8 @@ const MainLayout = () => {
   const [tempIdleTime, setTempIdleTime] = useState('0.5');
   const [tempIdlePin, setTempIdlePin] = useState('');
   const [currentPinDisplay, setCurrentPinDisplay] = useState(localStorage.getItem('pos_idle_pin') || '');
-  const [isOnboarding, setIsOnboarding] = useState(false);
+  
   const location = useLocation();
-
-  useEffect(() => {
-    const checkOnboarding = () => {
-      const onboardingStr = localStorage.getItem('onboardingStatus');
-      if (onboardingStr) {
-        try {
-          const statusObj = JSON.parse(onboardingStr);
-          setIsOnboarding(!statusObj.completed);
-        } catch (e) {}
-      } else {
-        setIsOnboarding(false);
-      }
-    };
-    checkOnboarding();
-    // Also re-check when storage changes
-    const handleStorage = (e) => {
-      if (e.key === 'onboardingStatus') checkOnboarding();
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [location.pathname]);
 
   useEffect(() => {
     isIdleRef.current = isIdle;
@@ -143,7 +123,7 @@ const MainLayout = () => {
       // If message is from someone else and user is NOT on the messages page
       const isSelf = msg.senderId === JSON.parse(localStorage.getItem('pos_user'))?.id;
       if (!isSelf && window.location.pathname !== '/messages') {
-        showToast(`💬 رسالة جديدة من ${msg.senderName}: ${msg.content.substring(0, 30)}${msg.content.length > 30 ? '...' : ''}`, 'info', () => {
+        showToast(` رسالة جديدة من ${msg.senderName}: ${msg.content.substring(0, 30)}${msg.content.length > 30 ? '...' : ''}`, 'info', () => {
           window.location.href = '/messages';
         });
       }
@@ -233,10 +213,10 @@ const MainLayout = () => {
       }
 
       let msg = val === 0 
-        ? '🔴 تم تعطيل شاشة الانتظار التلقائية.' 
-        : `🟢 تم ضبط وقت شاشة الانتظار على ${val} دقيقة.`;
+        ? ' تم تعطيل شاشة الانتظار التلقائية.' 
+        : ` تم ضبط وقت شاشة الانتظار على ${val} دقيقة.`;
       if (tempIdlePin.trim().length >= 4) {
-        msg += ' 🔒 تم تفعيل قفل PIN.';
+        msg += '  تم تفعيل قفل PIN.';
       }
       showToast(msg, 'success');
       resetIdleTimer();
@@ -250,7 +230,7 @@ const MainLayout = () => {
     localStorage.removeItem('pos_idle_pin');
     setCurrentPinDisplay('');
     setTempIdlePin('');
-    showToast('🔓 تم إزالة رمز PIN بنجاح.', 'success');
+    showToast(' تم إزالة رمز PIN بنجاح.', 'success');
   };
 
   const toggleSidebarCollapse = () => {
@@ -263,16 +243,28 @@ const MainLayout = () => {
 
   const handleMenuToggle = () => {
     if (window.innerWidth > 1024) {
-      if (sidebarOpen) {
-        setSidebarOpen(false);
-      } else {
-        setSidebarOpen(true);
-        setIsSidebarCollapsed(false);
-      }
+      setIsSidebarCollapsed(prev => {
+        const val = !prev;
+        localStorage.setItem('sidebar_collapsed', val.toString());
+        return val;
+      });
+      if (!sidebarOpen) setSidebarOpen(true);
     } else {
       setSidebarOpen(!sidebarOpen);
     }
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1024) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen]);
 
   const [impersonationBackup, setImpersonationBackup] = useState(null);
 
@@ -303,15 +295,17 @@ const MainLayout = () => {
   };
 
   return (
-    <div className={`app-layout ${isOnboarding ? 'onboarding-mode' : ''} ${!sidebarOpen ? 'sidebar-hidden' : ''} ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      {!isOnboarding && (
-        <Sidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)} 
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebarCollapse}
-        />
-      )}
+    <div className={`app-layout ${!sidebarOpen ? 'sidebar-hidden' : ''} ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => {
+          if (window.innerWidth <= 1024) {
+            setSidebarOpen(false);
+          }
+        }}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapse}
+      />
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {impersonationBackup && (
           <div style={{
@@ -328,7 +322,7 @@ const MainLayout = () => {
             position: 'relative'
           }}>
             <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
-              ⚠️ أنت الآن تتصفح كمدير للمتجر. أي تعديلات ستحفظ في هذا المتجر.
+              <i className="fa-solid fa-triangle-exclamation"></i> أنت الآن تتصفح كمدير للمتجر. أي تعديلات ستحفظ في هذا المتجر.
             </span>
             <button 
               onClick={handleReturnToSuperAdmin}
@@ -365,9 +359,9 @@ const MainLayout = () => {
           <div className="modal" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 style={{ fontSize: '1.25rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                🛠️ إعدادات شاشة الانتظار (Screensaver)
+                <i className="fa-solid fa-hammer"></i>️ إعدادات شاشة الانتظار (Screensaver)
               </h2>
-              <button className="close-btn" onClick={() => setIsIdleConfigOpen(false)}>✕</button>
+              <button className="close-btn" onClick={() => setIsIdleConfigOpen(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body" style={{ padding: '24px' }}>
               <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem', marginBottom: '20px', lineHeight: '1.6' }}>
@@ -376,7 +370,7 @@ const MainLayout = () => {
               
               {/* Idle Time Section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-                <label style={{ fontSize: '0.9rem', color: 'var(--text-light)', fontWeight: '600' }}>⏱️ وقت الانتظار (بالدقائق):</label>
+                <label style={{ fontSize: '0.9rem', color: 'var(--text-light)', fontWeight: '600' }}><i className="fa-solid fa-stopwatch"></i> وقت الانتظار (بالدقائق):</label>
                 <input
                   type="number"
                   step="0.1"
@@ -415,7 +409,7 @@ const MainLayout = () => {
 
               {/* PIN Section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <label style={{ fontSize: '0.9rem', color: 'var(--text-light)', fontWeight: '600' }}>🔒 رمز PIN لقفل الشاشة:</label>
+                <label style={{ fontSize: '0.9rem', color: 'var(--text-light)', fontWeight: '600' }}><i className="fa-solid fa-lock"></i> رمز PIN لقفل الشاشة:</label>
                 
                 {currentPinDisplay ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -431,7 +425,7 @@ const MainLayout = () => {
                       alignItems: 'center',
                       gap: '8px'
                     }}>
-                      ✅ رمز PIN مفعّل ({currentPinDisplay.length} أرقام)
+                      <i className="fa-solid fa-check"></i> رمز PIN مفعّل ({currentPinDisplay.length} أرقام)
                     </div>
                     <button 
                       className="btn" 
@@ -447,7 +441,7 @@ const MainLayout = () => {
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      🗑️ إزالة
+                      <i className="fa-solid fa-trash"></i> إزالة
                     </button>
                   </div>
                 ) : (
@@ -496,6 +490,7 @@ const MainLayout = () => {
           </div>
         </div>
       )}
+      {/* <FloatingAiChat /> */}
     </div>
   );
 };

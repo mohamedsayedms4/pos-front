@@ -45,7 +45,7 @@ const WorkstationSetup = () => {
         <div className="page-section">
             <div className="card mb-4">
                 <div className="card-header">
-                    <h3>➕ إضافة محطة عمل</h3>
+                    <h3><i className="fa-solid fa-plus"></i> إضافة محطة عمل</h3>
                 </div>
                 <div className="card-body">
                     <form onSubmit={handleSave}>
@@ -77,7 +77,7 @@ const WorkstationSetup = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3>⚙️ محطات العمل والماكينات</h3>
+                    <h3><i className="fa-solid fa-gear"></i> محطات العمل والماكينات</h3>
                 </div>
                 <div className="card-body no-padding">
                     <div className="table-wrapper">

@@ -147,7 +147,7 @@ const CreditNotes = () => {
                         <div className="ret-modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
                             <div className="ret-modal-header">
                                 <h3>إشعار دائن رقم: {activeNote.returnNumber.replace('RET', 'CN')}</h3>
-                                <button className="ret-modal-close" onClick={() => setShowDetails(false)}>✕</button>
+                                <button className="ret-modal-close" onClick={() => setShowDetails(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="ret-modal-body">
                                 <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>

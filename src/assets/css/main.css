@@ -735,6 +735,8 @@ textarea.form-control {
   animation-iteration-count: infinite;
   animation-name: orbit;
   animation-duration: 5.5s;
+  background-color: transparent !important;
+  border-radius: 0 !important;
 }
 
 .spinner .dot:after {
@@ -960,6 +962,14 @@ textarea.form-control {
   /* Professional micro-animation */
 }
 
+.nav-item:hover .nav-icon i {
+  background: linear-gradient(120deg, #121358 35%, #8db3ff 50%, #121358 65%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: icon-shine-sweep 1.5s linear infinite;
+}
+
 .nav-item.active {
   color: var(--metro-blue);
   background: var(--bg-black);
@@ -1162,53 +1172,37 @@ textarea.form-control {
 }
 
 /* Individual premium gradients for topbar buttons on hover */
-.topbar-btn.customize-btn:hover {
-  background: linear-gradient(135deg, #ff007f, #7f00ff);
-  color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(255, 0, 127, 0.35);
-  transform: translateY(-2px) scale(1.08);
+.topbar-btn:hover {
+  background: transparent;
+  transform: translateY(-2px) scale(1.1);
 }
 
-.topbar-btn.msg-btn:hover {
-  background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
-  transform: translateY(-2px) scale(1.08);
+.topbar-btn:hover i {
+  background: linear-gradient(120deg, #121358 35%, #8db3ff 50%, #121358 65%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: icon-shine-sweep 1.5s linear infinite;
 }
 
-.topbar-btn.notif-btn:hover {
-  background: linear-gradient(135deg, #f97316, #ef4444);
-  color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
-  transform: translateY(-2px) scale(1.08);
-}
-
-.topbar-btn.theme-toggle-btn:hover {
-  background: linear-gradient(135deg, #a855f7, #6366f1);
-  color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
-  transform: translateY(-2px) scale(1.08);
-}
-
-/* Customize Button Active State Glow */
+/* Customize Button Active State */
 .topbar-btn.customize-btn.active {
-  background: linear-gradient(135deg, #ff007f, #7f00ff);
-  color: #ffffff !important;
-  box-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
-  animation: pulse-glow 2s infinite ease-in-out;
+  background: transparent;
+}
+.topbar-btn.customize-btn.active i {
+  background: linear-gradient(120deg, #121358 35%, #8db3ff 50%, #121358 65%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: icon-shine-sweep 1.5s linear infinite;
 }
 
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 8px rgba(255, 0, 127, 0.4);
-    transform: scale(1);
+@keyframes icon-shine-sweep {
+  0% {
+    background-position: 200% center;
   }
-
-  50% {
-    box-shadow: 0 0 16px rgba(255, 0, 127, 0.7);
-    transform: scale(1.05);
+  100% {
+    background-position: -200% center;
   }
 }
 
@@ -1444,6 +1438,30 @@ textarea.form-control {
   bottom: -15px;
   right: -10px;
   pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: liveTileIconPulse 10s infinite;
+}
+
+.stat-card:nth-child(even) .stat-icon {
+  animation-delay: 4s;
+}
+
+.stat-card:nth-child(3n) .stat-icon {
+  animation-delay: 2s;
+}
+
+.stat-card:hover .stat-icon {
+  animation: none; /* Stop pulse when hovering */
+  transform: scale(1.3) rotate(-10deg);
+  opacity: 0.3;
+}
+
+@keyframes liveTileIconPulse {
+  0%, 80% { transform: scale(1) rotate(0deg); opacity: 0.15; }
+  85% { transform: scale(1.1) rotate(-5deg); opacity: 0.25; }
+  90% { transform: scale(0.95) rotate(5deg); opacity: 0.1; }
+  95% { transform: scale(1.05) rotate(-2deg); opacity: 0.2; }
+  100% { transform: scale(1) rotate(0deg); opacity: 0.15; }
 }
 
 .stat-card .stat-value {
@@ -2464,21 +2482,18 @@ textarea.form-control {
   animation: metroTileSlideIn 0.35s cubic-bezier(0, 0.9, 0.3, 1) both;
 }
 
-.stat-card:nth-child(1) {
-  animation-delay: 0.05s;
-}
-
-.stat-card:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.stat-card:nth-child(3) {
-  animation-delay: 0.15s;
-}
-
-.stat-card:nth-child(4) {
-  animation-delay: 0.2s;
-}
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.10s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.20s; }
+.stat-card:nth-child(5) { animation-delay: 0.25s; }
+.stat-card:nth-child(6) { animation-delay: 0.30s; }
+.stat-card:nth-child(7) { animation-delay: 0.35s; }
+.stat-card:nth-child(8) { animation-delay: 0.40s; }
+.stat-card:nth-child(9) { animation-delay: 0.45s; }
+.stat-card:nth-child(10) { animation-delay: 0.50s; }
+.stat-card:nth-child(11) { animation-delay: 0.55s; }
+.stat-card:nth-child(12) { animation-delay: 0.60s; }
 
 @keyframes metroTileSlideIn {
   0% {
@@ -2531,7 +2546,9 @@ textarea.form-control {
 
 .stat-card:hover {
   opacity: 1;
-  transform: scale(0.98);
+  /* Windows 8 hover effect: slight brightness, no scale shrink until active */
+  filter: brightness(1.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .stat-card:active,

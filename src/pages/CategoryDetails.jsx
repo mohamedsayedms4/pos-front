@@ -123,7 +123,7 @@ const CategoryDetails = () => {
   if (error || !category) {
     return (
       <div className="page-section empty-state">
-        <div className="empty-icon">⚠️</div>
+        <div className="empty-icon"><i className="fa-solid fa-triangle-exclamation"></i></div>
         <h4>حدث خطأ</h4>
         <p>{error || 'لم يتم العثور على الفئة المطلوبة'}</p>
         <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={() => navigate('/categories')}>العودة للفئات</button>
@@ -137,7 +137,7 @@ const CategoryDetails = () => {
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header" style={{ justifyContent: 'flex-start', gap: '20px', padding: '20px' }}>
           <button className="btn btn-ghost" style={{ padding: '6px 14px', gap: '8px' }} onClick={() => navigate('/categories')}>
-            <span style={{ fontSize: '1.2rem' }}>⬅️</span> العودة للفئات
+            <span style={{ fontSize: '1.2rem' }}><i className="fa-solid fa-arrow-left"></i>️</span> العودة للفئات
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
             <div style={{ 
@@ -158,7 +158,7 @@ const CategoryDetails = () => {
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
               ) : (
-                <span style={{ fontSize: '1.8rem', color: 'white' }}>📁</span>
+                <span style={{ fontSize: '1.8rem', color: 'white' }}><i className="fa-solid fa-folder"></i></span>
               )}
             </div>
             <div>
@@ -180,7 +180,7 @@ const CategoryDetails = () => {
           label="عدد المنتجات الكلي"
           value={totalElements}
           subtitle="الموديلات المسجلة"
-          icon="📦"
+          icon={<i className="fa-solid fa-calculator"></i>}
           defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile 
@@ -188,7 +188,7 @@ const CategoryDetails = () => {
           label="إجمالي القطع في المخزن"
           value={totalStock}
           subtitle="الكمية الفعلية المتوفرة"
-          icon="📊"
+          icon={<i className="fa-solid fa-calculator"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
         />
         <StatTile 
@@ -196,7 +196,7 @@ const CategoryDetails = () => {
           label="قيمة المخزون بسعر الشراء"
           value={`${Number(totalPurchaseValue).toLocaleString()} ج.م`}
           subtitle="تكلفة البضاعة الحالية"
-          icon="📥"
+          icon={<i className="fa-solid fa-cart-shopping"></i>}
           defaults={{ color: '#ff6b6b', size: 'tile-wd-sm', order: 3 }}
         />
         <StatTile 
@@ -204,7 +204,7 @@ const CategoryDetails = () => {
           label="القيمة المتوقعة بسعر البيع"
           value={`${Number(totalSellingValue).toLocaleString()} ج.م`}
           subtitle="العائد المتوقع عند البيع"
-          icon="📤"
+          icon={<i className="fa-solid fa-coins"></i>}
           defaults={{ color: 'purple', size: 'tile-wd-sm', order: 4 }}
         />
       </div>
@@ -217,7 +217,7 @@ const CategoryDetails = () => {
           <div className="card">
             <div className="card-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
               <h3 style={{ fontSize: '1.05rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                📁 الفئات الفرعية التابعة ({subCategories.length})
+                <i className="fa-solid fa-folder"></i> الفئات الفرعية التابعة ({subCategories.length})
               </h3>
             </div>
             <div className="card-body" style={{ padding: '20px' }}>
@@ -239,7 +239,7 @@ const CategoryDetails = () => {
                     }}
                     className="hover-card-effect"
                   >
-                    <div style={{ fontSize: '1.5rem' }}>📁</div>
+                    <div style={{ fontSize: '1.5rem' }}><i className="fa-solid fa-folder"></i></div>
                     <div style={{ overflow: 'hidden' }}>
                       <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-white)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.name}</h4>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>انقر لعرض التفاصيل</span>
@@ -263,7 +263,7 @@ const CategoryDetails = () => {
             gap: '15px'
           }}>
             <h3 style={{ fontSize: '1.05rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              📦 منتجات هذه الفئة ({totalElements})
+              <i className="fa-solid fa-box"></i> منتجات هذه الفئة ({totalElements})
             </h3>
             
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', width: '300px' }}>
@@ -293,7 +293,7 @@ const CategoryDetails = () => {
               </div>
             ) : products.length === 0 ? (
               <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-                <div className="empty-icon" style={{ fontSize: '2.5rem', marginBottom: '10px' }}>📦</div>
+                <div className="empty-icon" style={{ fontSize: '2.5rem', marginBottom: '10px' }}><i className="fa-solid fa-box"></i></div>
                 <h4 style={{ color: 'var(--text-secondary)' }}>لا توجد منتجات</h4>
                 <p style={{ color: 'var(--text-muted)' }}>لم يتم العثور على أي منتج يطابق بحثك داخل هذه الفئة.</p>
               </div>
@@ -328,7 +328,7 @@ const CategoryDetails = () => {
                           {getImageUrl(p) ? (
                             <img src={getImageUrl(p)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <span style={{ fontSize: '1.1rem' }}>📦</span>
+                            <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-box"></i></span>
                           )}
                         </div>
                       </td>
@@ -351,8 +351,8 @@ const CategoryDetails = () => {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          <Link className="btn btn-icon btn-ghost" title="عرض التفاصيل" to={`/products/${p.id}`}>👁️</Link>
-                          <Link className="btn btn-icon btn-ghost" title="تعديل المنتج" to={`/products/edit/${p.id}`}>✏️</Link>
+                          <Link className="btn btn-icon btn-ghost" title="عرض التفاصيل" to={`/products/${p.id}`}><i className="fa-solid fa-eye"></i>️</Link>
+                          <Link className="btn btn-icon btn-ghost" title="تعديل المنتج" to={`/products/edit/${p.id}`}><i className="fa-solid fa-pencil"></i></Link>
                         </div>
                       </td>
                     </tr>

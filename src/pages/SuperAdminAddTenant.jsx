@@ -49,7 +49,7 @@ const SuperAdminAddTenant = () => {
                 password: formData.password,
                 phone: formData.phone,
             });
-            showToast('تم إنشاء المتجر بنجاح بدون OTP ✅', 'success');
+            showToast('تم إنشاء المتجر بنجاح بدون OTP ', 'success');
             navigate('/super-admin/dashboard');
         } catch (error) {
             showToast(error.message || 'فشل في إنشاء المتجر', 'error');

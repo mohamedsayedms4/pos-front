@@ -87,7 +87,7 @@ const LeaveTypes = () => {
         <div className="page-section anim-fade-in">
             <div className="card">
                 <div className="card-header">
-                    <h3>⚙️ إعدادات أنواع الإجازات</h3>
+                    <h3><i className="fa-solid fa-gear"></i> إعدادات أنواع الإجازات</h3>
                     <button className="btn btn-primary" onClick={() => { setEditingId(null); setForm({ nameAr: '', nameEn: '', maxDaysPerYear: 21, isCarryOver: false, isPaid: true, genderRestricted: 'NONE', oncePerLifetime: false, minServiceMonths: 0, includeHolidays: false }); setShowModal(true); }}>
                         + إضافة نوع جديد
                     </button>
@@ -137,7 +137,7 @@ const LeaveTypes = () => {
                         <div className="modal-content anim-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
                             <div className="modal-header">
                                 <h2>{editingId ? 'تعديل نوع إجازة' : 'إضافة نوع إجازة جديد'}</h2>
-                                <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+                                <button className="close-btn" onClick={() => setShowModal(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', padding: '20px' }}>

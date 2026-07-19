@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import '../styles/pages/SettingsPremium.css';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 import StatTile from '../components/common/StatTile';
@@ -36,13 +37,13 @@ const Expenses = () => {
   });
 
   const categories = [
-    { id: 'RENT', label: 'إيجار العقار', icon: '🏠', color: 'var(--metro-orange)' },
-    { id: 'SALARIES', label: 'المرتبات والأجور', icon: '💰', color: 'var(--metro-green)' },
-    { id: 'UTILITIES', label: 'مرافق (كهرباء/مياه)', icon: '💡', color: 'var(--metro-teal)' },
-    { id: 'TRANSPORT', label: 'نقل ومواصلات', icon: '🚛', color: 'var(--metro-purple)' },
-    { id: 'MARKETING', label: 'دعاية وتسويق', icon: '📢', color: 'var(--metro-blue)' },
-    { id: 'MAINTENANCE', label: 'صيانة وتصليح', icon: '🔧', color: 'var(--metro-rose)' },
-    { id: 'GENERAL', label: 'مصروفات عامة', icon: '📝', color: 'var(--text-dim)' }
+    { id: 'RENT', label: 'إيجار العقار', icon: '', color: 'var(--metro-orange)' },
+    { id: 'SALARIES', label: 'المرتبات والأجور', icon: '', color: 'var(--metro-green)' },
+    { id: 'UTILITIES', label: 'مرافق (كهرباء/مياه)', icon: '', color: 'var(--metro-teal)' },
+    { id: 'TRANSPORT', label: 'نقل ومواصلات', icon: '', color: 'var(--metro-purple)' },
+    { id: 'MARKETING', label: 'دعاية وتسويق', icon: '', color: 'var(--metro-blue)' },
+    { id: 'MAINTENANCE', label: 'صيانة وتصليح', icon: '', color: 'var(--metro-rose)' },
+    { id: 'GENERAL', label: 'مصروفات عامة', icon: '', color: 'var(--text-dim)' }
   ];
 
   useEffect(() => {
@@ -119,44 +120,44 @@ const Expenses = () => {
           id="expenses_total_spent"
           label="إجمالي المصروفات المعروضة"
           value={`${totalSpent.toLocaleString()} ج.م`}
-          icon="💰"
+          icon={<i className="fa-solid fa-money-bill-transfer"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm' }}
         />
         <StatTile
           id="expenses_salary_count"
           label="عدد قيود الرواتب"
           value={`${salaryCount} قيد`}
-          icon="👥"
+          icon={<i className="fa-solid fa-calculator"></i>}
           defaults={{ color: 'blue', size: 'tile-sq-sm' }}
         />
         <StatTile
           id="expenses_last"
           label="آخر مصروف تم تسجيله"
           value={expenses.length > 0 ? expenses[0].description.substring(0, 15) + '...' : '---'}
-          icon="📝"
+          icon={<i className="fa-solid fa-money-bill-transfer"></i>}
           defaults={{ color: 'amber', size: 'tile-sq-sm' }}
         />
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h3>🏢 إدارة المصروفات</h3>
-          <div className="toolbar">
+          <h3><i className="fa-solid fa-building"></i> إدارة المصروفات</h3>
+                    <div className="toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
             {isAdmin && (
-                <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '150px', height: '40px' }}>
+                <select className="form-control" value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ flex: '1 1 150px', minWidth: '150px', height: '40px' }}>
                   <option value="">جميع الفروع</option>
                   {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
             )}
             
-            <select className="form-control" value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '180px', height: '40px', padding: '0 10px' }}>
+            <select className="form-control" value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: '1 1 180px', minWidth: '180px', height: '40px', padding: '0 10px' }}>
               <option value="">جميع التصنيفات</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
             </select>
             
-            <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ width: '150px', height: '40px' }} />
+            <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ flex: '1 1 150px', minWidth: '150px', height: '40px' }} />
             
-            <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ width: '150px', height: '40px' }} />
+            <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ flex: '1 1 150px', minWidth: '150px', height: '40px' }} />
 
             <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {Api.can('EXPENSE_CREATE') && (
@@ -168,10 +169,8 @@ const Expenses = () => {
           </div>
         </div>
 
-
-
         <div className="card-body no-padding">
-          <div className="table-wrapper">
+          <div className="table-responsive" style={{ width: "100%", overflowX: "auto" }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -188,12 +187,12 @@ const Expenses = () => {
                   <tr><td colSpan="6" style={{ padding: '80px 0' }}><Loader message="جاري تحميل سجلات المصروفات..." /></td></tr>
                 ) : expenses.length === 0 ? (
                   <tr><td colSpan="6" style={{ padding: '100px 0', textAlign: 'center' }}>
-                      <div style={{ fontSize: '3rem', opacity: 0.2 }}>🔍</div>
+                      <div style={{ fontSize: '3rem', opacity: 0.2 }}><i className="fa-solid fa-magnifying-glass"></i></div>
                       <div style={{ color: 'var(--text-muted)', marginTop: '10px' }}>لا توجد مصروفات مسجلة تطابق هذا الفلتر</div>
                   </td></tr>
                 ) : (
                   expenses.map(exp => {
-                    const cat = categories.find(c => c.id === exp.category) || { label: exp.category, icon: '📄', color: 'var(--text-dim)' };
+                    const cat = categories.find(c => c.id === exp.category) || { label: exp.category, icon: '', color: 'var(--text-dim)' };
                     return (
                         <tr key={exp.id} className="anim-slide-in">
                             <td style={{ fontFamily: 'monospace' }}>{new Date(exp.expenseDate).toLocaleDateString('ar-EG')}</td>
@@ -245,8 +244,8 @@ const Expenses = () => {
           <div className="modal-overlay active anim-fade-in" onClick={() => setShowModal(false)} style={{ zIndex: 100000 }}>
             <div className="modal-content anim-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 30px 60px rgba(0,0,0,0.8)' }}>
                 <div className="modal-header" style={{ borderBottom: '1px solid var(--border-subtle)', padding: '25px' }}>
-                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><span>🖋️</span> إضافة مصروف مالي جديد</h2>
-                    <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><span><i className="fa-solid fa-pen"></i>️</span> إضافة مصروف مالي جديد</h2>
+                    <button className="close-btn" onClick={() => setShowModal(false)}><i className="fa-solid fa-times"></i></button>
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body" style={{ padding: '30px' }}>

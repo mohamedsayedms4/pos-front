@@ -78,7 +78,7 @@ const OrderCashier = () => {
                 customerId: selectedCustomerId || null, discount, paidAmount,
                 items: cart.map(item => ({ productId: item.id, quantity: item.qty, unitPrice: item.price }))
             });
-            toast('تمت عملية البيع بنجاح ✓', 'success');
+            toast('تمت عملية البيع بنجاح ', 'success');
             setCart([]); setDiscount(0); setPaidAmount(0); setSelectedCustomerId('');
         } catch (err) { toast(err.message || 'فشل في إتمام العملية', 'error'); }
         finally { setCheckoutLoading(false); }
@@ -91,7 +91,7 @@ const OrderCashier = () => {
 
                 {/* Connection Status */}
                 <div className="card" style={{ marginBottom: '0', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>⚡ شاشة الكاشير - استقبال الطلبات</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}><i className="fa-solid fa-bolt"></i> شاشة الكاشير - استقبال الطلبات</h3>
                     <div style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
                         background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
@@ -111,7 +111,7 @@ const OrderCashier = () => {
                 {/* Cart Table */}
                 <div className="card pos-cart" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                     <div className="card-header">
-                        <h3>🛒 سلة المشتريات ({cart.length})</h3>
+                        <h3><i className="fa-solid fa-cart-shopping"></i> سلة المشتريات ({cart.length})</h3>
                         <button className="btn btn-danger btn-sm" onClick={() => setCart([])}>مسح السلة</button>
                     </div>
                     <div className="table-wrapper" style={{ flex: 1 }}>
@@ -128,7 +128,7 @@ const OrderCashier = () => {
                             <tbody>
                                 {cart.length === 0 ? (
                                     <tr><td colSpan="5" className="empty-state" style={{ padding: '80px' }}>
-                                        <div className="empty-icon">📡</div>
+                                        <div className="empty-icon"><i className="fa-solid fa-satellite-dish"></i></div>
                                         <h4>بانتظار اختيارات العميل...</h4>
                                         <p>بمجرد أن يختار العميل منتج من شاشته، سيظهر هنا فوراً</p>
                                     </td></tr>
@@ -150,7 +150,7 @@ const OrderCashier = () => {
                                         </td>
                                         <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--text-white)' }}>{(item.price * item.qty).toFixed(2)}</td>
                                         <td style={{ textAlign: 'center' }}>
-                                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--metro-red)', border: 'none' }} onClick={() => removeFromCart(item.id)}>✕</button>
+                                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--metro-red)', border: 'none' }} onClick={() => removeFromCart(item.id)}><i className="fa-solid fa-times"></i></button>
                                         </td>
                                     </tr>
                                 ))}
@@ -216,7 +216,7 @@ const OrderCashier = () => {
                         <button className="btn btn-primary btn-block btn-lg mt-auto"
                             style={{ padding: '24px', fontSize: '1.1rem', fontWeight: 700, marginTop: '20px' }}
                             disabled={checkoutLoading || cart.length === 0} onClick={handleCheckout}>
-                            {checkoutLoading ? 'جاري الحفظ...' : '🖥️ إتمام العملية (CHECK OUT)'}
+                            {checkoutLoading ? 'جاري الحفظ...' : '️ إتمام العملية (CHECK OUT)'}
                         </button>
                     </div>
                 </div>

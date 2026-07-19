@@ -101,7 +101,7 @@ const ShareInvoice = ({ invoice, btnClassName = 'btn-ghost' }) => {
         disabled={shareStatus === 'generating'}
         style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}
       >
-        <span>📤</span>
+        <span><i className="fa-solid fa-upload"></i></span>
         {shareStatus === 'generating' ? 'جاري التجهيز...' : 'مشاركة الفاتورة (PDF)'}
       </button>
 

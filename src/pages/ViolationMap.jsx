@@ -62,7 +62,7 @@ const ViolationMap = () => {
         </button>
         <div>
           <h1 className="page-title" style={{ margin: 0, fontSize: '1.5rem', color: '#ef4444' }}>
-            ⚠️ مخالفة النطاق الجغرافي
+            <i className="fa-solid fa-triangle-exclamation"></i> مخالفة النطاق الجغرافي
           </h1>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-dim)' }}>
             محاولة تسجيل حضور من خارج النطاق الخاص بالفرع

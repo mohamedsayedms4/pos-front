@@ -85,14 +85,14 @@ const Returns = () => {
                         id="ret_refund"
                         label="إجمالي المسترد"
                         value={`${Number(analytics.totalRefund).toLocaleString()} ج.م`}
-                        icon="💰"
+                        icon={<i className="fa-solid fa-calculator"></i>}
                         defaults={{ color: 'crimson', size: 'tile-wd-sm', order: 1 }}
                     />
                     <StatTile 
                         id="ret_count"
                         label="عدد المرتجعات"
                         value={`${analytics.totalCount} عملية`}
-                        icon="🔄"
+                        icon={<i className="fa-solid fa-rotate-left"></i>}
                         defaults={{ color: 'blue', size: 'tile-sq-sm', order: 2 }}
                     />
                 </div>
@@ -100,7 +100,7 @@ const Returns = () => {
                 {/* Main Table Card */}
                 <div className="card">
                     <div className="card-header">
-                        <h3>🔄 سجل مرتجعات المبيعات</h3>
+                        <h3><i className="fa-solid fa-rotate"></i> سجل مرتجعات المبيعات</h3>
                         <div className="toolbar">
                             {isAdmin && (
                               <select className="form-control" value={selectedBranchId} onChange={e => { setSelectedBranchId(e.target.value); setCurrentPage(0); }} style={{ width: '150px', height: '40px' }}>
@@ -129,7 +129,7 @@ const Returns = () => {
                                 <Loader message="جاري التحميل..." />
                             ) : returns.length === 0 ? (
                                 <div className="empty-state">
-                                    <div className="empty-icon">🔄</div>
+                                    <div className="empty-icon"><i className="fa-solid fa-rotate"></i></div>
                                     <h4>لا توجد عمليات مرتجع</h4>
                                 </div>
                             ) : (
@@ -162,7 +162,7 @@ const Returns = () => {
                                                 <td className="hide-tablet" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{r.notes || '—'}</td>
                                                 <td style={{ textAlign: 'center' }}>
                                                     <div className="table-actions" style={{ justifyContent: 'center' }}>
-                                                        <button className="btn btn-icon btn-ghost" onClick={() => openDetails(r)} title="تفاصيل المرتجع">👁️</button>
+                                                        <button className="btn btn-icon btn-ghost" onClick={() => openDetails(r)} title="تفاصيل المرتجع"><i className="fa-solid fa-eye"></i>️</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -198,7 +198,7 @@ const Returns = () => {
                         <div className="modal" style={{ maxWidth: '650px' }}>
                             <div className="modal-header">
                                 <h3>تفاصيل المرتجع: {activeReturn.returnNumber}</h3>
-                                <button className="modal-close" onClick={() => setShowDetails(false)}>✕</button>
+                                <button className="modal-close" onClick={() => setShowDetails(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body no-padding">
                                 <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', marginBottom: '15px' }}>

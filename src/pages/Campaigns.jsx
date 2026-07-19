@@ -16,12 +16,12 @@ const getHtmlWrapper = (text, type = 'default', customHeader = '') => {
     const textHtml = text.split('\n').filter(line => line.trim() !== '').map(line => `<p style="font-size: 16px; margin: 0 0 10px 0;">${line}</p>`).join('');
     
     let headerBg = '#0078D7';
-    let headerText = customHeader || 'رسالة جديدة 📩';
+    let headerText = customHeader || 'رسالة جديدة ';
     
-    if (type === 'promo_eid') { headerBg = '#0078D7'; headerText = 'كل عام وأنتم بخير! 🌙'; }
-    if (type === 'new_arrivals') { headerBg = '#107C10'; headerText = 'اكتشف أحدث منتجاتنا! ✨'; }
-    if (type === 'debt_reminder') { headerBg = '#FF8C00'; headerText = 'تذكير بكشف الحساب 📄'; }
-    if (type === 'supplier_order') { headerBg = '#005A9E'; headerText = 'طلب عرض سعر وتوريد 📦'; }
+    if (type === 'promo_eid') { headerBg = '#0078D7'; headerText = 'كل عام وأنتم بخير! '; }
+    if (type === 'new_arrivals') { headerBg = '#107C10'; headerText = 'اكتشف أحدث منتجاتنا! '; }
+    if (type === 'debt_reminder') { headerBg = '#FF8C00'; headerText = 'تذكير بكشف الحساب '; }
+    if (type === 'supplier_order') { headerBg = '#005A9E'; headerText = 'طلب عرض سعر وتوريد '; }
     
     return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); direction: rtl; text-align: right;">
   <div style="background-color: ${headerBg}; padding: 20px; text-align: center;">
@@ -36,26 +36,26 @@ const getHtmlWrapper = (text, type = 'default', customHeader = '') => {
 const TEMPLATES = [
     {
         id: 'promo_eid',
-        label: '🎉 عروض العيد',
-        title: 'عروض حصرية بمناسبة العيد المجيد! 🎊',
+        label: ' عروض العيد',
+        title: 'عروض حصرية بمناسبة العيد المجيد! ',
         content: 'بمناسبة العيد، يسعدنا أن نقدم لكم خصومات تصل إلى 30% على منتجات مختارة.\n\nزورونا الآن للاستفادة من العروض قبل نفاد الكمية!\n\nكود الخصم: EID30'
     },
     {
         id: 'new_arrivals',
-        label: '📦 تشكيلة جديدة',
-        title: 'وصل حديثاً: تشكيلة جديدة ومميزة! 🌟',
+        label: ' تشكيلة جديدة',
+        title: 'وصل حديثاً: تشكيلة جديدة ومميزة! ',
         content: 'يسعدنا إبلاغكم بوصول تشكيلة جديدة ومميزة لتلبي كافة احتياجاتكم.\n\nتم اختيار هذه المنتجات بعناية لضمان أعلى جودة بأفضل سعر.\n\nتفضل بزيارة الفرع الآن لاكتشاف المزيد.'
     },
     {
         id: 'debt_reminder',
-        label: '💰 تذكير بالمديونية',
-        title: 'تذكير ودي بكشف الحساب 📝',
+        label: ' تذكير بالمديونية',
+        title: 'تذكير ودي بكشف الحساب ',
         content: 'عميلنا العزيز،\n\nنود تذكيركم بلطف بمراجعة كشف حسابكم الأخير وتأكيد الرصيد المتبقي.\n\nنسعد دائماً بخدمتكم وتلبية طلباتكم.\nشكراً لتعاونكم المستمر معنا.'
     },
     {
         id: 'supplier_order',
-        label: '🏭 طلب توريد',
-        title: 'طلب عرض سعر / توريد مواد جديدة 📋',
+        label: ' طلب توريد',
+        title: 'طلب عرض سعر / توريد مواد جديدة ',
         content: 'السادة الموردين الأفاضل، تحية طيبة وبعد،\n\nنرجو منكم موافاتنا بأحدث عروض الأسعار للمواد المطلوبة في أقرب وقت ممكن مع بيان مدة التوريد وطرق الدفع.\n\nفي انتظار ردكم الكريم لبدء إجراءات الاعتماد.\nمع خالص التحيات.'
     }
 ];
@@ -78,7 +78,7 @@ const RecipientPicker = ({ selected, onToggle, onSearch, results, loading, recip
                         transition: 'all .2s',
                     }}
                 >
-                    {t === 'CUSTOMER' ? '🛒 عملاء' : '🏭 موردون'}
+                    {t === 'CUSTOMER' ? ' عملاء' : ' موردون'}
                 </button>
             ))}
         </div>
@@ -121,7 +121,7 @@ const RecipientPicker = ({ selected, onToggle, onSearch, results, loading, recip
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             flexShrink: 0,
                         }}>
-                            {isSelected && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
+                            {isSelected && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}><i className="fa-solid fa-check"></i></span>}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: '500', color: 'var(--text-main)', fontSize: '0.9rem' }}>{item.name}</div>
@@ -145,7 +145,7 @@ const SelectedTags = ({ selected, onRemove }) => (
                 background: 'rgba(0,120,215,0.15)', color: 'var(--metro-blue)',
                 padding: '3px 10px', borderRadius: 20, fontSize: '0.8rem', fontWeight: '500',
             }}>
-                {s.type === 'CUSTOMER' ? '🛒' : '🏭'} {s.name}
+                {s.type === 'CUSTOMER' ? '' : ''} {s.name}
                 <button type="button" onClick={() => onRemove(s.key)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--metro-blue)', lineHeight: 1, padding: 0, fontSize: '1rem' }}>
                     ×
@@ -211,8 +211,8 @@ const CampaignModal = ({ onClose, onSubmit, formData, setFormData, submitting })
         <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) onClose(); }}>
             <div className="modal" style={{ maxWidth: '680px' }}>
                 <div className="modal-header">
-                    <h3>📣 إنشاء حملة تسويقية جديدة</h3>
-                    <button type="button" className="modal-close" onClick={onClose}>✕</button>
+                    <h3><i className="fa-solid fa-bullhorn"></i> إنشاء حملة تسويقية جديدة</h3>
+                    <button type="button" className="modal-close" onClick={onClose}><i className="fa-solid fa-times"></i></button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -220,7 +220,7 @@ const CampaignModal = ({ onClose, onSubmit, formData, setFormData, submitting })
                         {/* Templates Selector */}
                         <div className="form-group" style={{ marginBottom: 20 }}>
                             <label style={{ display: 'block', marginBottom: 12, fontWeight: 600, color: 'var(--text-light)', fontSize: '0.95rem' }}>
-                                ✨ قوالب سريعة (اختر لملء الحقول تلقائياً)
+                                <i className="fa-solid fa-wand-magic-sparkles"></i> قوالب سريعة (اختر لملء الحقول تلقائياً)
                             </label>
                             <div style={{ 
                                 display: 'grid', 
@@ -279,9 +279,9 @@ const CampaignModal = ({ onClose, onSubmit, formData, setFormData, submitting })
                             <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>قناة الإرسال</label>
                             <select className="form-control" value={formData.channel}
                                 onChange={e => setFormData({ ...formData, channel: e.target.value })}>
-                                <option value="EMAIL">📧 بريد إلكتروني (Email)</option>
-                                <option value="SMS" disabled>📱 SMS - قريباً</option>
-                                <option value="WHATSAPP" disabled>💬 واتساب - قريباً</option>
+                                <option value="EMAIL"><i className="fa-solid fa-envelope-open-text"></i> بريد إلكتروني (Email)</option>
+                                <option value="SMS" disabled><i className="fa-solid fa-mobile-screen"></i> SMS - قريباً</option>
+                                <option value="WHATSAPP" disabled><i className="fa-solid fa-comment-dots"></i> واتساب - قريباً</option>
                             </select>
                         </div>
 
@@ -290,8 +290,8 @@ const CampaignModal = ({ onClose, onSubmit, formData, setFormData, submitting })
                             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>المستلمون</label>
                             <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
                                 {[
-                                    { value: 'broadcast', label: '📢 إرسال جماعي' },
-                                    { value: 'specific', label: '🎯 اختيار يدوي' },
+                                    { value: 'broadcast', label: ' إرسال جماعي' },
+                                    { value: 'specific', label: ' اختيار يدوي' },
                                 ].map(opt => (
                                     <button key={opt.value} type="button"
                                         onClick={() => setMode(opt.value)}
@@ -309,9 +309,9 @@ const CampaignModal = ({ onClose, onSubmit, formData, setFormData, submitting })
                             {mode === 'broadcast' ? (
                                 <select className="form-control" value={formData.targetAudience}
                                     onChange={e => setFormData({ ...formData, targetAudience: e.target.value })}>
-                                    <option value="ALL">👥 الكل (عملاء + موردون)</option>
-                                    <option value="CUSTOMERS">🛒 العملاء فقط</option>
-                                    <option value="SUPPLIERS">🏭 الموردون فقط</option>
+                                    <option value="ALL"><i className="fa-solid fa-users"></i> الكل (عملاء + موردون)</option>
+                                    <option value="CUSTOMERS"><i className="fa-solid fa-cart-shopping"></i> العملاء فقط</option>
+                                    <option value="SUPPLIERS"><i className="fa-solid fa-industry"></i> الموردون فقط</option>
                                 </select>
                             ) : (
                                 <>
@@ -337,7 +337,7 @@ const CampaignModal = ({ onClose, onSubmit, formData, setFormData, submitting })
                                     )}
                                     {selectedRecipients.length === 0 && (
                                         <p style={{ marginTop: 8, fontSize: '0.82rem', color: '#ef4444' }}>
-                                            ⚠️ اختر مستلماً واحداً على الأقل
+                                            <i className="fa-solid fa-triangle-exclamation"></i> اختر مستلماً واحداً على الأقل
                                         </p>
                                     )}
                                 </>
@@ -348,7 +348,7 @@ const CampaignModal = ({ onClose, onSubmit, formData, setFormData, submitting })
                     <div className="modal-footer">
                         <button type="button" className="btn btn-ghost" onClick={onClose} disabled={submitting}>إلغاء</button>
                         <button type="submit" className="btn btn-primary" disabled={submitting || (mode === 'specific' && selectedRecipients.length === 0)}>
-                            {submitting ? '⏳ جاري الإرسال...' : '🚀 إرسال الحملة الآن'}
+                            {submitting ? ' جاري الإرسال...' : ' إرسال الحملة الآن'}
                         </button>
                     </div>
                 </form>
@@ -444,7 +444,7 @@ const Campaigns = () => {
 
             const res = await CommunicationApi.createCampaign(payload);
             if (res && (res.success || res.id)) {
-                toast('✅ تم إنشاء الحملة وبدأ الإرسال في الخلفية!', 'success');
+                toast(' تم إنشاء الحملة وبدأ الإرسال في الخلفية!', 'success');
                 setShowModal(false);
                 setFormData({ title: '', content: '', channel: 'EMAIL', targetAudience: 'ALL', templateId: 'default' });
                 
@@ -576,35 +576,35 @@ const Campaigns = () => {
                         id="camp_total"
                         label="إجمالي الحملات"
                         value={stats.totalCampaigns || 0}
-                        icon="📣"
+                        icon={<i className="fa-solid fa-calculator"></i>}
                         defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
                     />
                     <StatTile
                         id="camp_success"
                         label="إجمالي الرسائل الناجحة"
                         value={stats.totalSuccessful || 0}
-                        icon="✅"
+                        icon={<i className="fa-solid fa-calculator"></i>}
                         defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
                     />
                     <StatTile
                         id="camp_completed"
                         label="حملات اكتملت"
                         value={stats.completedCampaigns || 0}
-                        icon="📈"
+                        icon={<i className="fa-solid fa-chart-simple"></i>}
                         defaults={{ color: 'purple', size: 'tile-sq-sm', order: 3 }}
                     />
                     <StatTile
                         id="camp_pending"
                         label="حملات قيد الإرسال/الانتظار"
                         value={stats.pendingCampaigns || 0}
-                        icon="⏳"
+                        icon={<i className="fa-solid fa-chart-simple"></i>}
                         defaults={{ color: 'amber', size: 'tile-sq-sm', order: 4 }}
                     />
                 </div>
 
                 <div className="card">
                     <div className="card-header">
-                        <h3>📣 الحملات التسويقية والرسائل <span className="badge badge-info" style={{ marginRight: '8px', borderRadius: 20 }}>{totalElements} حملة</span></h3>
+                        <h3><i className="fa-solid fa-bullhorn"></i> الحملات التسويقية والرسائل <span className="badge badge-info" style={{ marginRight: '8px', borderRadius: 20 }}>{totalElements} حملة</span></h3>
                         <div className="toolbar">
                             <div className="search-input">
                                 <input
@@ -675,7 +675,7 @@ const Campaigns = () => {
                                     {campaigns.length === 0 && (
                                         <tr>
                                             <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                                                <div style={{ fontSize: '2rem', marginBottom: 8 }}>📭</div>
+                                                <div style={{ fontSize: '2rem', marginBottom: 8 }}><i className="fa-solid fa-mailbox"></i></div>
                                                 {searchTerm ? 'لا توجد نتائج تطابق البحث' : 'لا توجد حملات حتى الآن — ابدأ أول حملة!'}
                                             </td>
                                         </tr>

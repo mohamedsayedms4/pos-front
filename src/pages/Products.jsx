@@ -13,47 +13,9 @@ import html2pdf from 'html2pdf.js';
 import SingleProductPdf from '../components/pdf/SingleProductPdf';
 import { useExport } from '../utils/useExport';
 import ExportProgressModal from '../components/ExportProgressModal';
-import { Joyride, STATUS } from 'react-joyride';
 
-const StartTourBeacon = ({ beaconProps }) => {
-    return (
-        <>
-            <style dangerouslySetInnerHTML={{__html: `
-                @keyframes pulseBeacon {
-                    0% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
-                    50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.7); }
-                    100% { transform: scale(1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); }
-                }
-            `}} />
-            <button 
-                {...beaconProps}
-                style={{
-                    background: '#0B1354',
-                    color: '#ffffff',
-                    border: '2px solid #3B82F6',
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                    borderRadius: '30px',
-                    fontFamily: 'Cairo, sans-serif',
-                    fontWeight: '800',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    whiteSpace: 'nowrap',
-                    position: 'relative',
-                    zIndex: 9999,
-                    animation: 'pulseBeacon 2s infinite ease-in-out',
-                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)'
-                }}
-            >
-                ابدأ الجولة الإرشادية للنظام
-            </button>
-        </>
-    );
-};
+
+
 
 
 
@@ -92,75 +54,7 @@ const Products = () => {
   });
   const [categoryFilter, setCategoryFilter] = useState(categoryId || '');
 
-  // Tour State
-  const [runTour, setRunTour] = useState(false);
 
-  useEffect(() => {
-    if (loading) return;
-    const checkTour = async () => {
-        let onboarding = null;
-        const onboardingStr = localStorage.getItem('onboardingStatus');
-        if (onboardingStr) {
-            try { onboarding = JSON.parse(onboardingStr); } catch(e){}
-        }
-        
-        if (!onboarding) {
-            try {
-                const res = await Api.get('/onboarding/status');
-                onboarding = res.data || res;
-                if (onboarding) {
-                    localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
-                }
-            } catch(e){}
-        }
-        
-        if (onboarding && (onboarding.hasProduct || onboarding.isCompleted || onboarding.completed)) {
-            return;
-        }
-
-        if (!localStorage.getItem('tour_products_list_v3')) {
-            if (data.length === 0) {
-                setTimeout(() => {
-                    setRunTour(true);
-                }, 500); 
-            } else {
-                localStorage.setItem('tour_products_list_v3', 'true');
-            }
-        }
-    };
-    checkTour();
-  }, [loading, data.length]);
-
-  const handleJoyrideCallback = (data) => {
-      const { status, type } = data;
-      const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
-      
-      if (finishedStatuses.includes(status) || type === 'tour:end') {
-          setRunTour(false);
-          localStorage.setItem('tour_products_list_v3', 'true');
-      }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === '2') {
-            e.preventDefault();
-            setRunTour(false);
-            localStorage.setItem('tour_products_list_v3', 'true');
-            toast('تم تخطي الجولة الإرشادية للنظام', 'info');
-        }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toast]);
-
-  const tourSteps = [
-      {
-          target: '.tour-add-product',
-          content: 'ممتاز! الآن يمكنك البدء في إضافة أول منتج ستبيعه للعملاء. اضغط هنا!',
-          placement: 'bottom',
-      }
-  ];
 
   useEffect(() => {
     setCategoryFilter(categoryId || '');
@@ -299,7 +193,7 @@ const Products = () => {
               `;
         } else if (templateId === '5') {
           templateHtml = `
-                <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;">🏷️ ${tenantName}</div>
+                <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;"> ${tenantName}</div>
                 <div class="product-name">${nameStr}</div>
                 <div class="product-price">${priceStr}</div>
                 <img src="${dataUrl}" class="barcode-img" />
@@ -637,30 +531,7 @@ const Products = () => {
 
   return (
     <>
-      <Joyride
-          steps={tourSteps}
-          run={runTour}
-          beaconComponent={StartTourBeacon}
-          continuous={true}
-          showProgress={true}
-          showSkipButton={true}
-          disableOverlayClose={true}
-          spotlightClicks={true}
-          callback={handleJoyrideCallback}
-          styles={{
-              options: {
-                  primaryColor: '#3B82F6',
-                  backgroundColor: '#0B1354',
-                  textColor: '#ffffff',
-                  arrowColor: '#0B1354',
-                  zIndex: 1000,
-              },
-              tooltipContainer: { textAlign: 'right' },
-              buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
-              buttonBack: { marginRight: 10, outline: 'none', color: '#a0aec0', fontFamily: 'Cairo, sans-serif' }
-          }}
-          locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
-      />
+
       <style>{`
         /* Responsive CSS Overrides for Products Page */
         @media (max-width: 1024px) {
@@ -772,35 +643,35 @@ const Products = () => {
             id="prod_total"
             label="إجمالي المنتجات"
             value={stats?.totalProducts || 0}
-            icon="📦"
+            icon={<i className="fa-solid fa-calculator"></i>}
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
           <StatTile
             id="prod_capital"
             label="قيمة المخزون (ج.م)"
             value={(stats?.totalInventoryCapital || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            icon="💰"
+            icon={<i className="fa-solid fa-coins"></i>}
             defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
           />
           <StatTile
             id="prod_profit"
             label="الأرباح المتوقعة"
             value={(stats?.totalExpectedProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            icon="📈"
+            icon={<i className="fa-solid fa-chart-line"></i>}
             defaults={{ color: 'purple', size: 'tile-wd-sm', order: 3 }}
           />
           <StatTile
             id="prod_sales"
             label="إجمالي المبيعات"
             value={(stats?.totalRealizedSales || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            icon="🛒"
+            icon={<i className="fa-solid fa-bag-shopping"></i>}
             defaults={{ color: 'amber', size: 'tile-wd-sm', order: 4 }}
           />
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h3>📦 إدارة المنتجات</h3>
+            <h3><i className="fa-solid fa-box"></i> إدارة المنتجات</h3>
             <div className="toolbar">
               <div className="search-input">
 
@@ -824,8 +695,8 @@ const Products = () => {
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                   style={{ width: '180px', height: '40px', padding: '0 10px' }}
                 >
-                  <option value="">🏢 كل الفروع</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>📍 {b.name}</option>)}
+                  <option value=""><i className="fa-solid fa-building"></i> كل الفروع</option>
+                  {branches.map(b => <option key={b.id} value={b.id}><i className="fa-solid fa-location-dot"></i> {b.name}</option>)}
                 </select>
               )}
 
@@ -857,13 +728,13 @@ const Products = () => {
 
               <div className="toolbar-actions" style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportState.isOpen || data.length === 0}>
-                  {exportState.isOpen ? '⏳' : '📊'} إكسيل
+                  {exportState.isOpen ? '' : ''} إكسيل
                 </button>
                 <button className="btn btn-secondary" onClick={handleExportPdf} disabled={exportState.isOpen || data.length === 0}>
-                  {exportState.isOpen ? '⏳' : '📄'} PDF
+                  {exportState.isOpen ? '' : ''} PDF
                 </button>
                 <button className="btn btn-secondary" onClick={() => navigate('/settings/print')} title="إعدادات الطباعة والقوالب">
-                  ⚙️
+                  <i className="fa-solid fa-gear"></i>
                 </button>
                 {Api.can('PRODUCT_WRITE') && (
                   <button className="btn btn-primary tour-add-product" onClick={() => {
@@ -883,7 +754,7 @@ const Products = () => {
                 <Loader message="جاري تحميل المنتجات..." />
               ) : filteredItems.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">📦</div>
+                  <div className="empty-icon"><i className="fa-solid fa-box"></i></div>
                   <h4>لا توجد منتجات</h4>
                   <p>قم بإضافة منتجات جديدة للبدء</p>
                 </div>
@@ -912,7 +783,7 @@ const Products = () => {
                             {getImageUrl(p) ? (
                               <img src={getImageUrl(p)} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
                             ) : (
-                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📦</div>
+                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}><i className="fa-solid fa-box"></i></div>
                             )}
                           </Link>
                         </td>
@@ -938,7 +809,7 @@ const Products = () => {
                             </div>
                             {p.onlineInventory != null && (
                               <div style={{ display: 'inline-block', fontSize: '0.75rem', background: 'var(--brand-primary)', color: 'white', padding: '2px 6px', borderRadius: '4px', textAlign: 'center', width: 'fit-content' }}>
-                                🌐 أونلاين
+                                <i className="fa-solid fa-globe"></i> أونلاين
                               </div>
                             )}
                           </div>
@@ -957,8 +828,8 @@ const Products = () => {
                                 <rect x="19" y="5" width="3" height="14" />
                               </svg>
                             </button>
-                            <button className="btn btn-icon btn-ghost" onClick={() => handleDownloadSinglePdf(p)} title="تنزيل كـ PDF">📄</button>
-                            <button className="btn btn-icon btn-ghost" onClick={() => openStockModal(p)} title="توزيع المخزون">🏭</button>
+                            <button className="btn btn-icon btn-ghost" onClick={() => handleDownloadSinglePdf(p)} title="تنزيل كـ PDF"><i className="fa-solid fa-file-lines"></i></button>
+                            <button className="btn btn-icon btn-ghost" onClick={() => openStockModal(p)} title="توزيع المخزون"><i className="fa-solid fa-industry"></i></button>
                             {Api.can('PRODUCT_WRITE') && (
                               p.onlineInventory != null ? (
                                 <button className="btn btn-icon btn-ghost" onClick={() => handleRemoveFromOnlineStore(p.id, p.name)} title="إزالة من المتجر الإلكتروني" style={{ color: 'var(--metro-red)' }}>
@@ -970,8 +841,8 @@ const Products = () => {
                                 </button>
                               )
                             )}
-                            {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/products/edit/${p.id}`)} title="تعديل">✏️</button>}
-                            {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" onClick={() => handleDelete(p.id, p.name)} title="حذف">🗑️</button>}
+                            {Api.can('PRODUCT_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/products/edit/${p.id}`)} title="تعديل"><i className="fa-solid fa-pencil"></i></button>}
+                            {Api.can('PRODUCT_DELETE') && <button className="btn btn-icon btn-ghost" onClick={() => handleDelete(p.id, p.name)} title="حذف"><i className="fa-solid fa-trash"></i></button>}
                           </div>
                         </td>
                       </tr>
@@ -1038,8 +909,8 @@ const Products = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowStockModal(false); }}>
             <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
-                <h3>📦 توزيع المنتج: {stockProduct?.name}</h3>
-                <button className="modal-close" onClick={() => setShowStockModal(false)}>✕</button>
+                <h3><i className="fa-solid fa-box"></i> توزيع المنتج: {stockProduct?.name}</h3>
+                <button className="modal-close" onClick={() => setShowStockModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="stockForm" onSubmit={handleUpdateStock}>
@@ -1084,8 +955,8 @@ const Products = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setPrintQtyModalOpen(false); }}>
             <div className="modal" style={{ maxWidth: '400px' }}>
               <div className="modal-header">
-                <h3>🖨️ طباعة ملصقات الباركود</h3>
-                <button className="modal-close" onClick={() => setPrintQtyModalOpen(false)}>✕</button>
+                <h3><i className="fa-solid fa-print"></i>️ طباعة ملصقات الباركود</h3>
+                <button className="modal-close" onClick={() => setPrintQtyModalOpen(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="printQtyForm" onSubmit={executePrint}>
@@ -1123,8 +994,8 @@ const Products = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowOnlineModal(false); }}>
             <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
-                <h3>🌐 إضافة للمتجر الإلكتروني: {onlineProduct?.name}</h3>
-                <button className="modal-close" onClick={() => setShowOnlineModal(false)}>✕</button>
+                <h3><i className="fa-solid fa-globe"></i> إضافة للمتجر الإلكتروني: {onlineProduct?.name}</h3>
+                <button className="modal-close" onClick={() => setShowOnlineModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="onlineForm" onSubmit={handlePublishToOnlineStore}>

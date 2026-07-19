@@ -153,7 +153,7 @@ const AlwaysOnDisplay = () => {
                         <div className="aod-notifications">
                             {unreadCount > 0 && (
                                 <div className="aod-notif-item">
-                                    <span className="aod-notif-icon">🔔</span>
+                                    <span className="aod-notif-icon"><i className="fa-solid fa-bell"></i></span>
                                     <span className="aod-notif-badge">{unreadCount}</span>
                                 </div>
                             )}
@@ -168,7 +168,7 @@ const AlwaysOnDisplay = () => {
                     
                     {hasPin && (
                         <div className="aod-lock-hint" style={{ marginTop: '20px', fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', animation: 'pulse 2s infinite' }}>
-                            🔒 الشاشة مؤمنة. انقر أو اضغط أي مفتاح لإدخال رمز PIN
+                            <i className="fa-solid fa-lock"></i> الشاشة مؤمنة. انقر أو اضغط أي مفتاح لإدخال رمز PIN
                         </div>
                     )}
                 </div>
@@ -176,7 +176,7 @@ const AlwaysOnDisplay = () => {
                 <div className="aod-keypad-container" onClick={(e) => e.stopPropagation()}>
                     <div className="aod-keypad-card" ref={keypadRef}>
                         <div className="aod-keypad-header">
-                            <span className="aod-lock-icon">🔒</span>
+                            <span className="aod-lock-icon"><i className="fa-solid fa-lock"></i></span>
                             <h3>أدخل رمز PIN لإلغاء القفل</h3>
                             <p>الشاشة مقفلة لتأمين جلستك النشطة</p>
                         </div>

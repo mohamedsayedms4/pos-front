@@ -43,10 +43,10 @@ const MrpDashboard = () => {
         <div className="page-section">
             <div className="card">
                 <div className="card-header">
-                    <h3>📊 تخطيط الاحتياجات (MRP)</h3>
+                    <h3><i className="fa-solid fa-chart-column"></i> تخطيط الاحتياجات (MRP)</h3>
                     <div className="toolbar">
                         <button type="button" className="btn btn-secondary" onClick={fetchRequirements}>
-                            🔄 تحديث البيانات
+                            <i className="fa-solid fa-rotate"></i> تحديث البيانات
                         </button>
                     </div>
                 </div>

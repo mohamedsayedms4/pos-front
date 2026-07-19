@@ -17,10 +17,6 @@ const Customers = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const isAdmin = Api.isAdminOrBranchManager();
-  const [showModal, setShowModal] = useState(false);
-  const [currentCustomer, setCurrentCustomer] = useState({ name: '', phone: '', email: '', address: '', branchIds: [] });
-  const [formErrors, setFormErrors] = useState({});
-  const [isEditing, setIsEditing] = useState(false);
   const { toast, confirm } = useGlobalUI();
   const [query, setQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
@@ -66,28 +62,7 @@ const Customers = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setFormErrors({});
-    try {
-      if (isEditing) {
-        await Api.updateCustomer(currentCustomer.id, currentCustomer);
-        toast('تم تحديث بيانات العميل بنجاح', 'success');
-      } else {
-        await Api.createCustomer(currentCustomer);
-        toast('تم إضافة العميل بنجاح', 'success');
-      }
-      setShowModal(false);
-      loadCustomers(currentPage, pageSize, query);
-    } catch (err) {
-      if (err.errors) {
-        setFormErrors(err.errors);
-        toast(err.message || 'يرجى تصحيح الأخطاء في الحقول المشار إليها', 'error');
-      } else {
-        toast(err.message, 'error');
-      }
-    }
-  };
+
 
   const handleDelete = (id) => {
     confirm('هل أنت متأكد من حذف هذا العميل؟', async () => {
@@ -102,28 +77,11 @@ const Customers = () => {
   };
 
   const openAddModal = () => {
-    setCurrentCustomer({ name: '', phone: '', email: '', address: '', branchIds: [] });
-    setFormErrors({});
-    setIsEditing(false);
-    setShowModal(true);
+    navigate('/customers/add');
   };
 
-  const openEditModal = async (customer) => {
-    setLoading(true);
-    try {
-      const fullCustomer = await Api.getCustomer(customer.id);
-      setCurrentCustomer({
-        ...fullCustomer,
-        branchIds: fullCustomer.branches ? fullCustomer.branches.map(b => b.id) : []
-      });
-      setFormErrors({});
-      setIsEditing(true);
-      setShowModal(true);
-    } catch (err) {
-      toast(err.message || 'فشل في جلب بيانات العميل', 'error');
-    } finally {
-      setLoading(false);
-    }
+  const openEditModal = (customer) => {
+    navigate(`/customers/edit/${customer.id}`);
   };
 
   const handleViewDebt = async (customerId) => {
@@ -179,7 +137,7 @@ const Customers = () => {
         const textHtml = textContent.split('\n').filter(line => line.trim() !== '').map(line => `<p style="font-size: 16px; margin: 0 0 10px 0;">${line}</p>`).join('');
         const finalContent = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); direction: rtl; text-align: right;">
   <div style="background-color: #f59e0b; padding: 20px; text-align: center;">
-    <h2 style="color: #ffffff; margin: 0; font-size: 24px;">تذكير بكشف الحساب 📄</h2>
+    <h2 style="color: #ffffff; margin: 0; font-size: 24px;">تذكير بكشف الحساب </h2>
   </div>
   <div style="padding: 24px; background-color: #ffffff; color: #374151; line-height: 1.6;">
     ${textHtml}
@@ -187,7 +145,7 @@ const Customers = () => {
 </div>`;
 
         await CommunicationApi.createCampaign({
-           title: 'تذكير ودي بكشف الحساب 📝',
+           title: 'تذكير ودي بكشف الحساب ',
            content: finalContent,
            channel: 'EMAIL',
            targetAudience: 'SPECIFIC',
@@ -277,28 +235,28 @@ const Customers = () => {
             id="cust_total"
             label="إجمالي العملاء"
             value={totalElements}
-            icon="👥"
+            icon={<i className="fa-solid fa-users"></i>}
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
           <StatTile
             id="cust_active"
             label="نشط بالمزامنة"
             value={customers.length}
-            icon="✅"
+            icon={<i className="fa-solid fa-check-circle"></i>}
             defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
           />
           <StatTile
             id="cust_recent"
             label="انضموا مؤخراً"
             value="0"
-            icon="🕒"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'amber', size: 'tile-sq-sm', order: 3 }}
           />
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h3>👥 إدارة العملاء</h3>
+            <h3><i className="fa-solid fa-users"></i> إدارة العملاء</h3>
             <div className="toolbar">
               <div className="search-input">
                 <input
@@ -322,12 +280,12 @@ const Customers = () => {
               )}
 
               <div className="toolbar-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {Api.can('CUSTOMER_READ') && <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportState.isOpen} title="تصدير إلى إكسيل">📊 إكسيل</button>}
+                {Api.can('CUSTOMER_READ') && <button className="btn btn-secondary" onClick={handleExportExcel} disabled={exportState.isOpen} title="تصدير إلى إكسيل"><i className="fa-solid fa-chart-column"></i> إكسيل</button>}
                 {Api.can('CUSTOMER_WRITE') !== false && (
                   <>
                     <input type="file" id="customerExcelInput" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
-                    <button className="btn btn-secondary" onClick={handleDownloadTemplate} title="تحميل قالب الاستيراد">📄 قالب</button>
-                    <button className="btn btn-secondary" onClick={() => document.getElementById('customerExcelInput').click()} title="استيراد من إكسيل">📤 استيراد</button>
+                    <button className="btn btn-secondary" onClick={handleDownloadTemplate} title="تحميل قالب الاستيراد"><i className="fa-solid fa-file-lines"></i> قالب</button>
+                    <button className="btn btn-secondary" onClick={() => document.getElementById('customerExcelInput').click()} title="استيراد من إكسيل"><i className="fa-solid fa-upload"></i> استيراد</button>
                     <button className="btn btn-primary" onClick={openAddModal}>
                       <span>+</span> عميل جديد
                     </button>
@@ -343,7 +301,7 @@ const Customers = () => {
                 <Loader message="جاري جلب البيانات..." />
               ) : customers.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">👥</div>
+                  <div className="empty-icon"><i className="fa-solid fa-users"></i></div>
                   <h4>لا يوجد عملاء</h4>
                 </div>
               ) : (
@@ -378,15 +336,15 @@ const Customers = () => {
                         </td>
                         <td style={{ textAlign: 'center' }}>
                           <div className="table-actions" style={{ justifyContent: 'center' }}>
-                            <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/customers/${c.id}`)} title="عرض التفاصيل">👁️</button>
+                            <button className="btn btn-icon btn-ghost" onClick={() => navigate(`/customers/${c.id}`)} title="عرض التفاصيل"><i className="fa-solid fa-eye"></i>️</button>
                             {Number(c.balance) > 0 && Api.can('TREASURY_WRITE') && (
                               <>
-                                <button className="btn btn-icon btn-ghost" style={{ color: '#f59e0b' }} onClick={() => handleSendDebtMessage(c)} title="إرسال رسالة تذكير">📩</button>
-                                <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-green)' }} onClick={() => handleViewDebt(c.id)} title="تحصيل دفع">💰</button>
+                                <button className="btn btn-icon btn-ghost" style={{ color: '#f59e0b' }} onClick={() => handleSendDebtMessage(c)} title="إرسال رسالة تذكير"><i className="fa-solid fa-envelope"></i></button>
+                                <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-green)' }} onClick={() => handleViewDebt(c.id)} title="تحصيل دفع"><i className="fa-solid fa-sack-dollar"></i></button>
                               </>
                             )}
-                            {Api.can('CUSTOMER_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => openEditModal(c)} title="تعديل">✏️</button>}
-                            {Api.can('CUSTOMER_DELETE') && <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => handleDelete(c.id)} title="حذف">🗑</button>}
+                            {Api.can('CUSTOMER_WRITE') && <button className="btn btn-icon btn-ghost" onClick={() => openEditModal(c)} title="تعديل"><i className="fa-solid fa-pencil"></i></button>}
+                            {Api.can('CUSTOMER_DELETE') && <button className="btn btn-icon btn-ghost" style={{ color: 'var(--metro-red)' }} onClick={() => handleDelete(c.id)} title="حذف"><i className="fa-solid fa-trash"></i></button>}
                           </div>
                         </td>
                       </tr>
@@ -418,69 +376,6 @@ const Customers = () => {
       <ExportProgressModal exportState={exportState} onClose={closeExportModal} />
 
       {/* --- Modals --- */}
-      {showModal && (
-        <ModalContainer>
-          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowModal(false); }}>
-            <div className="modal" style={{ maxWidth: '600px' }}>
-              <div className="modal-header">
-                <h3>{isEditing ? 'تعديل بيانات عميل' : 'إضافة عميل جديد'}</h3>
-                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
-              </div>
-              <form onSubmit={handleSave}>
-                <div className="modal-body">
-                  <div className="form-group">
-                    <label>اسم العميل *</label>
-                    <input type="text" className="form-control" required value={currentCustomer.name} onChange={e => setCurrentCustomer({ ...currentCustomer, name: e.target.value })} />
-                    {formErrors.name && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.name}</span>}
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>رقم الهاتف</label>
-                      <input type="text" className="form-control" value={currentCustomer.phone} onChange={e => setCurrentCustomer({ ...currentCustomer, phone: e.target.value })} />
-                      {formErrors.phone && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.phone}</span>}
-                    </div>
-                    <div className="form-group">
-                      <label>البريد الإلكتروني</label>
-                      <input type="email" className="form-control" value={currentCustomer.email} onChange={e => setCurrentCustomer({ ...currentCustomer, email: e.target.value })} />
-                      {formErrors.email && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.email}</span>}
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>العنوان التفصيلي</label>
-                    <textarea className="form-control" rows="2" value={currentCustomer.address} onChange={e => setCurrentCustomer({ ...currentCustomer, address: e.target.value })} />
-                    {formErrors.address && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.address}</span>}
-                  </div>
-                  <div className="form-group">
-                    <label>الفروع المرتبطة *</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', background: 'var(--bg-elevated)', padding: '15px', borderRadius: '8px', marginTop: '5px' }}>
-                      {branches.map(branch => (
-                        <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={currentCustomer.branchIds?.includes(branch.id)} 
-                            onChange={(e) => {
-                              const newIds = e.target.checked 
-                                ? [...(currentCustomer.branchIds || []), branch.id]
-                                : (currentCustomer.branchIds || []).filter(id => id !== branch.id);
-                              setCurrentCustomer({ ...currentCustomer, branchIds: newIds });
-                            }} 
-                          />
-                          {branch.name}
-                        </label>
-                      ))}
-                    </div>
-                    {formErrors.branchIds && <span style={{ color: 'var(--metro-red)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{formErrors.branchIds}</span>}
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
-                  <button type="submit" className="btn btn-primary">{isEditing ? 'تحديث' : 'إضافة'}</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </ModalContainer>
-      )}
 
       {showDebtModal && (
         <ModalContainer>
@@ -488,7 +383,7 @@ const Customers = () => {
             <div className="modal" style={{ maxWidth: '700px' }}>
               <div className="modal-header">
                 <h3>كشف حساب: {debtSummary?.customerName}</h3>
-                <button className="modal-close" onClick={() => setShowDebtModal(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowDebtModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 {debtSummary && (
@@ -548,7 +443,7 @@ const Customers = () => {
                   <button className={`btn btn-sm ${historyTab === 'pos' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'pos')}>كاشير</button>
                   <button className={`btn btn-sm ${historyTab === 'online' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => handleViewHistory(selectedHistoryCustomer, 0, 'online')}>أونلاين</button>
                 </div>
-                <button className="modal-close" onClick={() => setShowHistoryModal(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowHistoryModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body" style={{ minHeight: '300px' }}>
                 <div className="table-wrapper">
@@ -587,7 +482,7 @@ const Customers = () => {
             <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
                 <h3>تفاصيل: {activeInvoice?.invoiceNumber}</h3>
-                <button className="modal-close" onClick={() => setShowInvoiceDetails(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowInvoiceDetails(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <table className="data-table">

@@ -280,7 +280,7 @@ const OnlineOrders = () => {
             id="online_orders_all"
             label="إجمالي الطلبات"
             value={stats.total || 0}
-            icon="📦"
+            icon={<i className="fa-solid fa-calculator"></i>}
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
             onClick={() => { setActiveTab('ALL'); setPage(0); }}
             style={{ 
@@ -293,7 +293,7 @@ const OnlineOrders = () => {
             id="online_orders_awaiting"
             label="انتظار الدفع"
             value={stats.awaitingPayment || 0}
-            icon="💳"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'indigo', size: 'tile-wd-sm', order: 2 }}
             onClick={() => { setActiveTab('AWAITING_PAYMENT'); setPage(0); }}
             style={{ 
@@ -306,7 +306,7 @@ const OnlineOrders = () => {
             id="online_orders_pending"
             label="في الانتظار"
             value={stats.pending || 0}
-            icon="🕒"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'amber', size: 'tile-wd-sm', order: 3 }}
             onClick={() => { setActiveTab('PENDING'); setPage(0); }}
             style={{ 
@@ -319,7 +319,7 @@ const OnlineOrders = () => {
             id="online_orders_ready"
             label="جاهز / تم التسليم"
             value={(stats.ready || 0) + (stats.delivered || 0)}
-            icon="✅"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 4 }}
             onClick={() => { setActiveTab('READY'); setPage(0); }}
             style={{ 
@@ -332,7 +332,7 @@ const OnlineOrders = () => {
             id="online_orders_cancelled"
             label="ملغي"
             value={stats.cancelled || 0}
-            icon="🚫"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'red', size: 'tile-wd-sm', order: 5 }}
             onClick={() => { setActiveTab('CANCELLED'); setPage(0); }}
             style={{ 
@@ -345,7 +345,7 @@ const OnlineOrders = () => {
             id="online_orders_returned"
             label="مرتجع"
             value={stats.returned || 0}
-            icon="🔄"
+            icon={<i className="fa-solid fa-rotate-left"></i>}
             defaults={{ color: 'orange', size: 'tile-wd-sm', order: 6 }}
             onClick={() => { setActiveTab('RETURNED'); setPage(0); }}
             style={{ 
@@ -359,7 +359,7 @@ const OnlineOrders = () => {
 
         <div className="card">
           <div className="card-header">
-            <h3>📦 الطلبات الإلكترونية</h3>
+            <h3><i className="fa-solid fa-box"></i> الطلبات الإلكترونية</h3>
             <div className="toolbar">
               <div className="search-input">
                 <input
@@ -389,17 +389,17 @@ const OnlineOrders = () => {
                 onChange={(e) => { setActiveTab(e.target.value); setPage(0); }}
                 style={{ width: '220px', height: '40px', padding: '0 10px' }}
               >
-                <option value="ALL">📦 الكل (الكل في واحد)</option>
-                <option value="AWAITING_PAYMENT">💳 انتظار الدفع</option>
-                <option value="PENDING">🕒 في الانتظار</option>
-                <option value="READY">✅ جاهز / تم التسليم</option>
-                <option value="CANCELLED">🚫 ملغي</option>
-                <option value="RETURNED">🔄 مرتجع</option>
+                <option value="ALL"><i className="fa-solid fa-box"></i> الكل (الكل في واحد)</option>
+                <option value="AWAITING_PAYMENT"><i className="fa-solid fa-credit-card"></i> انتظار الدفع</option>
+                <option value="PENDING"><i className="fa-solid fa-clock"></i> في الانتظار</option>
+                <option value="READY"><i className="fa-solid fa-check"></i> جاهز / تم التسليم</option>
+                <option value="CANCELLED"><i className="fa-solid fa-ban"></i> ملغي</option>
+                <option value="RETURNED"><i className="fa-solid fa-rotate"></i> مرتجع</option>
               </select>
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn btn-primary" onClick={() => window.open('/store', '_blank')}>
-                  🛒 المتجر أونلاين
+                  <i className="fa-solid fa-cart-shopping"></i> المتجر أونلاين
                 </button>
               </div>
             </div>
@@ -439,7 +439,7 @@ const OnlineOrders = () => {
                         <td className="hide-mobile">
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                             <span style={{ fontSize: '0.7rem' }}>
-                              {order.paymentMethod === 'ONLINE' ? '💳 دفع إلكتروني' : '💵 عند الاستلام'}
+                              {order.paymentMethod === 'ONLINE' ? ' دفع إلكتروني' : ' عند الاستلام'}
                             </span>
                             {order.paymentMethod === 'ONLINE' && (
                               <span style={{ 
@@ -498,7 +498,7 @@ const OnlineOrders = () => {
                                     {/* Items Table */}
                                     <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)' }}>
                                         <h4 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                          📦 محتويات الطلب
+                                          <i className="fa-solid fa-box"></i> محتويات الطلب
                                         </h4>
                                         <div style={{ overflowX: 'auto' }}>
                                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
@@ -532,7 +532,7 @@ const OnlineOrders = () => {
                                     {/* Timeline */}
                                     <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)' }}>
                                         <h4 style={{ margin: '0 0 24px 0', fontSize: '1.1rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                          📅 سجل التتبع
+                                          <i className="fa-solid fa-calendar-days"></i> سجل التتبع
                                         </h4>
                                         <div style={{ position: 'relative', paddingRight: '15px', borderRight: '2px solid var(--border-color)' }}>
                                             {selectedOrderDetails.history?.map((hist, i) => (
@@ -593,8 +593,8 @@ const OnlineOrders = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowCancelModal(false); }}>
             <div className="modal" style={{ maxWidth: '400px' }}>
               <div className="modal-header">
-                <h3>🚫 إلغاء الطلب</h3>
-                <button className="modal-close" onClick={() => setShowCancelModal(false)}>✕</button>
+                <h3><i className="fa-solid fa-ban"></i> إلغاء الطلب</h3>
+                <button className="modal-close" onClick={() => setShowCancelModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <form onSubmit={handleCancel}>
                 <div className="modal-body">
@@ -618,8 +618,8 @@ const OnlineOrders = () => {
           <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowReturnModal(false); }}>
             <div className="modal" style={{ maxWidth: '400px' }}>
               <div className="modal-header">
-                <h3>🔄 إرجاع الطلب</h3>
-                <button className="modal-close" onClick={() => setShowReturnModal(false)}>✕</button>
+                <h3><i className="fa-solid fa-rotate"></i> إرجاع الطلب</h3>
+                <button className="modal-close" onClick={() => setShowReturnModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <form onSubmit={handleReturn}>
                 <div className="modal-body">

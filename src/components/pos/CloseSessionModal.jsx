@@ -83,7 +83,7 @@ const CloseSessionModal = ({ onCloseSuccess, onCancel }) => {
       <div className="session-modal-content">
         <div className="session-modal-header">
           <h2 className="session-modal-title" style={{ margin: 0 }}>إغلاق الوردية</h2>
-          <button onClick={onCancel} className="session-modal-close-btn">✕</button>
+          <button onClick={onCancel} className="session-modal-close-btn"><i className="fa-solid fa-times"></i></button>
         </div>
         
         <p className="session-modal-desc" style={{ marginTop: '10px' }}>

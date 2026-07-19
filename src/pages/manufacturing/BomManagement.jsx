@@ -164,7 +164,7 @@ const BomManagement = () => {
         <div className="page-section">
             <div className="card mb-4">
                 <div className="card-header">
-                    <h3>➕ إنشاء قائمة مواد (BOM)</h3>
+                    <h3><i className="fa-solid fa-plus"></i> إنشاء قائمة مواد (BOM)</h3>
                 </div>
                 <div className="card-body">
                     <form onSubmit={handleSave}>
@@ -238,7 +238,7 @@ const BomManagement = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3>📋 قوائم المواد (BOMs)</h3>
+                    <h3><i className="fa-solid fa-clipboard-list"></i> قوائم المواد (BOMs)</h3>
                 </div>
                 <div className="card-body no-padding">
                     <div className="table-wrapper">

@@ -203,7 +203,7 @@ const InstallmentCalendar = () => {
       <div className="day-details" style={{ marginTop: '30px', padding: '20px', background: 'var(--bg-secondary)', borderRadius: '15px', boxShadow: 'var(--shadow-lg)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <h3 style={{ margin: 0 }}>تفاصيل يوم {selectedDay}</h3>
-          <button className="btn-close" onClick={() => setSelectedDay(null)}>✕</button>
+          <button className="btn-close" onClick={() => setSelectedDay(null)}><i className="fa-solid fa-times"></i></button>
         </div>
         {dayInsts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>لا توجد أقساط مستحقة في هذا اليوم</div>
@@ -238,7 +238,7 @@ const InstallmentCalendar = () => {
     return (
       <div className="cal-stats-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' }}>
         <div className="cal-stat-card cal-stat-rec">
-          <div className="cal-stat-icon">💵</div>
+          <div className="cal-stat-icon"><i className="fa-solid fa-money-bill"></i></div>
           <div className="cal-stat-info">
             <span className="cal-stat-label">إجمالي المستحقات (لنا)</span>
             <span className="cal-stat-value">{totalRec.toLocaleString()} <small>ج.م</small></span>
@@ -246,7 +246,7 @@ const InstallmentCalendar = () => {
         </div>
         
         <div className="cal-stat-card cal-stat-pay">
-          <div className="cal-stat-icon">💸</div>
+          <div className="cal-stat-icon"><i className="fa-solid fa-money-bill-wave"></i></div>
           <div className="cal-stat-info">
             <span className="cal-stat-label">إجمالي الالتزامات (علينا)</span>
             <span className="cal-stat-value">{totalPay.toLocaleString()} <small>ج.م</small></span>
@@ -401,7 +401,7 @@ const InstallmentCalendar = () => {
       
       <div className="page-header" style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '15px' }}>
         <div style={{ background: 'var(--bg-elevated)', padding: '15px', borderRadius: '15px', boxShadow: 'var(--shadow-sm)', fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          📅
+          <i className="fa-solid fa-calendar-days"></i>
         </div>
         <div>
           <h1 style={{ fontSize: '2rem', fontWeight: '900', margin: '0 0 5px 0', color: 'var(--text-main)' }}>تقويم الأقساط</h1>

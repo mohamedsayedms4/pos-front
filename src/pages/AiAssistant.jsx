@@ -7,7 +7,7 @@ const AiAssistant = () => {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'أهلاً بك! أنا **مساعد سجل الذكي** 🤖، مستشارك الذكي المدمج بنظام **سجل** المدعوم بـ **DeepSeek**.\n\nيمكنني مساعدتك في:\n- 📊 كتابة خطط لزيادة مبيعاتك ونمو منشأتك.\n- 📝 صياغة أوصاف جذابة لمنتجاتك وخدماتك.\n- 💸 تقديم نصائح محاسبية دقيقة لتقليل الهوالك والمصروفات.\n- ✉️ صياغة مراسلات للموردين أو ردود على تذاكر الدعم الفني.',
+      content: 'أهلاً بك! أنا **مساعد سجل الذكي** ، مستشارك الذكي المدمج بنظام **سجل** المدعوم بـ **DeepSeek**.\n\nيمكنني مساعدتك في:\n-  كتابة خطط لزيادة مبيعاتك ونمو منشأتك.\n-  صياغة أوصاف جذابة لمنتجاتك وخدماتك.\n-  تقديم نصائح محاسبية دقيقة لتقليل الهوالك والمصروفات.\n- ️ صياغة مراسلات للموردين أو ردود على تذاكر الدعم الفني.',
       time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -31,7 +31,7 @@ const AiAssistant = () => {
     localStorage.setItem('deepseek_api_key', apiKey);
     localStorage.setItem('deepseek_model', model);
     setShowConfig(false);
-    toast('تم حفظ إعدادات DeepSeek بنجاح! 🤖', 'success');
+    toast('تم حفظ إعدادات DeepSeek بنجاح! ', 'success');
   };
 
   const handleClearChat = () => {
@@ -40,7 +40,7 @@ const AiAssistant = () => {
         {
           id: 'welcome',
           role: 'assistant',
-          content: 'تم بدء محادثة جديدة. كيف يمكنني مساعدتك في أعمالك اليوم؟ 🤖',
+          content: 'تم بدء محادثة جديدة. كيف يمكنني مساعدتك في أعمالك اليوم؟ ',
           time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -58,7 +58,7 @@ const AiAssistant = () => {
     // Check if API key is configured
     if (!apiKey) {
       setShowConfig(true);
-      toast('الرجاء إدخال مفتاح API لـ DeepSeek للبدء 🔑', 'warning');
+      toast('الرجاء إدخال مفتاح API لـ DeepSeek للبدء ', 'warning');
       return;
     }
 
@@ -122,7 +122,7 @@ const AiAssistant = () => {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `❌ **تعذر الاتصال بـ DeepSeek**\n\nالرجاء التأكد من:\n1. صحة مفتاح الـ API المفعل في إعدادات المساعد بالأعلى 🔑\n2. وجود رصيد كافٍ في حساب DeepSeek الخاص بك.\n3. اتصال الإنترنت بجهازك.\n\n*ملاحظة: يمكنك إعداد مفتاح الـ API من زر "إعدادات الربط" بأعلى الشاشة.*`,
+        content: ` **تعذر الاتصال بـ DeepSeek**\n\nالرجاء التأكد من:\n1. صحة مفتاح الـ API المفعل في إعدادات المساعد بالأعلى \n2. وجود رصيد كافٍ في حساب DeepSeek الخاص بك.\n3. اتصال الإنترنت بجهازك.\n\n*ملاحظة: يمكنك إعداد مفتاح الـ API من زر "إعدادات الربط" بأعلى الشاشة.*`,
         time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
       }]);
     } finally {
@@ -150,7 +150,7 @@ const AiAssistant = () => {
       {/* Header bar with controls */}
       <div className="ai-header-bar">
         <div className="ai-brand">
-          <span className="ai-icon">🤖</span>
+          <span className="ai-icon"><i className="fa-solid fa-robot"></i></span>
           <div>
             <h2>مساعد سجل الذكي</h2>
             <p>مساعد أعمالك الذكي المدعوم بـ DeepSeek AI</p>
@@ -159,10 +159,10 @@ const AiAssistant = () => {
 
         <div className="ai-actions">
           <button className="btn-ai-setup" onClick={() => setShowConfig(!showConfig)}>
-            ⚙️ إعدادات الربط بـ DeepSeek
+            <i className="fa-solid fa-gear"></i> إعدادات الربط بـ DeepSeek
           </button>
           <button className="btn-ai-clear" onClick={handleClearChat}>
-            🗑️ مسح المحادثة
+            <i className="fa-solid fa-trash"></i> مسح المحادثة
           </button>
         </div>
       </div>
@@ -171,7 +171,7 @@ const AiAssistant = () => {
       {showConfig && (
         <div className="ai-setup-panel">
           <form onSubmit={saveConfig} className="ai-setup-form">
-            <h3>🔑 ربط مفتاح API الخاص بـ DeepSeek</h3>
+            <h3><i className="fa-solid fa-key"></i> ربط مفتاح API الخاص بـ DeepSeek</h3>
             <p>لربط منشأتك بالذكاء الاصطناعي، يرجى كتابة مفتاح الـ API الخاص بـ DeepSeek. يتم حفظ المفتاح محلياً بشكل آمن على متصفحك.</p>
             
             <div className="setup-fields-grid">
@@ -201,7 +201,7 @@ const AiAssistant = () => {
               <button type="button" className="btn btn-ghost" onClick={() => setShowConfig(false)}>إلغاء</button>
             </div>
             <small className="setup-help-link">
-              💡 يمكنك توليد مفتاح الـ API من لوحة تحكم مطوري ديب سيك عبر الموقع: <a href="https://platform.deepseek.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--metro-blue)' }}>platform.deepseek.com</a>
+              <i className="fa-solid fa-lightbulb"></i> يمكنك توليد مفتاح الـ API من لوحة تحكم مطوري ديب سيك عبر الموقع: <a href="https://platform.deepseek.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--metro-blue)' }}>platform.deepseek.com</a>
             </small>
           </form>
         </div>
@@ -213,7 +213,7 @@ const AiAssistant = () => {
           {messages.map(msg => (
             <div key={msg.id} className={`chat-message-bubble ${msg.role === 'user' ? 'user-bubble' : 'assistant-bubble'}`}>
               <div className="bubble-avatar">
-                {msg.role === 'user' ? '👤' : '🤖'}
+                {msg.role === 'user' ? '' : ''}
               </div>
               <div className="bubble-body">
                 <div className="bubble-meta">
@@ -229,7 +229,7 @@ const AiAssistant = () => {
 
           {loading && (
             <div className="chat-message-bubble assistant-bubble typing-bubble">
-              <div className="bubble-avatar">🤖</div>
+              <div className="bubble-avatar"><i className="fa-solid fa-robot"></i></div>
               <div className="bubble-body">
                 <div className="bubble-meta">
                   <span className="sender-name">مساعد سجل</span>
@@ -249,19 +249,19 @@ const AiAssistant = () => {
         {messages.length === 1 && (
           <div className="shortcuts-suggestion-grid">
             <button className="shortcut-card" onClick={() => executeShortcut('اكتب لي خطة تسويقية لزيادة مبيعات السوبرماركت الخاص بي بنسبة 25%')}>
-              📝 <strong>خطة تسويق للمبيعات</strong>
+              <i className="fa-solid fa-file-pen"></i> <strong>خطة تسويق للمبيعات</strong>
               <span>تخطيط تسويقي لزيادة الأرباح</span>
             </button>
             <button className="shortcut-card" onClick={() => executeShortcut('اكتب لي وصفاً جذاباً ومحفزاً لمنتج "قهوة باردة ممتازة بالبندق ومحلاة"')}>
-              📦 <strong>وصف منتج بالذكاء</strong>
+              <i className="fa-solid fa-box"></i> <strong>وصف منتج بالذكاء</strong>
               <span>صياغة تسويقية للأصناف</span>
             </button>
             <button className="shortcut-card" onClick={() => executeShortcut('أعطني 5 نصائح محاسبية وإدارية دقيقة لتقليل الهدر والتوالف والمصروفات بالمستودع')}>
-              💸 <strong>تقليل النفقات والهوالك</strong>
+              <i className="fa-solid fa-money-bill-wave"></i> <strong>تقليل النفقات والهوالك</strong>
               <span>طرق لرفع صافي الأرباح</span>
             </button>
             <button className="shortcut-card" onClick={() => executeShortcut('اكتب لي رداً احترافياً لعميل يشتكي من تأخر توصيل طلبه الإلكتروني')}>
-              ✉️ <strong>ردود خدمة العملاء</strong>
+              <i className="fa-solid fa-envelope"></i>️ <strong>ردود خدمة العملاء</strong>
               <span>صياغة خطابات للعملاء والموردين</span>
             </button>
           </div>

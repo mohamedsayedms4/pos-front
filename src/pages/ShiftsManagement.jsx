@@ -74,16 +74,16 @@ const ShiftsManagement = () => {
 
     const getShiftIcon = (name, startTime) => {
         const n = (name || '').toLowerCase();
-        if (n.includes('صباح') || n.includes('day') || n.includes('morning')) return '☀️';
-        if (n.includes('مساء') || n.includes('ليل') || n.includes('night') || n.includes('evening')) return '🌙';
+        if (n.includes('صباح') || n.includes('day') || n.includes('morning')) return '️';
+        if (n.includes('مساء') || n.includes('ليل') || n.includes('night') || n.includes('evening')) return '';
         
         // fallback to hour check
         if (startTime) {
             const hour = parseInt(startTime.split(':')[0]);
-            if (hour >= 6 && hour < 17) return '☀️';
-            return '🌙';
+            if (hour >= 6 && hour < 17) return '️';
+            return '';
         }
-        return '🕒';
+        return '';
     };
 
     const getShiftColor = (index) => {
@@ -97,7 +97,7 @@ const ShiftsManagement = () => {
         <div className="page-section anim-fade-in">
             <div className="section-header" style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                   <h1 className="page-title" style={{ marginBottom: '5px' }}>🕒 إدارة الورديات</h1>
+                   <h1 className="page-title" style={{ marginBottom: '5px' }}><i className="fa-solid fa-clock"></i> إدارة الورديات</h1>
                    <p className="text-dim">تحديد ساعات العمل وفترات السماح لكل وردية</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => handleOpenModal()} style={{ height: '48px', padding: '0 30px' }}>
@@ -155,7 +155,7 @@ const ShiftsManagement = () => {
                     <div className="modal anim-scale-in" style={{ maxWidth: '450px' }}>
                         <div className="modal-header" style={{ borderBottom: '1px solid var(--border-main)' }}>
                             <h3 style={{ margin: 0 }}>{editingShift ? 'تعديل وردية' : 'إضافة وردية جديدة'}</h3>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+                            <button className="modal-close" onClick={() => setShowModal(false)}><i className="fa-solid fa-times"></i></button>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="modal-body" style={{ padding: '25px' }}>

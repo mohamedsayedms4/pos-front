@@ -11,9 +11,9 @@ import Returns from './Returns';
 import ProfitLoss from './ProfitLoss';
 import Customers from './Customers';
 import Expenses from './Expenses';
-import OnboardingDashboard from './OnboardingDashboard';
+
 import '../styles/pages/StoreInactivePremium.css';
-import { Joyride, STATUS } from 'react-joyride';
+
 
 const StartTourBeacon = ({ beaconProps }) => {
     return (
@@ -93,49 +93,6 @@ const Dashboard = () => {
   const [myRequests, setMyRequests] = useState([]);
   const [pendingRequest, setPendingRequest] = useState(null);
   const [globalConfig, setGlobalConfig] = useState(null);
-  const [onboardingStatus, setOnboardingStatus] = useState(null);
-  const [runTour, setRunTour] = useState(false);
-
-  useEffect(() => {
-    const checkTour = async () => {
-        let onboarding = null;
-        const onboardingStr = localStorage.getItem('onboardingStatus');
-        if (onboardingStr) {
-            try { onboarding = JSON.parse(onboardingStr); } catch(e){}
-        }
-        
-        if (!onboarding) {
-            try {
-                const res = await Api.get('/onboarding/status');
-                onboarding = res.data || res;
-                if (onboarding) {
-                    localStorage.setItem('onboardingStatus', JSON.stringify(onboarding));
-                }
-            } catch(e){}
-        }
-        
-        if (onboarding && (onboarding.isCompleted || onboarding.completed)) {
-            return;
-        }
-
-        if (!localStorage.getItem('tour_dashboard_v3')) {
-            setTimeout(() => {
-                setRunTour(true);
-            }, 1500);
-        }
-    };
-    checkTour();
-  }, []);
-
-  const handleJoyrideCallback = (data) => {
-    const { status, type } = data;
-    const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
-    
-    if (finishedStatuses.includes(status) || type === 'tour:end') {
-        setRunTour(false);
-        localStorage.setItem('tour_dashboard_v3', 'true');
-    }
-  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -150,32 +107,6 @@ const Dashboard = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toast]);
 
-  const tourSteps = [
-    {
-      target: '.tour-dashboard-store',
-      content: 'من هنا يمكنك نسخ رابط المتجر الخاص بك لمشاركته مع عملائك أو موظفيك بسهولة.',
-      placement: 'bottom',
-    },
-    {
-      target: '.tour-dashboard-pos',
-      content: 'هذا هو اختصارك السريع للدخول إلى شاشة الكاشير (نقطة البيع) للبدء في إصدار الفواتير.',
-      disableBeacon: true,
-      placement: 'bottom',
-    },
-    {
-      target: '.tour-dashboard-tabs',
-      content: 'تتيح لك هذه التبويبات التنقل بين الإحصائيات المختلفة (مبيعات، مشتريات، أرباح، وغيرها) لمتابعة أداء عملك.',
-      disableBeacon: true,
-      placement: 'bottom',
-    },
-    {
-      target: '.tour-dashboard-shortcuts',
-      content: 'هنا تجد اختصارات سريعة لجميع أقسام النظام المهمة للوصول إليها بنقرة واحدة.',
-      disableBeacon: true,
-      placement: 'top',
-    }
-  ];
-
   const loadRequests = async () => {
     try {
       const requests = await Api.getMySubscriptionRequests();
@@ -184,27 +115,6 @@ const Dashboard = () => {
       setPendingRequest(pending || null);
     } catch (err) {
       console.error('Failed to load subscription requests', err);
-    }
-  };
-
-  const loadOnboardingStatus = async () => {
-    try {
-      const res = await Api.get('/onboarding/status');
-      setOnboardingStatus(res.data);
-      localStorage.setItem('onboardingStatus', JSON.stringify(res.data));
-    } catch (err) {
-      console.error('Failed to load onboarding status:', err);
-      // Fallback so it doesn't block the dashboard from loading
-      const cached = localStorage.getItem('onboardingStatus');
-      if (cached) {
-        try {
-          setOnboardingStatus(JSON.parse(cached));
-        } catch(e) {
-          setOnboardingStatus({ completed: true });
-        }
-      } else {
-        setOnboardingStatus({ completed: true }); // Default to completed if there's an error and no cache
-      }
     }
   };
 
@@ -219,7 +129,6 @@ const Dashboard = () => {
     Api.getGlobalConfig().then(setGlobalConfig).catch(() => {});
 
     loadRequests();
-    loadOnboardingStatus();
   }, []);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -308,7 +217,7 @@ const Dashboard = () => {
 
   const handleManageSubscription = () => {
     if (pendingRequest) {
-      toast('لديك طلب تجديد قيد المراجعة حالياً بالفعل. يرجى الانتظار لحين مراجعته وتفعيله. ⏳', 'warning');
+      toast('لديك طلب تجديد قيد المراجعة حالياً بالفعل. يرجى الانتظار لحين مراجعته وتفعيله. ', 'warning');
     } else {
       setShowModal(true);
     }
@@ -342,7 +251,7 @@ const Dashboard = () => {
         receiptFile
       });
 
-      toast('تم إرسال طلب التجديد بنجاح! جاري مراجعته من قبل الإدارة. 🎉', 'success');
+      toast('تم إرسال طلب التجديد بنجاح! جاري مراجعته من قبل الإدارة. ', 'success');
       setShowModal(false);
       
       // Reset form
@@ -371,41 +280,12 @@ const Dashboard = () => {
     ? new Date(tenantInfo.subscriptionExpiry) < new Date() 
     : false;
 
-  if (loading || onboardingStatus === null) {
+  if (loading) {
     return <Loader message="جاري التحميل..." />;
-  }
-
-  if (onboardingStatus && !onboardingStatus.completed) {
-    return <OnboardingDashboard status={onboardingStatus} reloadStatus={loadOnboardingStatus} />;
   }
 
   return (
     <div className="page-section">
-      {runTour && (
-        <Joyride
-            steps={tourSteps}
-            run={runTour}
-            beaconComponent={StartTourBeacon}
-            continuous={true}
-            showProgress={true}
-            showSkipButton={true}
-            disableOverlayClose={true}
-            callback={handleJoyrideCallback}
-            styles={{
-                options: {
-                    primaryColor: '#3B82F6',
-                    backgroundColor: '#0B1354',
-                    textColor: '#ffffff',
-                    arrowColor: '#0B1354',
-                    zIndex: 9999999,
-                },
-                tooltipContainer: { textAlign: 'right' },
-                buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
-                buttonBack: { marginLeft: 15, marginRight: 0, outline: 'none', fontFamily: 'Cairo, sans-serif', color: '#a0aec0' }
-            }}
-            locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
-        />
-      )}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
@@ -965,8 +845,8 @@ const Dashboard = () => {
                 } : {}}
               >
                 {tenantInfo?.packageName 
-                  ? `👑 ${tenantInfo.packageName} (نشطة)` 
-                  : (isExpired ? '❌ المجانية (منتهية)' : '🎁 الفترة التجريبية (نشطة)')
+                  ? ` ${tenantInfo.packageName} (نشطة)` 
+                  : (isExpired ? ' المجانية (منتهية)' : ' الفترة التجريبية (نشطة)')
                 }
               </span>
             </div>
@@ -990,7 +870,7 @@ const Dashboard = () => {
                 gap: '6px',
                 width: 'fit-content'
               }}>
-                ⏳ طلب التجديد لـ ({pendingRequest.packageName}) قيد المراجعة حالياً.
+                <i className="fa-solid fa-hourglass-half"></i> طلب التجديد لـ ({pendingRequest.packageName}) قيد المراجعة حالياً.
               </div>
             )}
           </div>
@@ -1009,13 +889,13 @@ const Dashboard = () => {
                   onClick={handleCopyLink} 
                   className="store-link-copy-btn"
                 >
-                  {copied ? '✓ تم النسخ' : 'نسخ الرابط'}
+                  {copied ? ' تم النسخ' : 'نسخ الرابط'}
                 </button>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="manage-sub-btn" onClick={handleManageSubscription}>
-                إدارة إشتراكك ⚡
+                إدارة إشتراكك <i className="fa-solid fa-bolt"></i>
               </button>
               <button 
                 className="manage-sub-btn" 
@@ -1062,7 +942,7 @@ const Dashboard = () => {
             <div className="pos-banner-title-small">تطبيق سطح المكتب</div>
             <h2 className="pos-banner-title-large">نظام الكاشير (أوفلاين)</h2>
             <p className="pos-banner-desc">استمتع بتجربة أسرع للبيع بدون إنترنت من خلال تطبيق الديسكتوب الخاص بنا.</p>
-            <p className="pos-banner-desc" style={{ fontSize: '0.85rem', color: '#10b981', marginTop: '4px' }}>✨ متوفر الآن للتحميل: إصدار {latestApp.version}</p>
+            <p className="pos-banner-desc" style={{ fontSize: '0.85rem', color: '#10b981', marginTop: '4px' }}><i className="fa-solid fa-wand-magic-sparkles"></i> متوفر الآن للتحميل: إصدار {latestApp.version}</p>
           </div>
           <div className="pos-banner-left" style={{ paddingLeft: '40px' }}>
             <a href={latestApp.downloadUrl} className="pos-banner-btn" style={{ background: '#10b981', textDecoration: 'none', textAlign: 'center' }} download>
@@ -1078,31 +958,31 @@ const Dashboard = () => {
           <div className="dashboard-tabs-container tour-dashboard-tabs">
         <div className="dashboard-tabs">
           <div className={`tab-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} style={{cursor: 'pointer'}}>
-            <span className="tab-icon">🖥️</span>
+            <span className="tab-icon"><i className="fa-solid fa-desktop"></i>️</span>
             <span className="tab-text">نظرة عامة</span>
           </div>
           <div className={`tab-item ${activeTab === 'sales-analytics' ? 'active' : ''}`} onClick={() => setActiveTab('sales-analytics')} style={{cursor: 'pointer'}}>
-            <span className="tab-icon">📊</span>
+            <span className="tab-icon"><i className="fa-solid fa-chart-column"></i></span>
             <span className="tab-text">إحصائيات المبيعات</span>
           </div>
           <div className={`tab-item ${activeTab === 'purchases' ? 'active' : ''}`} onClick={() => setActiveTab('purchases')} style={{cursor: 'pointer'}}>
-            <span className="tab-icon">🛒</span>
+            <span className="tab-icon"><i className="fa-solid fa-cart-shopping"></i></span>
             <span className="tab-text">إحصائيات المشتريات</span>
           </div>
           <div className={`tab-item ${activeTab === 'returns' ? 'active' : ''}`} onClick={() => setActiveTab('returns')} style={{cursor: 'pointer'}}>
-            <span className="tab-icon">🔄</span>
+            <span className="tab-icon"><i className="fa-solid fa-rotate"></i></span>
             <span className="tab-text">إحصائيات المرتجعات</span>
           </div>
           <div className={`tab-item ${activeTab === 'profit-loss' ? 'active' : ''}`} onClick={() => setActiveTab('profit-loss')} style={{cursor: 'pointer'}}>
-            <span className="tab-icon">💵</span>
+            <span className="tab-icon"><i className="fa-solid fa-money-bill"></i></span>
             <span className="tab-text">إحصائيات أرباح المبيعات</span>
           </div>
           <div className={`tab-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')} style={{cursor: 'pointer'}}>
-            <span className="tab-icon">👥</span>
+            <span className="tab-icon"><i className="fa-solid fa-users"></i></span>
             <span className="tab-text">إحصائيات الموردين والعملاء</span>
           </div>
           <div className={`tab-item ${activeTab === 'expenses' ? 'active' : ''}`} onClick={() => setActiveTab('expenses')} style={{cursor: 'pointer'}}>
-            <span className="tab-icon">💸</span>
+            <span className="tab-icon"><i className="fa-solid fa-money-bill-wave"></i></span>
             <span className="tab-text">إحصائيات المصروفات</span>
           </div>
         </div>
@@ -1151,7 +1031,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.branches}+ فرع</span>
             </div>
             <div className="shortcut-icon-wrapper bg-purple-light">
-              <span className="shortcut-icon text-purple">🏢</span>
+              <span className="shortcut-icon text-purple"><i className="fa-solid fa-building"></i></span>
             </div>
           </div>
         )}
@@ -1164,7 +1044,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.sales} فاتورة</span>
             </div>
             <div className="shortcut-icon-wrapper bg-blue-light">
-              <span className="shortcut-icon text-blue">📈</span>
+              <span className="shortcut-icon text-blue"><i className="fa-solid fa-arrow-trend-up"></i></span>
             </div>
           </div>
         )}
@@ -1177,7 +1057,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.purchases} فاتورة</span>
             </div>
             <div className="shortcut-icon-wrapper bg-gold-light">
-              <span className="shortcut-icon text-gold">🛒</span>
+              <span className="shortcut-icon text-gold"><i className="fa-solid fa-cart-shopping"></i></span>
             </div>
           </div>
         )}
@@ -1190,7 +1070,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.customers}+ عميل</span>
             </div>
             <div className="shortcut-icon-wrapper bg-purple-light">
-              <span className="shortcut-icon text-purple">👥</span>
+              <span className="shortcut-icon text-purple"><i className="fa-solid fa-users"></i></span>
             </div>
           </div>
         )}
@@ -1203,7 +1083,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.suppliers}+ مورد</span>
             </div>
             <div className="shortcut-icon-wrapper bg-blue-light">
-              <span className="shortcut-icon text-blue">📦</span>
+              <span className="shortcut-icon text-blue"><i className="fa-solid fa-box"></i></span>
             </div>
           </div>
         )}
@@ -1216,7 +1096,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.products}+ صنف</span>
             </div>
             <div className="shortcut-icon-wrapper bg-violet-light">
-              <span className="shortcut-icon text-violet">▨</span>
+              <span className="shortcut-icon text-violet"><i className="fa-solid fa-cubes"></i></span>
             </div>
           </div>
         )}
@@ -1229,7 +1109,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.expenses} سند</span>
             </div>
             <div className="shortcut-icon-wrapper bg-green-light">
-              <span className="shortcut-icon text-green">📄</span>
+              <span className="shortcut-icon text-green"><i className="fa-solid fa-file-lines"></i></span>
             </div>
           </div>
         )}
@@ -1242,7 +1122,7 @@ const Dashboard = () => {
               <span className="shortcut-subtitle">{counts.receipts} سند</span>
             </div>
             <div className="shortcut-icon-wrapper bg-green-light">
-              <span className="shortcut-icon text-green">💵</span>
+              <span className="shortcut-icon text-green"><i className="fa-solid fa-money-bill"></i></span>
             </div>
           </div>
         )}
@@ -1257,9 +1137,9 @@ const Dashboard = () => {
           <div className="sa-sub-modal-overlay" onClick={() => setShowModal(false)}>
             <div className="sa-sub-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '20px' }}>
               <div className="sa-sub-modal-header" style={{ paddingBottom: '1.25rem' }}>
-                <h3>💳 طلب تجديد الاشتراك وتفعيل المتجر</h3>
+                <h3><i className="fa-solid fa-credit-card"></i> طلب تجديد الاشتراك وتفعيل المتجر</h3>
                 <button className="sa-sub-modal-close" onClick={() => setShowModal(false)}>
-                  ✕
+                  <i className="fa-solid fa-times"></i>
                 </button>
               </div>
               <form onSubmit={handleSubmitSubscription}>
@@ -1267,7 +1147,7 @@ const Dashboard = () => {
                   
                   {/* Instructions Card */}
                   <div className="si-instructions-card">
-                    <h4>📱 تعليمات التحويل والدفع:</h4>
+                    <h4><i className="fa-solid fa-mobile-screen"></i> تعليمات التحويل والدفع:</h4>
                     <ul>
                       <li>فودافون كاش: <strong>{globalConfig?.vodafoneCashNumber || '01012345678'}</strong></li>
                       <li>انستا باي: <strong>{globalConfig?.instapayAddress || 'pos@instapay'}</strong></li>
@@ -1302,7 +1182,7 @@ const Dashboard = () => {
                         onClick={() => setPaymentMethod('VODAFONE_CASH')}
                         style={{ width: '50%' }}
                       >
-                        🔴 فودافون كاش
+                        <i className="fa-solid fa-circle" style={{color: "#ef4444"}}></i> فودافون كاش
                       </button>
                       <button
                         type="button"
@@ -1310,7 +1190,7 @@ const Dashboard = () => {
                         onClick={() => setPaymentMethod('INSTAPAY')}
                         style={{ width: '50%' }}
                       >
-                        ⚡ انستا باي
+                        <i className="fa-solid fa-bolt"></i> انستا باي
                       </button>
                     </div>
                   </div>
@@ -1344,7 +1224,7 @@ const Dashboard = () => {
                       id="si-file-input"
                     />
                     <label htmlFor="si-file-input" className="si-file-label">
-                      <span className="si-file-icon">📸</span>
+                      <span className="si-file-icon"><i className="fa-solid fa-camera"></i></span>
                       <span className="si-file-text">
                         {receiptFile ? receiptFile.name : 'اختر صورة الإيصال أو اسحبها هنا'}
                       </span>

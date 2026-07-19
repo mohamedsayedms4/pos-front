@@ -120,13 +120,13 @@ const PrivacyPolicy = () => {
               <div className="ec-contact-info">
                 {email && <p><i className="fas fa-envelope" style={{ marginLeft: '8px' }}></i> <strong>البريد الإلكتروني:</strong> {email}</p>}
                 {whatsappNumber && <p><i className="fab fa-whatsapp" style={{ marginLeft: '8px', color: '#25D366' }}></i> <strong>واتساب:</strong> {whatsappNumber}</p>}
-                <p>🌐 <strong>الموقع الإلكتروني:</strong> <a href={websiteUrl} style={{ color: 'var(--ec-primary)', textDecoration: 'none', fontWeight: 'bold' }}>{websiteUrl}</a></p>
+                <p><i className="fa-solid fa-globe"></i> <strong>الموقع الإلكتروني:</strong> <a href={websiteUrl} style={{ color: 'var(--ec-primary)', textDecoration: 'none', fontWeight: 'bold' }}>{websiteUrl}</a></p>
               </div>
             </section>
           </div>
 
           <footer className="ec-legal-footer-note" style={{ marginTop: '60px', paddingTop: '30px', borderTop: '1px solid #eee', textAlign: 'center', opacity: 0.8, fontSize: '0.95rem', fontWeight: '500' }}>
-            جميع الحقوق محفوظة © 2025 – {platformName}
+            جميع الحقوق محفوظة <i className="fa-regular fa-copyright"></i> 2025 – {platformName}
           </footer>
         </div>
       </div>

@@ -125,7 +125,7 @@ const PayrollDashboard = () => {
     <div className="page-section anim-fade-in">
       <div className="section-header" style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <h1 className="page-title" style={{ marginBottom: '5px' }}>💸 مسير الرواتب (Payroll)</h1>
+          <h1 className="page-title" style={{ marginBottom: '5px' }}><i className="fa-solid fa-money-bill-wave"></i> مسير الرواتب (Payroll)</h1>
           <p className="text-dim">عرض وإدارة مستحقات الموظفين الشهرية</p>
         </div>
         
@@ -159,9 +159,9 @@ const PayrollDashboard = () => {
             disabled={generating}
             style={{ height: '48px', background: 'var(--metro-purple)', borderColor: 'var(--metro-purple)' }}
           >
-            {generating ? 'جاري التوليد...' : '⚡ توليد الشهر'}
+            {generating ? 'جاري التوليد...' : ' توليد الشهر'}
           </button>
-          <button className="btn btn-success" onClick={handlePayAll} style={{ height: '48px' }}>💰 صرف الكل</button>
+          <button className="btn btn-success" onClick={handlePayAll} style={{ height: '48px' }}><i className="fa-solid fa-sack-dollar"></i> صرف الكل</button>
         </div>
       </div>
 
@@ -172,28 +172,28 @@ const PayrollDashboard = () => {
           label="إجمالي صافي المنصرف"
           value={formatCurrency(totalNet)}
           subtitle="صافي ما سيتم خصمه من الخزينة"
-          icon="💰"
+          icon={<i className="fa-solid fa-money-bill-transfer"></i>}
           defaults={{ color: 'cobalt', size: 'tile-wd-md', order: 1 }}
         />
         <StatTile 
           id="pay_base"
           label="إجمالي الأساسي"
           value={formatCurrency(totalBase)}
-          icon="📑"
+          icon={<i className="fa-solid fa-calculator"></i>}
           defaults={{ color: 'azure', size: 'tile-wd-sm', order: 2 }}
         />
         <StatTile 
           id="pay_bonus"
           label="المكافآت"
           value={formatCurrency(totalBonuses)}
-          icon="🎁"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 3 }}
         />
         <StatTile 
           id="pay_deduct"
           label="الخصومات"
           value={formatCurrency(totalDeductions)}
-          icon="📉"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'rose', size: 'tile-sq-sm', order: 4 }}
         />
       </div>
@@ -218,7 +218,7 @@ const PayrollDashboard = () => {
               ) : payrolls.length === 0 ? (
                 <tr><td colSpan="7" style={{ textAlign: 'center', padding: '100px' }}>
                   <div className="empty-state">
-                    <div style={{ fontSize: '3rem', marginBottom: '15px' }}>😴</div>
+                    <div style={{ fontSize: '3rem', marginBottom: '15px' }}><i className="fa-solid fa-bed"></i></div>
                     <h3>لا توجد بيانات لهذا الشهر</h3>
                     <p className="text-dim">قم بإضافة رواتب أو مكافآت للموظفين لتظهر هنا</p>
                   </div>
@@ -256,13 +256,13 @@ const PayrollDashboard = () => {
                       className={`badge ${p.status === 'PAID' ? 'badge-success' : 'badge-warning'}`}
                       style={{ fontSize: '0.7rem' }}
                     >
-                      {p.status === 'PAID' ? 'مدفوع ✓' : 'معلق ⏳'}
+                      {p.status === 'PAID' ? 'مدفوع ' : 'معلق '}
                     </span>
                   </td>
                   <td>
                     {p.status === 'PENDING' ? (
                       <button className="btn btn-sm btn-primary" onClick={() => handlePaySingle(p.id)}>
-                        💵 صرف الآن
+                        <i className="fa-solid fa-money-bill"></i> صرف الآن
                       </button>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.75rem' }}>

@@ -219,7 +219,7 @@ const SuperAdminSubscriptions = () => {
     try {
       toast('جاري تجهيز ملف الإكسيل...', 'info');
       await Api.downloadSuperAdminTenantsExport();
-      toast('تم التصدير بنجاح ✅', 'success');
+      toast('تم التصدير بنجاح ', 'success');
     } catch (err) {
       toast(err.message || 'فشل التصدير', 'error');
     }
@@ -301,7 +301,7 @@ const SuperAdminSubscriptions = () => {
       async () => {
         try {
           await Api.toggleTenantStatus(tenant.id, newStatus);
-          toast(`تم ${action} "${tenant.name}" بنجاح ✅`, 'success');
+          toast(`تم ${action} "${tenant.name}" بنجاح `, 'success');
           loadData();
         } catch (err) {
           toast(err.message || `فشل في ${action} المستأجر`, 'error');
@@ -336,7 +336,7 @@ const SuperAdminSubscriptions = () => {
       const params = extendType === 'months' ? { months: amount } : { days: amount };
       await Api.extendTenantSubscription(extendModal.tenant.id, params);
       toast(
-        `تم تمديد اشتراك "${extendModal.tenant.name}" بنجاح — ${amount} ${extendType === 'months' ? 'شهر' : 'يوم'} ✅`,
+        `تم تمديد اشتراك "${extendModal.tenant.name}" بنجاح — ${amount} ${extendType === 'months' ? 'شهر' : 'يوم'} `,
         'success'
       );
       closeExtendModal();
@@ -371,7 +371,7 @@ const SuperAdminSubscriptions = () => {
       async () => {
         try {
           await Api.approveSubscriptionRequest(request.id);
-          toast(`تم قبول طلب التجديد وتفعيل متجر "${request.tenantName}" بنجاح ✅`, 'success');
+          toast(`تم قبول طلب التجديد وتفعيل متجر "${request.tenantName}" بنجاح `, 'success');
           loadData();
         } catch (err) {
           toast(err.message || 'فشل في تفعيل الاشتراك المعين', 'error');
@@ -391,7 +391,7 @@ const SuperAdminSubscriptions = () => {
     setRejecting(true);
     try {
       await Api.rejectSubscriptionRequest(rejectModal.requestId, rejectModal.reason);
-      toast(`تم رفض طلب تجديد "${rejectModal.tenantName}" وإرسال التنبيه للمتجر ❌`, 'success');
+      toast(`تم رفض طلب تجديد "${rejectModal.tenantName}" وإرسال التنبيه للمتجر `, 'success');
       setRejectModal({ open: false, requestId: null, tenantName: '', reason: '' });
       loadData();
     } catch (err) {
@@ -420,7 +420,7 @@ const SuperAdminSubscriptions = () => {
 
         {/* Header */}
         <div className="sa-sub-header-row">
-          <h1>🔑 إدارة الاشتراكات ونظام الدفع اليدوي</h1>
+          <h1><i className="fa-solid fa-key"></i> إدارة الاشتراكات ونظام الدفع اليدوي</h1>
         </div>
 
         {/* Stats Grid */}
@@ -429,28 +429,28 @@ const SuperAdminSubscriptions = () => {
             id="tenant_total"
             label="إجمالي المستأجرين"
             value={stats.totalTenants || 0}
-            icon="🏢"
+            icon={<i className="fa-solid fa-calculator"></i>}
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
           <StatTile
             id="tenant_active"
             label="الاشتراكات النشطة"
             value={stats.activeTenants || 0}
-            icon="✅"
+            icon={<i className="fa-solid fa-check-circle"></i>}
             defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
           />
           <StatTile
             id="tenant_pending"
             label="طلبات التجديد المعلقة"
             value={pendingRequestsCount}
-            icon="⏳"
+            icon={<i className="fa-solid fa-chart-simple"></i>}
             defaults={{ color: 'amber', size: 'tile-wd-sm', order: 3 }}
           />
           <StatTile
             id="tenant_inactive"
             label="المعطلة / المنتهية"
             value={stats.inactiveTenants || 0}
-            icon="⛔"
+            icon={<i className="fa-solid fa-ban"></i>}
             defaults={{ color: 'rose', size: 'tile-wd-sm', order: 4 }}
           />
         </div>
@@ -476,7 +476,7 @@ const SuperAdminSubscriptions = () => {
               gap: '8px'
             }}
           >
-            🏢 إدارة المتاجر ({tenants.length})
+            <i className="fa-solid fa-building"></i> إدارة المتاجر ({tenants.length})
           </button>
           <button 
             className={`sa-sub-tab-item ${activeTab === 'requests' ? 'active' : ''}`}
@@ -497,7 +497,7 @@ const SuperAdminSubscriptions = () => {
               gap: '8px'
             }}
           >
-            📥 طلبات تجديد الدفع اليدوي
+            <i className="fa-solid fa-inbox"></i> طلبات تجديد الدفع اليدوي
             {pendingRequestsCount > 0 && (
               <span style={{
                 background: '#ef4444',
@@ -521,7 +521,7 @@ const SuperAdminSubscriptions = () => {
           <>
             <div className="card">
               <div className="card-header">
-                <h3>🏢 إدارة المتاجر</h3>
+                <h3><i className="fa-solid fa-building"></i> إدارة المتاجر</h3>
                 <div className="toolbar">
                   <div className="search-input">
                     <input
@@ -564,7 +564,7 @@ const SuperAdminSubscriptions = () => {
                   <Loader message="جاري تحميل المتاجر..." />
                 ) : tenants.length === 0 ? (
                   <div className="sa-sub-empty-state">
-                    <div className="sa-sub-empty-icon">📋</div>
+                    <div className="sa-sub-empty-icon"><i className="fa-solid fa-clipboard-list"></i></div>
                     <h3>لا يوجد مستأجرين</h3>
                     <p>لا توجد نتائج مطابقة لبحثك</p>
                   </div>
@@ -646,14 +646,14 @@ const SuperAdminSubscriptions = () => {
                                    title="دخول كمدير"
                                    onClick={() => handleImpersonate(tenant)}
                                  >
-                                   🔑
+                                   <i className="fa-solid fa-key"></i>
                                  </button>
                                  <button
                                    className="btn btn-icon btn-ghost"
                                    title="تمديد الاشتراك"
                                    onClick={() => openExtendModal(tenant)}
                                  >
-                                   📅
+                                   <i className="fa-solid fa-calendar-days"></i>
                                  </button>
                                  {tenant.active ? (
                                    <button
@@ -661,7 +661,7 @@ const SuperAdminSubscriptions = () => {
                                      title="تعطيل المستأجر"
                                      onClick={() => handleToggleStatus(tenant)}
                                    >
-                                     ⛔
+                                     <i className="fa-solid fa-ban"></i>
                                    </button>
                                  ) : (
                                      <button
@@ -669,7 +669,7 @@ const SuperAdminSubscriptions = () => {
                                        title="تفعيل المستأجر"
                                        onClick={() => handleToggleStatus(tenant)}
                                      >
-                                       ✅
+                                       <i className="fa-solid fa-check"></i>
                                      </button>
                                    )}
                                    <button
@@ -677,7 +677,7 @@ const SuperAdminSubscriptions = () => {
                                      title="حذف المستأجر"
                                      onClick={() => setDeleteModalState({ isOpen: true, tenant, password: '', mode: 'soft' })}
                                    >
-                                     🗑️
+                                     <i className="fa-solid fa-trash"></i>
                                    </button>
                                  </div>
                                </td>
@@ -771,7 +771,7 @@ const SuperAdminSubscriptions = () => {
           <>
             <div className="card">
               <div className="card-header">
-                <h3>📥 طلبات تجديد الدفع اليدوي</h3>
+                <h3><i className="fa-solid fa-inbox"></i> طلبات تجديد الدفع اليدوي</h3>
                 <div className="toolbar">
                   <div className="search-input">
                     <input
@@ -809,7 +809,7 @@ const SuperAdminSubscriptions = () => {
                 <Loader />
               ) : requests.length === 0 ? (
                 <div className="sa-sub-empty-state">
-                  <div className="sa-sub-empty-icon">📥</div>
+                  <div className="sa-sub-empty-icon"><i className="fa-solid fa-inbox"></i></div>
                   <h3>لا توجد طلبات تجديد</h3>
                   <p>لا توجد طلبات مطابقة للفلتر المحدد</p>
                 </div>
@@ -865,7 +865,7 @@ const SuperAdminSubscriptions = () => {
                                 border: '1px solid rgba(0, 0, 0, 0.05)'
                               }}
                             >
-                              {req.paymentMethod === 'VODAFONE_CASH' ? '🔴 فودافون كاش' : '⚡ انستا باي'}
+                              {req.paymentMethod === 'VODAFONE_CASH' ? ' فودافون كاش' : ' انستا باي'}
                             </span>
                           </td>
                           <td style={{ direction: 'ltr', textAlign: 'right', fontWeight: '600' }}>
@@ -915,7 +915,7 @@ const SuperAdminSubscriptions = () => {
                               }}
                               className="sa-sub-receipt-overlay"
                               >
-                                🔍
+                                <i className="fa-solid fa-magnifying-glass"></i>
                               </div>
                             </div>
                           </td>
@@ -937,14 +937,14 @@ const SuperAdminSubscriptions = () => {
                                   title="موافقة وتفعيل الاشتراك"
                                   onClick={() => handleApproveRequest(req)}
                                 >
-                                  ✅
+                                  <i className="fa-solid fa-check"></i>
                                 </button>
                                 <button
                                   className="sa-sub-action-btn sa-sub-btn-deactivate"
                                   title="رفض الطلب"
                                   onClick={() => setRejectModal({ open: true, requestId: req.id, tenantName: req.tenantName, reason: '' })}
                                 >
-                                  ❌
+                                  <i className="fa-solid fa-xmark"></i>
                                 </button>
                               </div>
                             ) : (
@@ -1009,9 +1009,9 @@ const SuperAdminSubscriptions = () => {
           <div className="sa-sub-modal-overlay" onClick={closeExtendModal}>
             <div className="sa-sub-modal" onClick={(e) => e.stopPropagation()}>
               <div className="sa-sub-modal-header">
-                <h3>📅 تمديد الاشتراك</h3>
+                <h3><i className="fa-solid fa-calendar-days"></i> تمديد الاشتراك</h3>
                 <button className="sa-sub-modal-close" onClick={closeExtendModal}>
-                  ✕
+                  <i className="fa-solid fa-times"></i>
                 </button>
               </div>
               <div className="sa-sub-modal-body">
@@ -1110,9 +1110,9 @@ const SuperAdminSubscriptions = () => {
           <div className="sa-sub-modal-overlay" onClick={() => setRejectModal({ open: false, requestId: null, tenantName: '', reason: '' })}>
             <div className="sa-sub-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
               <div className="sa-sub-modal-header" style={{ borderBottom: '1px solid var(--sa-sub-border)', background: 'linear-gradient(to bottom, rgba(239, 68, 68, 0.05), transparent)' }}>
-                <h3 style={{ color: '#ef4444' }}>❌ رفض طلب تجديد الاشتراك</h3>
+                <h3 style={{ color: '#ef4444' }}><i className="fa-solid fa-xmark"></i> رفض طلب تجديد الاشتراك</h3>
                 <button className="sa-sub-modal-close" onClick={() => setRejectModal({ open: false, requestId: null, tenantName: '', reason: '' })}>
-                  ✕
+                  <i className="fa-solid fa-times"></i>
                 </button>
               </div>
               <form onSubmit={handleRejectRequestSubmit}>
@@ -1230,9 +1230,9 @@ const SuperAdminSubscriptions = () => {
               }}
             >
               <div className="sa-sub-modal-header" style={{ padding: '16px 24px', borderBottom: '1px solid var(--sa-sub-border)' }}>
-                <h3 style={{ fontSize: '1.1rem' }}>🖼️ إيصال تحويل الدفع لمتجر: {lightbox.tenantName}</h3>
+                <h3 style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-image"></i>️ إيصال تحويل الدفع لمتجر: {lightbox.tenantName}</h3>
                 <button className="sa-sub-modal-close" onClick={() => setLightbox({ open: false, imgUrl: '', tenantName: '' })}>
-                  ✕
+                  <i className="fa-solid fa-times"></i>
                 </button>
               </div>
               <div 
@@ -1270,7 +1270,7 @@ const SuperAdminSubscriptions = () => {
                     className="sa-sub-btn-ghost" 
                     style={{ textDecoration: 'none', padding: '8px 16px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    📥 فتح بالحجم الكامل
+                    <i className="fa-solid fa-inbox"></i> فتح بالحجم الكامل
                   </a>
                   <button 
                     className="sa-sub-btn-ghost" 
@@ -1292,8 +1292,8 @@ const SuperAdminSubscriptions = () => {
           <div className="sa-sub-modal-overlay" onClick={() => setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' })}>
             <div className="sa-sub-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
               <div className="sa-sub-modal-header">
-                <h3>🗑️ حذف المتجر: {deleteModalState.tenant?.name}</h3>
-                <button className="sa-sub-modal-close" onClick={() => setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' })}>✕</button>
+                <h3><i className="fa-solid fa-trash"></i> حذف المتجر: {deleteModalState.tenant?.name}</h3>
+                <button className="sa-sub-modal-close" onClick={() => setDeleteModalState({ isOpen: false, tenant: null, password: '', mode: 'soft' })}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="sa-sub-modal-body">
                 <form onSubmit={handleDeleteSubmit}>
@@ -1323,7 +1323,7 @@ const SuperAdminSubscriptions = () => {
                       </div>
                       {deleteModalState.mode === 'hard' && (
                           <div style={{ color: '#dc2626', background: '#fee2e2', padding: '10px', borderRadius: '8px', marginTop: '15px', fontSize: '0.9rem' }}>
-                              ⚠️ تحذير: هذا الخيار سيقوم بحذف جميع البيانات المتعلقة بالمتجر نهائياً ولا يمكن التراجع عنه.
+                              <i className="fa-solid fa-triangle-exclamation"></i> تحذير: هذا الخيار سيقوم بحذف جميع البيانات المتعلقة بالمتجر نهائياً ولا يمكن التراجع عنه.
                           </div>
                       )}
                   </div>

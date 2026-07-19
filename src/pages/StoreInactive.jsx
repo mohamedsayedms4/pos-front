@@ -83,7 +83,7 @@ const StoreInactive = () => {
         : true;
       
       if (tenantInfo.active && !isExpired) {
-        toast('تم تفعيل حساب متجرك بنجاح! يتم توجيهك الآن... 🎉', 'success');
+        toast('تم تفعيل حساب متجرك بنجاح! يتم توجيهك الآن... ', 'success');
         
         localStorage.removeItem('inactive_reason_code');
         localStorage.removeItem('inactive_reason_msg');
@@ -138,7 +138,7 @@ const StoreInactive = () => {
         receiptFile
       });
 
-      toast('تم إرسال طلب التجديد بنجاح! جاري مراجعته من قبل الإدارة. 🎉', 'success');
+      toast('تم إرسال طلب التجديد بنجاح! جاري مراجعته من قبل الإدارة. ', 'success');
       setShowModal(false);
       
       // Reset form fields
@@ -172,7 +172,7 @@ const StoreInactive = () => {
         <div className="si-icon-container">
           <div className="si-icon-pulse"></div>
           <div className="si-icon-bg"></div>
-          <div className="si-icon-main">{isExpired ? '📅' : '⛔'}</div>
+          <div className="si-icon-main">{isExpired ? '' : ''}</div>
         </div>
 
         {/* Status Badge */}
@@ -191,7 +191,7 @@ const StoreInactive = () => {
         {/* Dynamic Subscription Status Notice */}
         {pendingRequest ? (
           <div className="si-status-notice si-notice-pending">
-            <span className="si-notice-icon">⏳</span>
+            <span className="si-notice-icon"><i className="fa-solid fa-hourglass-half"></i></span>
             <div className="si-notice-text">
               <h4>طلب التجديد قيد المراجعة</h4>
               <p>
@@ -201,7 +201,7 @@ const StoreInactive = () => {
           </div>
         ) : lastRejectedRequest ? (
           <div className="si-status-notice si-notice-rejected">
-            <span className="si-notice-icon">❌</span>
+            <span className="si-notice-icon"><i className="fa-solid fa-xmark"></i></span>
             <div className="si-notice-text">
               <h4>تم رفض طلب التجديد الأخير</h4>
               <p>
@@ -222,7 +222,7 @@ const StoreInactive = () => {
               onClick={handleRefreshStatus} 
               disabled={loading}
             >
-              {loading ? <span className="si-spinner"></span> : '🔄'}
+              {loading ? <span className="si-spinner"></span> : ''}
               {loading ? 'جاري التحقق...' : 'تحديث والتحقق من التفعيل الآن'}
             </button>
           ) : (
@@ -231,7 +231,7 @@ const StoreInactive = () => {
               onClick={() => setShowModal(true)} 
               disabled={loadingRequests}
             >
-              💳 طلب تجديد الاشتراك وتفعيل المتجر
+              <i className="fa-solid fa-credit-card"></i> طلب تجديد الاشتراك وتفعيل المتجر
             </button>
           )}
 
@@ -242,7 +242,7 @@ const StoreInactive = () => {
               disabled={loading}
               style={{ marginBottom: '0.5rem' }}
             >
-              {loading ? <span className="si-spinner"></span> : '🔄'}
+              {loading ? <span className="si-spinner"></span> : ''}
               التحقق من التفعيل المباشر
             </button>
           )}
@@ -252,7 +252,7 @@ const StoreInactive = () => {
             onClick={handleLogout}
             disabled={loading}
           >
-            🚪 تسجيل الخروج من الحساب
+            <i className="fa-solid fa-door-open"></i> تسجيل الخروج من الحساب
           </button>
         </div>
 
@@ -261,7 +261,7 @@ const StoreInactive = () => {
           <p>للمساعدة الفنية الفورية وتسهيل التفعيل:</p>
           <div className="si-support-links">
             {globalConfig?.supportPhone && (
-              <a href={`tel:${globalConfig.supportPhone}`} className="si-support-link">📞 اتصل بنا</a>
+              <a href={`tel:${globalConfig.supportPhone}`} className="si-support-link"><i className="fa-solid fa-phone"></i> اتصل بنا</a>
             )}
             <a 
               href={`https://wa.me/${(globalConfig?.supportPhone || '201000000000').replace(/\D/g, '')}`} 
@@ -269,7 +269,7 @@ const StoreInactive = () => {
               rel="noopener noreferrer" 
               className="si-support-link"
             >
-              💬 واتساب الدعم
+              <i className="fa-solid fa-comment-dots"></i> واتساب الدعم
             </a>
           </div>
         </div>
@@ -281,9 +281,9 @@ const StoreInactive = () => {
           <div className="sa-sub-modal-overlay" onClick={() => setShowModal(false)}>
             <div className="sa-sub-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '20px' }}>
               <div className="sa-sub-modal-header" style={{ paddingBottom: '1.25rem' }}>
-                <h3>💳 طلب تجديد الاشتراك وتفعيل المتجر</h3>
+                <h3><i className="fa-solid fa-credit-card"></i> طلب تجديد الاشتراك وتفعيل المتجر</h3>
                 <button className="sa-sub-modal-close" onClick={() => setShowModal(false)}>
-                  ✕
+                  <i className="fa-solid fa-times"></i>
                 </button>
               </div>
               <form onSubmit={handleSubmitSubscription}>
@@ -291,7 +291,7 @@ const StoreInactive = () => {
                   
                   {/* Instructions Card */}
                   <div className="si-instructions-card">
-                    <h4>📱 تعليمات التحويل والدفع:</h4>
+                    <h4><i className="fa-solid fa-mobile-screen"></i> تعليمات التحويل والدفع:</h4>
                     <ul>
                       <li>فودافون كاش: <strong>{globalConfig?.vodafoneCashNumber || '01012345678'}</strong></li>
                       <li>انستا باي: <strong>{globalConfig?.instapayAddress || 'pos@instapay'}</strong></li>
@@ -326,7 +326,7 @@ const StoreInactive = () => {
                         onClick={() => setPaymentMethod('VODAFONE_CASH')}
                         style={{ width: '50%' }}
                       >
-                        🔴 فودافون كاش
+                        <i className="fa-solid fa-circle" style={{color: "#ef4444"}}></i> فودافون كاش
                       </button>
                       <button
                         type="button"
@@ -334,7 +334,7 @@ const StoreInactive = () => {
                         onClick={() => setPaymentMethod('INSTAPAY')}
                         style={{ width: '50%' }}
                       >
-                        ⚡ انستا باي
+                        <i className="fa-solid fa-bolt"></i> انستا باي
                       </button>
                     </div>
                   </div>
@@ -368,7 +368,7 @@ const StoreInactive = () => {
                       id="si-file-input"
                     />
                     <label htmlFor="si-file-input" className="si-file-label">
-                      <span className="si-file-icon">📸</span>
+                      <span className="si-file-icon"><i className="fa-solid fa-camera"></i></span>
                       <span className="si-file-text">
                         {receiptFile ? receiptFile.name : 'اختر صورة الإيصال أو اسحبها هنا'}
                       </span>

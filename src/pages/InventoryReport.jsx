@@ -53,7 +53,7 @@ const InventoryReport = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', width: '100%' }}>
                         <div>
                             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <span style={{ fontSize: '1.5rem' }}>📋</span> تقرير جرد المخزون العام
+                                <span style={{ fontSize: '1.5rem' }}><i className="fa-solid fa-clipboard-list"></i></span> تقرير جرد المخزون العام
                             </h3>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '5px' }}>
                                 عرض تفصيلي لجميع المنتجات وتوزيعها عبر المخازن والفروع
@@ -70,10 +70,10 @@ const InventoryReport = () => {
                                 />
                                 <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
                             </div>
-                            <button className="btn btn-secondary" onClick={() => loadData()}>🔄 تحديث</button>
+                            <button className="btn btn-secondary" onClick={() => loadData()}><i className="fa-solid fa-rotate"></i> تحديث</button>
                             <div style={{ display: 'flex', gap: '5px' }}>
-                                <button className="btn btn-ghost" onClick={() => handleExport('Excel')} title="تصدير Excel">📊</button>
-                                <button className="btn btn-ghost" onClick={() => handleExport('PDF')} title="تصدير PDF">📄</button>
+                                <button className="btn btn-ghost" onClick={() => handleExport('Excel')} title="تصدير Excel"><i className="fa-solid fa-chart-column"></i></button>
+                                <button className="btn btn-ghost" onClick={() => handleExport('PDF')} title="تصدير PDF"><i className="fa-solid fa-file-lines"></i></button>
                             </div>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ const InventoryReport = () => {
                         <Loader message="جاري جلب بيانات المخزون..." />
                     ) : data.length === 0 ? (
                         <div className="empty-state">
-                            <div className="empty-icon">📦</div>
+                            <div className="empty-icon"><i className="fa-solid fa-box"></i></div>
                             <h4>لا توجد بيانات مخزون</h4>
                             <p>لم يتم العثور على منتجات تطابق البحث في المخازن</p>
                         </div>
@@ -104,7 +104,7 @@ const InventoryReport = () => {
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                                                        📦
+                                                        <i className="fa-solid fa-box"></i>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                         <a href={`/products/${product.productId}`} style={{ fontWeight: 700, color: 'var(--color-primary)', textDecoration: 'none' }}>

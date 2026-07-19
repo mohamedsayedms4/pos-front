@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Api from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
+import '../styles/pages/SettingsPremium.css';
 import Loader from '../components/common/Loader';
 import ModalContainer from '../components/common/ModalContainer';
 import StatTile from '../components/common/StatTile';
@@ -171,36 +172,36 @@ const FixedAssets = () => {
           id="assets_total_purchase"
           label="إجمالي قيمة الشراء"
           value={`${totalPurchaseValue.toLocaleString()} ج.م`}
-          icon="🏦"
+          icon={<i className="fa-solid fa-cart-shopping"></i>}
           defaults={{ color: 'blue', size: 'tile-wd-sm' }}
         />
         <StatTile
           id="assets_total_current"
           label="القيمة الحالية الدفترية"
           value={`${totalCurrentValue.toLocaleString()} ج.م`}
-          icon="📈"
+          icon={<i className="fa-solid fa-coins"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm' }}
         />
         <StatTile
           id="assets_count"
           label="عدد الأصول"
           value={`${assets.length} أصل`}
-          icon="📦"
+          icon={<i className="fa-solid fa-building-columns"></i>}
           defaults={{ color: 'purple', size: 'tile-sq-sm' }}
         />
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h3>🏢 إدارة الأصول الثابتة</h3>
-          <div className="toolbar">
+          <h3><i className="fa-solid fa-building"></i> إدارة الأصول الثابتة</h3>
+          <div className="toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
               {isAdmin && (
-                  <select className="form-control" value={selectedBranchId} onChange={(e) => { setSelectedBranchId(e.target.value); setSelectedWarehouseId(''); }} style={{ width: '150px', height: '40px' }}>
+                  <select className="form-control" value={selectedBranchId} onChange={(e) => { setSelectedBranchId(e.target.value); setSelectedWarehouseId(''); }} style={{ flex: '1 1 150px', minWidth: '150px', height: '40px' }}>
                     <option value="">جميع الفروع</option>
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
               )}
-              <select className="form-control" value={selectedWarehouseId} onChange={(e) => setSelectedWarehouseId(e.target.value)} style={{ width: '150px', height: '40px' }} disabled={!selectedBranchId}>
+              <select className="form-control" value={selectedWarehouseId} onChange={(e) => setSelectedWarehouseId(e.target.value)} style={{ flex: '1 1 150px', minWidth: '150px', height: '40px' }} disabled={!selectedBranchId}>
                 <option value="">جميع المخازن</option>
                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
@@ -214,7 +215,7 @@ const FixedAssets = () => {
         </div>
 
         <div className="card-body no-padding">
-          <div className="table-wrapper">
+          <div className="table-responsive" style={{ width: "100%", overflowX: "auto" }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -234,7 +235,7 @@ const FixedAssets = () => {
                   <tr><td colSpan="8" style={{ padding: '80px 0' }}><Loader message="جاري تحميل سجل الأصول..." /></td></tr>
                 ) : assets.length === 0 ? (
                   <tr><td colSpan="8" style={{ padding: '100px 0', textAlign: 'center' }}>
-                      <div style={{ fontSize: '3rem', opacity: 0.2 }}>🔍</div>
+                      <div style={{ fontSize: '3rem', opacity: 0.2 }}><i className="fa-solid fa-magnifying-glass"></i></div>
                       <div style={{ color: 'var(--text-muted)', marginTop: '10px' }}>لا توجد أصول مسجلة حالياً</div>
                   </td></tr>
                 ) : (
@@ -255,8 +256,8 @@ const FixedAssets = () => {
                             <td style={{ color: 'var(--metro-green)', fontWeight: 'bold' }}>{asset.currentValue?.toLocaleString()} ج.م</td>
                             <td>
                                 <div style={{ fontSize: '0.85rem' }}>
-                                    <div>📍 {asset.branchName}</div>
-                                    {asset.warehouseName && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>🏠 {asset.warehouseName}</div>}
+                                    <div><i className="fa-solid fa-location-dot"></i> {asset.branchName}</div>
+                                    {asset.warehouseName && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}><i className="fa-solid fa-house"></i> {asset.warehouseName}</div>}
                                 </div>
                             </td>
                             <td>
@@ -286,8 +287,8 @@ const FixedAssets = () => {
           <div className="modal-overlay active anim-fade-in" onClick={() => setShowModal(false)} style={{ zIndex: 100000 }}>
             <div className="modal-content anim-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px' }}>
                 <div className="modal-header">
-                    <h2>{editingId ? '📝 تعديل بيانات أصل' : '🏗️ إضافة أصل ثابت جديد'}</h2>
-                    <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+                    <h2>{editingId ? ' تعديل بيانات أصل' : '️ إضافة أصل ثابت جديد'}</h2>
+                    <button className="close-btn" onClick={() => setShowModal(false)}><i className="fa-solid fa-times"></i></button>
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body" style={{ padding: '25px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>

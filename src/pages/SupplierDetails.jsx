@@ -92,7 +92,7 @@ const SupplierDetails = () => {
   if (error || !data) {
     return (
       <div className="page-section empty-state">
-        <div className="empty-icon">⚠️</div>
+        <div className="empty-icon"><i className="fa-solid fa-triangle-exclamation"></i></div>
         <h4>حدث خطأ</h4>
         <p>{error || 'لم يتم العثور على المورد'}</p>
         <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={() => navigate('/suppliers')}>العودة للموردين</button>
@@ -107,7 +107,7 @@ const SupplierDetails = () => {
       <div className="card" style={{ marginBottom: '20px' }}>
         <div className="card-header" style={{ justifyContent: 'flex-start', gap: '15px' }}>
           <button className="btn btn-ghost" style={{ padding: '4px 12px', gap: '6px' }} onClick={() => navigate('/suppliers')}>
-            <span style={{ fontSize: '1.2rem' }}>⬅️</span> جميع الموردين
+            <span style={{ fontSize: '1.2rem' }}><i className="fa-solid fa-arrow-left"></i>️</span> جميع الموردين
           </button>
           <div>
             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -117,7 +117,7 @@ const SupplierDetails = () => {
                {d.supplierName}
             </h3>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {d.supplierPhone ? `📞 ${d.supplierPhone}` : ''} {d.supplierEmail ? ` ✉️ ${d.supplierEmail}` : ''}
+              {d.supplierPhone ? ` ${d.supplierPhone}` : ''} {d.supplierEmail ? ` ️ ${d.supplierEmail}` : ''}
             </div>
           </div>
         </div>
@@ -126,7 +126,7 @@ const SupplierDetails = () => {
       {/* Daily Supplier Activity Chart */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
-          <h3 style={{ fontSize: '1rem', margin: 0 }}>📊 نشاط المورد اليومي (أخر 7 أيام)</h3>
+          <h3 style={{ fontSize: '1rem', margin: 0 }}><i className="fa-solid fa-chart-column"></i> نشاط المورد اليومي (أخر 7 أيام)</h3>
         </div>
         <div className="card-body" style={{ height: '300px', width: '100%', padding: '20px' }}>
           {dailyStats.length > 0 ? (
@@ -164,7 +164,7 @@ const SupplierDetails = () => {
           label="عدد الفواتير الكلي"
           value={d.totalInvoices}
           subtitle={`هذا الشهر: ${d.currentMonthInvoices}`}
-          icon="📄"
+          icon={<i className="fa-solid fa-calculator"></i>}
           defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile 
@@ -172,7 +172,7 @@ const SupplierDetails = () => {
           label="حجم التعامل (مشتريات)"
           value={Number(d.totalBusinessVolume).toFixed(2)}
           subtitle={`هذا الشهر: ${Number(d.currentMonthBusinessVolume).toFixed(2)}`}
-          icon="📊"
+          icon={<i className="fa-solid fa-cart-shopping"></i>}
           defaults={{ color: 'cobalt', size: 'tile-wd-sm', order: 2 }}
         />
         <StatTile 
@@ -180,7 +180,7 @@ const SupplierDetails = () => {
           label="علينا للمورد (متبقي)"
           value={Number(d.weOweSupplier).toFixed(2)}
           subtitle="المديونيات المفتوحة"
-          icon="📤"
+          icon={<i className="fa-solid fa-truck-field"></i>}
           defaults={{ color: 'rose', size: 'tile-wd-sm', order: 3 }}
         />
         <StatTile 
@@ -188,7 +188,7 @@ const SupplierDetails = () => {
           label="لنا عند المورد (سلف/مدين)"
           value={Number(d.supplierOwesUs).toFixed(2)}
           subtitle="أرصدة مدينة على المورد"
-          icon="📥"
+          icon={<i className="fa-solid fa-truck-field"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 4 }}
         />
       </div>
@@ -232,8 +232,8 @@ const SupplierDetails = () => {
           <div className="card-header" style={{ padding: '15px', borderBottom: '1px solid var(--border-color)' }}>
             <h3 style={{ fontSize: '1rem', margin: 0 }}>أحدث حركات كشف الحساب</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
-               <button className="btn btn-outline-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.exportSupplierStatement(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>📊 مبسط</button>
-               <button className="btn btn-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.downloadComprehensiveReport(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>📄 شامل</button>
+               <button className="btn btn-outline-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.exportSupplierStatement(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}> مبسط</button>
+               <button className="btn btn-success btn-sm" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => Api.downloadComprehensiveReport(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}><i className="fa-solid fa-file-lines"></i> شامل</button>
                <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={handleShowLedger}>التفاصيل كاملة</button>
             </div>
           </div>
@@ -268,24 +268,24 @@ const SupplierDetails = () => {
             <div className="modal" style={{ maxWidth: '800px' }}>
               <div className="modal-header">
                 <h3>كشف حساب — {d.supplierName}</h3>
-                <button className="modal-close" onClick={closeLedger}>✕</button>
+                <button className="modal-close" onClick={closeLedger}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 {isLedgerLoading ? (
                   <Loader message="جاري تحميل كشف الحساب..." />
                 ) : !ledgerData || ledgerData.length === 0 ? (
                   <div className="empty-state">
-                    <div className="empty-icon">📋</div>
+                    <div className="empty-icon"><i className="fa-solid fa-clipboard-list"></i></div>
                     <h4>لا توجد حركات</h4>
                   </div>
                 ) : (
                   <>
                     <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                       <button className="btn btn-outline-success btn-sm" onClick={() => Api.exportSupplierStatement(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>
-                        📊 كشف حساب (مبسط)
+                         كشف حساب (مبسط)
                       </button>
                       <button className="btn btn-success btn-sm" onClick={() => Api.downloadComprehensiveReport(d.supplierId, d.supplierName.replace(/'/g, "\\'"), selectedBranchId)}>
-                        📄 التقرير الشامل (Advanced)
+                        <i className="fa-solid fa-file-lines"></i> التقرير الشامل (Advanced)
                       </button>
                     </div>
                     <div className="table-wrapper">

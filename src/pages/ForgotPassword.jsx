@@ -64,7 +64,7 @@ const ForgotPassword = () => {
         {success ? (
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <div style={{ color: 'var(--metro-green)', fontSize: '1.1rem', marginBottom: '15px' }}>
-              ✅ تم إرسال رابط إعادة تعيين كلمة المرور بنجاح إلى بريدك الإلكتروني.
+              <i className="fa-solid fa-check"></i> تم إرسال رابط إعادة تعيين كلمة المرور بنجاح إلى بريدك الإلكتروني.
             </div>
             <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>
               الرجاء التحقق من رسائلك والنقر على الرابط لتغيير كلمة المرور.

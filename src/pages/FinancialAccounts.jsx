@@ -92,26 +92,26 @@ const FinancialAccounts = () => {
                 <StatTile
                     label="إجمالي السيولة (نقدية + بنوك)"
                     value={accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0).toFixed(2)}
-                    icon="💰"
+                    icon={<i className="fa-solid fa-money-bill-wave"></i>}
                     defaults={{ color: 'blue' }}
                 />
                 <StatTile
                     label="رصيد البنوك"
                     value={accounts.filter(a => a.accountType === 'BANK').reduce((sum, acc) => sum + (acc.balance || 0), 0).toFixed(2)}
-                    icon="🏦"
+                    icon={<i className="fa-solid fa-vault"></i>}
                     defaults={{ color: 'emerald' }}
                 />
                 <StatTile
                     label="رصيد الخزائن النقدية"
                     value={accounts.filter(a => a.accountType === 'CASH').reduce((sum, acc) => sum + (acc.balance || 0), 0).toFixed(2)}
-                    icon="💵"
+                    icon={<i className="fa-solid fa-money-bill-wave"></i>}
                     defaults={{ color: 'amber' }}
                 />
             </div>
 
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3>🏦 إدارة الحسابات المالية والبنوك</h3>
+                    <h3><i className="fa-solid fa-building-columns"></i> إدارة الحسابات المالية والبنوك</h3>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button className="btn btn-secondary" onClick={() => setShowTransfer(true)}>↔️ تحويل بين الحسابات</button>
                         <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ إضافة حساب جديد</button>
@@ -168,7 +168,7 @@ const FinancialAccounts = () => {
                         <div className="modal">
                             <div className="modal-header">
                                 <h3>إضافة حساب مالي جديد</h3>
-                                <button className="modal-close" onClick={() => setShowForm(false)}>✕</button>
+                                <button className="modal-close" onClick={() => setShowForm(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <form id="accForm" onSubmit={handleCreateAccount}>
@@ -231,7 +231,7 @@ const FinancialAccounts = () => {
                         <div className="modal">
                             <div className="modal-header">
                                 <h3>تحويل بين الحسابات</h3>
-                                <button className="modal-close" onClick={() => setShowTransfer(false)}>✕</button>
+                                <button className="modal-close" onClick={() => setShowTransfer(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <form id="transForm" onSubmit={handleTransfer}>

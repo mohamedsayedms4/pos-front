@@ -142,7 +142,7 @@ const SalesAnalytics = () => {
   return (
     <div className="page-section">
       <div className="card-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-        <h3 style={{ margin: 0 }}>📊 تحليلات المبيعات الذكية (Widgets)</h3>
+        <h3 style={{ margin: 0 }}><i className="fa-solid fa-chart-column"></i> تحليلات المبيعات الذكية (Widgets)</h3>
         {Api.isAdminOrBranchManager() && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>تصفية بالفرع:</span>
@@ -198,7 +198,7 @@ const SalesAnalytics = () => {
 
         {/* 30 Day Trend Chart */}
         <div className="card" style={{ padding: '20px', marginBottom: '25px' }}>
-            <h4 style={{ marginBottom: '15px' }}>📈 اتجاه المبيعات (30 يوم)</h4>
+            <h4 style={{ marginBottom: '15px' }}><i className="fa-solid fa-arrow-trend-up"></i> اتجاه المبيعات (30 يوم)</h4>
             <div style={{ height: '200px' }}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <AreaChart data={summary.dailyTrend.reduce((acc, curr) => {
@@ -222,7 +222,7 @@ const SalesAnalytics = () => {
       <div className="widgets-2-column-grid">
         
         {/* Hourly Trend Widget */}
-        <AnalyticsWidget title="أوقات الذروة" icon="🕒" date={hourlyDate} onDateChange={setHourlyDate} loading={hourlyLoading}>
+        <AnalyticsWidget title="أوقات الذروة" icon={<i className="fa-solid fa-clock"></i>} date={hourlyDate} onDateChange={setHourlyDate} loading={hourlyLoading}>
             <div style={{ height: '250px' }}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart data={Array.from({length: 24}, (_, i) => {
@@ -238,7 +238,7 @@ const SalesAnalytics = () => {
             </div>
         </AnalyticsWidget>
 
-        <AnalyticsWidget title="الأكثر مبيعاً" icon="🏆" date={productDate} onDateChange={setProductDate} loading={productLoading}>
+        <AnalyticsWidget title="الأكثر مبيعاً" icon={<i className="fa-solid fa-fire"></i>} date={productDate} onDateChange={setProductDate} loading={productLoading}>
             <div className="table-wrapper" style={{ maxHeight: '250px', overflowY: 'auto' }}>
                 <table className="data-table">
                     <thead>
@@ -258,7 +258,7 @@ const SalesAnalytics = () => {
         </AnalyticsWidget>
 
         {/* Cashier Stats Widget */}
-        <AnalyticsWidget title="أداء الموظفين" icon="👥" date={cashierDate} onDateChange={setCashierDate} loading={cashierLoading}>
+        <AnalyticsWidget title="أداء الموظفين" icon={<i className="fa-solid fa-user-tie"></i>} date={cashierDate} onDateChange={setCashierDate} loading={cashierLoading}>
             <div className="table-wrapper" style={{ maxHeight: '250px', overflowY: 'auto' }}>
                 <table className="data-table">
                     <thead>
@@ -279,7 +279,7 @@ const SalesAnalytics = () => {
         </AnalyticsWidget>
 
         {/* Returns Widget */}
-        <AnalyticsWidget title="المرتجعات" icon="📦" date={returnDate} onDateChange={setReturnDate} loading={returnLoading}>
+        <AnalyticsWidget title="المرتجعات" icon={<i className="fa-solid fa-rotate-left"></i>} date={returnDate} onDateChange={setReturnDate} loading={returnLoading}>
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <div className="card" style={{ flex: 1, padding: '15px', textAlign: 'center', background: 'rgba(255,255,255,0.03)', minWidth: '140px' }}>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>عدد المرتجعات</div>

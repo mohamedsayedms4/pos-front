@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Api, { SERVER_URL } from '../services/api';
 import { useGlobalUI } from '../components/common/GlobalUI';
 import ModalContainer from '../components/common/ModalContainer';
@@ -7,6 +7,7 @@ import Loader from '../components/common/Loader';
 import StatTile from '../components/common/StatTile';
 
 const Categories = () => {
+  const navigate = useNavigate();
   const { toast, confirm } = useGlobalUI();
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -293,14 +294,14 @@ const Categories = () => {
             id="cat_total"
             label="إجمالي الفئات"
             value={flatData.length}
-            icon="📂"
+            icon={<i className="fa-solid fa-calculator"></i>}
             defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
           />
           <StatTile
             id="cat_main"
             label="رئيسية"
             value={flatData.filter(c => c.level === 0).length}
-            icon="📁"
+            icon={<i className="fa-solid fa-folder"></i>}
             defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 2 }}
           />
           <StatTile
@@ -314,7 +315,7 @@ const Categories = () => {
 
         <div className="card">
           <div className="card-header">
-            <h3>📂 إدارة الفئات</h3>
+            <h3><i className="fa-solid fa-folder-open"></i> إدارة الفئات</h3>
             <div className="toolbar">
               <div className="search-input">
                 <input type="text" placeholder="بحث عن فئة..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -329,7 +330,7 @@ const Categories = () => {
               >
                 <option value="name,asc">الاسم (أ-ي)</option>
                 <option value="name,desc">الاسم (ي-أ)</option>
-                <option value="productCount,desc">الأكثر منتجات 🔥</option>
+                <option value="productCount,desc">الأكثر منتجات <i className="fa-solid fa-fire"></i></option>
                 <option value="productCount,asc">الأقل منتجات</option>
                 <option value="createdAt,desc">الأحدث 🆕</option>
                 <option value="createdAt,asc">الأقدم</option>
@@ -343,7 +344,7 @@ const Categories = () => {
                     onClick={() => { setShowExcelDropdown(!showExcelDropdown); setShowPdfDropdown(false); }}
                     disabled={exportingExcel || exportingCompExcel || data.length === 0}
                   >
-                    {exportingExcel || exportingCompExcel ? '⏳' : '📊'} إكسيل
+                    {exportingExcel || exportingCompExcel ? '' : ''} إكسيل
                   </button>
                   {showExcelDropdown && (
                     <div style={{ 
@@ -362,7 +363,7 @@ const Categories = () => {
                           borderBottom: '1px solid var(--border-subtle)'
                         }}
                       >
-                        <span style={{ fontSize: '1.1rem' }}>📂</span> قائمة الفئات
+                        <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-folder-open"></i></span> قائمة الفئات
                       </div>
                       <div 
                         onClick={() => { handleExportCompExcel(); setShowExcelDropdown(false); }}
@@ -372,7 +373,7 @@ const Categories = () => {
                           color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px'
                         }}
                       >
-                        <span style={{ fontSize: '1.1rem' }}>📋</span> جرد شامل (منتجات)
+                        <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-clipboard-list"></i></span> جرد شامل (منتجات)
                       </div>
                     </div>
                   )}
@@ -385,7 +386,7 @@ const Categories = () => {
                     onClick={() => { setShowPdfDropdown(!showPdfDropdown); setShowExcelDropdown(false); }}
                     disabled={exportingPdf || exportingCompPdf || data.length === 0}
                   >
-                    {exportingPdf || exportingCompPdf ? '⏳' : '📄'} PDF
+                    {exportingPdf || exportingCompPdf ? '' : ''} PDF
                   </button>
                   {showPdfDropdown && (
                     <div style={{ 
@@ -404,7 +405,7 @@ const Categories = () => {
                           borderBottom: '1px solid var(--border-subtle)'
                         }}
                       >
-                        <span style={{ fontSize: '1.1rem' }}>📄</span> تقرير الفئات
+                        <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-file-lines"></i></span> تقرير الفئات
                       </div>
                       <div 
                         onClick={() => { handleExportCompPdf(); setShowPdfDropdown(false); }}
@@ -414,14 +415,14 @@ const Categories = () => {
                           color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '10px'
                         }}
                       >
-                        <span style={{ fontSize: '1.1rem' }}>📋</span> جرد شامل (منتجات)
+                        <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-clipboard-list"></i></span> جرد شامل (منتجات)
                       </div>
                     </div>
                   )}
                 </div>
 
                 {Api.can('CATEGORY_WRITE') && (
-                  <button className="btn btn-primary" onClick={() => openForm(null)}>
+                  <button className="btn btn-primary" onClick={() => navigate('/categories/add')}>
                     <span>+</span> إضافة فئة
                   </button>
                 )}
@@ -434,7 +435,7 @@ const Categories = () => {
                 <Loader message="جاري تحميل الفئات..." />
               ) : flatData.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">📂</div>
+                  <div className="empty-icon"><i className="fa-solid fa-folder-open"></i></div>
                   <h4>لا توجد فئات</h4>
                   <p>قم بإضافة فئات لتنظيم المنتجات</p>
                 </div>
@@ -459,7 +460,7 @@ const Categories = () => {
                           {c.imageUrl ? (
                             <img src={SERVER_URL + c.imageUrl} alt={c.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
                           ) : (
-                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📁</div>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}><i className="fa-solid fa-folder"></i></div>
                           )}
                         </td>
                         <td>
@@ -475,10 +476,10 @@ const Categories = () => {
                         <td><span className="badge badge-info">{c.productCount || 0}</span></td>
                         <td>
                           <div className="table-actions">
-                            <Link className="btn btn-icon btn-ghost" title="تفاصيل الفئة" to={`/categories/${c.id}`}>👁️</Link>
-                            <Link className="btn btn-icon btn-ghost" title="عرض المنتجات" to={`/categories/${c.id}/products`}>📦</Link>
-                            {Api.can('CATEGORY_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => openForm(c)}>✏️</button>}
-                            {Api.can('CATEGORY_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(c.id, c.name)}>🗑️</button>}
+                            <Link className="btn btn-icon btn-ghost" title="تفاصيل الفئة" to={`/categories/${c.id}`}><i className="fa-solid fa-eye"></i>️</Link>
+                            <Link className="btn btn-icon btn-ghost" title="عرض المنتجات" to={`/categories/${c.id}/products`}><i className="fa-solid fa-box"></i></Link>
+                            {Api.can('CATEGORY_WRITE') && <button className="btn btn-icon btn-ghost" title="تعديل" onClick={() => navigate(`/categories/edit/${c.id}`)}><i className="fa-solid fa-pencil"></i></button>}
+                            {Api.can('CATEGORY_DELETE') && <button className="btn btn-icon btn-ghost" title="حذف" onClick={() => handleDelete(c.id, c.name)}><i className="fa-solid fa-trash"></i></button>}
                           </div>
                         </td>
                       </tr>
@@ -498,7 +499,7 @@ const Categories = () => {
             <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
                 <h3>{editCategory ? 'تعديل فئة' : 'إضافة فئة جديدة'}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="categoryForm" onSubmit={handleSave}>

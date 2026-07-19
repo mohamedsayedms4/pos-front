@@ -181,7 +181,7 @@ const CustomerDetails = () => {
   if (error || !customer) {
     return (
       <div className="page-section empty-state">
-        <div className="empty-icon">⚠️</div>
+        <div className="empty-icon"><i className="fa-solid fa-triangle-exclamation"></i></div>
         <h4>حدث خطأ</h4>
         <p>{error || 'لم يتم العثور على العميل'}</p>
         <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={() => navigate('/customers')}>العودة للعملاء</button>
@@ -196,7 +196,7 @@ const CustomerDetails = () => {
       <div className="card" style={{ marginBottom: '20px' }}>
         <div className="card-header" style={{ justifyContent: 'flex-start', gap: '15px' }}>
           <button className="btn btn-ghost" style={{ padding: '4px 12px', gap: '6px' }} onClick={() => navigate('/customers')}>
-            <span style={{ fontSize: '1.2rem' }}>⬅️</span> جميع العملاء
+            <span style={{ fontSize: '1.2rem' }}><i className="fa-solid fa-arrow-left"></i>️</span> جميع العملاء
           </button>
           <div>
             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -206,7 +206,7 @@ const CustomerDetails = () => {
                {c.name}
             </h3>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {c.phone ? `📞 ${c.phone}` : ''} {c.email ? ` ✉️ ${c.email}` : ''}
+              {c.phone ? ` ${c.phone}` : ''} {c.email ? ` ️ ${c.email}` : ''}
             </div>
           </div>
         </div>
@@ -218,7 +218,7 @@ const CustomerDetails = () => {
           label="الرصيد / المديونية الحالية"
           value={Number(c.balance || 0).toFixed(2)}
           subtitle={c.balance > 0 ? "مديونية مستحقة" : "رصيد دائن"}
-          icon="💰"
+          icon={<i className="fa-solid fa-hand-holding-dollar"></i>}
           defaults={{ color: c.balance > 0 ? 'rose' : 'emerald', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile 
@@ -226,7 +226,7 @@ const CustomerDetails = () => {
           label="الفواتير المفتوحة"
           value={debtSummary?.openInvoicesCount || 0}
           subtitle="غير مسددة بالكامل"
-          icon="📄"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'amber', size: 'tile-wd-sm', order: 2 }}
         />
       </div>
@@ -235,7 +235,7 @@ const CustomerDetails = () => {
         {/* Profile Details Card */}
         <div className="card" style={{ height: 'fit-content' }}>
           <div className="card-header">
-            <h4>📋 معلومات الملف الشخصي</h4>
+            <h4><i className="fa-solid fa-clipboard-list"></i> معلومات الملف الشخصي</h4>
           </div>
           <div className="card-body">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -262,7 +262,7 @@ const CustomerDetails = () => {
               {c.balance > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
                   <button className="btn btn-primary w-100" onClick={() => { setPaymentAmount(c.balance); setShowPayModal(true); }}>
-                    💰 تحصيل مديونية
+                    <i className="fa-solid fa-sack-dollar"></i> تحصيل مديونية
                   </button>
                 </div>
               )}
@@ -275,13 +275,13 @@ const CustomerDetails = () => {
           <div className="card-header" style={{ padding: '0 15px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="modal-tabs" style={{ display: 'flex', gap: '15px' }}>
               <button className={`tab-btn ${activeTab === 'invoices' ? 'active' : ''}`} onClick={() => setActiveTab('invoices')} style={{ background: 'none', border: 'none', padding: '15px 5px', cursor: 'pointer', color: activeTab === 'invoices' ? 'var(--metro-blue)' : 'var(--text-muted)', borderBottom: activeTab === 'invoices' ? '2px solid var(--metro-blue)' : 'none', fontWeight: activeTab === 'invoices' ? 'bold' : 'normal' }}>
-                📄 فواتير الكاشير
+                <i className="fa-solid fa-file-lines"></i> فواتير الكاشير
               </button>
               <button className={`tab-btn ${activeTab === 'online' ? 'active' : ''}`} onClick={() => setActiveTab('online')} style={{ background: 'none', border: 'none', padding: '15px 5px', cursor: 'pointer', color: activeTab === 'online' ? 'var(--metro-blue)' : 'var(--text-muted)', borderBottom: activeTab === 'online' ? '2px solid var(--metro-blue)' : 'none', fontWeight: activeTab === 'online' ? 'bold' : 'normal' }}>
-                🌐 طلبات أونلاين
+                <i className="fa-solid fa-globe"></i> طلبات أونلاين
               </button>
               <button className={`tab-btn ${activeTab === 'open' ? 'active' : ''}`} onClick={() => setActiveTab('open')} style={{ background: 'none', border: 'none', padding: '15px 5px', cursor: 'pointer', color: activeTab === 'open' ? 'var(--metro-blue)' : 'var(--text-muted)', borderBottom: activeTab === 'open' ? '2px solid var(--metro-blue)' : 'none', fontWeight: activeTab === 'open' ? 'bold' : 'normal' }}>
-                ⚠️ فواتير معلقة الدفع
+                <i className="fa-solid fa-triangle-exclamation"></i> فواتير معلقة الدفع
               </button>
             </div>
           </div>
@@ -292,7 +292,7 @@ const CustomerDetails = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', padding: '15px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
                 {/* Branch Filter */}
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>🏢 الفرع</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}><i className="fa-solid fa-building"></i> الفرع</label>
                   <select className="form-control" style={{ height: '36px', padding: '4px 10px', fontSize: '0.85rem' }} value={filterBranchId} onChange={e => setFilterBranchId(e.target.value)}>
                     <option value="">كل الفروع</option>
                     {branches && branches.map(b => (
@@ -303,25 +303,25 @@ const CustomerDetails = () => {
                 
                 {/* Start Date */}
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>📅 من تاريخ</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}><i className="fa-solid fa-calendar-days"></i> من تاريخ</label>
                   <input type="date" className="form-control" style={{ height: '36px', padding: '4px 10px', fontSize: '0.85rem' }} value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} />
                 </div>
 
                 {/* End Date */}
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>📅 إلى تاريخ</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}><i className="fa-solid fa-calendar-days"></i> إلى تاريخ</label>
                   <input type="date" className="form-control" style={{ height: '36px', padding: '4px 10px', fontSize: '0.85rem' }} value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} />
                 </div>
 
                 {/* Min Amount */}
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>💰 الحد الأدنى</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}><i className="fa-solid fa-sack-dollar"></i> الحد الأدنى</label>
                   <input type="number" step="0.01" className="form-control" placeholder="0.00" style={{ height: '36px', padding: '4px 10px', fontSize: '0.85rem' }} value={filterMinAmount} onChange={e => setFilterMinAmount(e.target.value)} />
                 </div>
 
                 {/* Max Amount */}
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>💰 الحد الأقصى</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}><i className="fa-solid fa-sack-dollar"></i> الحد الأقصى</label>
                   <input type="number" step="0.01" className="form-control" placeholder="0.00" style={{ height: '36px', padding: '4px 10px', fontSize: '0.85rem' }} value={filterMaxAmount} onChange={e => setFilterMaxAmount(e.target.value)} />
                 </div>
 
@@ -334,7 +334,7 @@ const CustomerDetails = () => {
                     setFilterMinAmount('');
                     setFilterMaxAmount('');
                   }}>
-                    🧹 مسح الفلاتر
+                    <i className="fa-solid fa-broom"></i> مسح الفلاتر
                   </button>
                 </div>
               </div>
@@ -351,7 +351,7 @@ const CustomerDetails = () => {
                         <tr>
                           <th>رقم الفاتورة</th>
                           <th>التاريخ</th>
-                          <th>🏢 الفرع</th>
+                          <th><i className="fa-solid fa-building"></i> الفرع</th>
                           <th>الإجمالي</th>
                           <th>المدفوع</th>
                           <th>المتبقي</th>
@@ -441,7 +441,7 @@ const CustomerDetails = () => {
                       <tr>
                         <th>رقم الفاتورة</th>
                         <th>التاريخ</th>
-                        <th>🏢 الفرع</th>
+                        <th><i className="fa-solid fa-building"></i> الفرع</th>
                         <th>إجمالي الفاتورة</th>
                         <th>المتبقي (المديونية)</th>
                       </tr>
@@ -477,7 +477,7 @@ const CustomerDetails = () => {
             <div className="modal" style={{ maxWidth: '500px' }}>
               <div className="modal-header">
                 <h3>تحصيل دفعة مديونية</h3>
-                <button className="modal-close" onClick={() => setShowPayModal(false)}>✕</button>
+                <button className="modal-close" onClick={() => setShowPayModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <form onSubmit={handlePaymentSubmit}>
                 <div className="modal-body">

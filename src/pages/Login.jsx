@@ -32,6 +32,24 @@ const Login = () => {
     }
   }, [navigate]);
 
+  // SEO: noindex لصفحة تسجيل الدخول — لا تريد محركات البحث لفهرستها
+  React.useEffect(() => {
+    const prevTitle = document.title;
+    document.title = 'تسجيل الدخول | سجل ERP';
+    let meta = document.querySelector('meta[name="robots"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'robots';
+      document.head.appendChild(meta);
+    }
+    const prevRobots = meta.content;
+    meta.content = 'noindex, follow';
+    return () => {
+      document.title = prevTitle;
+      meta.content = prevRobots;
+    };
+  }, []);
+
   React.useEffect(() => {
     // Set default favicon
     const link = document.querySelector("link[rel~='icon']");
@@ -190,7 +208,7 @@ const Login = () => {
       // 4. Perform Login
       await Api.login(email, password, resolvedId);
 
-      // 5. 📊 Facebook Pixel — حدث تسجيل دخول ناجح
+      // 5. <i className="fa-solid fa-chart-column"></i> Facebook Pixel — حدث تسجيل دخول ناجح
       trackCustomLogin({ businessName });
 
       navigate('/dashboard');
@@ -251,17 +269,22 @@ const Login = () => {
             />
           </div>
 
-          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', userSelect: 'none', cursor: 'pointer' }}>
-            <input
-              id="rememberMeInput"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--metro-blue)' }}
-            />
-            <label htmlFor="rememberMeInput" style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: 0, fontWeight: '600' }}>
-              تذكرني على هذا الجهاز
-            </label>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', cursor: 'pointer' }}>
+              <input
+                id="rememberMeInput"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--metro-blue)' }}
+              />
+              <label htmlFor="rememberMeInput" style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: 0, fontWeight: '600' }}>
+                تذكرني على هذا الجهاز
+              </label>
+            </div>
+            <Link to="/forgot-password" style={{ color: 'var(--metro-blue)', fontWeight: 'bold', fontSize: '0.9rem', textDecoration: 'none' }}>
+              نسيت كلمة المرور؟
+            </Link>
           </div>
 
           {suggestedTenants.length > 1 && (
@@ -289,7 +312,7 @@ const Login = () => {
 
           {businessName && suggestedTenants.length === 0 && (
             <div style={{ marginBottom: '15px', padding: '8px 12px', background: 'rgba(0, 123, 255, 0.1)', borderLeft: '3px solid var(--metro-blue)', color: 'var(--metro-blue)', fontSize: '0.8rem', fontWeight: 'bold' }}>
-              ✓ تسجيل الدخول إلى: {businessName}
+              <i className="fa-solid fa-check"></i> تسجيل الدخول إلى: {businessName}
             </div>
           )}
 
@@ -305,9 +328,6 @@ const Login = () => {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #222' }}>
-          <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '8px' }}>
-            نسيت كلمة المرور؟ <Link to="/forgot-password" style={{ color: 'var(--metro-blue)', fontWeight: '600', textDecoration: 'none' }}>إعادة تعيين</Link>
-          </p>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '8px' }}>
             ليس لديك حساب؟ <a href="/register" style={{ color: 'var(--metro-blue)', fontWeight: '600', textDecoration: 'none' }}>إنشاء شركة جديدة</a>
           </p>

@@ -95,7 +95,7 @@ const ProductAnalytics = () => {
   return (
     <div className="page-section animate-fade-in">
       <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', border: 'none', gap: '15px' }}>
-        <h2 style={{ margin: 0, fontWeight: '300', letterSpacing: '1px' }}>📊 تحليلات المنتجات</h2>
+        <h2 style={{ margin: 0, fontWeight: '300', letterSpacing: '1px' }}><i className="fa-solid fa-chart-column"></i> تحليلات المنتجات</h2>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {isAdmin && (
             <select 
@@ -107,9 +107,9 @@ const ProductAnalytics = () => {
               }} 
               style={{ width: '200px', height: '40px', background: 'var(--bg-elevated, #1a1a1a)', color: 'var(--text-main, #ffffff)', border: '1px solid var(--border-main, #333)', borderRadius: '8px', padding: '0 10px', fontSize: '0.9rem', outline: 'none' }}
             >
-              <option value="">🏢 كل الفروع</option>
+              <option value=""><i className="fa-solid fa-building"></i> كل الفروع</option>
               {branches.map(b => (
-                <option key={b.id} value={b.id}>📍 {b.name}</option>
+                <option key={b.id} value={b.id}><i className="fa-solid fa-location-dot"></i> {b.name}</option>
               ))}
             </select>
           )}
@@ -123,7 +123,7 @@ const ProductAnalytics = () => {
           id="ana_total"
           label="إجمالي المنتجات"
           value={stats?.totalProducts || 0}
-          icon="▨"
+          icon={<i className="fa-solid fa-calculator"></i>}
           defaults={{ color: 'azure', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile 
@@ -151,14 +151,14 @@ const ProductAnalytics = () => {
           id="ana_cart"
           label="إضافة للسلة"
           value={stats?.totalCartCount || 0}
-          icon="🛒"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'purple', size: 'tile-wd-sm', order: 5 }}
         />
         <StatTile 
           id="ana_fav"
           label="في المفضلة"
           value={stats?.totalFavoriteCount || 0}
-          icon="❤️"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'pink', size: 'tile-wd-sm', order: 6 }}
         />
       </div>
@@ -170,7 +170,7 @@ const ProductAnalytics = () => {
         <div className="analytics-card">
           <div className="chart-header">
             <span className="chart-badge badge-green">أحدث 5</span>
-            <h4 className="chart-title">الأحدث إضافة 📋</h4>
+            <h4 className="chart-title">الأحدث إضافة <i className="fa-solid fa-clipboard-list"></i></h4>
           </div>
           <div style={{ height: '240px', width: '100%', minWidth: '0' }}>
             <ResponsiveContainer>
@@ -195,7 +195,7 @@ const ProductAnalytics = () => {
         <div className="analytics-card">
           <div className="chart-header">
             <span className="chart-badge badge-blue">أمر 7 أيام</span>
-            <h4 className="chart-title">الأكثر مشاهدة 👁️</h4>
+            <h4 className="chart-title">الأكثر مشاهدة <i className="fa-solid fa-eye"></i>️</h4>
           </div>
           <div style={{ height: '240px', width: '100%', minWidth: '0' }}>
             <ResponsiveContainer>
@@ -220,7 +220,7 @@ const ProductAnalytics = () => {
         <div className="analytics-card">
           <div className="chart-header">
             <span className="chart-badge badge-purple">الأداء (الكمية)</span>
-            <h4 className="chart-title">الأكثر مبيعاً (Flow) 🔥</h4>
+            <h4 className="chart-title">الأكثر مبيعاً (Flow) <i className="fa-solid fa-fire"></i></h4>
           </div>
           <div style={{ height: '240px', width: '100%', minWidth: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {topSellingData.length > 0 && topSellingData.some(p => p.sales > 0) ? (
@@ -249,8 +249,8 @@ const ProductAnalytics = () => {
               </ResponsiveContainer>
             ) : (
               <div style={{ textAlign: 'center', color: 'var(--text-dim, #888)', padding: '20px' }}>
-                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '10px' }}>📈</span>
-                <span style={{ fontSize: '0.9rem' }}>لا توجد عمليات بيع مسجلة بعد في هذا الفرع 📊</span>
+                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '10px' }}><i className="fa-solid fa-arrow-trend-up"></i></span>
+                <span style={{ fontSize: '0.9rem' }}>لا توجد عمليات بيع مسجلة بعد في هذا الفرع <i className="fa-solid fa-chart-column"></i></span>
               </div>
             )}
           </div>
@@ -260,7 +260,7 @@ const ProductAnalytics = () => {
         <div className="analytics-card">
           <div className="chart-header">
             <span className="chart-badge badge-orange">المخزون (الأقل)</span>
-            <h4 className="chart-title">حالة المخزون ⚠️</h4>
+            <h4 className="chart-title">حالة المخزون <i className="fa-solid fa-triangle-exclamation"></i></h4>
           </div>
           <div style={{ height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 10px' }}>
             {/* Chart on the left/center */}
@@ -306,7 +306,7 @@ const ProductAnalytics = () => {
         <div className="analytics-card" style={{ direction: 'rtl' }}>
           <div className="chart-header">
             <span className="chart-badge badge-purple" style={{ backgroundColor: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24' }}>الترتيب</span>
-            <h4 className="chart-title">قائمة المنتجات الأكثر مبيعاً 🔥</h4>
+            <h4 className="chart-title">قائمة المنتجات الأكثر مبيعاً <i className="fa-solid fa-fire"></i></h4>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
             {stats?.topSellingProducts && stats.topSellingProducts.length > 0 ? (
@@ -317,7 +317,7 @@ const ProductAnalytics = () => {
                       {p.imageUrl ? (
                         <img src={getImageUrl(p.imageUrl)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontSize: '1.2rem', color: '#888' }}>📦</span>
+                        <span style={{ fontSize: '1.2rem', color: '#888' }}><i className="fa-solid fa-box"></i></span>
                       )}
                     </div>
                     <div>
@@ -326,12 +326,12 @@ const ProductAnalytics = () => {
                     </div>
                   </div>
                   <span style={{ fontSize: '0.8rem', fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-                    🔥 {Number(p.soldQuantity || 0).toLocaleString()} قطعة
+                    <i className="fa-solid fa-fire"></i> {Number(p.soldQuantity || 0).toLocaleString()} قطعة
                   </span>
                 </div>
               ))
             ) : (
-              <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>لا توجد منتجات مباعة حتى الآن 📊</div>
+              <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>لا توجد منتجات مباعة حتى الآن <i className="fa-solid fa-chart-column"></i></div>
             )}
           </div>
         </div>
@@ -340,7 +340,7 @@ const ProductAnalytics = () => {
         <div className="analytics-card" style={{ direction: 'rtl' }}>
           <div className="chart-header">
             <span className="chart-badge badge-orange" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}>النواقص</span>
-            <h4 className="chart-title">المنتجات القريبة من النفاد ⚠️</h4>
+            <h4 className="chart-title">المنتجات القريبة من النفاد <i className="fa-solid fa-triangle-exclamation"></i></h4>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
             {stats?.lowStockProducts && stats.lowStockProducts.length > 0 ? (
@@ -351,7 +351,7 @@ const ProductAnalytics = () => {
                       {p.imageUrl ? (
                         <img src={getImageUrl(p.imageUrl)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontSize: '1.2rem', color: '#888' }}>📦</span>
+                        <span style={{ fontSize: '1.2rem', color: '#888' }}><i className="fa-solid fa-box"></i></span>
                       )}
                     </div>
                     <div>
@@ -360,12 +360,12 @@ const ProductAnalytics = () => {
                     </div>
                   </div>
                   <span style={{ fontSize: '0.8rem', fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', backgroundColor: p.stock <= 1 ? 'rgba(220, 38, 38, 0.15)' : 'rgba(245, 158, 11, 0.1)', color: p.stock <= 1 ? '#dc2626' : '#f59e0b' }}>
-                    ⚠️ متبقي {Number(p.stock || 0).toLocaleString()} فقط
+                    <i className="fa-solid fa-triangle-exclamation"></i> متبقي {Number(p.stock || 0).toLocaleString()} فقط
                   </span>
                 </div>
               ))
             ) : (
-              <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>المخزون كافٍ ولا توجد نواقص 👍</div>
+              <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>المخزون كافٍ ولا توجد نواقص <i className="fa-solid fa-thumbs-up"></i></div>
             )}
           </div>
         </div>
@@ -375,7 +375,7 @@ const ProductAnalytics = () => {
       {/* Daily Additions Chart (Full Width) */}
       <div className="card" style={{ marginTop: '24px' }}>
         <div className="card-header">
-          <h3>📦 حركة الإضافات اليومية للمنتجات (الـ 7 أيام الماضية)</h3>
+          <h3><i className="fa-solid fa-box"></i> حركة الإضافات اليومية للمنتجات (الـ 7 أيام الماضية)</h3>
         </div>
         <div className="card-body" style={{ height: '350px', width: '100%', padding: '20px' }}>
           {dailyStats.length > 0 ? (

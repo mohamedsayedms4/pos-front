@@ -319,7 +319,7 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
-        <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}><i className="fa-solid fa-hourglass-half"></i></div>
         جاري التحميل...
       </div>
     );
@@ -332,10 +332,10 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
       <div style={styles.section}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={styles.sectionTitle}>
-            🏷️ خصائص المنتج (المقاس، اللون...)
+            <i className="fa-solid fa-tag"></i> خصائص المنتج (المقاس، اللون...)
           </div>
           <button style={styles.btnSecondary} onClick={() => setShowAddTemplate(!showAddTemplate)}>
-            {showAddTemplate ? '✕ إلغاء' : '+ إضافة خاصية'}
+            {showAddTemplate ? ' إلغاء' : '+ إضافة خاصية'}
           </button>
         </div>
 
@@ -362,7 +362,7 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
               </div>
             </div>
             <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
-              <button style={styles.btnPrimary} onClick={handleCreateTemplate}>💾 حفظ الخاصية</button>
+              <button style={styles.btnPrimary} onClick={handleCreateTemplate}><i className="fa-solid fa-floppy-disk"></i> حفظ الخاصية</button>
               <button style={{ ...styles.btnDanger, background: '#f1f5f9', color: '#64748b' }}
                 onClick={() => setShowAddTemplate(false)}>إلغاء</button>
             </div>
@@ -376,8 +376,8 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
             {templates.map(t => (
               <div key={t.id} style={{ marginBottom: '12px', background: '#fff', borderRadius: '10px', padding: '12px 16px', border: '1px solid #e0e7ff' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={styles.templateChip}>🏷️ {t.name}</span>
-                  <button style={styles.btnDanger} onClick={() => handleDeleteTemplate(t.id)}>🗑️ حذف</button>
+                  <span style={styles.templateChip}><i className="fa-solid fa-tag"></i> {t.name}</span>
+                  <button style={styles.btnDanger} onClick={() => handleDeleteTemplate(t.id)}><i className="fa-solid fa-trash"></i> حذف</button>
                 </div>
                 <div>
                   {t.values && t.values.map(v => (
@@ -396,7 +396,7 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
       {/* ── قسم المتغيرات ── */}
       <div style={styles.section}>
         <div style={styles.header}>
-          <div style={styles.sectionTitle}>📦 المتغيرات المتاحة (SKU)</div>
+          <div style={styles.sectionTitle}><i className="fa-solid fa-box"></i> المتغيرات المتاحة (SKU)</div>
           <button style={styles.btnPrimary} onClick={() => { resetVariantForm(); setShowAddVariant(true); }}>
             + إضافة متغير
           </button>
@@ -406,7 +406,7 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
         {showAddVariant && (
           <div style={styles.modal}>
             <h4 style={{ margin: '0 0 16px', color: '#4f46e5', fontSize: '16px' }}>
-              {editVariant ? '✏️ تعديل المتغير' : '➕ إضافة متغير جديد'}
+              {editVariant ? ' تعديل المتغير' : ' إضافة متغير جديد'}
             </h4>
 
             {/* اختيار قيم الخصائص */}
@@ -469,15 +469,15 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
                 <select style={styles.select}
                   value={variantForm.isActive ? 'true' : 'false'}
                   onChange={e => setVariantForm(p => ({ ...p, isActive: e.target.value === 'true' }))}>
-                  <option value="true">✅ نشط</option>
-                  <option value="false">⛔ موقوف</option>
+                  <option value="true"><i className="fa-solid fa-check"></i> نشط</option>
+                  <option value="false"><i className="fa-solid fa-ban"></i> موقوف</option>
                 </select>
               </div>
             </div>
 
             <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
               <button style={styles.btnPrimary} onClick={handleSaveVariant}>
-                {editVariant ? '💾 حفظ التعديلات' : '➕ إضافة المتغير'}
+                {editVariant ? ' حفظ التعديلات' : ' إضافة المتغير'}
               </button>
               <button style={{ ...styles.btnDanger, background: '#f1f5f9', color: '#64748b' }}
                 onClick={resetVariantForm}>إلغاء</button>
@@ -488,7 +488,7 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
         {/* جدول المتغيرات */}
         {variants.length === 0 ? (
           <div style={styles.empty}>
-            🎨 لا توجد متغيرات بعد.<br />
+            <i className="fa-solid fa-palette"></i> لا توجد متغيرات بعد.<br />
             <small style={{ color: '#b0bec5' }}>أضف متغيرات مثل (L + أحمر) أو (XL + أبيض)...</small>
           </div>
         ) : (
@@ -541,8 +541,8 @@ const ProductVariantsTab = ({ productId, productSalePrice, productPurchasePrice 
                       </span>
                     </td>
                     <td style={styles.td}>
-                      <button style={styles.btnEdit} onClick={() => openEditVariant(v)}>✏️ تعديل</button>
-                      <button style={styles.btnDanger} onClick={() => handleDeleteVariant(v.id)}>🗑️</button>
+                      <button style={styles.btnEdit} onClick={() => openEditVariant(v)}><i className="fa-solid fa-pencil"></i> تعديل</button>
+                      <button style={styles.btnDanger} onClick={() => handleDeleteVariant(v.id)}><i className="fa-solid fa-trash"></i></button>
                     </td>
                   </tr>
                 ))}

@@ -68,7 +68,7 @@ const OfflineAudit = () => {
   };
 
   const clearDB = async () => {
-    if (window.confirm('⚠️ تحذير: سيتم مسح كافة البيانات المخزنة محلياً. هل أنت متأكد؟')) {
+    if (window.confirm(' تحذير: سيتم مسح كافة البيانات المخزنة محلياً. هل أنت متأكد؟')) {
       await db.products.clear();
       await db.customers.clear();
       await db.branches.clear();
@@ -95,11 +95,11 @@ const OfflineAudit = () => {
         </div>
         <div className="header-buttons">
           <button className="btn-premium sync" onClick={handleSync} disabled={syncing}>
-            <span className="icon">🚀</span>
+            <span className="icon"><i className="fa-solid fa-rocket"></i></span>
             <span>مزامنة شاملة</span>
           </button>
           <button className="btn-premium clear" onClick={clearDB}>
-            <span className="icon">🧹</span>
+            <span className="icon"><i className="fa-solid fa-broom"></i></span>
             <span>تصفير الذاكرة</span>
           </button>
         </div>
@@ -108,7 +108,7 @@ const OfflineAudit = () => {
       <section className="stats-row">
         <div className="stat-card-premium">
           <div className="card-bg"></div>
-          <div className="card-icon products-icon">📦</div>
+          <div className="card-icon products-icon"><i className="fa-solid fa-box"></i></div>
           <div className="card-body">
             <span className="label">المنتجات</span>
             <span className="number">{stats.products.toLocaleString()}</span>
@@ -117,7 +117,7 @@ const OfflineAudit = () => {
 
         <div className="stat-card-premium">
           <div className="card-bg"></div>
-          <div className="card-icon customers-icon">👥</div>
+          <div className="card-icon customers-icon"><i className="fa-solid fa-users"></i></div>
           <div className="card-body">
             <span className="label">العملاء</span>
             <span className="number">{stats.customers.toLocaleString()}</span>
@@ -126,7 +126,7 @@ const OfflineAudit = () => {
 
         <div className="stat-card-premium">
           <div className="card-bg"></div>
-          <div className="card-icon branches-icon">🏢</div>
+          <div className="card-icon branches-icon"><i className="fa-solid fa-building"></i></div>
           <div className="card-body">
             <span className="label">الفروع / المخازن</span>
             <span className="number">{stats.branches} / {stats.warehouses}</span>
@@ -135,7 +135,7 @@ const OfflineAudit = () => {
 
         <div className={`stat-card-premium pending ${stats.pending > 0 ? 'has-pending' : ''}`}>
           <div className="card-bg"></div>
-          <div className="card-icon sales-icon">⏳</div>
+          <div className="card-icon sales-icon"><i className="fa-solid fa-hourglass-half"></i></div>
           <div className="card-body">
             <span className="label">فواتير معلقة</span>
             <span className="number">{stats.pending}</span>
@@ -147,7 +147,7 @@ const OfflineAudit = () => {
         <div className="main-column">
           <div className="glass-panel queue-panel">
             <div className="panel-header">
-              <h2>🧾 طابور المبيعات (Queue)</h2>
+              <h2><i className="fa-solid fa-receipt"></i> طابور المبيعات (Queue)</h2>
             </div>
             <div className="panel-body scrollable">
               <table className="premium-table">
@@ -170,7 +170,7 @@ const OfflineAudit = () => {
                         <td className="bold text-emerald">{s.data.paidAmount?.toFixed(2)} ج.م</td>
                         <td>
                           <span className={`status-pill ${s.status}`}>
-                            {s.status === 'pending' ? '⏳ بانتظار المزامنة' : '✅ تم الرفع'}
+                            {s.status === 'pending' ? ' بانتظار المزامنة' : ' تم الرفع'}
                           </span>
                         </td>
                       </tr>
@@ -185,7 +185,7 @@ const OfflineAudit = () => {
         <div className="side-column">
           <div className="glass-panel data-health">
             <div className="panel-header">
-              <h2>🛠️ تفاصيل الفروع والمخازن</h2>
+              <h2><i className="fa-solid fa-hammer"></i>️ تفاصيل الفروع والمخازن</h2>
             </div>
             <div className="panel-body">
               <div className="branch-list">
@@ -212,7 +212,7 @@ const OfflineAudit = () => {
 
           <div className="glass-panel preview-panel">
             <div className="panel-header">
-              <h2>📋 عينة منتجات</h2>
+              <h2><i className="fa-solid fa-clipboard-list"></i> عينة منتجات</h2>
             </div>
             <div className="panel-body compact-scroll">
               {products.slice(0, 10).map(p => (

@@ -133,7 +133,7 @@ const SuperAdminCalendar = () => {
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>
-              📅 المواعيد والتقويم
+              <i className="fa-solid fa-calendar-days"></i> المواعيد والتقويم
             </h2>
             {loading && <Loader small />}
           </div>
@@ -203,7 +203,7 @@ const SuperAdminCalendar = () => {
                   <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '5px' }}>النوع</span>
                     <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                      {selectedEvent.type === 'CALL' ? '📞 مكالمة' : selectedEvent.type === 'ONLINE_MEETING' ? '💻 اجتماع أونلاين' : '👥 اجتماع فريق'}
+                      {selectedEvent.type === 'CALL' ? ' مكالمة' : selectedEvent.type === 'ONLINE_MEETING' ? ' اجتماع أونلاين' : ' اجتماع فريق'}
                     </span>
                   </div>
                   <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
@@ -281,14 +281,14 @@ const SuperAdminCalendar = () => {
                         className="btn btn-success"
                         style={{ backgroundColor: 'var(--metro-green)', borderColor: 'var(--metro-green)', color: '#fff' }}
                       >
-                        ✓ تحديد كمكتمل
+                        <i className="fa-solid fa-check"></i> تحديد كمكتمل
                       </button>
                       <button 
                         onClick={() => updateStatus(selectedEvent.id, 'CANCELED')}
                         className="btn btn-danger"
                         style={{ backgroundColor: 'var(--metro-red)', borderColor: 'var(--metro-red)', color: '#fff' }}
                       >
-                        ✕ إلغاء الموعد
+                        <i className="fa-solid fa-times"></i> إلغاء الموعد
                       </button>
                     </>
                   )}
@@ -318,7 +318,7 @@ const SuperAdminCalendar = () => {
         onClose={(success) => {
           setShowAddModal(false);
           if (success === true) {
-            toast('تم حجز الموعد بنجاح 📅', 'success');
+            toast('تم حجز الموعد بنجاح ', 'success');
             fetchEvents(currentDate, currentView);
           }
         }}

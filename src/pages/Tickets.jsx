@@ -154,9 +154,9 @@ const Tickets = () => {
   // Helper getters
   const getTypeLabel = (type) => {
     switch (type) {
-      case 'SUGGESTION': return { text: '💡 اقتراح', className: 'badge-emerald' };
-      case 'QUESTION': return { text: '❓ سؤال', className: 'badge-info' };
-      case 'COMPLAINT': return { text: '⚠️ شكوى', className: 'badge-danger' };
+      case 'SUGGESTION': return { text: ' اقتراح', className: 'badge-emerald' };
+      case 'QUESTION': return { text: ' سؤال', className: 'badge-info' };
+      case 'COMPLAINT': return { text: ' شكوى', className: 'badge-danger' };
       default: return { text: type, className: 'badge' };
     }
   };
@@ -204,43 +204,43 @@ const Tickets = () => {
   return (
     <div className="page-section anim-fade-in" style={{ direction: 'rtl', fontFamily: 'Cairo, sans-serif' }}>
       
-      {/* 🚀 Overview Cards */}
+      {/* <i className="fa-solid fa-rocket"></i> Overview Cards */}
       <div className="stats-grid mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
         <StatTile
           id="stat_total"
           label="إجمالي الطلبات"
           value={`${totalCount} طلب`}
-          icon="🛠️"
+          icon={<i className="fa-solid fa-calculator"></i>}
           defaults={{ color: 'blue', size: 'tile-wd-sm' }}
         />
         <StatTile
           id="stat_pending"
           label="قيد الانتظار"
           value={`${pendingCount} طلب`}
-          icon="⏳"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'orange', size: 'tile-wd-sm' }}
         />
         <StatTile
           id="stat_inprogress"
           label="قيد المعالجة"
           value={`${inProgressCount} طلب`}
-          icon="⚙️"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'indigo', size: 'tile-wd-sm' }}
         />
         <StatTile
           id="stat_resolved"
           label="تم حلها / مغلقة"
           value={`${resolvedCount} طلب`}
-          icon="✅"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm' }}
         />
       </div>
 
       <div className="card">
-        {/* 🎨 Header with Glassmorphism Actions */}
+        {/* <i className="fa-solid fa-palette"></i> Header with Glassmorphism Actions */}
         <div className="card-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>🛠️ الدعم الفني والمقترحات</h3>
+            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}><i className="fa-solid fa-hammer"></i>️ الدعم الفني والمقترحات</h3>
             <p style={{ margin: '5px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               {isSuper ? 'إدارة وحل تذاكر الدعم الفني لكافة العملاء والمتاجر في النظام' : 'أرسل أسئلتك، شكاواك، أو مقترحاتك الإبداعية لفريق الدعم الفني'}
             </p>
@@ -252,7 +252,7 @@ const Tickets = () => {
           )}
         </div>
 
-        {/* 🔍 Filters Bar */}
+        {/* <i className="fa-solid fa-magnifying-glass"></i> Filters Bar */}
         <div style={{
           padding: '15px 20px',
           background: 'rgba(255, 255, 255, 0.03)',
@@ -298,9 +298,9 @@ const Tickets = () => {
               }}
             >
               <option value="ALL">الكل</option>
-              <option value="QUESTION">❓ سؤال</option>
-              <option value="SUGGESTION">💡 اقتراح</option>
-              <option value="COMPLAINT">⚠️ شكوى</option>
+              <option value="QUESTION"><i className="fa-solid fa-question"></i> سؤال</option>
+              <option value="SUGGESTION"><i className="fa-solid fa-lightbulb"></i> اقتراح</option>
+              <option value="COMPLAINT"><i className="fa-solid fa-triangle-exclamation"></i> شكوى</option>
             </select>
           </div>
 
@@ -328,13 +328,13 @@ const Tickets = () => {
           </div>
         </div>
 
-        {/* 📋 Tickets Content Grid */}
+        {/* <i className="fa-solid fa-clipboard-list"></i> Tickets Content Grid */}
         <div className="card-body" style={{ padding: '20px' }}>
           {loading ? (
             <div style={{ padding: '60px 0' }}><Loader message="جاري تحميل طلبات الدعم..." /></div>
           ) : filteredTickets.length === 0 ? (
             <div className="empty-state" style={{ padding: '50px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '15px' }}>🔍</div>
+              <div style={{ fontSize: '3rem', marginBottom: '15px' }}><i className="fa-solid fa-magnifying-glass"></i></div>
               <h4 style={{ color: 'var(--text-primary)' }}>لا توجد تذاكر دعم حالياً</h4>
               <p style={{ color: 'var(--text-muted)' }}>تطابق محددات البحث والفلاتر أو لم تقم بإضافة طلبات بعد.</p>
             </div>
@@ -396,8 +396,8 @@ const Tickets = () => {
                           marginBottom: '10px',
                           border: '1px solid rgba(59,130,246,0.15)'
                         }}>
-                          <strong>🏬 المتجر: </strong> {t.tenantName || 'غير معروف'} <br />
-                          <strong>👤 مرسل بواسطة: </strong> {t.userName || 'مستخدم'}
+                          <strong><i className="fa-solid fa-building"></i> المتجر: </strong> {t.tenantName || 'غير معروف'} <br />
+                          <strong><i className="fa-solid fa-user"></i> مرسل بواسطة: </strong> {t.userName || 'مستخدم'}
                         </div>
                       )}
 
@@ -427,7 +427,7 @@ const Tickets = () => {
                       alignItems: 'center'
                     }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        📅 {t.createdAt ? new Date(t.createdAt).toLocaleDateString('ar-EG') : ''}
+                        <i className="fa-solid fa-calendar-days"></i> {t.createdAt ? new Date(t.createdAt).toLocaleDateString('ar-EG') : ''}
                       </div>
                       <div>
                         {getStatusBadge(t.status)}
@@ -458,14 +458,14 @@ const Tickets = () => {
         </div>
       </div>
 
-      {/* 🚀 Create Ticket Modal */}
+      {/* <i className="fa-solid fa-rocket"></i> Create Ticket Modal */}
       {showCreateModal && (
         <ModalContainer>
           <div className="modal-overlay active anim-fade-in" onClick={() => !submitting && setShowCreateModal(false)}>
             <div className="modal-content anim-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', borderRadius: '18px' }}>
               <div className="modal-header">
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}>🚀 إنشاء تذكرة دعم فني جديدة</h2>
-                <button className="close-btn" onClick={() => !submitting && setShowCreateModal(false)}>✕</button>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}><i className="fa-solid fa-rocket"></i> إنشاء تذكرة دعم فني جديدة</h2>
+                <button className="close-btn" onClick={() => !submitting && setShowCreateModal(false)}><i className="fa-solid fa-times"></i></button>
               </div>
               <form onSubmit={handleCreateSubmit}>
                 <div className="modal-body" style={{ padding: '20px 25px' }}>
@@ -479,9 +479,9 @@ const Tickets = () => {
                       onChange={e => setCreateForm({ ...createForm, type: e.target.value })}
                       style={{ borderRadius: '10px', height: '42px' }}
                     >
-                      <option value="QUESTION">❓ سؤال / استفسار فني</option>
-                      <option value="SUGGESTION">💡 اقتراح أو إضافة مرغوبة</option>
-                      <option value="COMPLAINT">⚠️ شكوى أو عطل في النظام</option>
+                      <option value="QUESTION"><i className="fa-solid fa-question"></i> سؤال / استفسار فني</option>
+                      <option value="SUGGESTION"><i className="fa-solid fa-lightbulb"></i> اقتراح أو إضافة مرغوبة</option>
+                      <option value="COMPLAINT"><i className="fa-solid fa-triangle-exclamation"></i> شكوى أو عطل في النظام</option>
                     </select>
                   </div>
 
@@ -526,7 +526,7 @@ const Tickets = () => {
                           e.currentTarget.style.background = 'rgba(255,255,255,0.01)';
                         }}
                       >
-                        <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🖼️</div>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}><i className="fa-solid fa-image"></i>️</div>
                         <p style={{ margin: '0 0 5px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>اسحب وأسقط الصورة هنا أو اضغط للتصفح</p>
                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>يدعم JPEG, PNG حتى 5 ميجابايت</p>
                         <input
@@ -565,7 +565,7 @@ const Tickets = () => {
                             boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
                           }}
                         >
-                          ✕
+                          <i className="fa-solid fa-times"></i>
                         </button>
                       </div>
                     )}
@@ -586,15 +586,15 @@ const Tickets = () => {
         </ModalContainer>
       )}
 
-      {/* 🚀 Ticket Details / Super Admin Reply Modal */}
+      {/* <i className="fa-solid fa-rocket"></i> Ticket Details / Super Admin Reply Modal */}
       {selectedTicket && (
         <ModalContainer>
           <div className="modal-overlay active anim-fade-in" onClick={() => !submitting && setSelectedTicket(null)}>
             <div className="modal-content anim-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px', borderRadius: '18px' }}>
               
               <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>📝 تفاصيل طلب الدعم الفني</h2>
-                <button className="close-btn" onClick={() => !submitting && setSelectedTicket(null)}>✕</button>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}><i className="fa-solid fa-file-pen"></i> تفاصيل طلب الدعم الفني</h2>
+                <button className="close-btn" onClick={() => !submitting && setSelectedTicket(null)}><i className="fa-solid fa-times"></i></button>
               </div>
 
               <div className="modal-body" style={{ padding: '20px 25px', maxHeight: '75vh', overflowY: 'auto' }}>
@@ -635,11 +635,11 @@ const Tickets = () => {
                     <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', marginTop: '5px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                         <div>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>🏬 المتجر / العميل:</span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-building"></i> المتجر / العميل:</span>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedTicket.tenantName}</div>
                         </div>
                         <div>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>👤 مرسل الطلب:</span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-user"></i> مرسل الطلب:</span>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedTicket.userName}</div>
                         </div>
                       </div>
@@ -649,7 +649,7 @@ const Tickets = () => {
 
                 {/* Ticket Description Section */}
                 <div className="mb-4">
-                  <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1rem' }}>💬 وصف المشكلة / المقترح:</h4>
+                  <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1rem' }}><i className="fa-solid fa-comment-dots"></i> وصف المشكلة / المقترح:</h4>
                   <div style={{
                     background: 'rgba(255, 255, 255, 0.01)',
                     border: '1px solid var(--border-subtle)',
@@ -667,7 +667,7 @@ const Tickets = () => {
                 {/* Attachment Section */}
                 {selectedTicket.imageUrl && (
                   <div className="mb-4">
-                    <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1rem' }}>🖼️ المرفقات التوضيحية:</h4>
+                    <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1rem' }}><i className="fa-solid fa-image"></i>️ المرفقات التوضيحية:</h4>
                     <div style={{
                       textAlign: 'center',
                       background: 'rgba(0,0,0,0.1)',
@@ -713,7 +713,7 @@ const Tickets = () => {
                     paddingTop: '20px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '1.3rem' }}>🛠️</span>
+                      <span style={{ fontSize: '1.3rem' }}><i className="fa-solid fa-hammer"></i>️</span>
                       <h4 style={{ fontWeight: 700, color: '#10b981', margin: 0, fontSize: '1.05rem' }}>رد الدعم الفني للـ Super Admin:</h4>
                     </div>
                     <div style={{
@@ -736,7 +736,7 @@ const Tickets = () => {
                         borderTop: '1px solid rgba(16,185,129,0.1)',
                         paddingTop: '8px'
                       }}>
-                        🕒 تم الرد في: {selectedTicket.repliedAt ? new Date(selectedTicket.repliedAt).toLocaleString('ar-EG') : ''}
+                        <i className="fa-solid fa-clock"></i> تم الرد في: {selectedTicket.repliedAt ? new Date(selectedTicket.repliedAt).toLocaleString('ar-EG') : ''}
                       </div>
                     </div>
                   </div>
@@ -767,13 +767,13 @@ const Tickets = () => {
                           {selectedTicket.reply}
                         </div>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          🕒 تم في: {selectedTicket.repliedAt ? new Date(selectedTicket.repliedAt).toLocaleString('ar-EG') : ''}
+                          <i className="fa-solid fa-clock"></i> تم في: {selectedTicket.repliedAt ? new Date(selectedTicket.repliedAt).toLocaleString('ar-EG') : ''}
                         </span>
                       </div>
                     )}
 
                     <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>✍️</span> كتابة رد جديد / تحديث حالة التذكرة
+                      <span><i className="fa-solid fa-pen-nib"></i>️</span> كتابة رد جديد / تحديث حالة التذكرة
                     </h4>
                     
                     <form onSubmit={handleReplySubmit}>
@@ -786,10 +786,10 @@ const Tickets = () => {
                             onChange={(e) => setReplyStatus(e.target.value)}
                             style={{ borderRadius: '8px', height: '38px' }}
                           >
-                            <option value="PENDING">⏳ قيد الانتظار</option>
-                            <option value="IN_PROGRESS">⚙️ قيد المعالجة</option>
-                            <option value="RESOLVED">✅ تم الحل</option>
-                            <option value="CLOSED">🔒 مغلقة نهائياً</option>
+                            <option value="PENDING"><i className="fa-solid fa-hourglass-half"></i> قيد الانتظار</option>
+                            <option value="IN_PROGRESS"><i className="fa-solid fa-gear"></i> قيد المعالجة</option>
+                            <option value="RESOLVED"><i className="fa-solid fa-check"></i> تم الحل</option>
+                            <option value="CLOSED"><i className="fa-solid fa-lock"></i> مغلقة نهائياً</option>
                           </select>
                         </div>
                       </div>

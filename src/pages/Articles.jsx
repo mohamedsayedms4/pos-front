@@ -78,7 +78,7 @@ const ArticleCard = ({ article, featured = false }) => {
           ? <img src={coverSrc} alt={article.title} loading="lazy" />
           : <div className="article-card__cover-placeholder"><ArticleIcon /></div>
         }
-        {article.featured && <span className="article-badge article-badge--featured">مميز ⭐</span>}
+        {article.featured && <span className="article-badge article-badge--featured">مميز <i className="fa-solid fa-star"></i></span>}
         {article.category && <span className="article-badge article-badge--cat">{article.category}</span>}
       </div>
 
@@ -233,7 +233,7 @@ const Articles = () => {
                 aria-label="بحث في المقالات"
               />
               {searchInput && (
-                <button type="button" className="articles-search__clear" onClick={() => { setSearchInput(''); setSearchParams(category ? { category } : {}); }}>✕</button>
+                <button type="button" className="articles-search__clear" onClick={() => { setSearchInput(''); setSearchParams(category ? { category } : {}); }}><i className="fa-solid fa-times"></i></button>
               )}
               <button type="submit" className="articles-search__btn">بحث</button>
             </div>
@@ -259,7 +259,7 @@ const Articles = () => {
         {/* Sidebar */}
         <aside className="articles-sidebar">
           <div className="sidebar-card">
-            <h3 className="sidebar-card__title">📂 التصنيفات</h3>
+            <h3 className="sidebar-card__title"><i className="fa-solid fa-folder-open"></i> التصنيفات</h3>
             <ul className="sidebar-cats">
               <li>
                 <button
@@ -291,14 +291,14 @@ const Articles = () => {
             <div className="articles-filters-bar">
               {search && (
                 <span className="filter-chip">
-                  🔍 نتائج: <strong>{search}</strong>
-                  <button onClick={() => { setSearchInput(''); setSearchParams(category ? { category } : {}); }}>✕</button>
+                  <i className="fa-solid fa-magnifying-glass"></i> نتائج: <strong>{search}</strong>
+                  <button onClick={() => { setSearchInput(''); setSearchParams(category ? { category } : {}); }}><i className="fa-solid fa-times"></i></button>
                 </span>
               )}
               {category && (
                 <span className="filter-chip">
-                  📂 <strong>{category}</strong>
-                  <button onClick={() => handleCategoryClick('')}>✕</button>
+                  <i className="fa-solid fa-folder-open"></i> <strong>{category}</strong>
+                  <button onClick={() => handleCategoryClick('')}><i className="fa-solid fa-times"></i></button>
                 </span>
               )}
               <span className="filter-results-count">{totalElements} نتيجة</span>
@@ -320,7 +320,7 @@ const Articles = () => {
             </div>
           ) : error ? (
             <div className="articles-empty">
-              <div className="articles-empty__icon">⚠️</div>
+              <div className="articles-empty__icon"><i className="fa-solid fa-triangle-exclamation"></i></div>
               <h3>{error}</h3>
               <button className="btn-retry" onClick={fetchArticles}>إعادة المحاولة</button>
             </div>

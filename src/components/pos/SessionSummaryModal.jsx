@@ -40,7 +40,7 @@ const SessionSummaryModal = ({ sessionId, onClose }) => {
       <div className="session-modal-content summary-content" onClick={e => e.stopPropagation()}>
         <div className="session-modal-header">
           <h2 className="session-modal-title" style={{ margin: 0 }}>تقرير الوردية #{summary.session?.id}</h2>
-          <button onClick={onClose} className="session-modal-close-btn">✕</button>
+          <button onClick={onClose} className="session-modal-close-btn"><i className="fa-solid fa-times"></i></button>
         </div>
         
         <div className="session-summary-list">

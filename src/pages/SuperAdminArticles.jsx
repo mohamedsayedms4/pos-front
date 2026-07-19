@@ -74,10 +74,10 @@ const ArticleFormModal = ({ article, onClose, onSave }) => {
   };
 
   const tabs = [
-    { id: 'main', label: '📝 المحتوى' },
-    { id: 'seo', label: '🔍 SEO' },
-    { id: 'og', label: '📱 Open Graph' },
-    { id: 'meta', label: '⚙️ إعدادات' }
+    { id: 'main', label: ' المحتوى' },
+    { id: 'seo', label: ' SEO' },
+    { id: 'og', label: ' Open Graph' },
+    { id: 'meta', label: ' إعدادات' }
   ];
 
   // Auto SEO score preview
@@ -95,8 +95,8 @@ const ArticleFormModal = ({ article, onClose, onSave }) => {
     <div className="sa-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sa-modal sa-modal--wide" dir="rtl">
         <div className="sa-modal-header">
-          <h2>{article ? '✏️ تعديل المقال' : '➕ مقال جديد'}</h2>
-          <button className="sa-modal-close" onClick={onClose}>✕</button>
+          <h2>{article ? ' تعديل المقال' : ' مقال جديد'}</h2>
+          <button className="sa-modal-close" onClick={onClose}><i className="fa-solid fa-times"></i></button>
         </div>
 
         {/* SEO Preview Score */}
@@ -179,22 +179,22 @@ const ArticleFormModal = ({ article, onClose, onSave }) => {
           {activeTab === 'seo' && (
             <div className="sa-form-section">
               <div className="sa-seo-checklist">
-                <h4>✅ عناصر SEO</h4>
+                <h4><i className="fa-solid fa-check"></i> عناصر SEO</h4>
                 <ul>
                   <li className={form.title ? 'seo-ok' : 'seo-miss'}>
-                    {form.title ? '✓' : '✗'} العنوان (Title) — +20 نقطة
+                    {form.title ? '' : ''} العنوان (Title) — +20 نقطة
                   </li>
                   <li className={form.metaDescription ? 'seo-ok' : 'seo-miss'}>
-                    {form.metaDescription ? '✓' : '✗'} Meta Description — +20 نقطة
+                    {form.metaDescription ? '' : ''} Meta Description — +20 نقطة
                   </li>
                   <li className={form.metaKeywords ? 'seo-ok' : 'seo-miss'}>
-                    {form.metaKeywords ? '✓' : '✗'} Meta Keywords — +20 نقطة
+                    {form.metaKeywords ? '' : ''} Meta Keywords — +20 نقطة
                   </li>
                   <li className={form.coverImageUrl ? 'seo-ok' : 'seo-miss'}>
-                    {form.coverImageUrl ? '✓' : '✗'} صورة الغلاف (Cover Image) — +20 نقطة
+                    {form.coverImageUrl ? '' : ''} صورة الغلاف (Cover Image) — +20 نقطة
                   </li>
                   <li className={form.excerpt ? 'seo-ok' : 'seo-miss'}>
-                    {form.excerpt ? '✓' : '✗'} مقتطف الوصف (Excerpt) — +20 نقطة
+                    {form.excerpt ? '' : ''} مقتطف الوصف (Excerpt) — +20 نقطة
                   </li>
                 </ul>
               </div>
@@ -225,7 +225,7 @@ const ArticleFormModal = ({ article, onClose, onSave }) => {
           {activeTab === 'og' && (
             <div className="sa-form-section">
               <div className="sa-og-info">
-                <p>📱 حقول Open Graph تتحكم في مظهر المشاركة على فيسبوك، تويتر، لينكدإن، واتساب.</p>
+                <p><i className="fa-solid fa-mobile-screen"></i> حقول Open Graph تتحكم في مظهر المشاركة على فيسبوك، تويتر، لينكدإن، واتساب.</p>
                 <p>إذا تركتها فارغة سيستخدم النظام Meta Title و Meta Description بدلاً منها.</p>
               </div>
               <div className="sa-form-row sa-form-row--full">
@@ -256,15 +256,15 @@ const ArticleFormModal = ({ article, onClose, onSave }) => {
               <div className="sa-form-row">
                 <label>الحالة</label>
                 <select name="status" value={form.status} onChange={handleChange} className="sa-input sa-select">
-                  <option value="DRAFT">🟡 مسودة</option>
-                  <option value="PUBLISHED">🟢 منشور</option>
-                  <option value="ARCHIVED">⚫ مؤرشف</option>
+                  <option value="DRAFT"><i className="fa-solid fa-circle" style={{color:"#eab308"}}></i> مسودة</option>
+                  <option value="PUBLISHED"><i className="fa-solid fa-circle" style={{color: "#22c55e"}}></i> منشور</option>
+                  <option value="ARCHIVED"><i className="fa-solid fa-circle"></i> مؤرشف</option>
                 </select>
               </div>
               <div className="sa-form-row">
                 <label className="sa-checkbox-label">
                   <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} className="sa-checkbox" />
-                  <span>⭐ مقال مميز (يظهر في الصفحة الرئيسية)</span>
+                  <span><i className="fa-solid fa-star"></i> مقال مميز (يظهر في الصفحة الرئيسية)</span>
                 </label>
               </div>
             </div>
@@ -368,11 +368,11 @@ const SuperAdminArticles = () => {
       {/* Header */}
       <div className="sa-articles-header">
         <div className="sa-articles-title-area">
-          <h1>📰 إدارة المقالات</h1>
+          <h1><i className="fa-solid fa-newspaper"></i> إدارة المقالات</h1>
           <p className="sa-articles-sub">إنشاء وتعديل ونشر المقالات على الموقع العام</p>
         </div>
         <button className="btn-new-article" onClick={openCreate}>
-          ➕ مقال جديد
+          <i className="fa-solid fa-plus"></i> مقال جديد
         </button>
       </div>
 
@@ -402,10 +402,10 @@ const SuperAdminArticles = () => {
           <div className="sa-loading">جاري التحميل...</div>
         ) : articles.length === 0 ? (
           <div className="sa-empty">
-            <div className="sa-empty-icon">📰</div>
+            <div className="sa-empty-icon"><i className="fa-solid fa-newspaper"></i></div>
             <h3>لا توجد مقالات بعد</h3>
             <p>ابدأ بإنشاء أول مقال الآن</p>
-            <button className="btn-new-article" onClick={openCreate}>➕ أنشئ مقالاً</button>
+            <button className="btn-new-article" onClick={openCreate}><i className="fa-solid fa-plus"></i> أنشئ مقالاً</button>
           </div>
         ) : (
           <table className="sa-articles-table">
@@ -431,7 +431,7 @@ const SuperAdminArticles = () => {
                       <div>
                         <div className="sa-article-title">{article.title}</div>
                         <div className="sa-article-slug">/{article.slug}</div>
-                        {article.featured && <span className="featured-chip">⭐ مميز</span>}
+                        {article.featured && <span className="featured-chip"><i className="fa-solid fa-star"></i> مميز</span>}
                       </div>
                     </div>
                   </td>
@@ -458,14 +458,14 @@ const SuperAdminArticles = () => {
                         className="btn-act btn-act--edit"
                         onClick={() => openEdit(article)}
                         title="تعديل"
-                      >✏️</button>
+                      ><i className="fa-solid fa-pencil"></i></button>
 
                       <button
                         className={`btn-act ${article.status === 'PUBLISHED' ? 'btn-act--unpublish' : 'btn-act--publish'}`}
                         onClick={() => handleTogglePublish(article)}
                         title={article.status === 'PUBLISHED' ? 'إلغاء النشر' : 'نشر'}
                       >
-                        {article.status === 'PUBLISHED' ? '🔴' : '🟢'}
+                        {article.status === 'PUBLISHED' ? '' : ''}
                       </button>
 
                       {article.status !== 'ARCHIVED' && (
@@ -473,7 +473,7 @@ const SuperAdminArticles = () => {
                           className="btn-act btn-act--archive"
                           onClick={() => handleArchive(article)}
                           title="أرشفة"
-                        >📦</button>
+                        ><i className="fa-solid fa-box"></i></button>
                       )}
 
                       <a
@@ -482,13 +482,13 @@ const SuperAdminArticles = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         title="عرض المقال"
-                      >👁️</a>
+                      ><i className="fa-solid fa-eye"></i>️</a>
 
                       <button
                         className="btn-act btn-act--delete"
                         onClick={() => handleDelete(article)}
                         title="حذف نهائي"
-                      >🗑️</button>
+                      ><i className="fa-solid fa-trash"></i></button>
                     </div>
                   </td>
                 </tr>

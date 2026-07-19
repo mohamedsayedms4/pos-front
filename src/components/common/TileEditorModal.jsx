@@ -46,7 +46,7 @@ const TileEditorModal = () => {
       <div className="modal tile-editor-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>تخصيص المربع: {tile?.label}</h3>
-          <button className="modal-close" onClick={() => setActiveTileId(null)}>✕</button>
+          <button className="modal-close" onClick={() => setActiveTileId(null)}><i className="fa-solid fa-times"></i></button>
         </div>
         
         <div className="modal-body" style={{ padding: '25px' }}>
@@ -129,7 +129,7 @@ const TileEditorModal = () => {
                 onClick={() => updateTile(activeTileId, { order: (settings.order || 0) - 1 })}
                 style={{ width: '40px', height: '40px', fontSize: '1.2rem', background: 'var(--border-input, #333)', border: 'none', color: 'var(--text-white, #fff)', cursor: 'pointer', borderRadius: '4px' }}
               >
-                🔼
+                <i className="fa-solid fa-caret-up"></i>
               </button>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, minWidth: '40px', textAlign: 'center', color: 'var(--text-white, #fff)' }}>
                 {settings.order || 0}
@@ -139,7 +139,7 @@ const TileEditorModal = () => {
                 onClick={() => updateTile(activeTileId, { order: (settings.order || 0) + 1 })}
                 style={{ width: '40px', height: '40px', fontSize: '1.2rem', background: 'var(--border-input, #333)', border: 'none', color: 'var(--text-white, #fff)', cursor: 'pointer', borderRadius: '4px' }}
               >
-                🔽
+                <i className="fa-solid fa-caret-down"></i>
               </button>
             </div>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textAlign: 'center', marginTop: '10px' }}>
@@ -149,7 +149,7 @@ const TileEditorModal = () => {
 
           <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px dashed var(--border-subtle, #333)' }}>
             <button className="btn btn-ghost w-100" onClick={resetTiles} style={{ color: 'var(--metro-red)', fontSize: '0.85rem' }}>
-              🔄 إعادة ضبط كافة المربعات للأصل
+              <i className="fa-solid fa-rotate"></i> إعادة ضبط كافة المربعات للأصل
             </button>
           </div>
         </div>

@@ -13,10 +13,10 @@ const ScannerModal = ({ isOpen, onClose, onScan }) => {
       <div className="modal scanner-modal" style={{ maxWidth: '500px', width: '90%' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.5rem' }}>📷</span>
+            <span style={{ fontSize: '1.5rem' }}><i className="fa-solid fa-camera"></i></span>
             <h2 style={{ margin: 0 }}>ماسح الباركود</h2>
           </div>
-          <button onClick={onClose} className="btn-close">✕</button>
+          <button onClick={onClose} className="btn-close"><i className="fa-solid fa-times"></i></button>
         </div>
 
         <div className="modal-body" style={{ padding: '0', position: 'relative' }}>
@@ -76,7 +76,7 @@ const ScannerModal = ({ isOpen, onClose, onScan }) => {
             className="btn btn-secondary"
             onClick={() => setFacingMode(prev => prev === "environment" ? "user" : "environment")}
           >
-            <span>🔄 تبديل الكاميرا</span>
+            <span><i className="fa-solid fa-rotate"></i> تبديل الكاميرا</span>
           </button>
           <button className="btn btn-danger" onClick={onClose}>إلغاء</button>
         </div>

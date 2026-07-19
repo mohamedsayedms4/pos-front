@@ -262,7 +262,7 @@ const PrintInvoice = () => {
           cursor: 'pointer', fontFamily: "'Cairo', sans-serif",
           fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px'
         }}>
-          🖨️ طباعة الفاتورة
+          <i className="fa-solid fa-print"></i>️ طباعة الفاتورة
         </button>
         <button onClick={handleDownloadPdf} style={{
           background: '#28a745', color: '#fff', border: 'none',
@@ -270,7 +270,7 @@ const PrintInvoice = () => {
           cursor: 'pointer', fontFamily: "'Cairo', sans-serif",
           fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px'
         }}>
-          📥 تنزيل الفاتورة
+          <i className="fa-solid fa-inbox"></i> تنزيل الفاتورة
         </button>
         <ShareInvoice invoice={invoice} btnClassName="share-invoice-btn" />
         <button onClick={() => window.close()} style={{
@@ -279,7 +279,7 @@ const PrintInvoice = () => {
           cursor: 'pointer', fontFamily: "'Cairo', sans-serif",
           fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px'
         }}>
-          ❌ إغلاق المعاينة
+          <i className="fa-solid fa-xmark"></i> إغلاق المعاينة
         </button>
       </div>
 

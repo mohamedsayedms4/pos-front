@@ -192,7 +192,7 @@ const DebtManagement = () => {
                 </div>
                 <div className="header-actions">
                     <button className="btn btn-ghost" onClick={() => setShowSettingsModal(true)}>
-                        ⚙️ إعدادات التذكير
+                        <i className="fa-solid fa-gear"></i> إعدادات التذكير
                     </button>
                     <button className="btn btn-primary" onClick={() => {
                         setNewDebt({ ...newDebt, type: activeTab });
@@ -208,27 +208,27 @@ const DebtManagement = () => {
                   id="debt_receive"
                   label="سجلات لنا (مدين)"
                   value={activeTab === 'RECEIVABLE' ? totalElements : '-'}
-                  icon=""
+                  icon={<i className="fa-solid fa-chart-simple"></i>}
                   defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
                 />
                 <StatTile 
                   id="debt_pay"
                   label="سجلات علينا (دائن)"
                   value={activeTab === 'PAYABLE' ? totalElements : '-'}
-                  icon="📤"
+                  icon={<i className="fa-solid fa-chart-simple"></i>}
                   defaults={{ color: 'amber', size: 'tile-wd-sm', order: 2 }}
                 />
                 <StatTile 
                   id="debt_new"
                   label="أقساط سددت (اليوم)"
                   value="جديد"
-                  icon="📅"
+                  icon={<i className="fa-solid fa-chart-simple"></i>}
                   defaults={{ color: 'emerald', size: 'tile-sq-sm', order: 3 }}
                 />
                 <StatTile 
                   id="debt_overdue"
                   label="أقساط متأخرة"
-                  value="⚠️"
+                  value=""
                   icon="⏰"
                   defaults={{ color: 'crimson', size: 'tile-sq-sm', order: 4 }}
                 />
@@ -239,13 +239,13 @@ const DebtManagement = () => {
                   className={`btn ${activeTab === 'RECEIVABLE' ? 'btn-primary' : 'btn-ghost'}`}
                   onClick={() => handleTabChange('RECEIVABLE')}
                 >
-                    💰 لنا (تحصيلات من عملاء وغيرهم)
+                    <i className="fa-solid fa-sack-dollar"></i> لنا (تحصيلات من عملاء وغيرهم)
                 </button>
                 <button 
                   className={`btn ${activeTab === 'PAYABLE' ? 'btn-amber' : 'btn-ghost'}`}
                   onClick={() => handleTabChange('PAYABLE')}
                 >
-                    💸 علينا (سداد لموردين وغيرهم)
+                    <i className="fa-solid fa-money-bill-wave"></i> علينا (سداد لموردين وغيرهم)
                 </button>
             </div>
 
@@ -390,7 +390,7 @@ const DebtManagement = () => {
                     <div className="modal" style={{ maxWidth: '800px', width: '90%' }}>
                         <div className="modal-header">
                             <h3>إضافة دين يدوي جديد ({activeTab === 'RECEIVABLE' ? 'لنا' : 'علينا'})</h3>
-                            <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
+                            <button className="modal-close" onClick={() => setShowAddModal(false)}><i className="fa-solid fa-times"></i></button>
                         </div>
                         <form onSubmit={handleSaveDebt}>
                             <div className="modal-body">
@@ -499,7 +499,7 @@ const DebtManagement = () => {
                                             </div>
                                             <div style={{ paddingBottom: '5px' }}>
                                                 {newDebt.installments.length > 1 && (
-                                                    <button type="button" className="btn btn-danger btn-sm" onClick={() => handleRemoveInstallment(idx)}>✕</button>
+                                                    <button type="button" className="btn btn-danger btn-sm" onClick={() => handleRemoveInstallment(idx)}><i className="fa-solid fa-times"></i></button>
                                                 )}
                                             </div>
                                         </div>
@@ -522,7 +522,7 @@ const DebtManagement = () => {
                     <div className="modal" style={{ maxWidth: '500px' }}>
                         <div className="modal-header">
                             <h3>تسجيل سداد قسط</h3>
-                            <button className="modal-close" onClick={() => setShowPayModal(false)}>✕</button>
+                            <button className="modal-close" onClick={() => setShowPayModal(false)}><i className="fa-solid fa-times"></i></button>
                         </div>
                         <form onSubmit={handlePayment}>
                             <div className="modal-body">
@@ -561,8 +561,8 @@ const DebtManagement = () => {
                 <div className={`modal-overlay ${showSettingsModal ? 'active' : ''}`}>
                     <div className="modal" style={{ maxWidth: '500px' }}>
                         <div className="modal-header">
-                            <h3>⚙️ إعدادات تذكير الأقساط</h3>
-                            <button className="modal-close" onClick={() => setShowSettingsModal(false)}>✕</button>
+                            <h3><i className="fa-solid fa-gear"></i> إعدادات تذكير الأقساط</h3>
+                            <button className="modal-close" onClick={() => setShowSettingsModal(false)}><i className="fa-solid fa-times"></i></button>
                         </div>
                         <div className="modal-body">
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
@@ -571,7 +571,7 @@ const DebtManagement = () => {
                                     يقوم النظام بفحص الأقساط المتأخرة وإرسال التنبيهات الآن بشكل فوري لجميع المديرين.
                                 </p>
                                 <button type="button" className="btn btn-warning" onClick={handleTriggerReminders}>
-                                    ▶ إرسال الإشعارات الآن
+                                    <i className="fa-solid fa-play"></i> إرسال الإشعارات الآن
                                 </button>
                             </div>
 

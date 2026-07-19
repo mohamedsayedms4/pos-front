@@ -20,10 +20,10 @@ export const TileProvider = ({ children }) => {
         setIsEditMode((prev) => {
           const newState = !prev;
           if (newState) {
-            toast('🎨 وضع التخصيص مفعل. اسحب المربعات لترتيبها أو انقر للتعديل.', 'info');
+            toast(' وضع التخصيص مفعل. اسحب المربعات لترتيبها أو انقر للتعديل.', 'info');
           } else {
             setActiveTileId(null);
-            toast('✅ تم حفظ التعديلات.', 'success');
+            toast(' تم حفظ التعديلات.', 'success');
           }
           return newState;
         });
@@ -85,7 +85,7 @@ export const TileProvider = ({ children }) => {
   const resetTiles = () => {
     setTileSettings({});
     localStorage.removeItem('pos_tile_settings');
-    toast('🔄 تم إعادة تعيين جميع المربعات للوضع الافتراضي.', 'success');
+    toast(' تم إعادة تعيين جميع المربعات للوضع الافتراضي.', 'success');
     window.location.reload(); // Hard reload to clear component states if needed
   };
 

@@ -10,7 +10,7 @@ import beepSound from '../assets/sound/freesound_community-store-scanner-beep-90
 import OpenSessionModal from '../components/pos/OpenSessionModal';
 import CloseSessionModal from '../components/pos/CloseSessionModal';
 import CashMovementModal from '../components/pos/CashMovementModal';
-import { Joyride, STATUS } from 'react-joyride';
+
 
 const StartTourBeacon = ({ beaconProps }) => {
     return (
@@ -127,7 +127,6 @@ const POS = () => {
   const [savingQuickProduct, setSavingQuickProduct] = useState(false);
 
   // Tour State
-  const [runTour, setRunTour] = useState(false);
 
   useEffect(() => {
     if (!activeSession) return;
@@ -160,45 +159,6 @@ const POS = () => {
     };
     checkTour();
   }, [activeSession]);
-
-  const handleJoyrideCallback = (data) => {
-      const { status, type } = data;
-      const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
-      
-      if (finishedStatuses.includes(status) || type === 'tour:end') {
-          setRunTour(false);
-          localStorage.setItem('tour_pos_v3', 'true');
-          
-          // Confetti for completing onboarding!
-          const onboardingStr = localStorage.getItem('onboardingStatus');
-          if (onboardingStr) {
-             toast('🎉 رائع! لقد أنهيت الجولة الإرشادية لنقطة البيع. اصنع فاتورتك الأولى الآن!', 'success');
-          }
-      }
-  };
-
-  const tourSteps = [
-      {
-          target: '.tour-pos-search',
-          content: 'هنا يمكنك البحث عن منتجاتك بالاسم أو مسح الباركود مباشرة لإضافتها للفاتورة.',
-          placement: 'bottom',
-      },
-      {
-          target: '.tour-pos-products',
-          content: 'أو يمكنك ببساطة الضغط على أي منتج من القائمة ليتم إضافته فوراً لسلة المشتريات.',
-          placement: 'right',
-      },
-      {
-          target: '.tour-pos-cart',
-          content: 'هنا تظهر المنتجات المطلوبة. يمكنك تعديل الكميات أو حذف المنتجات.',
-          placement: 'left',
-      },
-      {
-          target: '.tour-pos-checkout',
-          content: 'وأخيراً، بعد التأكد من الفاتورة، اضغط هنا لإتمام الدفع وطباعة الإيصال. مبروك على أول مبيعاتك! 🎉',
-          placement: 'top',
-      }
-  ];
 
   useEffect(() => {
     localStorage.setItem('pos_print_preview', printPreview);
@@ -463,7 +423,7 @@ const POS = () => {
           setTimeout(() => toast('تجاوزت الرصيد المتاح', 'warning'), 10);
           return prev;
         }
-        // 🔊 Beep
+        // <i className="fa-solid fa-volume-high"></i> Beep
         beepRef.current.currentTime = 0;
         beepRef.current.play().catch(() => {});
         const updatedPrice = calculateItemPrice({
@@ -479,7 +439,7 @@ const POS = () => {
         setTimeout(() => toast('الكمية المطلوبة (الحد الأدنى للجملة) تتجاوز الرصيد المتاح', 'warning'), 10);
         return prev;
       }
-      // 🔊 Beep
+      // <i className="fa-solid fa-volume-high"></i> Beep
       beepRef.current.currentTime = 0;
       beepRef.current.play().catch(() => {});
 
@@ -711,7 +671,7 @@ const POS = () => {
 
         if (stompClientRef.current?.connected) {
           stompClientRef.current.publish({
-            destination: '/app/order-complete',
+            destination: '/order-complete',
             body: JSON.stringify({ status: 'COMPLETED', invoiceId: invoiceData.id, ts: Date.now() })
           });
         }
@@ -819,31 +779,6 @@ const POS = () => {
 
   return (
     <>
-      {runTour && (
-        <Joyride
-            steps={tourSteps}
-            run={runTour}
-            beaconComponent={StartTourBeacon}
-            continuous={true}
-            showProgress={true}
-            showSkipButton={true}
-            disableOverlayClose={true}
-            callback={handleJoyrideCallback}
-            styles={{
-                options: {
-                    primaryColor: '#3B82F6',
-                    backgroundColor: '#0B1354',
-                    textColor: '#ffffff',
-                    arrowColor: '#0B1354',
-                    zIndex: 9999999,
-                },
-                tooltipContainer: { textAlign: 'right' },
-                buttonNext: { outline: 'none', backgroundColor: '#3B82F6', color: '#ffffff', fontFamily: 'Cairo, sans-serif', fontWeight: 'bold', padding: '6px 16px', borderRadius: '6px' },
-                buttonBack: { marginRight: 10, outline: 'none', color: '#a0aec0', fontFamily: 'Cairo, sans-serif' }
-            }}
-            locale={{ back: 'السابق', close: 'إغلاق', last: 'إنهاء', next: 'التالي', skip: 'تخطي' }}
-        />
-      )}
       {showOpenSession && <OpenSessionModal onOpenSuccess={() => { setShowOpenSession(false); Api.getCurrentSession().then(setActiveSession).catch(()=>{}); }} />}
       {showCloseSession && <CloseSessionModal onCloseSuccess={() => { setShowCloseSession(false); setActiveSession(null); setShowOpenSession(true); }} onCancel={() => setShowCloseSession(false)} />}
       {showCashMovement && <CashMovementModal onClose={() => setShowCashMovement(false)} />}
@@ -873,11 +808,11 @@ const POS = () => {
               title="إضافة منتج سريع"
               onClick={() => setShowQuickAddProduct(true)}
             >
-              ➕
+              <i className="fa-solid fa-plus"></i>
             </button>
           </div>
           <div className={`sync-indicator ${connected ? 'active' : ''}`}>
-            {connected ? '🟢 متصل' : '🔴 غير متصل'}
+            {connected ? ' متصل' : ' غير متصل'}
           </div>
         </div>
 
@@ -886,7 +821,7 @@ const POS = () => {
             className={`category-pill ${selectedCategoryId === '' ? 'active' : ''}`}
             onClick={() => setSelectedCategoryId('')}
           >
-            📁 الكل
+            <i className="fa-solid fa-folder"></i> الكل
           </button>
           {categories.map(cat => (
             <button
@@ -907,7 +842,7 @@ const POS = () => {
               return (
                 <div key={p.id} className={`pos-item-card ${outOfStock ? 'out-stock' : ''}`} onClick={() => !outOfStock && addToCart(p)}>
                   <div className="pos-item-image">
-                    {imgSrc ? <img src={imgSrc} alt={p.name} /> : <div className="placeholder-icon">📦</div>}
+                    {imgSrc ? <img src={imgSrc} alt={p.name} /> : <div className="placeholder-icon"><i className="fa-solid fa-box"></i></div>}
                     <div className="stock-badge">{outOfStock ? 'نفذ' : `${p.stock} متوفر`}</div>
                   </div>
                   <div className="pos-item-details">
@@ -938,10 +873,10 @@ const POS = () => {
       {/* RIGHT: CART & CHECKOUT */}
       <div className="pos-cart-pane tour-pos-cart">
         <div className="cart-header">
-          <h3>🛒 الطلب الحالي</h3>
+          <h3><i className="fa-solid fa-cart-shopping"></i> الطلب الحالي</h3>
           <div style={{display:'flex', gap:'5px', flexWrap:'wrap', alignItems:'center'}}>
             <button onClick={toggleWholesaleMode} style={{padding:'4px 10px', fontSize:'0.75rem', background: isWholesaleMode ? '#10b981' : '#6b7280', color:'white', borderRadius:'6px', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px'}}>
-              {isWholesaleMode ? '📦 بيع جملة' : 'بيع قطاعي'}
+              {isWholesaleMode ? ' بيع جملة' : 'بيع قطاعي'}
             </button>
             <button onClick={() => setShowCashMovement(true)} style={{padding:'4px 10px', fontSize:'0.75rem', background:'var(--metro-blue)', color:'white', borderRadius:'6px', border:'none', cursor:'pointer'}}>حركة نقدية</button>
             <button onClick={() => setShowCloseSession(true)} style={{padding:'4px 10px', fontSize:'0.75rem', background:'#ef4444', color:'white', borderRadius:'6px', border:'none', cursor:'pointer'}}>تقفيل الوردية</button>
@@ -1030,7 +965,7 @@ const POS = () => {
         <div className="cart-items-list">
           {cart.length === 0 ? (
             <div className="empty-cart-state">
-              <span className="icon">🛒</span>
+              <span className="icon"><i className="fa-solid fa-cart-shopping"></i></span>
               <p>السلة فارغة</p>
               <small>قم بإضافة منتجات من القائمة</small>
             </div>
@@ -1119,7 +1054,7 @@ const POS = () => {
                          return (t > 0 ? t : 0).toFixed(2);
                      })()}
                   </div>
-                  <button className="remove-btn" onClick={() => removeFromCart(item.id)}>✕</button>
+                  <button className="remove-btn" onClick={() => removeFromCart(item.id)}><i className="fa-solid fa-times"></i></button>
                 </div>
               </div>
             ))
@@ -1177,7 +1112,7 @@ const POS = () => {
             disabled={checkoutLoading || cart.length === 0}
             title="إتمام الدفع (Ctrl+B للطباعة الفورية)"
           >
-            💳 إتمام الدفع {printPreview ? 'والمعاينة' : 'والطباعة المباشرة'}
+            <i className="fa-solid fa-credit-card"></i> إتمام الدفع {printPreview ? 'والمعاينة' : 'والطباعة المباشرة'}
           </button>
         </div>
       </div>
@@ -2024,8 +1959,8 @@ const POS = () => {
         <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddCustomer(false); }}>
           <div className="modal" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h3>➕ عميل جديد (سريع)</h3>
-              <button className="modal-close" onClick={() => setShowQuickAddCustomer(false)}>✕</button>
+              <h3><i className="fa-solid fa-plus"></i> عميل جديد (سريع)</h3>
+              <button className="modal-close" onClick={() => setShowQuickAddCustomer(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body">
               <form id="quickCustomerForm" onSubmit={handleSaveQuickCustomer}>
@@ -2054,8 +1989,8 @@ const POS = () => {
         <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) setShowQuickAddProduct(false); }}>
           <div className="modal" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h3>➕ منتج جديد (سريع)</h3>
-              <button className="modal-close" onClick={() => setShowQuickAddProduct(false)}>✕</button>
+              <h3><i className="fa-solid fa-plus"></i> منتج جديد (سريع)</h3>
+              <button className="modal-close" onClick={() => setShowQuickAddProduct(false)}><i className="fa-solid fa-times"></i></button>
             </div>
             <div className="modal-body">
               <form id="quickProductForm" onSubmit={handleSaveQuickProduct}>

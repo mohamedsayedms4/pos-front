@@ -8,9 +8,12 @@ import Products from './pages/Products.jsx'
 import AddProduct from './pages/AddProduct.jsx'
 import Categories from './pages/Categories.jsx'
 import CategoryDetails from './pages/CategoryDetails.jsx'
+import CategoryForm from './pages/CategoryForm.jsx'
 import Suppliers from './pages/Suppliers.jsx'
+import SupplierForm from './pages/SupplierForm.jsx'
 import ProductAnalytics from './pages/ProductAnalytics.jsx'
 import Purchases from './pages/Purchases.jsx'
+import AddPurchase from './pages/AddPurchase.jsx'
 import PurchaseDetails from './pages/PurchaseDetails.jsx'
 import Users from './pages/Users.jsx'
 import ProductInteractions from './pages/ProductInteractions.jsx'
@@ -26,15 +29,17 @@ import StockTransfers from './pages/StockTransfers.jsx'
 import POS from './pages/POS.jsx'
 import Customers from './pages/Customers.jsx'
 import CustomerDetails from './pages/CustomerDetails.jsx'
+import CustomerForm from './pages/CustomerForm.jsx'
 import Sales from './pages/Sales.jsx'
+import AddSale from './pages/AddSale.jsx'
 import SaleDetails from './pages/SaleDetails.jsx'
+import SalesAnalytics from './pages/SalesAnalytics.jsx'
 import SessionsLog from './pages/SessionsLog.jsx'
 import Returns from './pages/Returns.jsx'
 import Treasury from './pages/Treasury.jsx'
 import TreasuryManagement from './pages/TreasuryManagement.jsx'
 import CustomerOrder from './pages/CustomerOrder.jsx'
 import DamagedProducts from './pages/DamagedProducts.jsx'
-import SalesAnalytics from './pages/SalesAnalytics.jsx'
 import DebtManagement from './pages/DebtManagement.jsx'
 import InstallmentCalendar from './pages/InstallmentCalendar.jsx'
 import Employees from './pages/Employees.jsx'
@@ -104,6 +109,7 @@ import TileEditorModal from './components/common/TileEditorModal.jsx'
 import OrderCustomer from './pages/OrderCustomer.jsx'
 import OrderCashier from './pages/OrderCashier.jsx'
 import PrintInvoice from './pages/PrintInvoice.jsx'
+import PrintTestPage from './pages/PrintTestPage.jsx'
 
 import CostCenterSetup from './pages/manufacturing/CostCenterSetup.jsx'
 import WorkstationSetup from './pages/manufacturing/WorkstationSetup.jsx'
@@ -122,6 +128,9 @@ import Error403 from './pages/Error403.jsx'
 import Error404 from './pages/Error404.jsx'
 import Error500 from './pages/Error500.jsx'
 import BranchForm from './pages/BranchForm.jsx'
+import BranchDashboard from './pages/BranchDashboard.jsx'
+import UserForm from './pages/UserForm.jsx'
+import RoleForm from './pages/RoleForm.jsx'
 
 import { GlobalUIProvider } from './components/common/GlobalUI'
 import { ThemeProvider } from './components/common/ThemeContext'
@@ -129,6 +138,7 @@ import { BranchProvider } from './context/BranchContext.jsx'
 
 import Messages from './pages/Messages.jsx'
 import Campaigns from './pages/Campaigns.jsx'
+import Dashboard2 from './pages/Dashboard2.jsx'
 
 /**
  * Main application component setting up global contexts, router, and route definitions.
@@ -160,7 +170,7 @@ function App() {
         <BranchProvider>
           <TileProvider>
             <TileEditorModal />
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <BrowserRouter basename="/" future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
@@ -254,14 +264,17 @@ function App() {
                   <Route path="/order-cashier" element={<OrderCashier />} />
                   <Route path="/store-inactive" element={<StoreInactive />} />
                   <Route path="/print-receipt/:id" element={<PrintInvoice />} />
+                  <Route path="/print-test" element={<PrintTestPage />} />
                   <Route element={<MainLayout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/dashboard2" element={<Dashboard2 />} />
                     
                     {/* Sales & POS */}
                     <Route element={<ProtectedRoute permission="SALE_READ" />}>
                       <Route path="/pos" element={<POS />} />
                       <Route path="/sessions" element={<SessionsLog />} />
                       <Route path="/sales" element={<Sales />} />
+                      <Route path="/sales/add" element={<AddSale />} />
                       <Route path="/sales/view/:id" element={<SaleDetails />} />
                       <Route path="/sales/analytics" element={<SalesAnalytics />} />
                       <Route path="/returns" element={<Returns />} />
@@ -279,6 +292,8 @@ function App() {
                       <Route path="/products/interactions" element={<ProductInteractions />} />
                       <Route path="/products/offers" element={<CustomerOffers />} />
                       <Route path="/categories" element={<Categories />} />
+                      <Route path="/categories/add" element={<CategoryForm />} />
+                      <Route path="/categories/edit/:id" element={<CategoryForm />} />
                       <Route path="/categories/:id" element={<CategoryDetails />} />
                       <Route path="/categories/:categoryId/products" element={<Products />} />
                       <Route path="/inventory/report" element={<InventoryReport />} />
@@ -307,10 +322,13 @@ function App() {
                     {/* Suppliers & Purchases */}
                     <Route element={<ProtectedRoute permission="SUPPLIER_READ" />}>
                       <Route path="/suppliers" element={<Suppliers />} />
+                      <Route path="/suppliers/add" element={<SupplierForm />} />
+                      <Route path="/suppliers/edit/:id" element={<SupplierForm />} />
                       <Route path="/suppliers/:id" element={<SupplierDetails />} />
                     </Route>
                     <Route element={<ProtectedRoute permission="PURCHASE_READ" />}>
                       <Route path="/purchases" element={<Purchases />} />
+                      <Route path="/purchases/add" element={<AddPurchase />} />
                       <Route path="/purchases/:supplierName" element={<Purchases />} />
                       <Route path="/purchases/view/:id" element={<PurchaseDetails />} />
                       <Route path="/stock-receipts" element={<StockReceipts />} />
@@ -319,6 +337,8 @@ function App() {
                     {/* Customers */}
                     <Route element={<ProtectedRoute permission="CUSTOMER_READ" />}>
                       <Route path="/customers" element={<Customers />} />
+                      <Route path="/customers/add" element={<CustomerForm />} />
+                      <Route path="/customers/edit/:id" element={<CustomerForm />} />
                       <Route path="/customers/:id" element={<CustomerDetails />} />
                     </Route>
 
@@ -367,9 +387,13 @@ function App() {
                     {/* Administration */}
                     <Route element={<ProtectedRoute permission="USER_READ" />}>
                       <Route path="/users" element={<Users />} />
+                      <Route path="/users/add" element={<UserForm />} />
+                      <Route path="/users/edit/:id" element={<UserForm />} />
                     </Route>
                     <Route element={<ProtectedRoute permission="ROLE_READ" />}>
                       <Route path="/roles" element={<Roles />} />
+                      <Route path="/roles/add" element={<RoleForm />} />
+                      <Route path="/roles/edit/:id" element={<RoleForm />} />
                     </Route>
                     <Route element={<ProtectedRoute permission="AUDIT_READ" />}>
                       <Route path="/audit" element={<Audit />} />
@@ -377,12 +401,15 @@ function App() {
                     </Route>
                     <Route element={<ProtectedRoute permission="BRANCH_READ" />}>
                       <Route path="/branches" element={<Branches />} />
+                      <Route path="/branches/dashboard" element={<BranchDashboard />} />
                       <Route path="/branches/add" element={<BranchForm />} />
                       <Route path="/branches/edit/:id" element={<BranchForm />} />
                       <Route path="/branches/:id/manage" element={<BranchManagement />} />
                     </Route>
                     <Route element={<ProtectedRoute permission="WAREHOUSE_READ" />}>
                       <Route path="/warehouses" element={<Warehouses />} />
+                      <Route path="/warehouses/add" element={<BranchForm />} />
+                      <Route path="/warehouses/edit/:id" element={<BranchForm />} />
                       <Route path="/stock-transfers" element={<StockTransfers />} />
                       <Route path="/stock-transfers/new" element={<StockTransfers />} />
                     </Route>

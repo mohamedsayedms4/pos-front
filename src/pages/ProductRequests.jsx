@@ -159,7 +159,7 @@ const ProductRequests = () => {
                         <div className="prd-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
                             <div className="prd-modal-header">
                                 <h3>{notesModal.action === 'approve' ? 'الموافقة على الطلب' : 'رفض الطلب'}</h3>
-                                <button className="prd-modal-close" onClick={() => setNotesModal({ ...notesModal, open: false })}>✕</button>
+                                <button className="prd-modal-close" onClick={() => setNotesModal({ ...notesModal, open: false })}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <form onSubmit={handleAction}>
                                 <div className="prd-modal-body">

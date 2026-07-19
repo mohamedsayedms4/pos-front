@@ -493,8 +493,84 @@ const LandingPage = () => {
     }
   };
 
+  // ── Schema JSON-LD ─────────────────────────────────────────────────────────
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "سجل ERP — Seggle ERP",
+    "alternateName": ["سجل", "Seggle", "Seggle ERP"],
+    "url": "https://seggelerp.com",
+    "logo": "https://seggelerp.com/logo.png",
+    "description": "نظام ERP سحابي عربي متكامل لإدارة الحسابات والمخزون والمبيعات ونقاط البيع",
+    "foundingLocation": { "@type": "Place", "addressCountry": "EG" },
+    "parentOrganization": { "@type": "Organization", "name": "Remotly" },
+    "sameAs": ["https://www.facebook.com/seggleerp"]
+  };
+
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "سجل ERP",
+    "alternateName": "Seggle ERP",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web, Cloud, Windows",
+    "description": "برنامج ERP سحابي لإدارة الحسابات والمخزون والمبيعات ونقاط البيع والفواتير الإلكترونية",
+    "url": "https://seggelerp.com",
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/InStock",
+      "priceCurrency": "EGP",
+      "priceSpecification": {
+        "@type": "PriceSpecification",
+        "priceCurrency": "EGP"
+      }
+    },
+    "featureList": [
+      "إدارة نقاط البيع والكاشير",
+      "إدارة المخزون والمستودعات",
+      "الحسابات العامة والمحاسبة",
+      "الفاتورة الإلكترونية",
+      "إدارة الموارد البشرية",
+      "إدارة الفروع المتعددة",
+      "التجارة الإلكترونية"
+    ],
+    "inLanguage": "ar"
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "سجل ERP",
+    "url": "https://seggelerp.com",
+    "inLanguage": "ar",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://seggelerp.com/blog?search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqData.map(({ q, a }) => ({
+      "@type": "Question",
+      "name": q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": a
+      }
+    }))
+  };
+
   return (
     <div className="landing-layout">
+      {/* Schema JSON-LD — Organization, SoftwareApplication, WebSite, FAQPage */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
       {/* Pristine Light Header */}
       <header className={`landing-header ${scrolled ? 'header-scrolled' : ''}`}>
         <div className="container header-container">
@@ -655,7 +731,7 @@ const LandingPage = () => {
           </svg>
         </div>
         <div className="container hero-container">
-          <h1 className="hero-title animate-on-scroll fade-up">نظام ERP متكامل لإدارة أعمالك</h1>
+          <h2 className="hero-title animate-on-scroll fade-up">نظام ERP متكامل لإدارة أعمالك</h2>
           
           <p className="hero-desc animate-on-scroll fade-up delay-100">
             {softwareName} هو شريكك الرقمي الأمثل لإدارة جميع جوانب أعمالك. برنامج سحابي آمن بهوية عربية أصيلة وواجهة عصرية تدعم العربية والإنجليزية، يضمن سلامة بياناتك ويرافقك أينما كنت. أصدر الفواتير الإلكترونية المعتمدة وأدر مبيعاتك، مخزونك، عملائك، موظفيك، حساباتك، ودورة عملك من مكان واحد، مع حلول إدارة شاملة وقابلة للتخصيص لأكثر من 50 نشاطاً تجارياً.
@@ -668,16 +744,16 @@ const LandingPage = () => {
             
             <div className="sub-features-row">
               <div className="sub-feature-item">
-                <span className="sparkle-icon">✳</span>
+                <span className="sparkle-icon"><i className="fa-solid fa-asterisk"></i></span>
                 <span>تجربة مجانية</span>
               </div>
 
               <div className="sub-feature-item">
-                <span className="sparkle-icon">✳</span>
+                <span className="sparkle-icon"><i className="fa-solid fa-asterisk"></i></span>
                 <span>جاهز للعمل فوراً</span>
               </div>
               <div className="sub-feature-item">
-                <span className="sparkle-icon">✳</span>
+                <span className="sparkle-icon"><i className="fa-solid fa-asterisk"></i></span>
                 <span>شامل لجميع التطبيقات</span>
               </div>
             </div>
@@ -717,7 +793,7 @@ const LandingPage = () => {
       {/* Social Proof Section */}
       <section className="social-proof">
           <div className="container">
-              <p>يثق بنا أكثر من <span className="highlight">10,000+</span> نشاط تجاري للنمو بأعمالهم</p>
+              <p>يثق بنا أكثر من <span className="highlight">100+</span> نشاط تجاري للنمو بأعمالهم</p>
               <div className="logos-ticker">
                   <div className="ticker-track">
                       <div className="brand">شركة الأفق</div>
@@ -747,35 +823,35 @@ const LandingPage = () => {
                   {/* 1. المبيعات (Wide) */}
                   <div className="feature-card wide" style={{ textAlign: 'right' }}>
                       <span className="feature_icon"><i className="fa-solid fa-bolt text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
-                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>مبيعات لا تتوقف</h4>
+                      <h3 style={{ marginBottom: '10px', color: 'var(--text-dark)', fontSize: '1.1rem' }}>مبيعات لا تتوقف</h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>تجربة كاشير فائقة السرعة تواكب أوقات الذروة، مع إمكانية العمل بدون إنترنت للحفاظ على انسيابية المبيعات.</p>
                   </div>
                   
                   {/* 2. المخزون (Tall) */}
                   <div className="feature-card tall" style={{ textAlign: 'right' }}>
                       <span className="feature_icon"><i className="fa-solid fa-boxes-stacked text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
-                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>مخزون يتحدث إليك</h4>
+                      <h3 style={{ marginBottom: '10px', color: 'var(--text-dark)', fontSize: '1.1rem' }}>مخزون يتحدث إليك</h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>تنبيهات استباقية ونظرة عميقة لحركة بضائعك عبر المستودعات، لضمان عدم نفاد أي صنف هام.</p>
                   </div>
                   
                   {/* 3. الحسابات */}
                   <div className="feature-card" style={{ textAlign: 'right' }}>
                       <span className="feature_icon"><i className="fa-solid fa-chart-pie text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
-                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>محاسبة بلا عناء</h4>
+                      <h3 style={{ marginBottom: '10px', color: 'var(--text-dark)', fontSize: '1.1rem' }}>محاسبة بلا عناء</h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>تقارير مالية دقيقة وإقرارات ضريبية بضغطة زر واحدة.</p>
                   </div>
                   
                   {/* 4. المهام */}
                   <div className="feature-card" style={{ textAlign: 'right' }}>
                       <span className="feature_icon"><i className="fa-solid fa-users-gear text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
-                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>تكامل فريقك</h4>
+                      <h3 style={{ marginBottom: '10px', color: 'var(--text-dark)', fontSize: '1.1rem' }}>تكامل فريقك</h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>صلاحيات دقيقة وتتبع لمهام الموظفين وإنجازاتهم بدقة.</p>
                   </div>
                   
                   {/* 5. علاقات العملاء (Wide) */}
                   <div className="feature-card wide" style={{ textAlign: 'right' }}>
                       <span className="feature_icon"><i className="fa-solid fa-heart text-success" style={{ fontSize: '1.5rem', marginBottom: '15px' }}></i></span>
-                      <h4 style={{ marginBottom: '10px', color: 'var(--text-dark)' }}>ولاء يصنع الفارق</h4>
+                      <h3 style={{ marginBottom: '10px', color: 'var(--text-dark)', fontSize: '1.1rem' }}>ولاء يصنع الفارق</h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6' }}>افهم سلوك عملائك واصنع لهم عروضاً مخصصة تزيد من ارتباطهم بعلامتك التجارية وترفع مبيعاتك.</p>
                   </div>
               </div>
@@ -1073,7 +1149,7 @@ const LandingPage = () => {
           </div>
         </div>
         <div className="footer-copyright-bar">
-          <p>جميع الحقوق محفوظة لدى Remotly © {new Date().getFullYear()}</p>
+          <p>جميع الحقوق محفوظة لدى Remotly <i className="fa-regular fa-copyright"></i> {new Date().getFullYear()}</p>
         </div>
       </footer>
 

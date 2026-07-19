@@ -161,7 +161,7 @@ const RegisterSuccess = () => {
             </div>
 
             <h1 className="success-heading">تهانينا! تم إنشاء حسابك بنجاح</h1>
-            <p className="success-lead">لقد أعددنا لك نظام سجل وأصبح جاهزاً للعمل الآن لمساعدة عملك على التوسع 🚀</p>
+            <p className="success-lead">لقد أعددنا لك نظام سجل وأصبح جاهزاً للعمل الآن لمساعدة عملك على التوسع <i className="fa-solid fa-rocket"></i></p>
 
             {/* Details Panel */}
             <div className="details-panel-box">
@@ -181,10 +181,10 @@ const RegisterSuccess = () => {
                   <div className="copy-link-wrapper">
                     <span className="link-text-val" dir="ltr">{tenantLoginUrl}</span>
                     <button className={`copy-action-btn ${copied ? 'copied-done' : ''}`} onClick={handleCopy}>
-                      {copied ? '✓ تم النسخ!' : 'نسخ الرابط'}
+                      {copied ? ' تم النسخ!' : 'نسخ الرابط'}
                     </button>
                   </div>
-                  <p className="hint-label-text">💡 يرجى حفظ هذا الرابط وتقديمه لفريق العمل الخاص بك للوصول المباشر لنظام الكاشير والمحاسبة.</p>
+                  <p className="hint-label-text"><i className="fa-solid fa-lightbulb"></i> يرجى حفظ هذا الرابط وتقديمه لفريق العمل الخاص بك للوصول المباشر لنظام الكاشير والمحاسبة.</p>
                 </div>
               )}
             </div>
@@ -271,7 +271,7 @@ const RegisterSuccess = () => {
           </div>
         </div>
         <div className="footer-copyright-bar">
-          <p>جميع الحقوق محفوظة لدى Remotly © {new Date().getFullYear()}</p>
+          <p>جميع الحقوق محفوظة لدى Remotly <i className="fa-regular fa-copyright"></i> {new Date().getFullYear()}</p>
         </div>
       </footer>
 

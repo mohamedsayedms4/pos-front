@@ -229,7 +229,7 @@ const SubscriptionSuccess = () => {
         zIndex: 2
       }}>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600' }}>
-          جميع الحقوق محفوظة لدى {softwareName} © {new Date().getFullYear()}
+          جميع الحقوق محفوظة لدى {softwareName} <i className="fa-regular fa-copyright"></i> {new Date().getFullYear()}
         </p>
       </footer>
 

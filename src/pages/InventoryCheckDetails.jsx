@@ -224,7 +224,7 @@ const InventoryCheckDetails = () => {
                                         borderRadius: '8px', fontWeight: 'bold'
                                     }}
                                 >
-                                    💾 حفظ مسودة
+                                    <i className="fa-solid fa-floppy-disk"></i> حفظ مسودة
                                 </button>
                             )}
 
@@ -239,7 +239,7 @@ const InventoryCheckDetails = () => {
                                         borderRadius: '8px', fontWeight: 'bold'
                                     }}
                                 >
-                                    📩 إرسال للاعتماد
+                                    <i className="fa-solid fa-envelope"></i> إرسال للاعتماد
                                 </button>
                             )}
 
@@ -256,7 +256,7 @@ const InventoryCheckDetails = () => {
                                             borderRadius: '8px', fontWeight: 'bold', color: '#fff'
                                         }}
                                     >
-                                        ❌ رفض للمسودة
+                                        <i className="fa-solid fa-xmark"></i> رفض للمسودة
                                     </button>
                                     <button 
                                         className="btn btn-primary" 
@@ -269,13 +269,13 @@ const InventoryCheckDetails = () => {
                                             borderRadius: '8px', fontWeight: 'bold', color: '#fff'
                                         }}
                                     >
-                                        ✅ اعتماد وإنهاء الجرد
+                                        <i className="fa-solid fa-check"></i> اعتماد وإنهاء الجرد
                                     </button>
                                 </>
                             )}
                             {isPending && !isApprover && (
                                 <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', alignSelf: 'center' }}>
-                                    ⏳ في انتظار الاعتماد
+                                    <i className="fa-solid fa-hourglass-half"></i> في انتظار الاعتماد
                                 </span>
                             )}
                         </div>
@@ -357,8 +357,8 @@ const InventoryCheckDetails = () => {
                     <div className="modal-overlay active" onClick={(e) => { if (e.target.className.includes('modal-overlay')) setShowApproveConfirm(false) }}>
                         <div className="modal" style={{ maxWidth: '450px', width: '90%' }}>
                             <div className="modal-header">
-                                <h3>⚠️ تأكيد الاعتماد</h3>
-                                <button className="modal-close" onClick={() => setShowApproveConfirm(false)}>✕</button>
+                                <h3><i className="fa-solid fa-triangle-exclamation"></i> تأكيد الاعتماد</h3>
+                                <button className="modal-close" onClick={() => setShowApproveConfirm(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <p style={{ fontSize: '1.1rem', lineHeight: '1.8', margin: 0 }}>
@@ -382,8 +382,8 @@ const InventoryCheckDetails = () => {
                     <div className="modal-overlay active" onClick={(e) => { if (e.target.className.includes('modal-overlay')) setShowSubmitConfirm(false) }}>
                         <div className="modal" style={{ maxWidth: '450px', width: '90%' }}>
                             <div className="modal-header">
-                                <h3>📩 إرسال للاعتماد</h3>
-                                <button className="modal-close" onClick={() => setShowSubmitConfirm(false)}>✕</button>
+                                <h3><i className="fa-solid fa-envelope"></i> إرسال للاعتماد</h3>
+                                <button className="modal-close" onClick={() => setShowSubmitConfirm(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <p style={{ fontSize: '1.1rem', lineHeight: '1.8', margin: 0 }}>
@@ -407,8 +407,8 @@ const InventoryCheckDetails = () => {
                     <div className="modal-overlay active" onClick={(e) => { if (e.target.className.includes('modal-overlay')) setShowRejectConfirm(false) }}>
                         <div className="modal" style={{ maxWidth: '450px', width: '90%' }}>
                             <div className="modal-header">
-                                <h3>❌ رفض الجرد</h3>
-                                <button className="modal-close" onClick={() => setShowRejectConfirm(false)}>✕</button>
+                                <h3><i className="fa-solid fa-xmark"></i> رفض الجرد</h3>
+                                <button className="modal-close" onClick={() => setShowRejectConfirm(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <p style={{ fontSize: '1.1rem', lineHeight: '1.8', margin: 0 }}>

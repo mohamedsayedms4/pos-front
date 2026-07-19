@@ -727,7 +727,7 @@ const Purchases = () => {
               {/* Status Distribution - Circular Chart */}
               <div className="card" style={{ margin: 0, padding: '20px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>📊</span>
+                  <span style={{ fontSize: '1.2rem' }}><i className="fa-solid fa-chart-column"></i></span>
                   <h4 style={{ fontSize: '0.9rem', margin: 0, fontWeight: 700 }}>توزيع المديونيات</h4>
                 </div>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
@@ -799,7 +799,7 @@ const Purchases = () => {
               {/* Top Suppliers Card */}
               <div className="card" style={{ margin: 0, padding: '15px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                  <span style={{ fontSize: '1.2rem' }}><i className="fa-solid fa-trophy"></i></span>
                   <h4 style={{ fontSize: '0.9rem', margin: 0, fontWeight: 700 }}>أهم الموردين</h4>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -834,7 +834,7 @@ const Purchases = () => {
             {/* Daily Trend Chart */}
             <div className="card" style={{ padding: '15px' }}>
               <div className="card-header" style={{ padding: '0 0 10px 0', border: 'none' }}>
-                <h4 style={{ fontSize: '0.9rem', margin: 0 }}>📈 إجمالي المشتريات اليومية (أخر 30 يوم)</h4>
+                <h4 style={{ fontSize: '0.9rem', margin: 0 }}><i className="fa-solid fa-arrow-trend-up"></i> إجمالي المشتريات اليومية (أخر 30 يوم)</h4>
               </div>
               <div style={{ height: '200px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -860,7 +860,7 @@ const Purchases = () => {
 
         <div className="card">
           <div className="card-header">
-            <h3>🛒 إدارة المشتريات</h3>
+            <h3><i className="fa-solid fa-cart-shopping"></i> إدارة المشتريات</h3>
             <div className="toolbar">
               <div className="search-input">
                 <input
@@ -932,7 +932,7 @@ const Purchases = () => {
                          }}
                          disabled={importingExcel}
                        >
-                         {importingExcel ? '⏳ جاري الاستيراد...' : '📥 استيراد'}
+                         {importingExcel ? ' جاري الاستيراد...' : ' استيراد'}
                        </button>
                        <div 
                          id="importPurchasesDropdownMenu" 
@@ -976,7 +976,7 @@ const Purchases = () => {
                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover-tile, #2a2a2a)'}
                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                          >
-                           <span style={{ fontSize: '1.1rem' }}>📂</span>
+                           <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-folder-open"></i></span>
                            <span style={{ color: 'var(--text-main, #ffffff)' }}>رفع ملف إكسيل</span>
                          </button>
                          <button 
@@ -1006,13 +1006,13 @@ const Purchases = () => {
                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover-tile, #2a2a2a)'}
                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                          >
-                           <span style={{ fontSize: '1.1rem' }}>📋</span>
+                           <span style={{ fontSize: '1.1rem' }}><i className="fa-solid fa-clipboard-list"></i></span>
                            <span style={{ color: 'var(--text-main, #ffffff)' }}>تحميل نموذج فارغ</span>
                          </button>
                        </div>
                     </div>
 
-                    <button className="btn btn-primary" onClick={openForm}>
+                    <button className="btn btn-primary" onClick={() => navigate('/purchases/add')}>
                       <span>+</span> إضافة فاتورة
                     </button>
                   </>
@@ -1026,7 +1026,7 @@ const Purchases = () => {
                 <Loader message="جاري تحميل فواتير المشتريات..." />
               ) : items.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">🛒</div>
+                  <div className="empty-icon"><i className="fa-solid fa-cart-shopping"></i></div>
                   <h4>لا توجد فواتير مشتريات</h4>
                   <p>قم بإضافة فواتير جديدة من الموردين</p>
                 </div>
@@ -1072,9 +1072,9 @@ const Purchases = () => {
                         </td>
                         <td>
                           <div className="table-actions">
-                            <button className="btn btn-icon btn-ghost" title="تفاصيل الفاتورة" onClick={() => openDetails(p)}>👁️</button>
+                            <button className="btn btn-icon btn-ghost" title="تفاصيل الفاتورة" onClick={() => openDetails(p)}><i className="fa-solid fa-eye"></i>️</button>
                             {p.status !== 'PAID' && (
-                              <button className="btn btn-icon btn-ghost" title="تسديد دفعة" onClick={() => openPayment(p)}>💰</button>
+                              <button className="btn btn-icon btn-ghost" title="تسديد دفعة" onClick={() => openPayment(p)}><i className="fa-solid fa-sack-dollar"></i></button>
                             )}
                           </div>
                         </td>
@@ -1116,7 +1116,7 @@ const Purchases = () => {
             <div className="modal" style={{ maxWidth: '860px' }}>
               <div className="modal-header">
                 <h3>إنشاء فاتورة مشتريات جديدة</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <form id="purchaseForm" onSubmit={handleSaveInvoice}>
@@ -1190,7 +1190,7 @@ const Purchases = () => {
                               setShowSupplierDropdown(true);
                             }}
                           >
-                            ✕
+                            <i className="fa-solid fa-times"></i>
                           </span>
                         )}
                         {showSupplierDropdown && (
@@ -1258,8 +1258,8 @@ const Purchases = () => {
                     {showQuickAddSupplier && (
                       <div style={{ gridColumn: '1 / -1', marginTop: '10px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border-color)', width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                          <h4 style={{ margin: 0, fontSize: '1rem' }}>➕ مورد جديد (سريع) <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal', marginRight: '5px' }}>(يُحفظ تلقائياً مع الفاتورة)</span></h4>
-                          <button type="button" className="btn btn-icon btn-ghost" onClick={() => setShowQuickAddSupplier(false)}>✕</button>
+                          <h4 style={{ margin: 0, fontSize: '1rem' }}><i className="fa-solid fa-plus"></i> مورد جديد (سريع) <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal', marginRight: '5px' }}>(يُحفظ تلقائياً مع الفاتورة)</span></h4>
+                          <button type="button" className="btn btn-icon btn-ghost" onClick={() => setShowQuickAddSupplier(false)}><i className="fa-solid fa-times"></i></button>
                         </div>
                         <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                           <div className="form-group mb-0">
@@ -1324,14 +1324,14 @@ const Purchases = () => {
 
                   {/* Items section */}
                   <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                    <h4 style={{ marginBottom: '15px' }}>📦 إضافة منتجات للفاتورة</h4>
+                    <h4 style={{ marginBottom: '15px' }}><i className="fa-solid fa-box"></i> إضافة منتجات للفاتورة</h4>
                     
                     {/* Quick Add Product Inline Form */}
                     {showQuickAddProduct && (
                       <div style={{ marginTop: '10px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '15px', width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                          <h4 style={{ margin: 0, fontSize: '1rem' }}>➕ منتج جديد (سريع) <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal', marginRight: '5px' }}>(يُحفظ تلقائياً عند النقر على + إضافة)</span></h4>
-                          <button type="button" className="btn btn-icon btn-ghost" onClick={() => setShowQuickAddProduct(false)}>✕</button>
+                          <h4 style={{ margin: 0, fontSize: '1rem' }}><i className="fa-solid fa-plus"></i> منتج جديد (سريع) <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal', marginRight: '5px' }}>(يُحفظ تلقائياً عند النقر على + إضافة)</span></h4>
+                          <button type="button" className="btn btn-icon btn-ghost" onClick={() => setShowQuickAddProduct(false)}><i className="fa-solid fa-times"></i></button>
                         </div>
                         <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                           <div className="form-group mb-0">
@@ -1544,9 +1544,9 @@ const Purchases = () => {
                           borderRadius: '6px', padding: '12px 14px', marginBottom: '12px',
                           fontSize: '0.9rem', color: 'var(--metro-blue)', fontWeight: 500
                         }}>
-                          📦 استلام: {qty} {unit.unitName} (كل {unit.unitName} فيها {unit.conversionFactor} {prod?.unitName || 'قطعة'})
+                          <i className="fa-solid fa-box"></i> استلام: {qty} {unit.unitName} (كل {unit.unitName} فيها {unit.conversionFactor} {prod?.unitName || 'قطعة'})
                           <br/>
-                          📉 سيتم إضافة <strong>{inBase.toFixed(3)} {prod?.unitName || 'وحدة'}</strong> للمخزون
+                          <i className="fa-solid fa-arrow-trend-down"></i> سيتم إضافة <strong>{inBase.toFixed(3)} {prod?.unitName || 'وحدة'}</strong> للمخزون
                         </div>
                       );
                     })()}
@@ -1583,7 +1583,7 @@ const Purchases = () => {
                               </td>
                               <td style={{ fontWeight: 600 }}>{item.totalPrice.toFixed(2)}</td>
                               <td>
-                                <button type="button" className="btn btn-icon btn-ghost" onClick={() => handleRemoveItem(idx)}>🗑️</button>
+                                <button type="button" className="btn btn-icon btn-ghost" onClick={() => handleRemoveItem(idx)}><i className="fa-solid fa-trash"></i></button>
                               </td>
                             </tr>
                           ))}
@@ -1631,7 +1631,7 @@ const Purchases = () => {
             <div className="modal" style={{ maxWidth: '450px' }}>
               <div className="modal-header">
                 <h3>تسجيل دفعة للمورد — {activePurchase.supplierName}</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <p style={{ marginBottom: '15px' }}>رقم الفاتورة: <strong>{activePurchase.invoiceNumber}</strong></p>
@@ -1671,7 +1671,7 @@ const Purchases = () => {
             <div className="modal" style={{ maxWidth: '700px' }}>
               <div className="modal-header">
                 <h3>تفاصيل فاتورة المشتريات</h3>
-                <button className="modal-close" onClick={closeModal}>✕</button>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
               </div>
               <div className="modal-body">
                 <div className="invoice-header-info" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px', padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
@@ -1733,7 +1733,7 @@ const Purchases = () => {
                     navigate(`/purchases/view/${activePurchase.id}`);
                   }}
                 >
-                  عرض التفاصيل الكاملة 📄
+                  عرض التفاصيل الكاملة <i className="fa-solid fa-file-lines"></i>
                 </button>
               </div>
             </div>

@@ -158,7 +158,7 @@ const ArticleDetail = () => {
     return (
       <div className="article-detail-page" dir="rtl">
         <div className="article-not-found container">
-          <div className="not-found-icon">📄</div>
+          <div className="not-found-icon"><i className="fa-solid fa-file-lines"></i></div>
           <h1>المقال غير موجود</h1>
           <p>{error || 'لم يتم العثور على المقال المطلوب'}</p>
           <button className="btn-back-blog" onClick={() => navigate('/blog')}>← العودة للمدونة</button>
@@ -214,7 +214,7 @@ const ArticleDetail = () => {
                   {article.category}
                 </Link>
               )}
-              {article.featured && <span className="article-featured-badge">⭐ مقال مميز</span>}
+              {article.featured && <span className="article-featured-badge"><i className="fa-solid fa-star"></i> مقال مميز</span>}
             </div>
 
             <h1 className="article-header__title">{article.title}</h1>
@@ -300,7 +300,7 @@ const ArticleDetail = () => {
                 لينكدإن
               </a>
               <button className="share-btn share-btn--copy" onClick={handleCopyLink}>
-                {copyFeedback ? '✓ تم النسخ!' : '🔗 نسخ الرابط'}
+                {copyFeedback ? ' تم النسخ!' : ' نسخ الرابط'}
               </button>
             </div>
           </div>
@@ -324,17 +324,17 @@ const ArticleDetail = () => {
           <div className="sidebar-info-card">
             <h4>معلومات المقال</h4>
             <ul className="sidebar-info-list">
-              {pubDate && <li><span>📅 تاريخ النشر</span><span>{pubDate}</span></li>}
-              {article.readingTime && <li><span>⏱️ وقت القراءة</span><span>{article.readingTime} دقيقة</span></li>}
-              {article.category && <li><span>📂 التصنيف</span><span>{article.category}</span></li>}
-              <li><span>👁️ المشاهدات</span><span>{(article.viewCount || 0).toLocaleString('ar-EG')}</span></li>
+              {pubDate && <li><span><i className="fa-solid fa-calendar-days"></i> تاريخ النشر</span><span>{pubDate}</span></li>}
+              {article.readingTime && <li><span><i className="fa-solid fa-stopwatch"></i> وقت القراءة</span><span>{article.readingTime} دقيقة</span></li>}
+              {article.category && <li><span><i className="fa-solid fa-folder-open"></i> التصنيف</span><span>{article.category}</span></li>}
+              <li><span><i className="fa-solid fa-eye"></i>️ المشاهدات</span><span>{(article.viewCount || 0).toLocaleString('ar-EG')}</span></li>
             </ul>
 
           </div>
 
           {/* CTA Card */}
           <div className="sidebar-cta-card">
-            <div className="sidebar-cta-icon">🚀</div>
+            <div className="sidebar-cta-icon"><i className="fa-solid fa-rocket"></i></div>
             <h4>جرب سجل ERP مجاناً</h4>
             <p>نظام متكامل لإدارة أعمالك</p>
             <Link to="/register" className="btn-sidebar-cta">ابدأ الآن</Link>
@@ -355,13 +355,13 @@ const ArticleDetail = () => {
                     <div className="related-card__cover">
                       {relCover
                         ? <img src={relCover} alt={rel.title} loading="lazy" />
-                        : <div className="related-card__cover-ph">📄</div>
+                        : <div className="related-card__cover-ph"><i className="fa-solid fa-file-lines"></i></div>
                       }
                     </div>
                     <div className="related-card__body">
                       {rel.category && <span className="related-card__cat">{rel.category}</span>}
                       <h3 className="related-card__title">{rel.title}</h3>
-                      {rel.readingTime && <span className="related-card__time">⏱️ {rel.readingTime} دقيقة</span>}
+                      {rel.readingTime && <span className="related-card__time"><i className="fa-solid fa-stopwatch"></i> {rel.readingTime} دقيقة</span>}
                     </div>
                   </Link>
                 );

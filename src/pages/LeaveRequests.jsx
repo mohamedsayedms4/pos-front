@@ -90,7 +90,7 @@ const LeaveRequests = () => {
                             id={`bal_${b.id}`}
                             label={`رصيد ${b.leaveTypeNameAr}`}
                             value={`${b.remaining} يوم`}
-                            icon="📅"
+                            icon={<i className="fa-solid fa-chart-simple"></i>}
                             defaults={{ color: b.remaining > 5 ? 'emerald' : 'orange', size: 'tile-wd-sm' }}
                         />
                     ))}
@@ -99,7 +99,7 @@ const LeaveRequests = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3>{isAdmin ? '📋 إدارة طلبات الإجازات' : '🏖️ طلباتي وإجازاتي'}</h3>
+                    <h3>{isAdmin ? ' إدارة طلبات الإجازات' : '️ طلباتي وإجازاتي'}</h3>
                     <button className="btn btn-primary" onClick={() => setShowModal(true)}>
                         + تقديم طلب إجازة
                     </button>
@@ -160,8 +160,8 @@ const LeaveRequests = () => {
                     <div className="modal-overlay active anim-fade-in" onClick={() => setShowModal(false)}>
                         <div className="modal-content anim-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                             <div className="modal-header">
-                                <h2>🚀 تقديم طلب إجازة جديد</h2>
-                                <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+                                <h2><i className="fa-solid fa-rocket"></i> تقديم طلب إجازة جديد</h2>
+                                <button className="close-btn" onClick={() => setShowModal(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body" style={{ padding: '20px' }}>

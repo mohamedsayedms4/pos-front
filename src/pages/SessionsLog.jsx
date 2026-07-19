@@ -97,7 +97,7 @@ const SessionsLog = () => {
                       className="btn-view-report"
                       onClick={() => setSelectedSessionId(session.id)}
                     >
-                      📄 عرض التقرير
+                      <i className="fa-solid fa-file-lines"></i> عرض التقرير
                     </button>
                   </td>
                 </tr>

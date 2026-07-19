@@ -71,14 +71,14 @@ const ProfitLoss = () => {
           id="pnl_revenue"
           label="صافي الإيرادات"
           value={data?.netRevenue.toLocaleString() || '0'}
-          icon="💰"
+          icon={<i className="fa-solid fa-chart-simple"></i>}
           defaults={{ color: 'blue', size: 'tile-wd-sm', order: 1 }}
         />
         <StatTile 
           id="pnl_gross"
           label="إجمالي الربح"
           value={data?.grossProfit.toLocaleString() || '0'}
-          icon="📈"
+          icon={<i className="fa-solid fa-chart-line"></i>}
           defaults={{ color: 'emerald', size: 'tile-wd-sm', order: 2 }}
         />
         <StatTile 
@@ -92,14 +92,14 @@ const ProfitLoss = () => {
           id="pnl_net"
           label="صافي الربح النهائي"
           value={data?.netProfit.toLocaleString() || '0'}
-          icon={data?.netProfit >= 0 ? '💎' : '⚠️'}
+          icon={data?.netProfit >= 0 ? '' : ''}
           defaults={{ color: data?.netProfit >= 0 ? 'emerald' : 'rose', size: 'tile-wd-sm', order: 4 }}
         />
       </div>
 
       <div className="card mb-4">
         <div className="card-header">
-          <h3>📊 فلترة التقرير المالي</h3>
+          <h3><i className="fa-solid fa-chart-column"></i> فلترة التقرير المالي</h3>
           <div className="toolbar" style={{ flexWrap: 'wrap' }}>
             <div className="filter-toolbar">
               <select 
@@ -138,7 +138,7 @@ const ProfitLoss = () => {
       <div className="chart-grid">
         {/* Main Stats Chart */}
         <div className="card">
-          <div className="card-header"><h3>🔄 الهيكل المالي</h3></div>
+          <div className="card-header"><h3><i className="fa-solid fa-rotate"></i> الهيكل المالي</h3></div>
           <div className="card-body" style={{ height: '300px', width: '100%', minHeight: '300px' }}>
             <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={mainStats}>
@@ -157,7 +157,7 @@ const ProfitLoss = () => {
 
         {/* Expense Breakdown */}
         <div className="card">
-          <div className="card-header"><h3>🍕 توزيع المصروفات</h3></div>
+          <div className="card-header"><h3><i className="fa-solid fa-pizza-slice"></i> توزيع المصروفات</h3></div>
           <div className="card-body" style={{ height: '300px', width: '100%', minHeight: '300px' }}>
             {expenseData.length > 0 ? (
               <ResponsiveContainer width="99%" height="100%" minWidth={0} minHeight={0}>
@@ -187,7 +187,7 @@ const ProfitLoss = () => {
 
       {/* Details Table */}
       <div className="card" style={{ marginTop: '20px' }}>
-        <div className="card-header"><h3>📝 تفاصيل البنود</h3></div>
+        <div className="card-header"><h3><i className="fa-solid fa-file-pen"></i> تفاصيل البنود</h3></div>
         <div className="card-body no-padding">
           <div className="table-wrapper">
             <table className="data-table">
@@ -239,7 +239,7 @@ const ProfitLoss = () => {
       {/* Partner Distribution Table */}
       {data.partnerShares && data.partnerShares.length > 0 && (
         <div className="card" style={{ marginTop: '20px' }}>
-          <div className="card-header"><h3>💎 توزيع الأرباح على الشركاء (تقديري)</h3></div>
+          <div className="card-header"><h3><i className="fa-solid fa-gem"></i> توزيع الأرباح على الشركاء (تقديري)</h3></div>
           <div className="card-body no-padding">
             <table className="data-table">
               <thead>

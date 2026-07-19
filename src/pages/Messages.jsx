@@ -220,7 +220,7 @@ const Messages = () => {
         <div className="chat-sidebar">
           <div className="sidebar-header">
             <button className="back-to-home" onClick={() => window.location.href = '/'} title="العودة للرئيسية">
-              🏠
+              
             </button>
             <h3><img src={msgIcon} alt="" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '5px' }} /> المحادثات</h3>
           </div>
@@ -259,7 +259,7 @@ const Messages = () => {
               <div className="chat-header">
                 <div className="selected-user-info">
                   <button className="back-button mobile-only" onClick={() => setSelectedUser(null)}>
-                    <span className="back-arrow">⬅</span>
+                    <span className="back-arrow"></span>
                   </button>
                   <div className="avatar-small">
                     {selectedUser.profilePicture ? (
@@ -305,7 +305,7 @@ const Messages = () => {
                                 </span>
                                 {isMe && (
                                   <span className={`status-icon ${msg.status === 'READ' ? 'read' : ''}`}>
-                                    {msg.status === 'READ' ? '✓✓' : '✓'}
+                                    {msg.status === 'READ' ? '<i className="fa-solid fa-check"></i><i className="fa-solid fa-check"></i>' : '<i className="fa-solid fa-check"></i>'}
                                   </span>
                                 )}
                               </div>
@@ -328,7 +328,7 @@ const Messages = () => {
                   autoFocus
                 />
                 <button type="submit" disabled={!newMessage.trim()}>
-                  <span className="send-icon">➤</span>
+                  <span className="send-icon"></span>
                 </button>
               </form>
             </>

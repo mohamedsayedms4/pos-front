@@ -44,7 +44,7 @@ const ProductionOrderForm = () => {
         <div className="page-section d-flex align-items-center justify-content-center" style={{ minHeight: 'calc(100vh - 100px)' }}>
             <div className="card" style={{ maxWidth: '600px', width: '100%', margin: '0 auto' }}>
                 <div className="card-header" style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '15px' }}>
-                    <h3>➕ إنشاء أمر إنتاج جديد</h3>
+                    <h3><i className="fa-solid fa-plus"></i> إنشاء أمر إنتاج جديد</h3>
                 </div>
                 <div className="card-body" style={{ padding: '25px' }}>
                     <form onSubmit={handleSave}>

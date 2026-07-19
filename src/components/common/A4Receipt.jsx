@@ -369,12 +369,12 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
           )}
           <div className="modern-company-info">
             <h2>{displayStoreName}</h2>
-            <p className="branch-tag">📍 {displayBranchName}</p>
+            <p className="branch-tag"><i className="fa-solid fa-location-dot"></i> {displayBranchName}</p>
           </div>
         </div>
         <div className="modern-header-title-side">
           <span className="modern-invoice-tag">فاتورة مبيعات</span>
-          <span className={`modern-status-badge ${invoice.status?.toLowerCase()}`}>{invoice.status === 'PAID' ? '✓ مدفوع' : invoice.status === 'PARTIAL' ? '⚠️ مدفوع جزئياً' : '💳 آجل'}</span>
+          <span className={`modern-status-badge ${invoice.status?.toLowerCase()}`}>{invoice.status === 'PAID' ? ' مدفوع' : invoice.status === 'PARTIAL' ? ' مدفوع جزئياً' : ' آجل'}</span>
         </div>
       </div>
 
@@ -382,7 +382,7 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
       <div className="modern-cards-grid">
         <div className="modern-info-card">
           <div className="card-header-modern">
-            <span className="card-icon">📄</span>
+            <span className="card-icon"><i className="fa-solid fa-file-lines"></i></span>
             <h3>تفاصيل المعاملة</h3>
           </div>
           <div className="card-row">
@@ -401,7 +401,7 @@ const A4Receipt = ({ invoice, template = 'classic', isPreview = false }) => {
 
         <div className="modern-info-card">
           <div className="card-header-modern">
-            <span className="card-icon">👥</span>
+            <span className="card-icon"><i className="fa-solid fa-users"></i></span>
             <h3>العميل</h3>
           </div>
           <div className="card-row">

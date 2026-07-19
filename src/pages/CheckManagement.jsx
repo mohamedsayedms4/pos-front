@@ -175,19 +175,19 @@ const CheckManagement = () => {
             {/* Phase 4: Analytics Cards */}
             <div className="analytics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '20px' }}>
                 <div className="card" style={{ borderLeft: '4px solid var(--accent-emerald)', padding: '15px' }}>
-                    <small style={{ color: 'var(--text-muted)' }}>📥 إجمالي أوراق القبض</small>
+                    <small style={{ color: 'var(--text-muted)' }}><i className="fa-solid fa-inbox"></i> إجمالي أوراق القبض</small>
                     <h2 style={{ margin: '5px 0' }}>{stats.totalReceivable.toLocaleString()}</h2>
                 </div>
                 <div className="card" style={{ borderLeft: '4px solid var(--accent-danger)', padding: '15px' }}>
-                    <small style={{ color: 'var(--text-muted)' }}>📤 إجمالي أوراق الدفع</small>
+                    <small style={{ color: 'var(--text-muted)' }}><i className="fa-solid fa-upload"></i> إجمالي أوراق الدفع</small>
                     <h2 style={{ margin: '5px 0' }}>{stats.totalPayable.toLocaleString()}</h2>
                 </div>
                 <div className="card" style={{ borderLeft: '4px solid var(--accent-amber)', padding: '15px' }}>
-                    <small style={{ color: 'var(--text-muted)' }}>⏳ مبالغ تحت التحصيل</small>
+                    <small style={{ color: 'var(--text-muted)' }}><i className="fa-solid fa-hourglass-half"></i> مبالغ تحت التحصيل</small>
                     <h2 style={{ margin: '5px 0' }}>{stats.pendingAmount.toLocaleString()}</h2>
                 </div>
                 <div className="card" style={{ borderLeft: '4px solid var(--accent-indigo)', padding: '15px' }}>
-                    <small style={{ color: 'var(--text-muted)' }}>✅ مبالغ تم تحصيلها</small>
+                    <small style={{ color: 'var(--text-muted)' }}><i className="fa-solid fa-check"></i> مبالغ تم تحصيلها</small>
                     <h2 style={{ margin: '5px 0' }}>{stats.collectedAmount.toLocaleString()}</h2>
                 </div>
             </div>
@@ -195,8 +195,8 @@ const CheckManagement = () => {
             <div className="card">
                 <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <h3>📑 سجل الشيكات والتقارير</h3>
-                        <button className="btn btn-sm btn-outline" onClick={handleExport}>📊 تصدير Excel</button>
+                        <h3><i className="fa-solid fa-file-invoice"></i> سجل الشيكات والتقارير</h3>
+                        <button className="btn btn-sm btn-outline" onClick={handleExport}><i className="fa-solid fa-chart-column"></i> تصدير Excel</button>
                     </div>
                     <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ تسجيل شيك جديد</button>
                 </div>
@@ -231,7 +231,7 @@ const CheckManagement = () => {
                             <input type="date" className="form-control btn-sm" value={filters.dateTo} onChange={e => setFilters({...filters, dateTo: e.target.value})} />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                            <button className="btn btn-sm btn-ghost" onClick={() => setFilters({status: 'ALL', type: 'ALL', dateFrom: '', dateTo: ''})}>🧹 مسح</button>
+                            <button className="btn btn-sm btn-ghost" onClick={() => setFilters({status: 'ALL', type: 'ALL', dateFrom: '', dateTo: ''})}><i className="fa-solid fa-broom"></i> مسح</button>
                         </div>
                     </div>
                 </div>
@@ -258,12 +258,12 @@ const CheckManagement = () => {
                                         <tr key={c.id}>
                                             <td><code>{c.checkNumber}</code></td>
                                             <td style={{ color: new Date(c.dueDate) <= new Date() && c.status === 'PENDING' ? 'var(--accent-danger)' : 'inherit' }}>
-                                                {c.dueDate} {new Date(c.dueDate) <= new Date() && c.status === 'PENDING' && '⚠️'}
+                                                {c.dueDate} {new Date(c.dueDate) <= new Date() && c.status === 'PENDING' && ''}
                                             </td>
                                             <td style={{ fontWeight: 'bold' }}>{c.amount.toLocaleString()}</td>
                                             <td>
                                                 <span style={{ color: c.checkType === 'RECEIVABLE' ? 'var(--accent-emerald)' : 'var(--accent-danger)' }}>
-                                                    {c.checkType === 'RECEIVABLE' ? '📥 قبض' : '📤 دفع'}
+                                                    {c.checkType === 'RECEIVABLE' ? ' قبض' : ' دفع'}
                                                 </span>
                                             </td>
                                             <td>
@@ -276,15 +276,15 @@ const CheckManagement = () => {
                                                 <div className="table-actions">
                                                     {c.status === 'PENDING' && (
                                                         <>
-                                                            <button className="btn btn-sm btn-ghost" onClick={() => updateStatus(c.id, 'COLLECTED', 'تم التحصيل')}>✅ تحصيل</button>
+                                                            <button className="btn btn-sm btn-ghost" onClick={() => updateStatus(c.id, 'COLLECTED', 'تم التحصيل')}><i className="fa-solid fa-check"></i> تحصيل</button>
                                                             <button className="btn btn-sm btn-ghost" onClick={() => {
                                                                 setSelectedCheck(c);
                                                                 setShowEndorseModal(true);
                                                             }}>↪️ تجيير</button>
-                                                            <button className="btn btn-sm btn-ghost" onClick={() => updateStatus(c.id, 'REJECTED', 'مرفوض')}>❌ مرفوض</button>
+                                                            <button className="btn btn-sm btn-ghost" onClick={() => updateStatus(c.id, 'REJECTED', 'مرفوض')}><i className="fa-solid fa-xmark"></i> مرفوض</button>
                                                         </>
                                                     )}
-                                                    <button className="btn btn-sm btn-ghost" onClick={() => handlePrint(c)}>🖨️ طباعة</button>
+                                                    <button className="btn btn-sm btn-ghost" onClick={() => handlePrint(c)}><i className="fa-solid fa-print"></i>️ طباعة</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -302,7 +302,7 @@ const CheckManagement = () => {
                         <div className="modal">
                             <div className="modal-header">
                                 <h3>تسجيل شيك جديد</h3>
-                                <button className="modal-close" onClick={() => setShowForm(false)}>✕</button>
+                                <button className="modal-close" onClick={() => setShowForm(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <form id="checkForm" onSubmit={handleRegister}>
@@ -358,7 +358,7 @@ const CheckManagement = () => {
                         <div className="modal">
                             <div className="modal-header">
                                 <h3>تجيير الشيك (تظهير لطرف ثالث)</h3>
-                                <button className="modal-close" onClick={() => setShowEndorseModal(false)}>✕</button>
+                                <button className="modal-close" onClick={() => setShowEndorseModal(false)}><i className="fa-solid fa-times"></i></button>
                             </div>
                             <div className="modal-body">
                                 <p style={{ marginBottom: '15px' }}>

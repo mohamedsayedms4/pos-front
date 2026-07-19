@@ -173,7 +173,7 @@ const DeletedProducts = () => {
       <div className="products-container page-layout animate-fade-in" style={{ padding: '24px' }}>
       <div className="page-header" style={{ marginBottom: '20px' }}>
         <div className="header-info">
-          <h2 className="page-title">♻️ سلة المحذوفات (المنتجات)</h2>
+          <h2 className="page-title"><i className="fa-solid fa-recycle"></i>️ سلة المحذوفات (المنتجات)</h2>
           <p className="page-subtitle">يمكنك استعراض واستعادة المنتجات التي تم حذفها مؤخراً بشكل كامل أو لفروع محددة.</p>
         </div>
       </div>
@@ -226,7 +226,7 @@ const DeletedProducts = () => {
               <Loader message="جاري تحميل المنتجات المحذوفة..." />
             ) : filteredItems.length === 0 ? (
               <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-                <div className="empty-icon" style={{ fontSize: '3rem', marginBottom: '15px' }}>♻️</div>
+                <div className="empty-icon" style={{ fontSize: '3rem', marginBottom: '15px' }}><i className="fa-solid fa-recycle"></i>️</div>
                 <h4>لا توجد منتجات محذوفة</h4>
                 <p>{searchTerm ? 'لا توجد نتائج تطابق بحثك حالياً.' : 'سلة المحذوفات فارغة تماماً.'}</p>
               </div>
@@ -252,7 +252,7 @@ const DeletedProducts = () => {
                         {getImageUrl(p) ? (
                           <img src={getImageUrl(p)} alt={p.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
                         ) : (
-                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📦</div>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}><i className="fa-solid fa-box"></i></div>
                         )}
                       </td>
                       <td>
@@ -271,7 +271,7 @@ const DeletedProducts = () => {
                               style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px' }}
                               title="استعادة للفرع الحالي فقط"
                             >
-                              🔄 استعادة للفرع
+                              <i className="fa-solid fa-rotate"></i> استعادة للفرع
                             </button>
                           )}
                           {(Api.isAdmin() || Api.can('PRODUCT_WRITE')) && (
@@ -281,7 +281,7 @@ const DeletedProducts = () => {
                               style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px' }}
                               title="استعادة المنتج بالكامل لجميع الفروع والمستودعات"
                             >
-                              🌐 استعادة شاملة
+                              <i className="fa-solid fa-globe"></i> استعادة شاملة
                             </button>
                           )}
                         </div>
