@@ -34,6 +34,7 @@ import Sales from './pages/Sales.jsx'
 import AddSale from './pages/AddSale.jsx'
 import SaleDetails from './pages/SaleDetails.jsx'
 import SalesAnalytics from './pages/SalesAnalytics.jsx'
+import PriceQuotations from './pages/PriceQuotations.jsx'
 import SessionsLog from './pages/SessionsLog.jsx'
 import Returns from './pages/Returns.jsx'
 import Treasury from './pages/Treasury.jsx'
@@ -279,6 +280,7 @@ function App() {
                       <Route path="/sales/add" element={<AddSale />} />
                       <Route path="/sales/view/:id" element={<SaleDetails />} />
                       <Route path="/sales/analytics" element={<SalesAnalytics />} />
+                      <Route path="/price-quotations" element={<PriceQuotations />} />
                       <Route path="/returns" element={<Returns />} />
                       <Route path="/online-orders" element={<OnlineOrders />} />
                     </Route>

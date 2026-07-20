@@ -389,6 +389,14 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
           </NavLink>
         )}
 
+        {/* 10.5. عروض وبيانات الأسعار */}
+        {Api.can('SALE_READ') && isOnline && (
+          <NavLink to="/price-quotations" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="nav-icon"><i className="fa-solid fa-file-signature"></i></span>
+            <span>عروض وبيانات الأسعار</span>
+          </NavLink>
+        )}
+
         {/* 11. مرتجع المبيعات */}
         {Api.can('SALE_READ') && isOnline && (
           <NavLink to="/returns" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>

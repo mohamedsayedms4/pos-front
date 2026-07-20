@@ -1597,7 +1597,7 @@
 
 .switch-list { display: grid; gap: 11px; }
 
-.dimensions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+.dimensions { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; }
 .number-control {
   height: 46px;
   border: 1px solid var(--border-strong);

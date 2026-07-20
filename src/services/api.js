@@ -566,6 +566,50 @@ const Api = {
     return res.data;
   },
 
+  async getPriceQuotations(page = 0, size = 10, query = '', status = '', branchId = '') {
+    const q = query ? `&query=${encodeURIComponent(query)}` : '';
+    const s = status ? `&status=${status}` : '';
+    const b = branchId ? `&branchId=${branchId}` : '';
+    const res = await this._request(`/price-quotations?page=${page}&size=${size}${q}${s}${b}`);
+    return res.data;
+  },
+
+  async getPriceQuotationById(id) {
+    const res = await this._request(`/price-quotations/${id}`);
+    return res.data;
+  },
+
+  async createPriceQuotation(data) {
+    const res = await this._request('/price-quotations', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async updatePriceQuotation(id, data) {
+    const res = await this._request(`/price-quotations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
+  async convertPriceQuotationToSale(id, paidAmount = null) {
+    const paidQuery = paidAmount !== null && paidAmount !== undefined ? `?paidAmount=${paidAmount}` : '';
+    const res = await this._request(`/price-quotations/${id}/convert-to-sale${paidQuery}`, {
+      method: 'POST'
+    });
+    return res.data;
+  },
+
+  async deletePriceQuotation(id) {
+    const res = await this._request(`/price-quotations/${id}`, {
+      method: 'DELETE'
+    });
+    return res.data;
+  },
+
   _isTokenValid(token) {
     if (!token) return false;
     try {

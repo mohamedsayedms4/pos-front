@@ -471,7 +471,8 @@ const Settings = () => {
         barcodeTemplate: localStorage.getItem('pos_barcode_template') || 'classic',
         showProductName: localStorage.getItem('barcode_show_name') !== 'false',
         showPrice: localStorage.getItem('barcode_show_price') !== 'false',
-        showSku: localStorage.getItem('barcode_show_sku') !== 'false'
+        showSku: localStorage.getItem('barcode_show_sku') !== 'false',
+        barcodeOffsetX: parseInt(localStorage.getItem('barcode_offset_x') || '0', 10)
     });
     const [savedPrintSettings, setSavedPrintSettings] = useState(null);
 
@@ -632,6 +633,7 @@ const Settings = () => {
             localStorage.setItem('barcode_show_price', String(printSettings.showPrice));
             localStorage.setItem('barcode_show_sku', String(printSettings.showSku));
             localStorage.setItem('barcode_font_size', String(printSettings.barcodeFontSize));
+            localStorage.setItem('barcode_offset_x', String(printSettings.barcodeOffsetX || 0));
 
             await Api.updatePrinterConfig({
                 labelWidthMm: printSettings.barcodeWidth,
@@ -867,6 +869,7 @@ const Settings = () => {
                                     <NumberInput label="العرض" value={printSettings.barcodeWidth} onChange={(val) => setPrintProp("barcodeWidth", val)} min={20} max={100} unit="مم" hint="20–100 مم" />
                                     <NumberInput label="الطول" value={printSettings.barcodeHeight} onChange={(val) => setPrintProp("barcodeHeight", val)} min={15} max={80} unit="مم" hint="15–80 مم" />
                                     <NumberInput label="حجم النص" value={printSettings.barcodeFontSize} onChange={(val) => setPrintProp("barcodeFontSize", val)} min={8} max={18} unit="px" hint="8–18 بكسل" />
+                                    <NumberInput label="معايرة أفقية" value={printSettings.barcodeOffsetX} onChange={(val) => setPrintProp("barcodeOffsetX", val)} min={-10} max={10} unit="مم" hint="لو الملصق بيطبع منزاح لليمين أو الشمال، عدّل هنا" />
                                 </div>
 
                                 <div className="divider" />
