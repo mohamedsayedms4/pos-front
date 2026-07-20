@@ -1511,6 +1511,22 @@ const Api = {
     });
   },
 
+  async cancelPurchaseInvoice(id, reason = '') {
+    const res = await this._request(`/purchases/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+    return res;
+  },
+
+  async updatePurchaseInvoice(id, data) {
+    const res = await this._request(`/purchases/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return res.data;
+  },
+
   async getSalesSummary(date = '', branchId = '') {
     const params = new URLSearchParams();
     if (date) params.append('date', date);

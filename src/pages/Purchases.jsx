@@ -77,8 +77,11 @@ const Purchases = () => {
   }, [searchTerm]);
 
   // Modal State
-  const [modalType, setModalType] = useState(null); // 'form', 'payment', 'details'
+  const [modalType, setModalType] = useState(null); // 'form', 'payment', 'details', 'cancel'
   const [activePurchase, setActivePurchase] = useState(null);
+  const [editingPurchaseId, setEditingPurchaseId] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
@@ -310,6 +313,7 @@ const Purchases = () => {
   // ─── Form Open ────────────────────────────────────────────────────────────
   const openForm = async () => {
     setFormErrors({});
+    setEditingPurchaseId(null);
     try {
       const user = Api._getUser();
       const initialBranchId = selectedBranchId || user?.branchId || '';
@@ -338,6 +342,55 @@ const Purchases = () => {
       setModalType('form');
     } catch (err) {
       toast('فشل في جلب البيانات الأساسية', 'error');
+    }
+  };
+
+  const openEdit = async (purchase) => {
+    setFormErrors({});
+    setLoading(true);
+    try {
+      const full = await Api.getPurchaseById(purchase.id);
+      setEditingPurchaseId(full.id);
+      setFormSelectedBranchId(full.branchId || selectedBranchId || '');
+
+      if (full.branchId) {
+        const whs = await Api.getWarehousesByBranch(full.branchId);
+        setWarehouses(whs);
+        if (full.warehouseId) setSelectedWarehouseId(full.warehouseId);
+        else if (whs.length > 0) setSelectedWarehouseId(whs[0].id);
+      }
+
+      setInvoiceForm({
+        supplierId: full.supplierId,
+        invoiceDate: full.invoiceDate ? full.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        paidAmount: full.paidAmount || 0,
+        discount: full.discountValue || 0,
+        discountType: full.discountType || 'FIXED'
+      });
+      setSupplierSearch(full.supplierName || '');
+
+      setInvoiceItems((full.items || []).map(item => ({
+        productId: item.productId,
+        unitId: item.unitId || null,
+        name: item.productName,
+        unitLabel: item.unitName || 'قطعة',
+        unitName: item.unitName || 'قطعة',
+        packagingDesc: item.unitName || 'قطاعي',
+        quantity: item.quantity,
+        factor: item.conversionFactor || 1,
+        qtyInBase: item.quantityInBaseUnit || item.quantity,
+        unitPrice: item.unitPrice,
+        discountValue: item.discountValue || 0,
+        discountType: item.discountType || 'FIXED',
+        discountAmount: item.discountAmount || 0,
+        totalPrice: item.totalPrice
+      })));
+
+      setModalType('form');
+    } catch (err) {
+      toast(err.message || 'فشل تحميل بيانات الفاتورة للتعديل', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -392,10 +445,34 @@ const Purchases = () => {
     }
   };
 
+  const openCancelModal = (purchase) => {
+    setActivePurchase(purchase);
+    setCancelReason('');
+    setModalType('cancel');
+  };
+
+  const handleConfirmCancel = async (e) => {
+    e.preventDefault();
+    if (!activePurchase) return;
+    setCancelling(true);
+    try {
+      await Api.cancelPurchaseInvoice(activePurchase.id, cancelReason);
+      toast('تم إلغاء فاتورة الشراء بنجاح', 'success');
+      closeModal();
+      loadData();
+    } catch (err) {
+      toast(err.message || 'فشل إلغاء الفاتورة', 'error');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const closeModal = () => {
     setFormErrors({});
     setModalType(null);
     setActivePurchase(null);
+    setEditingPurchaseId(null);
+    setCancelReason('');
   };
 
   // ─── Quick Add Handlers ──────────────────────────────────────────────────
@@ -641,8 +718,13 @@ const Purchases = () => {
     };
 
     try {
-      await Api.createPurchase(payload);
-      toast('تم إضافة الفاتورة بنجاح', 'success');
+      if (editingPurchaseId) {
+        await Api.updatePurchaseInvoice(editingPurchaseId, payload);
+        toast('تم تعديل الفاتورة بنجاح', 'success');
+      } else {
+        await Api.createPurchase(payload);
+        toast('تم إضافة الفاتورة بنجاح', 'success');
+      }
       closeModal();
       loadData();
     } catch (err) {
@@ -1066,15 +1148,21 @@ const Purchases = () => {
                         <td style={{ color: 'var(--accent-emerald)' }}>{Number(p.paidAmount).toFixed(2)}</td>
                         <td style={{ color: 'var(--metro-red)' }}>{Number(p.remainingAmount).toFixed(2)}</td>
                         <td>
-                          <span className={`badge ${p.status === 'PAID' ? 'badge-success' : p.status === 'PARTIAL' ? 'badge-warning' : 'badge-danger'}`}>
-                            {p.status === 'PAID' ? 'مدفوعة' : p.status === 'PARTIAL' ? 'جزئي' : 'غير مدفوعة'}
+                          <span className={`badge ${p.status === 'PAID' ? 'badge-success' : p.status === 'PARTIAL' ? 'badge-warning' : p.status === 'CANCELLED' ? 'badge-danger' : 'badge-danger'}`} style={p.status === 'CANCELLED' ? { opacity: 0.7, textDecoration: 'line-through' } : {}}>
+                            {p.status === 'PAID' ? 'مدفوعة' : p.status === 'PARTIAL' ? 'جزئي' : p.status === 'CANCELLED' ? 'ملغاة' : 'غير مدفوعة'}
                           </span>
                         </td>
                         <td>
                           <div className="table-actions">
-                            <button className="btn btn-icon btn-ghost" title="تفاصيل الفاتورة" onClick={() => openDetails(p)}><i className="fa-solid fa-eye"></i>️</button>
-                            {p.status !== 'PAID' && (
+                            <button className="btn btn-icon btn-ghost" title="تفاصيل الفاتورة" onClick={() => openDetails(p)}><i className="fa-solid fa-eye"></i></button>
+                            {p.status !== 'CANCELLED' && Api.can('PURCHASE_WRITE') && (
+                              <button className="btn btn-icon btn-ghost" title="تعديل الفاتورة" onClick={() => openEdit(p)}><i className="fa-solid fa-pen-to-square"></i></button>
+                            )}
+                            {p.status !== 'PAID' && p.status !== 'CANCELLED' && Api.can('PURCHASE_WRITE') && (
                               <button className="btn btn-icon btn-ghost" title="تسديد دفعة" onClick={() => openPayment(p)}><i className="fa-solid fa-sack-dollar"></i></button>
+                            )}
+                            {p.status !== 'CANCELLED' && Api.can('PURCHASE_WRITE') && (
+                              <button className="btn btn-icon btn-ghost text-danger" title="إلغاء الفاتورة" onClick={() => openCancelModal(p)} style={{ color: 'var(--metro-red)' }}><i className="fa-solid fa-ban"></i></button>
                             )}
                           </div>
                         </td>
@@ -1734,6 +1822,47 @@ const Purchases = () => {
                   }}
                 >
                   عرض التفاصيل الكاملة <i className="fa-solid fa-file-lines"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {/* ═══ Modal: Cancel Purchase ══════════════════════════════════════════ */}
+      {modalType === 'cancel' && activePurchase && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
+            <div className="modal" style={{ maxWidth: '480px' }}>
+              <div className="modal-header">
+                <h3>إلغاء فاتورة شراء — {activePurchase.invoiceNumber}</h3>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
+              </div>
+              <div className="modal-body">
+                <div style={{ padding: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', marginBottom: '15px' }}>
+                  <p style={{ color: 'var(--metro-red)', fontWeight: 600, margin: 0, fontSize: '0.9rem' }}>
+                    <i className="fa-solid fa-triangle-exclamation" style={{ marginLeft: '6px' }}></i>
+                    تحذير: إلغاء الفاتورة سيعكس الكميات المتاحة في المخزن ويخصم المبالغ من المورد والخزنة دون حذف السجلات المالية بشكل نهائي.
+                  </p>
+                </div>
+
+                <form id="cancelPurchaseForm" onSubmit={handleConfirmCancel}>
+                  <div className="form-group">
+                    <label>سبب الإلغاء (اختياري)</label>
+                    <textarea
+                      className="form-control"
+                      rows="3"
+                      placeholder="أدخل سبب إلغاء الفاتورة..."
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                    ></textarea>
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
+                <button type="submit" form="cancelPurchaseForm" className="btn btn-danger" disabled={cancelling} style={{ background: 'var(--metro-red)' }}>
+                  {cancelling ? 'جاري الإلغاء...' : 'تأكيد إلغاء الفاتورة'}
                 </button>
               </div>
             </div>
