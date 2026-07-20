@@ -137,6 +137,16 @@ const RawMaterials = () => {
 
     const doc = iframe.contentDocument || iframe.contentWindow.document;
 
+    // Load settings from localStorage
+    const showName = localStorage.getItem('barcode_show_name') !== 'false';
+    const showPrice = localStorage.getItem('barcode_show_price') !== 'false';
+    const showSku = localStorage.getItem('barcode_show_sku') !== 'false';
+    const userFontSize = localStorage.getItem('barcode_font_size') || '11';
+    
+    const isClassic = templateId === 'classic' || templateId === '1';
+    const isPriceFocus = templateId === 'price-focus' || templateId === '2';
+    const isMinimal = templateId === 'minimal' || templateId === '3';
+
     // Conservative image sizing: 4mm less than label to guarantee no overflow
     const sw = widthMm - 4;
     const sh = heightMm - 4;
@@ -147,57 +157,39 @@ const RawMaterials = () => {
         const codeStr = productData.productCode || productData.id || '';
         const priceStr = parseFloat(productData.salePrice || 0).toFixed(2) + ' EGP';
         const nameStr = productData.name || '';
+        
+        const nameHtml = (showName && nameStr) ? `<div class="product-name">${nameStr}</div>` : '';
+        const priceHtml = (showPrice && priceStr) ? `<div class="product-price">${priceStr}</div>` : '';
+        const skuHtml = (showSku && codeStr) ? `<div class="product-code">SKU: ${codeStr}</div>` : '';
+        const tenantHtml = `<div class="tenant-name">${tenantName}</div>`;
+        const imgHtml = `<img src="${dataUrl}" class="barcode-img" />`;
+
         let templateHtml = '';
 
-        if (templateId === '2') {
+        if (isPriceFocus) {
           templateHtml = `
-                <div class="tenant-name" style="margin-bottom: 2px;">${tenantName}</div>
-                <div class="product-name">${nameStr}</div>
-                <img src="${dataUrl}" class="barcode-img" />
-                <div class="product-code">${codeStr}</div>
-                <div class="tenant-name" style="font-size: 8px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
-                <div class="product-price" style="margin-top: 2px;">${priceStr}</div>
+                ${tenantHtml}
+                ${nameHtml}
+                ${showPrice ? `<div class="product-price" style="font-size: calc(${userFontSize}px + 4px); margin: 2px 0;">${priceStr}</div>` : ''}
+                ${imgHtml}
+                ${skuHtml}
               `;
-        } else if (templateId === '3') {
+        } else if (isMinimal) {
           templateHtml = `
-                <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
-                <hr style="width: 80%; border: 0; border-top: 1px solid #000; margin: 2px 0;" />
-                <div class="product-name">${nameStr}</div>
-                <div class="product-price">${priceStr}</div>
-                <img src="${dataUrl}" class="barcode-img" />
-                <div class="product-code">${codeStr}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; width:90%; font-size:${userFontSize}px; font-weight:bold; margin-bottom:2px;">
+                  ${showName && nameStr ? `<span>${nameStr}</span>` : ''}
+                  ${showPrice && priceStr ? `<span>${priceStr}</span>` : ''}
+                </div>
+                ${imgHtml}
+                ${skuHtml}
               `;
-        } else if (templateId === '4') {
+        } else { // Classic (Default)
           templateHtml = `
-                <div class="product-name" style="margin-bottom: 2px;">${nameStr}</div>
-                <div class="product-price" style="margin-bottom: 4px;">${priceStr}</div>
-                <img src="${dataUrl}" class="barcode-img" />
-                <div class="product-code" style="margin-top: 4px;">${codeStr}</div>
-                <div class="tenant-name" style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
-              `;
-        } else if (templateId === '5') {
-          templateHtml = `
-                <div class="tenant-name" style="margin-bottom: 2px; font-size: 10px;"> ${tenantName}</div>
-                <div class="product-name">${nameStr}</div>
-                <div class="product-price">${priceStr}</div>
-                <img src="${dataUrl}" class="barcode-img" />
-                <div class="product-code">${codeStr}</div>
-              `;
-        } else if (templateId === '6') {
-          templateHtml = `
-                <div class="tenant-name" style="font-size: 10px; font-weight: bold;">${tenantName}</div>
-                <div class="product-name">${nameStr}</div>
-                <div class="product-code" style="margin-bottom: 2px;">SKU: ${codeStr}</div>
-                <div class="product-price">${priceStr}</div>
-                <img src="${dataUrl}" class="barcode-img" />
-              `;
-        } else { // Template 1 (Default)
-          templateHtml = `
-                <div class="product-name">${nameStr}</div>
-                <div class="product-price">${priceStr}</div>
-                <img src="${dataUrl}" class="barcode-img" />
-                <div class="product-code">${codeStr}</div>
-                <div class="tenant-name" style="font-size: 9px; font-weight: bold; margin-top: 2px;">${tenantName}</div>
+                ${tenantHtml}
+                ${nameHtml}
+                ${imgHtml}
+                ${skuHtml}
+                ${priceHtml}
               `;
         }
 
@@ -215,13 +207,13 @@ const RawMaterials = () => {
       '@page{size:auto;margin:0}',
       '*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}',
       `html,body{background:#fff;margin:0;padding:0;}`,
-      `.page{width:${widthMm}mm;height:${heightMm}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;page-break-inside:avoid;padding:0; margin:0 auto; text-align:center;}`,
-      `.page:not(:last-child) { page-break-after: always; }`,
-      `.product-name { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: ${sw}mm; line-height: 1.1; margin-bottom: 2px; width: 100%; text-align: center; }`,
-      `.product-price { font-size: 13px; font-weight: bold; margin-bottom: 2px; line-height: 1; width: 100%; text-align: center; }`,
-      `.barcode-img { max-width:${sw}mm; max-height: 14mm; width:auto; height:auto; display:block; margin: 0 auto; object-fit:contain; }`,
-      `.product-code { font-size: 9px; margin-top: 2px; letter-spacing: 1px; line-height: 1; width: 100%; text-align: center; }`,
-      `.tenant-name { font-size: 8px; margin-top: 2px; font-weight: bold; line-height: 1; width: 100%; text-align: center; }`,
+      '.page{width:' + widthMm + 'mm;height:' + heightMm + 'mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;page-break-inside:avoid;padding:1mm 1.5mm;box-sizing:border-box;margin:0 auto;text-align:center;}',
+      '.page:not(:last-child){page-break-after:always;}',
+      '.product-name{font-size:clamp(7px, ' + userFontSize + 'px, ' + (heightMm * 0.4) + 'px);font-weight:bold;line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.product-price{font-size:clamp(8px, ' + (parseInt(userFontSize) + 2) + 'px, ' + (heightMm * 0.45) + 'px);font-weight:bold;line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.barcode-img{width:95%;max-width:' + sw + 'mm;flex:1 1 auto;min-height:0;max-height:100%;display:block;margin:1px auto;object-fit:fill;}',
+      '.product-code{font-size:clamp(6px, ' + (parseInt(userFontSize) - 2) + 'px, ' + (heightMm * 0.35) + 'px);line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.tenant-name{font-size:clamp(6px, ' + (parseInt(userFontSize) - 3) + 'px, ' + (heightMm * 0.35) + 'px);font-weight:bold;line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
       '</style></head>',
       `<body>${imagesHtml}</body></html>`,
     ].join(''));

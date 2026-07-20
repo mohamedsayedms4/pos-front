@@ -631,6 +631,7 @@ const Settings = () => {
             localStorage.setItem('barcode_show_name', String(printSettings.showProductName));
             localStorage.setItem('barcode_show_price', String(printSettings.showPrice));
             localStorage.setItem('barcode_show_sku', String(printSettings.showSku));
+            localStorage.setItem('barcode_font_size', String(printSettings.barcodeFontSize));
 
             await Api.updatePrinterConfig({
                 labelWidthMm: printSettings.barcodeWidth,
