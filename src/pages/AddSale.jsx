@@ -44,6 +44,15 @@ const AddSale = () => {
   const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '', address: '' });
   const [savingQuickCustomer, setSavingQuickCustomer] = useState(false);
 
+  // ─── Quick Add Product State ───────────────────────────────────────────────
+  const [showQuickAddProduct, setShowQuickAddProduct] = useState(false);
+  const [quickProductForm, setQuickProductForm] = useState({
+    name: '', productCode: '', purchasePrice: '', salePrice: '', unitName: 'قطعة'
+  });
+  const [quickProductSuggestions, setQuickProductSuggestions] = useState([]);
+  const [savingQuickProduct, setSavingQuickProduct] = useState(false);
+  const [quickProductSuggestionFocused, setQuickProductSuggestionFocused] = useState(false);
+
   // ─── Product Search / Quick Add State ──────────────────────────────────────
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -62,19 +71,206 @@ const AddSale = () => {
   const [availableUnits, setAvailableUnits] = useState([]);
   const [loadingUnits, setLoadingUnits] = useState(false);
 
-  const [quickProductForms, setQuickProductForms] = useState([]);
-
-  const addQuickProductForm = () => {
-    setQuickProductForms(prev => [
-      ...prev,
-      { id: Date.now() + Math.random(), name: '', salePrice: 0, productCode: '', categoryId: '', unitName: 'قطعة' }
-    ]);
+  const addNewProductRow = () => {
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const newItem = {
+      productId: tempId,
+      isNewProduct: true,
+      name: '',
+      productCode: '',
+      unitName: 'قطعة',
+      quantity: 1,
+      unitPrice: '',
+      otherPrice: '',
+      discountValue: 0,
+      discountType: 'FIXED',
+      units: []
+    };
+    setInvoiceItems(prev => [newItem, ...prev]);
   };
-  const updateQuickProductForm = (id, field, value) => {
-    setQuickProductForms(prev => prev.map(f => f.id === id ? { ...f, [field]: value } : f));
+
+  const [cachedProducts, setCachedProducts] = useState([]);
+
+  useEffect(() => {
+    if (!formSelectedBranchId) {
+      setCachedProducts([]);
+      return;
+    }
+    const fetchCache = async () => {
+      try {
+        const prodList = await Api.getProducts(0, 2000, formSelectedBranchId);
+        setCachedProducts(prodList || []);
+      } catch (err) {
+        console.error("Failed to load products cache", err);
+      }
+    };
+    fetchCache();
+  }, [formSelectedBranchId]);
+
+  const [inlineSuggestions, setInlineSuggestions] = useState([]);
+  const [inlineActiveIndex, setInlineActiveIndex] = useState(null);
+  const [inlineLoading, setInlineLoading] = useState(false);
+
+  const handleInlineNameChange = (index, value) => {
+    const newItems = [...invoiceItems];
+    newItems[index].name = value;
+    setInvoiceItems(newItems);
+
+    if (!value.trim()) {
+      setInlineSuggestions([]);
+      return;
+    }
+
+    setInlineActiveIndex(index);
+    
+    // Filter locally to find similar products by name or code
+    const matching = cachedProducts.filter(p => 
+      p.name?.toLowerCase().includes(value.toLowerCase()) || 
+      p.productCode?.toLowerCase().includes(value.toLowerCase())
+    ).slice(0, 8);
+
+    setInlineSuggestions(matching);
   };
 
-  const [savingQuickProduct, setSavingQuickProduct] = useState(false);
+  const handleSelectInlineSuggestion = (index, product) => {
+    const units = product.units || [];
+    const defaultUnit = units?.find(u => u.isDefaultPurchase);
+    const unitId = defaultUnit ? defaultUnit.id : '';
+    const unitPrice = defaultUnit ? (defaultUnit.salePrice || product.salePrice || 0) : (product.salePrice || 0);
+    
+    const newItems = [...invoiceItems];
+    newItems[index] = {
+      ...newItems[index],
+      productId: product.id,
+      isNewProduct: false,
+      productObj: product,
+      name: product.name,
+      units: units,
+      unitId: unitId,
+      unitName: product.unitName || 'قطعة',
+      unitPrice: unitPrice,
+      otherPrice: product.purchasePrice || 0,
+      productCode: product.productCode || ''
+    };
+    setInvoiceItems(newItems);
+    setInlineActiveIndex(null);
+    setInlineSuggestions([]);
+  };
+
+  // ─── Quick Add Product Handlers ────────────────────────────────────────────
+  const handleQuickProductNameChange = (value) => {
+    setQuickProductForm(prev => ({ ...prev, name: value }));
+    if (!value.trim()) {
+      setQuickProductSuggestions([]);
+      return;
+    }
+    const matching = cachedProducts.filter(p =>
+      p.name?.toLowerCase().includes(value.toLowerCase()) ||
+      p.productCode?.toLowerCase().includes(value.toLowerCase())
+    ).slice(0, 6);
+    setQuickProductSuggestions(matching);
+  };
+
+  const handleSelectExistingFromQuickPanel = (product) => {
+    const units = product.units || [];
+    const defaultUnit = units?.find(u => u.isDefaultPurchase);
+    const unitId = defaultUnit ? defaultUnit.id : '';
+    const unitPrice = defaultUnit ? (defaultUnit.salePrice || product.salePrice || 0) : (product.salePrice || 0);
+    const newItem = {
+      productId: product.id,
+      productObj: product,
+      name: product.name,
+      units: units,
+      unitId: unitId,
+      unitName: product.unitName || 'قطعة',
+      quantity: 1,
+      unitPrice: unitPrice,
+      discountValue: 0,
+      discountType: 'FIXED'
+    };
+    setInvoiceItems(prev => [newItem, ...prev]);
+    setShowQuickAddProduct(false);
+    setQuickProductForm({ name: '', productCode: '', purchasePrice: '', salePrice: '', unitName: 'قطعة' });
+    setQuickProductSuggestions([]);
+  };
+
+  const handleSaveQuickProduct = async () => {
+    if (!quickProductForm.name.trim()) {
+      toast('اسم المنتج مطلوب', 'warning');
+      return;
+    }
+    if (!quickProductForm.salePrice) {
+      toast('سعر البيع مطلوب', 'warning');
+      return;
+    }
+    if (!quickProductForm.purchasePrice) {
+      toast('سعر الشراء مطلوب', 'warning');
+      return;
+    }
+    // Check exact name match first
+    const exactMatch = cachedProducts.find(
+      p => p.name?.trim().toLowerCase() === quickProductForm.name.trim().toLowerCase()
+    );
+    if (exactMatch) {
+      handleSelectExistingFromQuickPanel(exactMatch);
+      toast(`تم إضافة المنتج الموجود "${exactMatch.name}" للفاتورة`, 'info');
+      return;
+    }
+    setSavingQuickProduct(true);
+    try {
+      const productData = {
+        name: quickProductForm.name.trim(),
+        description: '',
+        salePrice: parseFloat(quickProductForm.salePrice) || 0.01,
+        purchasePrice: parseFloat(quickProductForm.purchasePrice) || 0,
+        productCode: quickProductForm.productCode || '',
+        categoryId: null,
+        unitName: quickProductForm.unitName || 'قطعة',
+        type: 'STANDARD',
+        status: 'ACTIVE',
+        trackStock: true,
+        stock: 0,
+        showInStore: true,
+        isRawMaterial: false,
+        units: []
+      };
+      const newProduct = await Api.createProduct(productData, null, formSelectedBranchId);
+      setCachedProducts(prev => [...prev, newProduct]);
+      // Add to invoice items
+      const newItem = {
+        productId: newProduct.id,
+        productObj: newProduct,
+        name: newProduct.name,
+        units: [],
+        unitId: '',
+        unitName: quickProductForm.unitName || 'قطعة',
+        quantity: 1,
+        unitPrice: parseFloat(quickProductForm.salePrice) || 0,
+        discountValue: 0,
+        discountType: 'FIXED'
+      };
+      setInvoiceItems(prev => [newItem, ...prev]);
+      toast(`تم إنشاء المنتج "${newProduct.name}" وإضافته للفاتورة`, 'success');
+      setShowQuickAddProduct(false);
+      setQuickProductForm({ name: '', productCode: '', purchasePrice: '', salePrice: '', unitName: 'قطعة' });
+      setQuickProductSuggestions([]);
+    } catch (err) {
+      toast(err.message || 'فشل إنشاء المنتج', 'error');
+    } finally {
+      setSavingQuickProduct(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        addNewProductRow();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // ─── Initialization ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -207,52 +403,7 @@ const AddSale = () => {
     setShowProductDropdown(false);
   };
 
-  const handleSaveQuickProduct = async (formId, quickProductForm) => {
-    if (!quickProductForm.name) return;
-    if (!quickProductForm.unitName) { toast('الوحدة الأساسية للمنتج السريع مطلوبة', 'warning'); return; }
-    try {
-      const data = {
-        name: quickProductForm.name,
-        description: '',
-        salePrice: quickProductForm.salePrice ? parseFloat(quickProductForm.salePrice) : 0.01,
-        purchasePrice: quickProductForm.purchasePrice ? parseFloat(quickProductForm.purchasePrice) : 0,
-        productCode: quickProductForm.productCode || '',
-        categoryId: quickProductForm.categoryId ? parseInt(quickProductForm.categoryId) : null,
-        unitName: quickProductForm.unitName || 'قطعة',
-        type: 'STANDARD',
-        status: 'ACTIVE',
-        trackStock: true,
-        stock: 0,
-        showInStore: true,
-        isRawMaterial: false,
-        units: []
-      };
-      
-      const tempId = `temp-${Date.now()}`;
-      const tempProduct = { ...data, id: tempId };
-      
-      const newItem = {
-        productId: tempProduct.id,
-        isNewProduct: true,
-        productData: data,
-        productObj: tempProduct,
-        name: tempProduct.name,
-        units: tempProduct.units || [],
-        unitId: '',
-        unitName: tempProduct.unitName || 'قطعة',
-        quantity: 1,
-        unitPrice: tempProduct.salePrice || 0,
-        discountValue: 0,
-        discountType: 'FIXED'
-      };
 
-      setInvoiceItems(prev => [newItem, ...prev]);
-      setQuickProductForms(prev => prev.filter(f => f.id !== formId));
-      toast('تم إضافة المنتج للفاتورة بشكل مؤقت وسيتم حفظه معها', 'success');
-    } catch (err) {
-      toast('حدث خطأ أثناء إضافة المنتج المؤقت', 'error');
-    }
-  };
 
   const handleRemoveItem = (index) => {
     setInvoiceItems(prev => prev.filter((_, i) => i !== index));
@@ -279,23 +430,83 @@ const AddSale = () => {
     }
 
     const processedItems = [];
-    for (const item of invoiceItems) {
+    const updatedInvoiceItems = [...invoiceItems];
+    for (let i = 0; i < updatedInvoiceItems.length; i++) {
+      const item = updatedInvoiceItems[i];
       let finalProductId = item.productId;
       if (item.isNewProduct) {
-        try {
-          const newProduct = await Api.createProduct(item.productData, null, formSelectedBranchId);
-          finalProductId = newProduct.id;
-        } catch (err) {
-          toast(`فشل إنشاء المنتج: ${item.name}`, 'error');
-          setSaving(false);
-          return;
+        // Double check if name matches an existing product in cachedProducts
+        const exactMatch = cachedProducts.find(p => p.name?.trim().toLowerCase() === item.name?.trim().toLowerCase());
+        if (exactMatch) {
+          finalProductId = exactMatch.id;
+          updatedInvoiceItems[i] = {
+            ...item,
+            isNewProduct: false,
+            productId: finalProductId,
+            productObj: exactMatch
+          };
+        } else {
+          if (!item.name) {
+            toast('اسم المنتج مطلوب لجميع المنتجات الجديدة', 'warning');
+            setSaving(false);
+            return;
+          }
+          if (!item.unitName) {
+            toast('الوحدة الأساسية مطلوبة لجميع المنتجات الجديدة', 'warning');
+            setSaving(false);
+            return;
+          }
+          if (!item.unitPrice) {
+            toast('سعر البيع مطلوب للمنتج الجديد', 'warning');
+            setSaving(false);
+            return;
+          }
+          if (!item.otherPrice) {
+            toast('سعر الشراء مطلوب للمنتج الجديد', 'warning');
+            setSaving(false);
+            return;
+          }
+          try {
+            const productDataWithStock = {
+              name: item.name,
+              description: '',
+              salePrice: parseFloat(item.unitPrice) || 0.01,
+              purchasePrice: parseFloat(item.otherPrice) || 0,
+              productCode: item.productCode || '',
+              categoryId: null,
+              unitName: item.unitName || 'قطعة',
+              type: 'STANDARD',
+              status: 'ACTIVE',
+              trackStock: true,
+              stock: parseFloat(item.quantity) || 0,
+              showInStore: true,
+              isRawMaterial: false,
+              units: []
+            };
+            const newProduct = await Api.createProduct(productDataWithStock, null, formSelectedBranchId);
+            finalProductId = newProduct.id;
+            updatedInvoiceItems[i] = {
+              ...item,
+              isNewProduct: false,
+              productId: finalProductId,
+              productObj: newProduct
+            };
+            // Also append newly created product to cachedProducts list
+            setCachedProducts(prev => [...prev, newProduct]);
+          } catch (err) {
+            toast(`فشل إنشاء المنتج: ${item.name}`, 'error');
+            setInvoiceItems(updatedInvoiceItems);
+            setSaving(false);
+            return;
+          }
         }
       }
       processedItems.push({
-        ...item,
+        ...updatedInvoiceItems[i],
         productId: finalProductId
       });
     }
+    setInvoiceItems(updatedInvoiceItems);
 
     const payload = {
       customerId: parseInt(finalCustomerId),
@@ -479,7 +690,7 @@ const AddSale = () => {
               <p style={{ color: 'var(--muted)', margin: '4px 0 0', fontSize: '0.9rem' }}>تحديد الفرع والعميل.</p>
             </div>
             
-            <section className="settings-card">
+            <section className="settings-card" style={{ overflow: 'visible' }}>
               <div className="card-body">
                 <div className="form-grid">
                   
@@ -517,40 +728,132 @@ const AddSale = () => {
                     <label>العميل <span className="required">*</span></label>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <div className="searchable-select-wrapper" style={{ position: 'relative', flex: 1 }}>
-                        <input
-                          type="text"
-                          placeholder="ابحث عن عميل بالاسم أو الهاتف..."
-                          value={customerSearch}
-                          onFocus={() => setShowCustomerDropdown(true)}
-                          onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
-                          onChange={(e) => {
-                            setCustomerSearch(e.target.value);
-                            setInvoiceForm(prev => ({ ...prev, customerId: '' }));
-                          }}
-                          required={!invoiceForm.customerId}
-                        />
-                        {invoiceForm.customerId && (
-                          <span 
-                            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--metro-green)', fontWeight: 'bold' }}
-                          >✓</span>
-                        )}
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            placeholder="🔍 ابحث عن عميل بالاسم أو رقم الهاتف..."
+                            value={customerSearch}
+                            onFocus={() => setShowCustomerDropdown(true)}
+                            onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
+                            onChange={(e) => {
+                              setCustomerSearch(e.target.value);
+                              setInvoiceForm(prev => ({ ...prev, customerId: '' }));
+                            }}
+                            required={!invoiceForm.customerId}
+                            style={{
+                              paddingRight: '38px',
+                              paddingLeft: invoiceForm.customerId ? '40px' : '15px',
+                              border: invoiceForm.customerId ? '1.5px solid var(--metro-green)' : '1px solid var(--border-strong)',
+                              boxShadow: invoiceForm.customerId ? '0 0 0 3px rgba(34, 197, 94, 0.08)' : 'none',
+                              transition: 'all 0.2s ease',
+                              fontWeight: invoiceForm.customerId ? '600' : 'normal'
+                            }}
+                          />
+                          <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                            <i className="fa-solid fa-search"></i>
+                          </span>
+                          {invoiceForm.customerId ? (
+                            <div 
+                              onClick={() => {
+                                setCustomerSearch('');
+                                setInvoiceForm(prev => ({ ...prev, customerId: '' }));
+                              }}
+                              style={{ 
+                                position: 'absolute', 
+                                left: '12px', 
+                                top: '50%', 
+                                transform: 'translateY(-50%)', 
+                                cursor: 'pointer', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px',
+                                background: 'rgba(34, 197, 94, 0.1)',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                color: 'var(--metro-green)', 
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              <span>مختار</span>
+                              <i className="fa-solid fa-times-circle"></i>
+                            </div>
+                          ) : customerSearch && (
+                            <span 
+                              onClick={() => setCustomerSearch('')}
+                              style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text-muted)' }}
+                            >
+                              <i className="fa-solid fa-circle-xmark"></i>
+                            </span>
+                          )}
+                        </div>
                         {showCustomerDropdown && (
-                          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+                          <div style={{ 
+                            position: 'absolute', 
+                            top: '105%', 
+                            left: 0, 
+                            right: 0, 
+                            background: 'rgba(255, 255, 255, 0.98)', 
+                            backdropFilter: 'blur(8px)',
+                            border: '1px solid var(--border-strong)', 
+                            borderRadius: '12px', 
+                            maxHeight: '260px', 
+                            overflowY: 'auto', 
+                            marginTop: '4px', 
+                            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
+                            zIndex: 1000,
+                            padding: '6px'
+                          }}>
                             {loadingCustomers ? (
-                              <div style={{ padding: '10px', textAlign: 'center' }}>جاري البحث...</div>
+                              <div style={{ padding: '15px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
+                                <i className="fa-solid fa-spinner spin-anim" style={{ marginLeft: '8px' }}></i> جاري البحث...
+                              </div>
                             ) : customers.length === 0 ? (
-                              <div style={{ padding: '10px', textAlign: 'center' }}>لا توجد نتائج</div>
+                              <div style={{ padding: '15px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
+                                <i className="fa-solid fa-circle-info" style={{ marginLeft: '8px' }}></i> لا توجد نتائج للبحث
+                              </div>
                             ) : (
                               customers.map(s => (
                                 <div
                                   key={s.id}
                                   onMouseDown={(e) => { e.preventDefault(); handleSelectCustomer(s); }}
-                                  style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}
-                                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                  style={{ 
+                                    padding: '10px 14px', 
+                                    cursor: 'pointer', 
+                                    borderRadius: '8px',
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: '4px',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'var(--primary-soft)';
+                                    e.currentTarget.style.color = 'var(--primary)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.color = 'inherit';
+                                  }}
                                 >
-                                  <span>{s.name}</span>
-                                  {s.phone && <span style={{ color: 'var(--text-muted)' }}>{s.phone}</span>}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(37, 99, 235, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)' }}>
+                                      <i className="fa-solid fa-user"></i>
+                                    </div>
+                                    <span style={{ fontWeight: '600', fontSize: '0.92rem' }}>{s.name}</span>
+                                  </div>
+                                  {s.phone && (
+                                    <span style={{ 
+                                      fontSize: '0.8rem', 
+                                      color: 'var(--muted)',
+                                      background: 'var(--surface-2)',
+                                      padding: '3px 8px',
+                                      borderRadius: '99px',
+                                      border: '1px solid var(--border)'
+                                    }}>
+                                      <i className="fa-solid fa-phone" style={{ marginLeft: '5px', fontSize: '0.7rem' }}></i> {s.phone}
+                                    </span>
+                                  )}
                                 </div>
                               ))
                             )}
@@ -596,79 +899,89 @@ const AddSale = () => {
 
           {/* ─ 2. Products ─ */}
           <div id="products" style={{ scrollMarginTop: 120, marginBottom: 40 }}>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>المنتجات</h2>
-                <p style={{ color: 'var(--muted)', margin: '4px 0 0', fontSize: '0.9rem' }}>أضف المنتجات وقم بتحديد الكميات والأسعار.</p>
-              </div>
-              <button type="button" className="btn-seggele btn-seggele--secondary btn-sm" onClick={addQuickProductForm}>
-                <i className="fa-solid fa-plus"></i> منتج جديد سريع
-              </button>
+            <div style={{ marginBottom: 16 }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>المنتجات</h2>
+              <p style={{ color: 'var(--muted)', margin: '4px 0 0', fontSize: '0.9rem' }}>ابحث عن منتج موجود أو أضف منتجات جديدة مباشرة للفاتورة.</p>
             </div>
             
             <section className="settings-card" style={{ overflow: 'visible' }}>
               <div className="card-body">
                 
-                {quickProductForms.map((formState) => (
-                  <div key={formState.id} style={{ padding: '20px', background: 'var(--surface-2)', borderRadius: '8px', border: '1px dashed var(--primary-color)', marginBottom: '20px' }}>
-                    <div className="form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 15 }}>
-                      <div className="field">
-                        <label>اسم المنتج *</label>
-                        <input type="text" value={formState.name} onChange={e => updateQuickProductForm(formState.id, 'name', e.target.value)} />
-                      </div>
-                      <div className="field">
-                        <label>سعر الشراء *</label>
-                        <input type="number" step="0.01" value={formState.salePrice === 0 ? '' : formState.salePrice} onChange={e => updateQuickProductForm(formState.id, 'salePrice', e.target.value)} />
-                      </div>
-                      <div className="field">
-                        <label>سعر البيع *</label>
-                        <input type="number" step="0.01" value={formState.salePrice === 0 ? '' : formState.salePrice} onChange={e => updateQuickProductForm(formState.id, 'salePrice', e.target.value)} />
-                      </div>
-                      <div className="field">
-                        <label>الباركود</label>
-                        <input type="text" value={formState.productCode} onChange={e => updateQuickProductForm(formState.id, 'productCode', e.target.value)} />
-                      </div>
-                      <div className="field">
-                        <label>الوحدة الأساسية *</label>
-                        <input type="text" value={formState.unitName} onChange={e => updateQuickProductForm(formState.id, 'unitName', e.target.value)} />
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                      <button type="button" className="btn-seggele btn-seggele--secondary" onClick={() => setQuickProductForms(prev => prev.filter(f => f.id !== formState.id))}>إلغاء</button>
-                      <button type="button" className="btn-seggele btn-seggele--primary" onClick={() => handleSaveQuickProduct(formState.id, formState)}>حفظ وإضافة للفاتورة</button>
-                    </div>
-                  </div>
-                ))}
 
-                <div className="field field--full" style={{ position: 'relative', zIndex: 40, marginBottom: 25 }}>
-                  <label>البحث عن منتج وإضافته مباشرة للفاتورة</label>
-                  <div className="searchable-select-container" ref={productDropdownRef} style={{ position: 'relative' }}>
-                    <div 
-                      className="form-control pos-select-display" 
-                      onClick={() => setShowProductDropdown(!showProductDropdown)}
-                      style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '44px', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+
+                <div className="field field--full" style={{ position: 'relative', zIndex: 40, marginBottom: showQuickAddProduct ? 0 : 25 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <label style={{ marginBottom: 0 }}>البحث عن منتج وإضافته مباشرة للفاتورة</label>
+                    <button
+                      type="button"
+                      className={`btn-seggele btn-sm ${showQuickAddProduct ? 'btn-seggele--primary' : 'btn-seggele--secondary'}`}
+                      onClick={() => {
+                        setShowQuickAddProduct(!showQuickAddProduct);
+                        setQuickProductForm({ name: '', productCode: '', purchasePrice: '', salePrice: '', unitName: 'قطعة' });
+                        setQuickProductSuggestions([]);
+                      }}
+                      style={{ padding: '5px 12px', fontSize: '0.82rem' }}
                     >
-                      <span style={{ color: 'var(--text-muted)' }}>-- ابحث عن المنتج لإضافته --</span>
-                      <span className="dropdown-arrow">▼</span>
+                      <i className={`fa-solid ${showQuickAddProduct ? 'fa-times' : 'fa-plus'}`} style={{ marginLeft: 5 }}></i>
+                      {showQuickAddProduct ? 'إلغاء' : 'إضافة منتج جديد'}
+                    </button>
+                  </div>
+                  <div className="searchable-select-container" ref={productDropdownRef} style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        placeholder="🔍 ابحث عن منتج بالاسم أو الباركود..." 
+                        value={productSearchQuery}
+                        onFocus={() => setShowProductDropdown(true)}
+                        onChange={e => setProductSearchQuery(e.target.value)}
+                        style={{
+                          height: '46px',
+                          paddingRight: '38px',
+                          paddingLeft: '15px',
+                          border: '1.5px solid var(--border-strong)',
+                          borderRadius: '10px',
+                          transition: 'all 0.2s ease',
+                          fontSize: '0.95rem'
+                        }}
+                      />
+                      <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                        <i className="fa-solid fa-search"></i>
+                      </span>
+                      {productSearchQuery && (
+                        <span 
+                          onClick={() => setProductSearchQuery('')}
+                          style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text-muted)' }}
+                        >
+                          <i className="fa-solid fa-circle-xmark"></i>
+                        </span>
+                      )}
                     </div>
                     
                     {showProductDropdown && (
-                      <div className="pos-select-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-                        <div className="dropdown-search-wrapper" style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
-                          <input 
-                            type="text" 
-                            className="form-control" 
-                            placeholder="ابحث باسم المنتج..." 
-                            value={productSearchQuery}
-                            onChange={e => setProductSearchQuery(e.target.value)}
-                            autoFocus 
-                          />
-                        </div>
+                      <div className="pos-select-dropdown" style={{ 
+                        position: 'absolute', 
+                        top: '105%', 
+                        left: 0, 
+                        right: 0, 
+                        zIndex: 1000, 
+                        background: 'rgba(255, 255, 255, 0.98)', 
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid var(--border-strong)', 
+                        borderRadius: '12px', 
+                        marginTop: '4px', 
+                        boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
+                        padding: '6px'
+                      }}>
                         <div className="dropdown-options-list" style={{ maxHeight: '250px', overflowY: 'auto' }}>
                           {productLoading && productPage === 0 ? (
-                            <div style={{ padding: '10px', textAlign: 'center' }}>جاري التحميل...</div>
+                            <div style={{ padding: '15px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
+                              <i className="fa-solid fa-spinner spin-anim" style={{ marginLeft: '8px' }}></i> جاري التحميل...
+                            </div>
                           ) : products.length === 0 ? (
-                            <div style={{ padding: '10px', textAlign: 'center' }}>لا توجد منتجات</div>
+                            <div style={{ padding: '15px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
+                              <i className="fa-solid fa-circle-info" style={{ marginLeft: '8px' }}></i> لا توجد نتائج، يمكنك إضافة منتج جديد من الزر بالأعلى
+                            </div>
                           ) : (
                             <>
                               {products.map(p => (
@@ -676,27 +989,179 @@ const AddSale = () => {
                                   key={p.id} 
                                   className="dropdown-option"
                                   onMouseDown={(e) => { e.preventDefault(); handleProductChange(p.id, p); }}
-                                  style={{ padding: '10px 15px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}
-                                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                  style={{ 
+                                    padding: '10px 14px', 
+                                    cursor: 'pointer', 
+                                    borderRadius: '8px',
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: '4px',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'var(--primary-soft)';
+                                    e.currentTarget.style.color = 'var(--primary)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.color = 'inherit';
+                                  }}
                                 >
-                                  <div>
-                                    <div style={{ fontWeight: 600 }}>{p.name}</div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>الكود: {p.productCode || '-'} | السعر: {p.salePrice}</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(37, 99, 235, 0.1)', display: 'grid', placeItems: 'center', color: 'var(--primary)' }}>
+                                      <i className="fa-solid fa-box"></i>
+                                    </div>
+                                    <div>
+                                      <div style={{ fontWeight: '600', fontSize: '0.92rem' }}>{p.name}</div>
+                                      <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                                        الكود: <span style={{ direction: 'ltr', display: 'inline-block' }}>{p.productCode || '-'}</span>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div style={{ fontSize: '0.8rem', textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                    <span style={{ color: p.stock <= 0 ? 'var(--metro-red)' : 'var(--metro-green)', fontWeight: 'bold' }}>المخزون: {p.stock} {p.unitName}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ 
+                                      fontSize: '0.8rem', 
+                                      fontWeight: '600',
+                                      background: 'var(--surface-2)',
+                                      padding: '4px 10px',
+                                      borderRadius: '6px',
+                                      border: '1px solid var(--border)',
+                                      color: 'var(--primary)'
+                                    }}>
+                                      السعر: {p.salePrice} ج.م
+                                    </span>
+                                    <span style={{ 
+                                      fontSize: '0.8rem', 
+                                      fontWeight: 'bold',
+                                      background: p.stock <= 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                                      color: p.stock <= 0 ? 'var(--metro-red)' : 'var(--metro-green)',
+                                      padding: '4px 10px',
+                                      borderRadius: '6px'
+                                    }}>
+                                      المخزون: {p.stock}
+                                    </span>
                                   </div>
                                 </div>
                               ))}
+                              {productLoading && (
+                                <div style={{ padding: '10px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>
+                                  جاري تحميل المزيد...
+                                </div>
+                              )}
                               <div ref={productObserverTarget} style={{ height: '1px' }}></div>
-                              {productLoading && productPage > 0 && <div style={{ padding: '10px', textAlign: 'center', fontSize: '0.8rem' }}>جاري التحميل...</div>}
                             </>
                           )}
                         </div>
                       </div>
                     )}
                   </div>
+
+                  {/* ── Inline Quick Add Product Form (Single Line) ── */}
+                  {showQuickAddProduct && (
+                    <div style={{
+                      marginTop: 10,
+                      padding: '10px 12px',
+                      background: 'rgba(37, 99, 235, 0.04)',
+                      border: '1.5px solid rgba(37, 99, 235, 0.15)',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      gap: '10px',
+                      alignItems: 'flex-start',
+                      animation: 'slideDown 0.2s ease',
+                      flexWrap: 'nowrap',
+                      overflowX: 'auto'
+                    }}>
+                      <style>{`@keyframes slideDown { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }`}</style>
+                      
+                      {/* Name with prediction */}
+                      <div style={{ position: 'relative', flex: '2', minWidth: '160px' }}>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            placeholder="اسم المنتج *"
+                            value={quickProductForm.name}
+                            onChange={e => handleQuickProductNameChange(e.target.value)}
+                            onFocus={() => setQuickProductSuggestionFocused(true)}
+                            onBlur={() => setTimeout(() => setQuickProductSuggestionFocused(false), 200)}
+                            autoFocus
+                            style={{
+                              width: '100%', height: '40px',
+                              paddingRight: 32, paddingLeft: 10,
+                              border: quickProductSuggestions.length > 0 ? '1.5px solid #f59e0b' : '1px solid var(--border-strong)',
+                              borderRadius: '8px', fontSize: '0.9rem',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                            <i className="fa-solid fa-box"></i>
+                          </span>
+
+                          {/* Prediction Dropdown */}
+                          {quickProductSuggestionFocused && quickProductSuggestions.length > 0 && (
+                            <div style={{
+                              position: 'absolute', top: '105%', right: 0, zIndex: 9999, minWidth: '280px',
+                              background: '#fff', border: '1.5px solid #f59e0b', borderRadius: 10,
+                              boxShadow: '0 10px 28px rgba(245,158,11,0.2)', padding: 5
+                            }}>
+                              <div style={{ padding: '6px 10px 5px', fontSize: '0.72rem', color: '#92400e', background: 'rgba(245,158,11,0.08)', borderRadius: 7, marginBottom: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <i className="fa-solid fa-triangle-exclamation"></i>
+                                <strong>منتجات مشابهة موجودة</strong> — اختر أحدها
+                              </div>
+                              {quickProductSuggestions.map(p => (
+                                <div
+                                  key={p.id}
+                                  onMouseDown={() => { handleSelectExistingFromQuickPanel(p); toast(`تم إضافة "${p.name}" للفاتورة`, 'success'); }}
+                                  style={{ padding: '9px 12px', cursor: 'pointer', borderRadius: 7, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, transition: 'background 0.12s' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.08)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(245,158,11,0.12)', display: 'grid', placeItems: 'center', color: '#d97706', fontSize: '0.75rem' }}>
+                                      <i className="fa-solid fa-box"></i>
+                                    </div>
+                                    <div>
+                                      <div style={{ fontWeight: 600, fontSize: '0.87rem' }}>{p.name}</div>
+                                      <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>كود: {p.productCode || '—'}</div>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', background: 'rgba(37,99,235,0.08)', padding: '2px 8px', borderRadius: 99 }}>{p.salePrice} ج.م</span>
+                                    <span style={{ fontSize: '0.72rem', color: '#059669', background: 'rgba(5,150,105,0.08)', padding: '2px 7px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+                                      <i className="fa-solid fa-check" style={{ marginLeft: 2 }}></i>إضافة
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <input type="text" placeholder="الباركود" value={quickProductForm.productCode}
+                        onChange={e => setQuickProductForm(prev => ({ ...prev, productCode: e.target.value }))}
+                        style={{ height: '40px', flex: '1', minWidth: '80px', padding: '0 10px', border: '1px solid var(--border-strong)', borderRadius: '8px', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+                      
+                      <input type="text" placeholder="الوحدة *" value={quickProductForm.unitName}
+                        onChange={e => setQuickProductForm(prev => ({ ...prev, unitName: e.target.value }))}
+                        style={{ height: '40px', flex: '1', minWidth: '70px', padding: '0 10px', border: '1px solid var(--border-strong)', borderRadius: '8px', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+
+                      <input type="number" step="0.01" min="0" placeholder="شراء *" value={quickProductForm.purchasePrice}
+                        onChange={e => setQuickProductForm(prev => ({ ...prev, purchasePrice: e.target.value }))}
+                        style={{ height: '40px', flex: '1', minWidth: '80px', padding: '0 10px', border: '1.5px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+
+                      <input type="number" step="0.01" min="0" placeholder="بيع *" value={quickProductForm.salePrice}
+                        onChange={e => setQuickProductForm(prev => ({ ...prev, salePrice: e.target.value }))}
+                        style={{ height: '40px', flex: '1', minWidth: '80px', padding: '0 10px', border: '1.5px solid rgba(34,197,94,0.35)', borderRadius: '8px', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+
+                      <button type="button" onClick={handleSaveQuickProduct} disabled={savingQuickProduct || !quickProductForm.name.trim()}
+                        className="btn-seggele btn-seggele--primary"
+                        style={{ height: '40px', padding: '0 16px', fontSize: '0.85rem', whiteSpace: 'nowrap', minWidth: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        {savingQuickProduct ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-plus"></i>}
+                        حفظ
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Items Table */}
@@ -732,30 +1197,122 @@ const AddSale = () => {
                           
                           return (
                             <tr key={index} style={{ borderBottom: '1px solid var(--border)' }}>
-                              <td>
-                                <div style={{ fontWeight: 'bold' }}>{item.name}</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>الكود: {item.productObj?.productCode || '-'}</div>
-                              </td>
-                              <td>
-                                <div className="select-wrap">
-                                  <select 
-                                    value={item.unitId || ''} 
-                                    onChange={(e) => {
-                                      const newItems = [...invoiceItems];
-                                      const selectedUnitId = e.target.value;
-                                      newItems[index].unitId = selectedUnitId;
-                                      const selectedUnit = (newItems[index].units || []).find(u => u.id == selectedUnitId);
-                                      if (selectedUnit) newItems[index].unitPrice = selectedUnit.salePrice || newItems[index].productObj?.salePrice || 0;
-                                      else newItems[index].unitPrice = newItems[index].productObj?.salePrice || 0;
-                                      setInvoiceItems(newItems);
-                                    }}
-                                  >
-                                    <option value="">{item.productObj?.unitName || 'الأساسية'}</option>
-                                    {(item.units || []).map(u => <option key={u.id} value={u.id}>{u.unitName} ({u.conversionFactor})</option>)}
-                                  </select>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                </div>
-                              </td>
+                               {item.isNewProduct ? (
+                                 <>
+                                   <td style={{ position: inlineActiveIndex === index ? 'relative' : 'static', zIndex: inlineActiveIndex === index ? 99 : 1 }}>
+                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px' }}>
+                                       <div style={{ position: 'relative' }}>
+                                         <input 
+                                           type="text" 
+                                           className="form-control" 
+                                           placeholder="اسم المنتج الجديد *" 
+                                           value={item.name} 
+                                           onFocus={() => setInlineActiveIndex(index)}
+                                           onBlur={() => setTimeout(() => setInlineActiveIndex(null), 250)}
+                                           onChange={(e) => handleInlineNameChange(index, e.target.value)} 
+                                           style={{ height: '34px', fontSize: '0.9rem', border: '1px dashed var(--primary-color)' }}
+                                         />
+                                         {inlineActiveIndex === index && inlineSuggestions.length > 0 && (
+                                           <div style={{ 
+                                             position: 'absolute', 
+                                             top: '105%', 
+                                             left: 0, 
+                                             minWidth: '280px', 
+                                             background: '#ffffff', 
+                                             border: '1.5px solid var(--border-strong)', 
+                                             borderRadius: '10px', 
+                                             boxShadow: '0 10px 25px rgba(0,0,0,0.2)', 
+                                             zIndex: 99999, 
+                                             maxHeight: '220px', 
+                                             overflowY: 'auto',
+                                             padding: '4px'
+                                           }}>
+                                             {inlineSuggestions.map(p => (
+                                               <div
+                                                 key={p.id}
+                                                 onMouseDown={() => handleSelectInlineSuggestion(index, p)}
+                                                 style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}
+                                                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--primary-soft)'}
+                                                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                               >
+                                                 <span style={{ fontWeight: '600' }}>{p.name} (موجود مسبقاً)</span>
+                                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>السعر: {p.salePrice} | الكود: {p.productCode || '-'}</span>
+                                               </div>
+                                             ))}
+                                           </div>
+                                         )}
+                                       </div>
+                                       <div style={{ display: 'flex', gap: '6px' }}>
+                                         <input 
+                                           type="text" 
+                                           className="form-control" 
+                                           placeholder="الباركود" 
+                                           value={item.productCode} 
+                                           onChange={(e) => {
+                                             const newItems = [...invoiceItems];
+                                             newItems[index].productCode = e.target.value;
+                                             setInvoiceItems(newItems);
+                                           }} 
+                                           style={{ height: '30px', fontSize: '0.8rem', flex: 1 }}
+                                         />
+                                         <input 
+                                           type="number" 
+                                           className="form-control" 
+                                           placeholder="سعر الشراء *" 
+                                           value={item.otherPrice} 
+                                           onChange={(e) => {
+                                             const newItems = [...invoiceItems];
+                                             newItems[index].otherPrice = e.target.value;
+                                             setInvoiceItems(newItems);
+                                           }} 
+                                           style={{ height: '30px', fontSize: '0.8rem', flex: 1, border: '1px dashed var(--primary-color)' }}
+                                         />
+                                       </div>
+                                     </div>
+                                   </td>
+                                   <td>
+                                     <input 
+                                       type="text" 
+                                       className="form-control" 
+                                       placeholder="الوحدة *" 
+                                       value={item.unitName} 
+                                       onChange={(e) => {
+                                         const newItems = [...invoiceItems];
+                                         newItems[index].unitName = e.target.value;
+                                         setInvoiceItems(newItems);
+                                       }} 
+                                       style={{ height: '34px', fontSize: '0.9rem', border: '1px dashed var(--primary-color)' }}
+                                     />
+                                   </td>
+                                 </>
+                               ) : (
+                                 <>
+                                   <td>
+                                     <div style={{ fontWeight: 'bold' }}>{item.name}</div>
+                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>الكود: {item.productObj?.productCode || '-'}</div>
+                                   </td>
+                                   <td>
+                                     <div className="select-wrap">
+                                       <select 
+                                         value={item.unitId || ''} 
+                                         onChange={(e) => {
+                                           const newItems = [...invoiceItems];
+                                           const selectedUnitId = e.target.value;
+                                           newItems[index].unitId = selectedUnitId;
+                                           const selectedUnit = (newItems[index].units || []).find(u => u.id == selectedUnitId);
+                                           if (selectedUnit) newItems[index].unitPrice = selectedUnit.salePrice || newItems[index].productObj?.salePrice || 0;
+                                           else newItems[index].unitPrice = newItems[index].productObj?.salePrice || 0;
+                                           setInvoiceItems(newItems);
+                                         }}
+                                       >
+                                         <option value="">{item.productObj?.unitName || 'الأساسية'}</option>
+                                         {(item.units || []).map(u => <option key={u.id} value={u.id}>{u.unitName} ({u.conversionFactor})</option>)}
+                                       </select>
+                                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                     </div>
+                                   </td>
+                                 </>
+                               )}
                               <td>
                                 <input 
                                   className="form-control" 

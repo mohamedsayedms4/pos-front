@@ -930,6 +930,17 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
               <span className="nav-icon"><i className="fa-solid fa-computer"></i></span>
               <span>برنامج الديسكتوب</span>
             </NavLink>
+
+            {/* ── MESSAGING ── */}
+            <div className="nav-section-title" style={{ fontSize: '0.7rem', opacity: 0.6, padding: '10px 16px 4px' }}>MESSAGING & CALLING</div>
+            <NavLink to="/super-admin/whatsapp" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon" style={{ color: '#25d366' }}><i className="fa-brands fa-whatsapp"></i></span>
+              <span>واتساب — Chat & Campaigns</span>
+            </NavLink>
+            <NavLink to="/super-admin/calling" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+              <span className="nav-icon" style={{ color: '#3b82f6' }}><i className="fa-solid fa-phone"></i></span>
+              <span>المكالمات — CALLING</span>
+            </NavLink>
           </>
         )}
       </nav>

@@ -101,6 +101,8 @@ import SuperAdminLeadCommunications from './pages/SuperAdminLeadCommunications.j
 import SuperAdminCalendar from './pages/SuperAdminCalendar.jsx'
 import SuperAdminAppointmentDetails from './pages/SuperAdminAppointmentDetails.jsx'
 import SuperAdminAddTenant from './pages/SuperAdminAddTenant.jsx'
+import SuperAdminWhatsApp from './pages/SuperAdminWhatsApp.jsx'
+import SuperAdminCalling from './pages/SuperAdminCalling.jsx'
 import { StoreProvider } from './context/StoreContext.jsx'
 import { StoreAuthProvider } from './context/StoreAuthContext.jsx'
 import { TileProvider } from './context/TileContext.jsx'
@@ -425,6 +427,8 @@ function App() {
                     <Route path="/super-admin/tenants/:id/communications" element={<SuperAdminTenantCommunications />} />
                     <Route path="/super-admin/articles" element={<SuperAdminArticles />} />
                     <Route path="/super-admin/desktop-app" element={<SuperAdminDesktopApp />} />
+                    <Route path="/super-admin/whatsapp" element={<SuperAdminWhatsApp />} />
+                    <Route path="/super-admin/calling" element={<SuperAdminCalling />} />
 
                     {/* Technical Support */}
                     <Route path="/tickets" element={<Tickets />} />
