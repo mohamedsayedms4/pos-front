@@ -496,6 +496,15 @@ const AddPurchase = () => {
       });
     }
 
+    for (const item of processedItems) {
+      const qty = parseFloat(item.quantity);
+      if (!qty || qty <= 0) {
+        toast(`المنتج (${item.name || 'غير مسمى'}): كمية المنتجات يجب أن تكون أكبر من صفر`, 'warning');
+        setSaving(false);
+        return;
+      }
+    }
+
     const payload = {
       supplierId: parseInt(finalSupplierId),
       branchId: parseInt(formSelectedBranchId),

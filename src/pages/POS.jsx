@@ -619,6 +619,13 @@ const POS = () => {
         return;
       }
 
+      for (const item of cart) {
+        if (!item.qty || item.qty <= 0) {
+          toast(`المنتج (${item.name}): كمية المنتجات يجب أن تكون أكبر من صفر`, 'warning');
+          return;
+        }
+      }
+
       setCheckoutLoading(true);
       const saleData = {
         customerId: selectedCustomerId || null,

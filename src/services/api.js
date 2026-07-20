@@ -1563,6 +1563,14 @@ const Api = {
     return res;
   },
 
+  async deletePurchaseInvoice(id, reason = '') {
+    const res = await this._request(`/purchases/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason })
+    });
+    return res;
+  },
+
   async updatePurchaseInvoice(id, data) {
     const res = await this._request(`/purchases/${id}`, {
       method: 'PUT',

@@ -206,7 +206,7 @@ const Suppliers = () => {
       await Api.paySupplier(activeSupplier.id, amount, paymentDesc || 'Manual Payment', selectedBranchId);
       toast('تم تسجيل الدفعة بنجاح', 'success');
       closeModal();
-      loadData();
+      window.location.reload();
     } catch (err) {
       toast(err.message, 'error');
     } finally {

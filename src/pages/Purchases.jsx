@@ -82,6 +82,8 @@ const Purchases = () => {
   const [editingPurchaseId, setEditingPurchaseId] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
@@ -467,12 +469,35 @@ const Purchases = () => {
     }
   };
 
+  const openDeleteModal = (purchase) => {
+    setActivePurchase(purchase);
+    setDeleteReason('');
+    setModalType('delete');
+  };
+
+  const handleConfirmDelete = async (e) => {
+    e.preventDefault();
+    if (!activePurchase) return;
+    setDeleting(true);
+    try {
+      await Api.deletePurchaseInvoice(activePurchase.id, deleteReason);
+      toast('تم حذف فاتورة الشراء بنجاح', 'success');
+      closeModal();
+      loadData();
+    } catch (err) {
+      toast(err.message || 'فشل حذف الفاتورة', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const closeModal = () => {
     setFormErrors({});
     setModalType(null);
     setActivePurchase(null);
     setEditingPurchaseId(null);
     setCancelReason('');
+    setDeleteReason('');
   };
 
   // ─── Quick Add Handlers ──────────────────────────────────────────────────
@@ -1163,6 +1188,9 @@ const Purchases = () => {
                             )}
                             {p.status !== 'CANCELLED' && Api.can('PURCHASE_WRITE') && (
                               <button className="btn btn-icon btn-ghost text-danger" title="إلغاء الفاتورة" onClick={() => openCancelModal(p)} style={{ color: 'var(--metro-red)' }}><i className="fa-solid fa-ban"></i></button>
+                            )}
+                            {Api.can('PURCHASE_WRITE') && (
+                              <button className="btn btn-icon btn-ghost text-danger" title="حذف الفاتورة" onClick={() => openDeleteModal(p)} style={{ color: 'var(--metro-red)' }}><i className="fa-solid fa-trash"></i></button>
                             )}
                           </div>
                         </td>
@@ -1863,6 +1891,49 @@ const Purchases = () => {
                 <button type="button" className="btn btn-ghost" onClick={closeModal}>إلغاء</button>
                 <button type="submit" form="cancelPurchaseForm" className="btn btn-danger" disabled={cancelling} style={{ background: 'var(--metro-red)' }}>
                   {cancelling ? 'جاري الإلغاء...' : 'تأكيد إلغاء الفاتورة'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {/* ═══ Modal: Delete Purchase ══════════════════════════════════════════ */}
+      {modalType === 'delete' && activePurchase && (
+        <ModalContainer>
+          <div className="modal-overlay active" onClick={(e) => { if (e.target.classList.contains('modal-overlay')) closeModal(); }}>
+            <div className="modal" style={{ maxWidth: '480px' }}>
+              <div className="modal-header">
+                <h3>حذف فاتورة شراء — {activePurchase.invoiceNumber}</h3>
+                <button className="modal-close" onClick={closeModal}><i className="fa-solid fa-times"></i></button>
+              </div>
+              <div className="modal-body">
+                <div style={{ padding: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', marginBottom: '15px' }}>
+                  <p style={{ color: 'var(--metro-red)', fontWeight: 600, margin: 0, fontSize: '0.9rem' }}>
+                    <i className="fa-solid fa-triangle-exclamation" style={{ marginLeft: '6px' }}></i>
+                    تحذير: سيتم حذف الفاتورة وعكس كل تأثيراتها — خصم الكميات من المخزون، تعديل مديونية المورد، وإلغاء حركات الخزنة المرتبطة بها.
+                    إذا كان جزء من الكمية المشتراة قد تم بيعه أو صرفه بالفعل، سيتم تصفير المخزون المتبقي منها فقط دون رفض عملية الحذف.
+                    لن يتم حذف السجل نهائيًا من قاعدة البيانات (حذف آمن يمكن الرجوع لتفاصيله لاحقًا لأغراض المراجعة).
+                  </p>
+                </div>
+
+                <form id="deletePurchaseForm" onSubmit={handleConfirmDelete}>
+                  <div className="form-group">
+                    <label>سبب الحذف (اختياري)</label>
+                    <textarea
+                      className="form-control"
+                      rows="3"
+                      placeholder="أدخل سبب حذف الفاتورة..."
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                    ></textarea>
+                  </div>
+                </form>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={closeModal}>تراجع</button>
+                <button type="submit" form="deletePurchaseForm" className="btn btn-danger" disabled={deleting} style={{ background: 'var(--metro-red)' }}>
+                  {deleting ? 'جاري الحذف...' : 'تأكيد حذف الفاتورة'}
                 </button>
               </div>
             </div>
