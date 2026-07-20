@@ -37,8 +37,10 @@ const PriceQuotations = () => {
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [discountAmount, setDiscountAmount] = useState('0');
-  const [taxAmount, setTaxAmount] = useState('0');
+  const [discountValue, setDiscountValue] = useState('0');
+  const [discountType, setDiscountType] = useState('FIXED');
+  const [taxValue, setTaxValue] = useState('0');
+  const [taxType, setTaxType] = useState('PERCENTAGE');
   const [notes, setNotes] = useState('عرض السعر ساري لمدة 7 أيام من تاريخ الصدور');
   const [validDays, setValidDays] = useState(7);
   const [items, setItems] = useState([]);
@@ -95,10 +97,10 @@ const PriceQuotations = () => {
     const timer = setTimeout(async () => {
       setSearchingProducts(true);
       try {
-        const res = await Api.getProducts(0, 8, productSearch, '', selectedBranchId);
-        setSearchResults(res.content || res.items || []);
+        const res = await Api.getProductsPaged(0, 10, productSearch.trim(), 'id,desc', selectedBranchId);
+        setSearchResults(res?.items || res?.content || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error searching products in PriceQuotations:", err);
       } finally {
         setSearchingProducts(false);
       }
@@ -155,9 +157,33 @@ const PriceQuotations = () => {
     }, 0);
   };
 
+  const calculateDiscountAmount = () => {
+    const sub = calculateSubtotal();
+    const val = Number(discountValue || 0);
+    if (val <= 0) return 0;
+    if (discountType === 'PERCENTAGE') {
+      return (sub * val) / 100;
+    }
+    return val;
+  };
+
+  const calculateTaxAmount = () => {
+    const sub = calculateSubtotal();
+    const disc = calculateDiscountAmount();
+    const baseForTax = Math.max(0, sub - disc);
+    const val = Number(taxValue || 0);
+    if (val <= 0) return 0;
+    if (taxType === 'PERCENTAGE') {
+      return (baseForTax * val) / 100;
+    }
+    return val;
+  };
+
   const calculateGrandTotal = () => {
     const sub = calculateSubtotal();
-    const total = sub - Number(discountAmount || 0) + Number(taxAmount || 0);
+    const disc = calculateDiscountAmount();
+    const tax = calculateTaxAmount();
+    const total = sub - disc + tax;
     return total > 0 ? total : 0;
   };
 
@@ -166,8 +192,10 @@ const PriceQuotations = () => {
     setCustomerId('');
     setCustomerName('');
     setCustomerPhone('');
-    setDiscountAmount('0');
-    setTaxAmount('0');
+    setDiscountValue('0');
+    setDiscountType('FIXED');
+    setTaxValue('0');
+    setTaxType('PERCENTAGE');
     setNotes('عرض السعر ساري لمدة 7 أيام من تاريخ الصدور');
     setValidDays(7);
     setItems([]);
@@ -179,8 +207,10 @@ const PriceQuotations = () => {
     setCustomerId(q.customerId ? String(q.customerId) : '');
     setCustomerName(q.customerName || '');
     setCustomerPhone(q.customerPhone || '');
-    setDiscountAmount(String(q.discountAmount || 0));
-    setTaxAmount(String(q.taxAmount || 0));
+    setDiscountValue(String(q.discountAmount || 0));
+    setDiscountType('FIXED');
+    setTaxValue(String(q.taxAmount || 0));
+    setTaxType('FIXED');
     setNotes(q.notes || '');
     setValidDays(7);
     setItems((q.items || []).map(i => ({
@@ -205,8 +235,8 @@ const PriceQuotations = () => {
       customerId: customerId ? Number(customerId) : null,
       customerName: customerName || 'عميل عام',
       customerPhone: customerPhone || '',
-      discountAmount: Number(discountAmount || 0),
-      taxAmount: Number(taxAmount || 0),
+      discountAmount: Number(calculateDiscountAmount().toFixed(2)),
+      taxAmount: Number(calculateTaxAmount().toFixed(2)),
       notes: notes,
       validUntil: new Date(Date.now() + validDays * 24 * 60 * 60 * 1000).toISOString(),
       branchId: selectedBranchId ? Number(selectedBranchId) : null,
@@ -530,17 +560,43 @@ const PriceQuotations = () => {
                       />
                       {searchingProducts && <div style={{ position: 'absolute', left: '10px', top: '10px', fontSize: '0.8rem', color: '#888' }}>جاري البحث...</div>}
                       {searchResults.length > 0 && (
-                        <div style={{ position: 'absolute', top: '100%', right: 0, left: 0, background: '#222', border: '1px solid #444', borderRadius: '4px', zIndex: 99, maxHeight: '200px', overflowY: 'auto' }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 4px)',
+                          right: 0,
+                          left: 0,
+                          background: 'var(--bg-elevated, #1a1a1a)',
+                          border: '1px solid var(--border-color, #444)',
+                          borderRadius: '8px',
+                          zIndex: 9999,
+                          maxHeight: '260px',
+                          overflowY: 'auto',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+                        }}>
                           {searchResults.map(p => (
                             <div
                               key={p.id}
                               onClick={() => handleAddProductToItems(p)}
-                              style={{ padding: '8px 12px', borderBottom: '1px solid #333', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
-                              onMouseEnter={(e) => e.currentTarget.style.background = '#333'}
+                              style={{
+                                padding: '10px 14px',
+                                borderBottom: '1px solid var(--border-subtle, #333)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                color: 'var(--text-main, #ffffff)',
+                                transition: 'background-color 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover-tile, #2a2a2a)'}
                               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                             >
-                              <span>{p.name} ({p.productCode || 'بدون كود'})</span>
-                              <span style={{ fontWeight: 700, color: 'var(--metro-blue)' }}>{p.salePrice || 0} ج.م</span>
+                              <div>
+                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{p.name}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #888888)' }}>{p.productCode || p.barcode || 'بدون كود'}</div>
+                              </div>
+                              <span style={{ fontWeight: 700, color: 'var(--metro-blue, #3b82f6)', fontSize: '0.9rem' }}>
+                                {(Number(p.salePrice) || Number(p.purchasePrice) || 0).toFixed(2)} ج.م
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -600,16 +656,38 @@ const PriceQuotations = () => {
                     <div style={{ background: 'var(--bg-elevated, #1a1a1a)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-subtle, #333)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span>المجموع الفرعي:</span>
-                        <strong>{calculateSubtotal().toFixed(2)} ج.م</strong>
+                        <span>{calculateSubtotal().toFixed(2)} ج.م</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span>خصم إضافي:</span>
-                        <input className="form-control" type="number" step="0.01" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} style={{ width: '90px', padding: '2px 6px', height: '28px', textAlign: 'center' }} />
+                        <span>الخصم:</span>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                          <input className="form-control" type="number" step="0.01" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} style={{ width: '85px', padding: '2px 6px', height: '28px', textAlign: 'center' }} />
+                          <select className="form-control" value={discountType} onChange={(e) => setDiscountType(e.target.value)} style={{ width: '55px', padding: '2px', height: '28px', fontSize: '0.8rem' }}>
+                            <option value="PERCENTAGE">%</option>
+                            <option value="FIXED">ج.م</option>
+                          </select>
+                        </div>
                       </div>
+                      {discountType === 'PERCENTAGE' && Number(discountValue) > 0 && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'left', marginBottom: '6px' }}>
+                          (-{calculateDiscountAmount().toFixed(2)} ج.م)
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                         <span>ضريبة:</span>
-                        <input className="form-control" type="number" step="0.01" value={taxAmount} onChange={(e) => setTaxAmount(e.target.value)} style={{ width: '90px', padding: '2px 6px', height: '28px', textAlign: 'center' }} />
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                          <input className="form-control" type="number" step="0.01" value={taxValue} onChange={(e) => setTaxValue(e.target.value)} style={{ width: '85px', padding: '2px 6px', height: '28px', textAlign: 'center' }} />
+                          <select className="form-control" value={taxType} onChange={(e) => setTaxType(e.target.value)} style={{ width: '55px', padding: '2px', height: '28px', fontSize: '0.8rem' }}>
+                            <option value="PERCENTAGE">%</option>
+                            <option value="FIXED">ج.م</option>
+                          </select>
+                        </div>
                       </div>
+                      {taxType === 'PERCENTAGE' && Number(taxValue) > 0 && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'left', marginBottom: '6px' }}>
+                          (+{calculateTaxAmount().toFixed(2)} ج.م)
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid var(--metro-blue)', paddingTop: '8px', fontSize: '1.1rem', fontWeight: 700, color: 'var(--metro-blue)' }}>
                         <span>الإجمالي الكلي:</span>
                         <span>{calculateGrandTotal().toFixed(2)} ج.م</span>

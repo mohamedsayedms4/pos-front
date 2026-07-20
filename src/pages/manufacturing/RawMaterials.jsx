@@ -137,12 +137,18 @@ const RawMaterials = () => {
 
     const doc = iframe.contentDocument || iframe.contentWindow.document;
 
-    // Load settings from localStorage
+    // Load settings from localStorage — every element is independently
+    // toggleable and independently sized per the user's barcode settings.
+    const showTenant = localStorage.getItem('barcode_show_store_name') !== 'false';
     const showName = localStorage.getItem('barcode_show_name') !== 'false';
+    const showBarcodeImg = localStorage.getItem('barcode_show_barcode') !== 'false';
     const showPrice = localStorage.getItem('barcode_show_price') !== 'false';
     const showSku = localStorage.getItem('barcode_show_sku') !== 'false';
+    const tenantFontSize = localStorage.getItem('barcode_store_font_size') || '8';
     const userFontSize = localStorage.getItem('barcode_font_size') || '11';
-    
+    const priceFontSize = localStorage.getItem('barcode_price_font_size') || String(parseInt(userFontSize) + 2);
+    const skuFontSize = localStorage.getItem('barcode_sku_font_size') || String(parseInt(userFontSize) - 1);
+
     const isClassic = templateId === 'classic' || templateId === '1';
     const isPriceFocus = templateId === 'price-focus' || templateId === '2';
     const isMinimal = templateId === 'minimal' || templateId === '3';
@@ -161,8 +167,8 @@ const RawMaterials = () => {
         const nameHtml = (showName && nameStr) ? `<div class="product-name">${nameStr}</div>` : '';
         const priceHtml = (showPrice && priceStr) ? `<div class="product-price">${priceStr}</div>` : '';
         const skuHtml = (showSku && codeStr) ? `<div class="product-code">SKU: ${codeStr}</div>` : '';
-        const tenantHtml = `<div class="tenant-name">${tenantName}</div>`;
-        const imgHtml = `<img src="${dataUrl}" class="barcode-img" />`;
+        const tenantHtml = (showTenant && tenantName) ? `<div class="tenant-name">${tenantName}</div>` : '';
+        const imgHtml = showBarcodeImg ? `<div class="barcode-wrap"><img src="${dataUrl}" class="barcode-img" /></div>` : '';
 
         let templateHtml = '';
 
@@ -170,15 +176,15 @@ const RawMaterials = () => {
           templateHtml = `
                 ${tenantHtml}
                 ${nameHtml}
-                ${showPrice ? `<div class="product-price" style="font-size: calc(${userFontSize}px + 4px); margin: 2px 0;">${priceStr}</div>` : ''}
+                ${showPrice ? `<div class="product-price" style="font-size: ${priceFontSize}px; margin: 2px 0;">${priceStr}</div>` : ''}
                 ${imgHtml}
                 ${skuHtml}
               `;
         } else if (isMinimal) {
           templateHtml = `
-                <div style="display:flex; justify-content:space-between; align-items:center; width:90%; font-size:${userFontSize}px; font-weight:bold; margin-bottom:2px;">
-                  ${showName && nameStr ? `<span>${nameStr}</span>` : ''}
-                  ${showPrice && priceStr ? `<span>${priceStr}</span>` : ''}
+                <div style="display:flex; justify-content:space-between; align-items:center; width:90%; font-weight:bold; margin-bottom:2px;">
+                  ${showName && nameStr ? `<span style="font-size:${userFontSize}px;">${nameStr}</span>` : ''}
+                  ${showPrice && priceStr ? `<span style="font-size:${priceFontSize}px;">${priceStr}</span>` : ''}
                 </div>
                 ${imgHtml}
                 ${skuHtml}
@@ -207,13 +213,16 @@ const RawMaterials = () => {
       '@page{size:auto;margin:0}',
       '*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}',
       `html,body{background:#fff;margin:0;padding:0;}`,
-      '.page{width:' + widthMm + 'mm;height:' + heightMm + 'mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden;page-break-inside:avoid;padding:1mm 1.5mm;box-sizing:border-box;margin:0 auto;text-align:center;}',
+      '.page{width:' + widthMm + 'mm;height:' + heightMm + 'mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1mm;overflow:hidden;page-break-inside:avoid;padding:1mm 1.5mm;box-sizing:border-box;margin:0 auto;text-align:center;}',
       '.page:not(:last-child){page-break-after:always;}',
-      '.product-name{font-size:clamp(7px, ' + userFontSize + 'px, ' + (heightMm * 0.4) + 'px);font-weight:bold;line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.product-price{font-size:clamp(8px, ' + (parseInt(userFontSize) + 2) + 'px, ' + (heightMm * 0.45) + 'px);font-weight:bold;line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.barcode-img{width:95%;max-width:' + sw + 'mm;flex:1 1 auto;min-height:0;max-height:100%;display:block;margin:1px auto;object-fit:fill;}',
-      '.product-code{font-size:clamp(6px, ' + (parseInt(userFontSize) - 2) + 'px, ' + (heightMm * 0.35) + 'px);line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.tenant-name{font-size:clamp(6px, ' + (parseInt(userFontSize) - 3) + 'px, ' + (heightMm * 0.35) + 'px);font-weight:bold;line-height:1.1;margin:0;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      // Preferred sizes scale with the label height so text/barcode actually
+      // grow to use the full label instead of staying tiny and leaving blank space.
+      '.product-name{font-size:clamp(' + userFontSize + 'px, ' + (heightMm * 0.16).toFixed(1) + 'px, ' + (heightMm * 0.42).toFixed(1) + 'px);font-weight:700;line-height:1.15;margin:0;width:100%;flex:0 0 auto;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;}',
+      '.product-price{font-size:clamp(' + priceFontSize + 'px, ' + (heightMm * 0.2).toFixed(1) + 'px, ' + (heightMm * 0.48).toFixed(1) + 'px);font-weight:700;line-height:1.1;margin:0;width:100%;flex:0 0 auto;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.barcode-wrap{width:100%;flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}',
+      '.barcode-img{width:100%;height:100%;max-width:' + sw + 'mm;display:block;margin:0 auto;object-fit:fill;image-rendering:pixelated;image-rendering:crisp-edges;}',
+      '.product-code{font-size:clamp(' + skuFontSize + 'px, ' + (heightMm * 0.13).toFixed(1) + 'px, ' + (heightMm * 0.36).toFixed(1) + 'px);font-weight:600;line-height:1.1;margin:0;width:100%;flex:0 0 auto;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.3px;}',
+      '.tenant-name{font-size:clamp(' + tenantFontSize + 'px, ' + (heightMm * 0.11).toFixed(1) + 'px, ' + (heightMm * 0.35).toFixed(1) + 'px);font-weight:bold;line-height:1.1;margin:0;width:100%;flex:0 0 auto;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
       '</style></head>',
       `<body>${imagesHtml}</body></html>`,
     ].join(''));

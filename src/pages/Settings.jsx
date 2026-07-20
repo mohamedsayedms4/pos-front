@@ -201,16 +201,16 @@ function RadioCards({ value, onChange, options, compact = false }) {
   );
 }
 
-function NumberInput({ label, value, onChange, min, max, unit, hint }) {
+function NumberInput({ label, value, onChange, min, max, unit, hint, disabled }) {
   const update = (next) => onChange(Math.min(max, Math.max(min, Number(next) || min)));
   return (
-    <div className="field">
+    <div className={`field${disabled ? ' field--disabled' : ''}`}>
       <label>{label}</label>
       <div className="number-control">
-        <button type="button" onClick={() => update(value - 1)}>−</button>
-        <input type="number" value={value} min={min} max={max} onChange={(e) => update(e.target.value)} dir="ltr" />
+        <button type="button" onClick={() => update(value - 1)} disabled={disabled}>−</button>
+        <input type="number" value={value} min={min} max={max} onChange={(e) => update(e.target.value)} dir="ltr" disabled={disabled} />
         <span>{unit}</span>
-        <button type="button" onClick={() => update(value + 1)}>+</button>
+        <button type="button" onClick={() => update(value + 1)} disabled={disabled}>+</button>
       </div>
       {hint && <p className="field-hint">{hint}</p>}
     </div>
@@ -281,9 +281,11 @@ function ReceiptPreview({ settings, storeName = "MeDo Group", full = false }) {
 
 function BarcodePreview({ settings, storeName = "MeDo Group" }) {
   const t = settings.barcodeTemplate || 'classic';
+  const storeStr = settings.showStoreName ? storeName : null;
   const nameStr = settings.showProductName ? "سماعة بلوتوث لاسلكية" : null;
   const priceStr = settings.showPrice ? "EGP 150.00" : null;
   const skuStr = settings.showSku ? "SKU: 123456789" : null;
+  const showBarcode = settings.showBarcode !== false;
 
   return (
     <div
@@ -291,15 +293,18 @@ function BarcodePreview({ settings, storeName = "MeDo Group" }) {
       style={{
         "--label-width": `${Math.max(165, (settings.barcodeWidth || 32) * 5.2)}px`,
         "--label-height": `${Math.max(105, (settings.barcodeHeight || 20) * 5)}px`,
-        "--barcode-font-size": `${settings.barcodeFontSize || 10}px`
+        "--barcode-font-size": `${settings.barcodeFontSize || 10}px`,
+        "--barcode-store-font-size": `${settings.storeNameFontSize || 8}px`,
+        "--barcode-price-font-size": `${settings.priceFontSize || 13}px`,
+        "--barcode-sku-font-size": `${settings.skuFontSize || 9}px`
       }}
     >
       {t === 'price-focus' ? (
         <>
-          <div className="barcode-store-tag">{storeName}</div>
+          {storeStr && <div className="barcode-store-tag">{storeStr}</div>}
           {nameStr && <strong className="barcode-title">{nameStr}</strong>}
           {priceStr && <div className="barcode-price-focused">{priceStr}</div>}
-          <RealBarcodeGenerator barcodeValue="123456789" height={32} width={1.4} />
+          {showBarcode && <RealBarcodeGenerator barcodeValue="123456789" height={32} width={1.4} />}
           {skuStr && <small className="barcode-sku">{skuStr}</small>}
         </>
       ) : t === 'minimal' ? (
@@ -308,15 +313,15 @@ function BarcodePreview({ settings, storeName = "MeDo Group" }) {
             {nameStr && <strong>{nameStr}</strong>}
             {priceStr && <b>{priceStr}</b>}
           </div>
-          <RealBarcodeGenerator barcodeValue="123456789" height={30} width={1.3} />
+          {showBarcode && <RealBarcodeGenerator barcodeValue="123456789" height={30} width={1.3} />}
           {skuStr && <small>{skuStr}</small>}
         </>
       ) : (
         /* classic template */
         <>
-          <div className="barcode-store-tag">{storeName}</div>
+          {storeStr && <div className="barcode-store-tag">{storeStr}</div>}
           {nameStr && <strong>{nameStr}</strong>}
-          <RealBarcodeGenerator barcodeValue="123456789" height={34} width={1.5} />
+          {showBarcode && <RealBarcodeGenerator barcodeValue="123456789" height={34} width={1.5} />}
           {skuStr && <small>{skuStr}</small>}
           {priceStr && <b className="barcode-price-classic">{priceStr}</b>}
         </>
@@ -467,11 +472,16 @@ const Settings = () => {
         printCustomerCopy: localStorage.getItem('print_customer_copy') !== 'false',
         barcodeWidth: 32,
         barcodeHeight: 20,
-        barcodeFontSize: 10,
         barcodeTemplate: localStorage.getItem('pos_barcode_template') || 'classic',
+        showStoreName: localStorage.getItem('barcode_show_store_name') !== 'false',
         showProductName: localStorage.getItem('barcode_show_name') !== 'false',
+        showBarcode: localStorage.getItem('barcode_show_barcode') !== 'false',
         showPrice: localStorage.getItem('barcode_show_price') !== 'false',
         showSku: localStorage.getItem('barcode_show_sku') !== 'false',
+        storeNameFontSize: parseInt(localStorage.getItem('barcode_store_font_size') || '8', 10),
+        barcodeFontSize: parseInt(localStorage.getItem('barcode_font_size') || '11', 10),
+        priceFontSize: parseInt(localStorage.getItem('barcode_price_font_size') || '13', 10),
+        skuFontSize: parseInt(localStorage.getItem('barcode_sku_font_size') || '10', 10),
         barcodeOffsetX: parseInt(localStorage.getItem('barcode_offset_x') || '0', 10)
     });
     const [savedPrintSettings, setSavedPrintSettings] = useState(null);
@@ -629,10 +639,15 @@ const Settings = () => {
             localStorage.setItem('auto_print_sale', String(printSettings.autoPrintAfterSale));
             localStorage.setItem('print_customer_copy', String(printSettings.printCustomerCopy));
             localStorage.setItem('pos_barcode_template', printSettings.barcodeTemplate);
+            localStorage.setItem('barcode_show_store_name', String(printSettings.showStoreName));
             localStorage.setItem('barcode_show_name', String(printSettings.showProductName));
+            localStorage.setItem('barcode_show_barcode', String(printSettings.showBarcode));
             localStorage.setItem('barcode_show_price', String(printSettings.showPrice));
             localStorage.setItem('barcode_show_sku', String(printSettings.showSku));
+            localStorage.setItem('barcode_store_font_size', String(printSettings.storeNameFontSize));
             localStorage.setItem('barcode_font_size', String(printSettings.barcodeFontSize));
+            localStorage.setItem('barcode_price_font_size', String(printSettings.priceFontSize));
+            localStorage.setItem('barcode_sku_font_size', String(printSettings.skuFontSize));
             localStorage.setItem('barcode_offset_x', String(printSettings.barcodeOffsetX || 0));
 
             await Api.updatePrinterConfig({
@@ -868,7 +883,6 @@ const Settings = () => {
                                 <div className="dimensions">
                                     <NumberInput label="العرض" value={printSettings.barcodeWidth} onChange={(val) => setPrintProp("barcodeWidth", val)} min={20} max={100} unit="مم" hint="20–100 مم" />
                                     <NumberInput label="الطول" value={printSettings.barcodeHeight} onChange={(val) => setPrintProp("barcodeHeight", val)} min={15} max={80} unit="مم" hint="15–80 مم" />
-                                    <NumberInput label="حجم النص" value={printSettings.barcodeFontSize} onChange={(val) => setPrintProp("barcodeFontSize", val)} min={8} max={18} unit="px" hint="8–18 بكسل" />
                                     <NumberInput label="معايرة أفقية" value={printSettings.barcodeOffsetX} onChange={(val) => setPrintProp("barcodeOffsetX", val)} min={-10} max={10} unit="مم" hint="لو الملصق بيطبع منزاح لليمين أو الشمال، عدّل هنا" />
                                 </div>
 
@@ -886,19 +900,48 @@ const Settings = () => {
                                     />
                                 </div>
 
-                                <div className="label-options">
-                                    <label>
-                                        <input type="checkbox" checked={printSettings.showProductName} onChange={(e) => setPrintProp("showProductName", e.target.checked)} />
-                                        <span><b>اسم المنتج</b><small>إظهار اسم الصنف أعلى الباركود</small></span>
-                                    </label>
-                                    <label>
-                                        <input type="checkbox" checked={printSettings.showPrice} onChange={(e) => setPrintProp("showPrice", e.target.checked)} />
-                                        <span><b>السعر</b><small>طباعة سعر البيع على الملصق</small></span>
-                                    </label>
-                                    <label>
-                                        <input type="checkbox" checked={printSettings.showSku} onChange={(e) => setPrintProp("showSku", e.target.checked)} />
-                                        <span><b>كود الصنف</b><small>إظهار SKU أسفل الباركود</small></span>
-                                    </label>
+                                <div className="divider" />
+
+                                <div className="subsection">
+                                    <div className="subsection-head">
+                                        <div><h3>عناصر الملصق</h3><p>تحكم كامل: أظهر أو أخفِ كل عنصر، واضبط حجم خطه بشكل مستقل.</p></div>
+                                    </div>
+                                    <div className="label-options">
+                                        <label>
+                                            <input type="checkbox" checked={printSettings.showStoreName} onChange={(e) => setPrintProp("showStoreName", e.target.checked)} />
+                                            <span><b>اسم المتجر</b><small>إظهار اسم المتجر أعلى الملصق</small></span>
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" checked={printSettings.showProductName} onChange={(e) => setPrintProp("showProductName", e.target.checked)} />
+                                            <span><b>اسم المنتج</b><small>إظهار اسم الصنف أعلى الباركود</small></span>
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" checked={printSettings.showBarcode} onChange={(e) => setPrintProp("showBarcode", e.target.checked)} />
+                                            <span><b>الباركود</b><small>إظهار رمز الباركود نفسه</small></span>
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" checked={printSettings.showPrice} onChange={(e) => setPrintProp("showPrice", e.target.checked)} />
+                                            <span><b>السعر</b><small>طباعة سعر البيع على الملصق</small></span>
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" checked={printSettings.showSku} onChange={(e) => setPrintProp("showSku", e.target.checked)} />
+                                            <span><b>كود الصنف</b><small>إظهار SKU أسفل الباركود</small></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="divider" />
+
+                                <div className="subsection">
+                                    <div className="subsection-head">
+                                        <div><h3>أحجام الخطوط</h3><p>حجم كل عنصر مستقل تمامًا عن الباقي.</p></div>
+                                    </div>
+                                    <div className="dimensions">
+                                        <NumberInput label="حجم اسم المتجر" value={printSettings.storeNameFontSize} onChange={(val) => setPrintProp("storeNameFontSize", val)} min={6} max={24} unit="px" hint="6–24 بكسل" disabled={!printSettings.showStoreName} />
+                                        <NumberInput label="حجم اسم المنتج" value={printSettings.barcodeFontSize} onChange={(val) => setPrintProp("barcodeFontSize", val)} min={6} max={30} unit="px" hint="6–30 بكسل" disabled={!printSettings.showProductName} />
+                                        <NumberInput label="حجم السعر" value={printSettings.priceFontSize} onChange={(val) => setPrintProp("priceFontSize", val)} min={6} max={30} unit="px" hint="6–30 بكسل" disabled={!printSettings.showPrice} />
+                                        <NumberInput label="حجم كود الصنف" value={printSettings.skuFontSize} onChange={(val) => setPrintProp("skuFontSize", val)} min={6} max={24} unit="px" hint="6–24 بكسل" disabled={!printSettings.showSku} />
+                                    </div>
                                 </div>
                             </SectionCard>
                         </div>
